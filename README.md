@@ -1,8 +1,8 @@
 # PetShopManagement
 
-Khung desktop app Java Swing để quản lý cửa hàng thú cưng cho chủ cửa hàng và nhân viên.
+Khung desktop app JavaFX quan ly cua hang thu cung cho chu cua hang va nhan vien.
 
-## Cấu trúc
+## Cau truc
 
 ```text
 src/com/petshop/
@@ -11,26 +11,28 @@ src/com/petshop/
 ├── util/SessionManager.java
 ├── controller/LoginController.java
 └── view/
-    ├── LoginFrame.java
+    ├── LoginView.java
     └── MainDashboard.java
+
+src/main/resources/com/petshop/view/styles.css
 ```
 
-## Chạy ứng dụng
+## Chay ung dung
 
-Yêu cầu JDK 17 và Maven:
+Yeu cau JDK 17 va Maven:
 
 ```powershell
 mvn clean compile
-mvn exec:java
+mvn javafx:run
 ```
 
-Hoặc chạy class `com.petshop.main.Main` trực tiếp trong VS Code/IDE.
+Hoac chay class `com.petshop.main.Main` truc tiep trong VS Code/IDE co ho tro JavaFX.
 
-## Tài khoản mẫu
+## Tai khoan mau
 
-| Tài khoản | Mật khẩu | Quyền |
+| Tai khoan | Mat khau | Quyen |
 | --- | --- | --- |
-| `owner` | `owner123` | Chủ cửa hàng |
-| `staff` | `staff123` | Nhân viên |
+| `owner` | `owner123` | Chu cua hang |
+| `staff` | `staff123` | Nhan vien |
 
-Các nút nghiệp vụ hiện là placeholder để bổ sung từng module sau.
+Cac nut nghiep vu hien la placeholder de bo sung tung module sau.
