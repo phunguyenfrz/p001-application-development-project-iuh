@@ -1,0 +1,88 @@
+.root {
+    -fx-font-family: "Segoe UI";
+    -fx-background-color: #f4f7fb;
+}
+
+.login-view {
+    -fx-background-color: linear-gradient(to bottom right, #e8f3f8, #f9fbfd);
+}
+
+.app-title, .dashboard-title {
+    -fx-text-fill: #234e70;
+    -fx-font-weight: bold;
+}
+
+.app-title {
+    -fx-font-size: 27px;
+}
+
+.subtitle {
+    -fx-text-fill: #5c7180;
+    -fx-font-size: 15px;
+}
+
+.text-field, .password-field {
+    -fx-pref-height: 42px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-border-color: #c9d6df;
+    -fx-padding: 0 12px;
+}
+
+.primary-button {
+    -fx-pref-height: 42px;
+    -fx-background-color: #287b9e;
+    -fx-background-radius: 6px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.primary-button:hover {
+    -fx-background-color: #1f6482;
+}
+
+.error-label {
+    -fx-text-fill: #b3261e;
+    -fx-min-height: 18px;
+}
+
+.hint-label, .account-label {
+    -fx-text-fill: #687b87;
+    -fx-font-size: 12px;
+}
+
+.dashboard {
+    -fx-background-color: #f4f7fb;
+}
+
+.dashboard-header {
+    -fx-padding: 0 0 14px 0;
+    -fx-border-color: transparent transparent #d7e1e8 transparent;
+}
+
+.dashboard-title {
+    -fx-font-size: 27px;
+}
+
+.dashboard-header .button {
+    -fx-max-width: 120px;
+}
+
+.module-button {
+    -fx-background-color: white;
+    -fx-background-radius: 8px;
+    -fx-border-color: #d2dee6;
+    -fx-border-radius: 8px;
+    -fx-text-fill: #234e70;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.module-button:hover {
+    -fx-background-color: #e8f3f8;
+    -fx-border-color: #287b9e;
+}
+
+.module-button:disabled {
+    -fx-opacity: 0.45;
+}
