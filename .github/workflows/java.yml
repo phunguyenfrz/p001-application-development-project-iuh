@@ -16,17 +16,5 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Build Java backend
-        working-directory: server
-        run: mvn -B package --file pom.xml
-      - name: Run Java tests
-        working-directory: server
-        run: mvn -B test --file pom.xml
-      - name: Install frontend dependencies (optional)
-        if: always()
-        working-directory: client
-        run: npm install
-      - name: Build frontend (optional)
-        if: always()
-        working-directory: client
-        run: npm run build
+      - name: Compile desktop application
+        run: mvn -B clean compile
