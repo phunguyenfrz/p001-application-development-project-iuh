@@ -1,36 +1,36 @@
-# p001 - Application Development Project
+# PetShopManagement
 
-Đây là dự án đồ án chính bằng Java với backend Spring Boot. Frontend tách biệt và có thể tiếp tục phát triển trong `client/` nếu cần.
+Khung desktop app Java Swing để quản lý cửa hàng thú cưng cho chủ cửa hàng và nhân viên.
 
-## Cấu trúc chính
+## Cấu trúc
 
-- `server/`: ứng dụng backend Java Spring Boot
-- `client/`: ứng dụng frontend React (tùy chọn)
-- `docs/`: tài liệu đồ án
-- `scripts/`: script hỗ trợ
-- `.env.example`: mẫu cấu hình môi trường
+```text
+src/com/petshop/
+├── main/Main.java
+├── model/User.java
+├── util/SessionManager.java
+├── controller/LoginController.java
+└── view/
+    ├── LoginFrame.java
+    └── MainDashboard.java
+```
 
-## Chạy backend Java
+## Chạy ứng dụng
 
-1. Cài JDK 17 hoặc mới hơn
-2. Vào thư mục backend:
-   ```powershell
-   cd server
-   mvn spring-boot:run
-   ```
-3. Mở API:
-   - `GET http://localhost:3000/api/hello`
+Yêu cầu JDK 17 và Maven:
 
-## Chạy frontend (nếu cần)
+```powershell
+mvn clean compile
+mvn exec:java
+```
 
-1. Vào thư mục frontend:
-   ```powershell
-   cd client
-   npm install
-   npm start
-   ```
+Hoặc chạy class `com.petshop.main.Main` trực tiếp trong VS Code/IDE.
 
-## Ghi chú
+## Tài khoản mẫu
 
-- Backend Java sử dụng Spring Boot và Maven
-- Frontend React chỉ là phần phụ nếu bạn muốn thêm giao diện
+| Tài khoản | Mật khẩu | Quyền |
+| --- | --- | --- |
+| `owner` | `owner123` | Chủ cửa hàng |
+| `staff` | `staff123` | Nhân viên |
+
+Các nút nghiệp vụ hiện là placeholder để bổ sung từng module sau.
