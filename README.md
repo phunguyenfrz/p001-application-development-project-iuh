@@ -19,7 +19,7 @@ src/main/resources/com/petshop/view/styles.css
 
 ## Chay ung dung
 
-Yeu cau JDK 17 va Maven:
+Yeu cau JDK 25 va Maven:
 
 ```powershell
 mvn clean compile
