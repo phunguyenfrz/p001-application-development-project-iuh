@@ -8,10 +8,10 @@ import javafx.stage.Stage;
 public class Main extends Application {
     @Override
     public void start(Stage stage) {
-        stage.setTitle("PetShop Management | Đăng nhập");
-        stage.setMinWidth(420);
-        stage.setMinHeight(520);
-        Scene scene = new Scene(new LoginView(stage), 520, 600);
+        stage.setTitle("Happy Tails | Đăng nhập hệ thống");
+        stage.setMinWidth(480);
+        stage.setMinHeight(620);
+        Scene scene = new Scene(new LoginView(stage), 600, 680);
         scene.getStylesheets().add(getClass().getResource("/com/petshop/view/styles.css").toExternalForm());
         stage.setScene(scene);
         stage.show();
