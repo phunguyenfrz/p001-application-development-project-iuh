@@ -149,6 +149,68 @@
     -fx-letter-spacing: 0.8px;
 }
 
+/* Mục chức năng chính ở ngoài sidebar có thể bấm Dropdown */
+.sidebar-nav-item {
+    -fx-pref-height: 42px;
+    -fx-background-color: transparent;
+    -fx-background-radius: 10px;
+    -fx-padding: 0 14px;
+    -fx-cursor: hand;
+}
+
+.sidebar-nav-item:hover {
+    -fx-background-color: #f2f7f2;
+}
+
+.sidebar-nav-bullet {
+    -fx-font-size: 14px;
+    -fx-text-fill: #9ca89e;
+    -fx-padding: 0 4px 0 0;
+}
+
+.sidebar-nav-item:hover .sidebar-nav-bullet {
+    -fx-text-fill: #436850;
+}
+
+.sidebar-nav-text {
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #3b4740;
+}
+
+.sidebar-nav-item:hover .sidebar-nav-text {
+    -fx-text-fill: #1f3326;
+}
+
+.sidebar-nav-arrow {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #9ca89e;
+}
+
+.sidebar-nav-item:hover .sidebar-nav-arrow {
+    -fx-text-fill: #436850;
+}
+
+/* Các chức năng con bên trong khi sổ xuống */
+.sidebar-sub-btn {
+    -fx-pref-height: 36px;
+    -fx-background-color: transparent;
+    -fx-background-radius: 8px;
+    -fx-alignment: center-left;
+    -fx-padding: 0 14px 0 34px;
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #5a695e;
+    -fx-cursor: hand;
+}
+
+.sidebar-sub-btn:hover {
+    -fx-background-color: #f2f7f2;
+    -fx-text-fill: #245532;
+    -fx-font-weight: 600;
+}
+
 /* Nút menu sidebar */
 .sidebar-btn {
     -fx-pref-height: 40px;

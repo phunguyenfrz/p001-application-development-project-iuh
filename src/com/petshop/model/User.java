@@ -8,8 +8,7 @@ public class User {
     public enum Role {
         QUAN_LY("Quản lý"),
         BAN_HANG("Bán hàng"),
-        CHAM_SOC("Chăm sóc"),
-        THU_NGAN("Thu ngân");
+        CHAM_SOC("Chăm sóc");
 
         private final String displayName;
 
