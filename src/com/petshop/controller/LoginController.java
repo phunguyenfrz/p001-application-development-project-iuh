@@ -1,19 +1,23 @@
 package com.petshop.controller;
 
-import com.petshop.dao.UserDao;
 import com.petshop.model.User;
 
-public class LoginController {
-    private final UserDao userDao = new UserDao();
+import java.util.Map;
 
-    /**
-     * @return User nếu đăng nhập đúng, null nếu sai tên đăng nhập/mật khẩu.
-     * @throws IllegalStateException nếu không kết nối được database.
-     */
+public class LoginController {
+    private final Map<String, Account> accounts = Map.of(
+            "owner", new Account("owner123", new User("owner", "Chủ cửa hàng", User.Role.OWNER)),
+            "staff", new Account("staff123", new User("staff", "Nhân viên bán hàng", User.Role.STAFF))
+    );
+
     public User authenticate(String username, String password) {
-        if (username == null || username.isBlank() || password == null || password.isEmpty()) {
-            return null;
+        Account account = accounts.get(username.trim().toLowerCase());
+        if (account != null && account.password().equals(password)) {
+            return account.user();
         }
-        return userDao.findByCredentials(username.trim().toLowerCase(), password);
+        return null;
+    }
+
+    private record Account(String password, User user) {
     }
 }
