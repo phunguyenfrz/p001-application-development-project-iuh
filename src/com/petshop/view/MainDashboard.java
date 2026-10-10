@@ -163,8 +163,7 @@ public class MainDashboard extends BorderPane {
             menuList.getChildren().addAll(fnPos, fnInvoices, fnCustomers, fnProducts, fnInventory, fnImports);
 
         } else if (role == User.Role.CHAM_SOC) {
-            // ScreenFlow Chăm sóc (02C):
-            // - Lịch hẹn (26): Danh sách lịch hẹn, Đặt lịch mới, Chi tiết ca chăm sóc
+            
             VBox fnAppointments = createNavDropdownItem("Lịch hẹn",
                     createSubMenuButton("Lịch chăm sóc hôm nay"),
                     createSubMenuButton("Đặt lịch hẹn mới")
