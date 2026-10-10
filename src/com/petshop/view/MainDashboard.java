@@ -86,40 +86,101 @@ public class MainDashboard extends BorderPane {
         VBox menuList = new VBox(4);
         menuList.setPadding(new Insets(10, 12, 10, 12));
 
-        // Mục "Tổng quan" (Active)
+        // Nút "Tổng quan" (Active)
         Button btnOverview = createMenuButton("❖  Tổng quan", true);
+        menuList.getChildren().add(btnOverview);
 
-        // Nhóm NHÂN SỰ
-        Label groupHr = new Label("NHÂN SỰ");
-        groupHr.getStyleClass().add("sidebar-group-title");
-        Button btnEmployees = createMenuButton("Nhân viên", false);
-        Button btnShifts = createMenuButton("Ca trực", false);
+        User.Role role = user != null ? user.getRole() : User.Role.QUAN_LY;
 
-        // Chỉ Quản lý mới vào mục Nhân viên
-        if (user != null && user.getRole() != User.Role.QUAN_LY) {
-            btnEmployees.setDisable(true);
+        if (role == User.Role.QUAN_LY) {
+            // ScreenFlow Quản lý (02A):
+            // - Nhân viên (03): Danh sách nhân viên, Thêm/Sửa nhân viên, Chi tiết nhân viên
+            VBox fnEmployees = createNavDropdownItem("Nhân viên",
+                    createSubMenuButton("Danh sách nhân viên"),
+                    createSubMenuButton("Thêm nhân viên mới")
+            );
+            // - Ca trực (06): Lịch ca trực, Thêm/Điều chỉnh ca
+            VBox fnShifts = createNavDropdownItem("Ca trực",
+                    createSubMenuButton("Bảng phân ca trực"),
+                    createSubMenuButton("Thêm / Gán ca trực")
+            );
+            // - Nhà cung cấp (08): Danh sách nhà cung cấp, Thêm/Sửa nhà cung cấp
+            VBox fnSuppliers = createNavDropdownItem("Nhà cung cấp",
+                    createSubMenuButton("Danh sách đối tác NCC"),
+                    createSubMenuButton("Thêm nhà cung cấp")
+            );
+            // - Dịch vụ (10): Danh mục dịch vụ, Thêm/Sửa gói & bảng giá
+            VBox fnServices = createNavDropdownItem("Dịch vụ",
+                    createSubMenuButton("Danh mục dịch vụ Spa"),
+                    createSubMenuButton("Thêm gói / Bảng giá")
+            );
+            // - Khuyến mãi (12): Danh sách khuyến mãi, Tạo mã voucher/khuyến mãi
+            VBox fnPromos = createNavDropdownItem("Khuyến mãi",
+                    createSubMenuButton("Chương trình ưu đãi"),
+                    createSubMenuButton("Tạo khuyến mãi mới")
+            );
+            // - Báo cáo (14): Thống kê doanh thu, Xuất báo cáo
+            VBox fnReports = createNavDropdownItem("Báo cáo",
+                    createSubMenuButton("Thống kê doanh thu"),
+                    createSubMenuButton("Báo cáo dịch vụ & hàng hóa")
+            );
+
+            menuList.getChildren().addAll(fnEmployees, fnShifts, fnSuppliers, fnServices, fnPromos, fnReports);
+
+        } else if (role == User.Role.BAN_HANG) {
+            // ScreenFlow Bán hàng (02B):
+            // - Bán hàng POS (24): Màn hình lập hóa đơn, Tính tiền tại quầy
+            VBox fnPos = createNavDropdownItem("Bán hàng (POS)",
+                    createSubMenuButton("Lập hóa đơn mới"),
+                    createSubMenuButton("Quét mã vạch bán lẻ")
+            );
+            // - Hóa đơn (25): Danh sách hóa đơn, Tra cứu & Đổi trả
+            VBox fnInvoices = createNavDropdownItem("Hóa đơn",
+                    createSubMenuButton("Lịch sử hóa đơn"),
+                    createSubMenuButton("Phiếu đổi trả hàng")
+            );
+            // - Khách hàng (21): Danh sách khách hàng, Thêm/Sửa khách hàng, Hồ sơ khách hàng
+            VBox fnCustomers = createNavDropdownItem("Khách hàng",
+                    createSubMenuButton("Tra cứu khách hàng"),
+                    createSubMenuButton("Thêm khách hàng mới")
+            );
+            // - Sản phẩm (15): Danh mục sản phẩm, Thêm/Sửa sản phẩm
+            VBox fnProducts = createNavDropdownItem("Sản phẩm",
+                    createSubMenuButton("Danh mục sản phẩm"),
+                    createSubMenuButton("Thêm sản phẩm mới")
+            );
+            // - Tồn kho (17): Tồn kho sản phẩm, Cảnh báo sắp hết hàng
+            VBox fnInventory = createNavDropdownItem("Tồn kho",
+                    createSubMenuButton("Kiểm kê tồn kho"),
+                    createSubMenuButton("Cảnh báo chạm ngưỡng")
+            );
+            // - Đơn hàng nhập (18): Danh sách đơn nhập, Lập đơn nhập kho
+            VBox fnImports = createNavDropdownItem("Đơn hàng nhập",
+                    createSubMenuButton("Danh sách đơn nhập"),
+                    createSubMenuButton("Lập đơn nhập kho mới")
+            );
+
+            menuList.getChildren().addAll(fnPos, fnInvoices, fnCustomers, fnProducts, fnInventory, fnImports);
+
+        } else if (role == User.Role.CHAM_SOC) {
+            // ScreenFlow Chăm sóc (02C):
+            // - Lịch hẹn (26): Danh sách lịch hẹn, Đặt lịch mới, Chi tiết ca chăm sóc
+            VBox fnAppointments = createNavDropdownItem("Lịch hẹn",
+                    createSubMenuButton("Lịch chăm sóc hôm nay"),
+                    createSubMenuButton("Đặt lịch hẹn mới")
+            );
+            // - Thú cưng (29): Hồ sơ thú cưng, Thêm/Sửa thú cưng, Lịch sử y tế
+            VBox fnPets = createNavDropdownItem("Thú cưng",
+                    createSubMenuButton("Hồ sơ thú cưng"),
+                    createSubMenuButton("Đăng ký thú cưng mới")
+            );
+            // - Thanh toán (24): Chuyển ca hoàn thành sang POS
+            VBox fnPos = createNavDropdownItem("Thanh toán (POS)",
+                    createSubMenuButton("Thanh toán ca hoàn tất")
+            );
+
+            menuList.getChildren().addAll(fnAppointments, fnPets, fnPos);
         }
-
-        // Nhóm DANH MỤC
-        Label groupCat = new Label("DANH MỤC");
-        groupCat.getStyleClass().add("sidebar-group-title");
-        Button btnProducts = createMenuButton("Sản phẩm", false);
-        Button btnPets = createMenuButton("Thú cưng", false);
-        Button btnServices = createMenuButton("Dịch vụ", false);
-        Button btnSuppliers = createMenuButton("Nhà cung cấp", false);
-        Button btnPromos = createMenuButton("Khuyến mãi", false);
-
-        // Nhóm BÁO CÁO
-        Label groupRep = new Label("BÁO CÁO");
-        groupRep.getStyleClass().add("sidebar-group-title");
-        Button btnReports = createMenuButton("Thống kê & Báo cáo", false);
-
-        menuList.getChildren().addAll(
-                btnOverview,
-                groupHr, btnEmployees, btnShifts,
-                groupCat, btnProducts, btnPets, btnServices, btnSuppliers, btnPromos,
-                groupRep, btnReports
-        );
 
         ScrollPane menuScroll = new ScrollPane(menuList);
         menuScroll.setFitToWidth(true);
@@ -157,6 +218,53 @@ public class MainDashboard extends BorderPane {
         return sidebar;
     }
 
+    /**
+     * Tạo mục chức năng to ở ngoài Sidebar, khi click sẽ toggle sổ xuống các chức năng con.
+     * Mặc định ban đầu ở trạng thái đóng (collapsed).
+     */
+    private VBox createNavDropdownItem(String title, Button... subButtons) {
+        VBox itemBox = new VBox(2);
+        itemBox.setPadding(new Insets(2, 0, 2, 0));
+
+        // Thanh chức năng to ở ngoài (Icon tròn rỗng/đầy + Tên chức năng + Mũi tên đóng/mở)
+        HBox headerBtn = new HBox(10);
+        headerBtn.setAlignment(Pos.CENTER_LEFT);
+        headerBtn.getStyleClass().add("sidebar-nav-item");
+
+        Label bullet = new Label("○");
+        bullet.getStyleClass().add("sidebar-nav-bullet");
+
+        Label lblTitle = new Label(title);
+        lblTitle.getStyleClass().add("sidebar-nav-text");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        // Ban đầu đóng -> mũi tên trỏ sang phải
+        Label lblArrow = new Label("▸");
+        lblArrow.getStyleClass().add("sidebar-nav-arrow");
+
+        headerBtn.getChildren().addAll(bullet, lblTitle, spacer, lblArrow);
+
+        // Danh sách các chức năng con bên trong (mặc định đóng, ẩn)
+        VBox subMenuList = new VBox(2);
+        subMenuList.getChildren().addAll(subButtons);
+        subMenuList.setVisible(false);
+        subMenuList.setManaged(false);
+
+        // Sự kiện click toggle
+        headerBtn.setOnMouseClicked(e -> {
+            boolean isVisible = !subMenuList.isVisible();
+            subMenuList.setVisible(isVisible);
+            subMenuList.setManaged(isVisible);
+            lblArrow.setText(isVisible ? "▾" : "▸");
+            bullet.setText(isVisible ? "●" : "○");
+        });
+
+        itemBox.getChildren().addAll(headerBtn, subMenuList);
+        return itemBox;
+    }
+
     private Button createMenuButton(String text, boolean active) {
         Button btn = new Button(text);
         btn.setMaxWidth(Double.MAX_VALUE);
@@ -164,6 +272,14 @@ public class MainDashboard extends BorderPane {
         if (!active) {
             btn.setOnAction(e -> showPlaceholder(text));
         }
+        return btn;
+    }
+
+    private Button createSubMenuButton(String text) {
+        Button btn = new Button(text);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.getStyleClass().add("sidebar-sub-btn");
+        btn.setOnAction(e -> showPlaceholder(text));
         return btn;
     }
 
