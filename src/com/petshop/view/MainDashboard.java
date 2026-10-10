@@ -163,7 +163,7 @@ public class MainDashboard extends BorderPane {
             menuList.getChildren().addAll(fnPos, fnInvoices, fnCustomers, fnProducts, fnInventory, fnImports);
 
         } else if (role == User.Role.CHAM_SOC) {
-            
+            // Phu dep chai x2 
             VBox fnAppointments = createNavDropdownItem("Lịch hẹn",
                     createSubMenuButton("Lịch chăm sóc hôm nay"),
                     createSubMenuButton("Đặt lịch hẹn mới")
