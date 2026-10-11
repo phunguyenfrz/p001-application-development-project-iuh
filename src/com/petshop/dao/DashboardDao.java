@@ -1,6 +1,7 @@
 package com.petshop.dao;
 
-import com.petshop.util.DatabaseManager;
+import com.petshop.util.DbConnection;
+import com.petshop.model.DashboardData.*;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -14,41 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DashboardDao {
-    public record ProductStock(String code, String name, int quantity, int threshold) {
-    }
-
-    public record BestSeller(String type, String name, int quantity) {
-    }
-
-    public record Appointment(String code, LocalTime time, String pet, String services, String status) {
-    }
-
-    public record AllergyPet(String pet, String type, String allergy, String customer) {
-    }
-
-    public record PendingOrder(String code, String supplier, BigDecimal total) {
-    }
-
-    public record RecentInvoice(String code, LocalDate date, String customer,
-                                BigDecimal total, String status) {
-    }
-
-    public record ManagerDashboard(BigDecimal revenueToday, Map<LocalDate, BigDecimal> weeklyRevenue,
-                                   int appointmentsToday, List<ProductStock> lowStock,
-                                   List<BestSeller> bestSellers) {
-    }
-
-    public record SalesDashboard(int invoicesToday, BigDecimal revenueToday, List<ProductStock> lowStock,
-                                 int pendingOrderCount,
-                                 List<PendingOrder> pendingOrders, List<Appointment> unpaidAppointments,
-                                 List<RecentInvoice> recentInvoices) {
-    }
-
-    public record CareDashboard(List<Appointment> appointmentsToday, int awaitingConfirmation,
-                                List<AllergyPet> petsWithAllergiesToday) {
-    }
-
+public class DashboardDao implements DashboardRepository {
     public ManagerDashboard loadManagerDashboard() {
         BigDecimal revenueToday = queryRevenueToday();
         Map<LocalDate, BigDecimal> weeklyRevenue = queryWeeklyRevenue();
@@ -79,11 +46,23 @@ public class DashboardDao {
                 queryPetsWithAllergiesToday(employeeId));
     }
 
+    public List<ProductStock> loadLowStockNotifications() {
+        return queryLowStock();
+    }
+
+    public int loadTodayAppointmentCount() {
+        return queryAppointmentCount();
+    }
+
+    public List<Appointment> loadMyAppointmentsTodayNotifications(String employeeId) {
+        return queryMyAppointmentsToday(employeeId);
+    }
+
     private BigDecimal queryRevenueToday() {
         String sql = """
                 SELECT COALESCE(SUM(tongTien), 0) AS total
                 FROM HoaDon
-                WHERE ngayLap = CAST(GETDATE() AS DATE)
+                WHERE CAST(ngayLap AS DATE) = CAST(GETDATE() AS DATE)
                   AND trangThaiThanhToan = N'Đã thanh toán'
                 """;
         return querySingleDecimal(sql);
@@ -101,7 +80,7 @@ public class DashboardDao {
                 SELECT weekDays.businessDate, COALESCE(SUM(hd.tongTien), 0) AS total
                 FROM weekDays
                 LEFT JOIN HoaDon hd
-                  ON hd.ngayLap = weekDays.businessDate
+                  ON CAST(hd.ngayLap AS DATE) = weekDays.businessDate
                  AND hd.trangThaiThanhToan = N'Đã thanh toán'
                 GROUP BY weekDays.businessDate
                 ORDER BY weekDays.businessDate
@@ -126,7 +105,7 @@ public class DashboardDao {
         return querySingleInt("""
                 SELECT COUNT(*) AS total
                 FROM HoaDon
-                WHERE ngayLap = CAST(GETDATE() AS DATE)
+                WHERE CAST(ngayLap AS DATE) = CAST(GETDATE() AS DATE)
                   AND trangThaiThanhToan <> N'Đã hủy'
                 """, statement -> {
         });
@@ -249,7 +228,7 @@ public class DashboardDao {
         query(sql, statement -> {
         }, rs -> result.add(new RecentInvoice(
                 rs.getString("maHoaDon"),
-                rs.getDate("ngayLap").toLocalDate(),
+                rs.getTimestamp("ngayLap").toLocalDateTime().toLocalDate(),
                 rs.getString("customerName"),
                 rs.getBigDecimal("tongTien"),
                 rs.getString("trangThaiThanhToan"))));
@@ -324,7 +303,7 @@ public class DashboardDao {
     }
 
     private void query(String sql, StatementBinder binder, RowMapper mapper) {
-        try (Connection connection = DatabaseManager.getConnection();
+        try (Connection connection = DbConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             binder.bind(statement);
             try (ResultSet resultSet = statement.executeQuery()) {

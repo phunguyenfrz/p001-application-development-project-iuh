@@ -3,32 +3,18 @@ package com.petshop.view;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-public class InvoiceCreationView extends BorderPane {
-    public InvoiceCreationView(Runnable showDashboard) {
-        this(showDashboard, null);
-    }
+public class InvoiceCreationView extends VBox implements AppView {
+    private final String title;
 
-    public InvoiceCreationView(Runnable showDashboard, String appointmentId) {
-        getStyleClass().add("dashboard");
-
-        Button backButton = new Button("←  Tổng quan");
-        backButton.getStyleClass().add("sidebar-btn");
-        backButton.setOnAction(event -> showDashboard.run());
-
-        HBox header = new HBox(backButton);
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.getStyleClass().add("topbar");
-        setTop(header);
-
-        Label title = new Label("Lập hóa đơn mới");
-        title.getStyleClass().add("welcome-title");
+    public InvoiceCreationView(String appointmentId) {
+        super(16);
+        title = appointmentId == null ? "Lập hóa đơn" : "Lập hóa đơn | " + appointmentId;
+        setPadding(new Insets(4, 0, 0, 0));
 
         Label description = new Label(appointmentId == null
                 ? "Quét mã vạch sản phẩm để thêm vào hóa đơn."
@@ -44,11 +30,21 @@ public class InvoiceCreationView extends BorderPane {
         barcodeBox.setAlignment(Pos.CENTER_LEFT);
         barcodeBox.getStyleClass().add("search-box");
 
-        VBox content = new VBox(16, title, description, barcodeBox);
-        content.setPadding(new Insets(28));
-        content.getStyleClass().add("dashboard-content");
-        setCenter(content);
+        VBox panel = new VBox(16, description, barcodeBox);
+        panel.setPadding(new Insets(20));
+        panel.getStyleClass().add("card-panel");
+        getChildren().add(panel);
 
         Platform.runLater(barcodeField::requestFocus);
+    }
+
+    @Override
+    public javafx.scene.Node getNode() {
+        return this;
+    }
+
+    @Override
+    public String getTitle() {
+        return title;
     }
 }

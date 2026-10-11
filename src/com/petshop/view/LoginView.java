@@ -1,12 +1,10 @@
 package com.petshop.view;
 
-import com.petshop.controller.LoginController;
+import com.petshop.controller.AuthenticationController;
 import com.petshop.model.User;
-import com.petshop.util.SessionManager;
+import com.petshop.util.DbConfig;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Group;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -14,11 +12,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
-import javafx.scene.shape.Ellipse;
 import javafx.scene.shape.SVGPath;
-import javafx.stage.Stage;
 
 /**
  * Giao diện đăng nhập chuẩn thiết kế Happy Tails.
@@ -28,13 +22,14 @@ public class LoginView extends StackPane {
     private final TextField usernameField = new TextField();
     private final PasswordField passwordField = new PasswordField();
     private final TextField passwordTextField = new TextField(); // Khi bấm hiện mật khẩu
-    private final LoginController loginController = new LoginController();
-    private final Stage stage;
+    private final AuthenticationController loginController;
+    private final LoginListener loginListener;
     private final Label errorLabel = new Label();
     private boolean isPasswordVisible = false;
 
-    public LoginView(Stage stage) {
-        this.stage = stage;
+    public LoginView(AuthenticationController loginController, LoginListener loginListener) {
+        this.loginController = loginController;
+        this.loginListener = loginListener;
         getStyleClass().add("login-view");
 
         // Khối Card trắng ở giữa
@@ -44,7 +39,8 @@ public class LoginView extends StackPane {
         card.setAlignment(Pos.CENTER);
 
         // 1. Logo & Tiêu đề
-        Group pawLogo = createPawIcon();
+        PawIcon pawLogo = new PawIcon(34,
+                PawIcon.ColorVariant.BRAND, PawIcon.Style.OUTLINE);
         Label title = new Label("Happy Tails");
         title.getStyleClass().add("brand-title");
 
@@ -107,7 +103,7 @@ public class LoginView extends StackPane {
         errorLabel.setMinHeight(20);
 
         // 6. Footer
-        Label footer = new Label("HAPPY TAILS • Chi nhánh Quận 1");
+        Label footer = new Label("HAPPY TAILS • " + DbConfig.getBranchName());
         footer.getStyleClass().add("footer-text");
         VBox.setMargin(footer, new Insets(12, 0, 0, 0));
 
@@ -126,46 +122,6 @@ public class LoginView extends StackPane {
     }
 
     /**
-     * Tạo icon dấu chân thú cưng viền màu cam/nâu cam như thiết kế.
-     */
-    private Group createPawIcon() {
-        Group group = new Group();
-
-        Color strokeColor = Color.web("#d97736");
-        double strokeWidth = 2.4;
-
-        // Đệm chính (Main pad)
-        Ellipse mainPad = new Ellipse(0, 5, 12, 9);
-        mainPad.setFill(Color.TRANSPARENT);
-        mainPad.setStroke(strokeColor);
-        mainPad.setStrokeWidth(strokeWidth);
-
-        // 4 ngón chân (Toes)
-        Circle toe1 = new Circle(-11, -8, 3.8);
-        toe1.setFill(Color.TRANSPARENT);
-        toe1.setStroke(strokeColor);
-        toe1.setStrokeWidth(strokeWidth);
-
-        Circle toe2 = new Circle(-4, -13, 4.2);
-        toe2.setFill(Color.TRANSPARENT);
-        toe2.setStroke(strokeColor);
-        toe2.setStrokeWidth(strokeWidth);
-
-        Circle toe3 = new Circle(4, -13, 4.2);
-        toe3.setFill(Color.TRANSPARENT);
-        toe3.setStroke(strokeColor);
-        toe3.setStrokeWidth(strokeWidth);
-
-        Circle toe4 = new Circle(11, -8, 3.8);
-        toe4.setFill(Color.TRANSPARENT);
-        toe4.setStroke(strokeColor);
-        toe4.setStrokeWidth(strokeWidth);
-
-        group.getChildren().addAll(mainPad, toe1, toe2, toe3, toe4);
-        return group;
-    }
-
-    /**
      * Tạo nút con mắt để bật/tắt hiển thị mật khẩu.
      */
     private Button createEyeButton() {
@@ -175,7 +131,7 @@ public class LoginView extends StackPane {
         // SVG icon con mắt viền xám nhạt
         SVGPath eyeIcon = new SVGPath();
         eyeIcon.setContent("M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z");
-        eyeIcon.setFill(Color.web("#9ca89e"));
+        eyeIcon.getStyleClass().add("login-eye-icon");
         eyeIcon.setScaleX(0.75);
         eyeIcon.setScaleY(0.75);
 
@@ -197,7 +153,7 @@ public class LoginView extends StackPane {
                 passwordTextField.setManaged(true);
                 passwordField.setVisible(false);
                 passwordField.setManaged(false);
-                eyeIcon.setFill(Color.web("#436850")); // Màu đậm khi đang mở
+                eyeIcon.getStyleClass().add("login-eye-icon-open");
                 passwordTextField.requestFocus();
                 passwordTextField.positionCaret(passwordTextField.getText().length());
             } else {
@@ -206,7 +162,7 @@ public class LoginView extends StackPane {
                 passwordField.setManaged(true);
                 passwordTextField.setVisible(false);
                 passwordTextField.setManaged(false);
-                eyeIcon.setFill(Color.web("#9ca89e"));
+                eyeIcon.getStyleClass().remove("login-eye-icon-open");
                 passwordField.requestFocus();
                 passwordField.positionCaret(passwordField.getText().length());
             }
@@ -225,7 +181,7 @@ public class LoginView extends StackPane {
         try {
             user = loginController.authenticate(username, password);
         } catch (IllegalStateException e) {
-            errorLabel.setText("Không thể kết nối cơ sở dữ liệu SQL Server!");
+            errorLabel.setText(e.getMessage());
             return;
         }
 
@@ -236,14 +192,6 @@ public class LoginView extends StackPane {
             return;
         }
 
-        // Đăng nhập thành công -> chuyển sang Dashboard
-        SessionManager.login(user);
-        stage.setTitle("Happy Tails | Bảng điều khiển");
-        Scene scene = new Scene(new MainDashboard(stage), 1220, 800);
-        scene.getStylesheets().add(getClass().getResource("/com/petshop/view/styles.css").toExternalForm());
-        stage.setScene(scene);
-        stage.setMinWidth(1100);
-        stage.setMinHeight(750);
-        stage.centerOnScreen();
+        loginListener.onLoginSuccess(user);
     }
 }

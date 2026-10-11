@@ -17,9 +17,9 @@ public final class DatabaseInit {
      * @return true nếu kết nối thành công.
      */
     public static boolean initialize() {
-        try (Connection conn = DatabaseManager.getConnection()) {
+        try (Connection conn = DbConnection.getConnection()) {
             return conn.isValid(3);
-        } catch (SQLException e) {
+        } catch (IllegalStateException | SQLException e) {
             System.err.println("[DatabaseInit] Không kết nối được database: " + e.getMessage());
             return false;
         }

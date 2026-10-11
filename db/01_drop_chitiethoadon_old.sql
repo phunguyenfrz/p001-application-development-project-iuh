@@ -1,0 +1,5 @@
+IF OBJECT_ID(N'dbo.ChiTietHoaDon_OLD', N'U') IS NOT NULL
+BEGIN
+    DROP TABLE dbo.ChiTietHoaDon_OLD;
+END;
+GO

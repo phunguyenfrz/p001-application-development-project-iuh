@@ -101,6 +101,31 @@
     -fx-font-weight: 500;
 }
 
+.paw-shape.paw-outline {
+    -fx-fill: transparent;
+    -fx-stroke-width: 2.4px;
+}
+
+.paw-brand .paw-shape.paw-outline {
+    -fx-stroke: #d97736;
+}
+
+.paw-white .paw-shape.paw-filled {
+    -fx-fill: #ffffff;
+}
+
+.paw-logo-background {
+    -fx-fill: #d97736;
+}
+
+.login-eye-icon {
+    -fx-fill: #9ca89e;
+}
+
+.login-eye-icon-open {
+    -fx-fill: #436850;
+}
+
 /* --------------------------------------------------------------------------
    DASHBOARD - SIDEBAR
    -------------------------------------------------------------------------- */
@@ -111,6 +136,17 @@
     -fx-max-width: 240px;
     -fx-border-color: transparent #e5ebe5 transparent transparent;
     -fx-border-width: 1px;
+}
+
+.sidebar-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+}
+
+.profile-menu {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
 }
 
 .sidebar-brand-box {
@@ -186,6 +222,40 @@
     -fx-font-size: 11px;
     -fx-font-weight: bold;
     -fx-text-fill: #9ca89e;
+}
+
+.feedback-success {
+    -fx-text-fill: #2f6b3d;
+}
+
+.feedback-error {
+    -fx-text-fill: #dc2626;
+}
+
+.revenue-today-value {
+    -fx-font-size: 10px;
+    -fx-text-fill: #2f4f38;
+    -fx-font-weight: bold;
+}
+
+.revenue-bar {
+    -fx-fill: #bdd7c3;
+}
+
+.revenue-bar-today {
+    -fx-fill: #2f4f38;
+}
+
+.revenue-day {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: #829485;
+    -fx-font-weight: 600;
+}
+
+.revenue-day-today {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: #2f4f38;
+    -fx-font-weight: bold;
 }
 
 .sidebar-nav-item:hover .sidebar-nav-arrow {
