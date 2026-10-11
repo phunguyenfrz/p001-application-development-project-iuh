@@ -20,9 +20,9 @@ public final class MainShell extends BorderPane {
             NavigationController navigator, ScreenRegistry registry,
             ContentHost contentHost, Runnable logoutAction) {
         getStyleClass().add("dashboard");
-        SidebarView sidebar = new SidebarView(new MenuModel(registry, user.getRole()), navigator);
+        SidebarView sidebar = new SidebarView(
+                new MenuModel(registry).forRole(user.getRole()), navigator);
         sidebar.observe(navigator.currentScreenProperty());
-        contentHost.observe(navigator.currentScreenProperty(), registry);
         topbar = new TopbarView(user, controllers, navigator, logoutAction);
         VBox center = new VBox(topbar, contentHost);
         setLeft(sidebar);

@@ -5,9 +5,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.Priority;
-import com.petshop.model.Screen;
-import com.petshop.navigation.ScreenRegistry;
-import javafx.beans.property.ReadOnlyObjectProperty;
 
 public final class ContentHost extends VBox implements ContentSink {
     private final ScrollPane scrollPane = new ScrollPane();
@@ -35,12 +32,4 @@ public final class ContentHost extends VBox implements ContentSink {
         content.getChildren().add(node);
     }
 
-    public void observe(
-            ReadOnlyObjectProperty<Screen> currentScreen, ScreenRegistry registry) {
-        currentScreen.addListener((observable, oldScreen, newScreen) -> {
-            if (newScreen != null) {
-                breadcrumb.setText(registry.definition(newScreen).label());
-            }
-        });
-    }
 }

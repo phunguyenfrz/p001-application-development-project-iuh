@@ -12,8 +12,12 @@ public enum Screen {
     CARE_SERVICES,
     /** UC006: quản lý khuyến mãi. */
     PROMOTIONS,
-    /** UC007: xem báo cáo doanh thu, tồn kho hoặc mặt hàng bán chạy. */
-    REPORTS,
+    /** UC007: báo cáo doanh thu theo kỳ. */
+    REVENUE_REPORT,
+    /** UC007: báo cáo tình trạng tồn kho. */
+    INVENTORY_REPORT,
+    /** UC007: báo cáo mặt hàng bán chạy. */
+    BEST_SELLERS_REPORT,
     /** UC009: quản lý sản phẩm. */
     PRODUCTS,
     /** UC010: xem tồn kho và cảnh báo tồn thấp. */

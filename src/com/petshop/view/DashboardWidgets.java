@@ -1,13 +1,9 @@
 package com.petshop.view;
 
-import com.petshop.controller.ScreenNavigator;
-import com.petshop.model.Screen;
 import com.petshop.model.User;
 import com.petshop.util.Formats;
-import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -17,8 +13,12 @@ import javafx.scene.layout.VBox;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.math.BigDecimal;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public final class DashboardWidgets {
+    private static final Logger LOGGER = Logger.getLogger(DashboardWidgets.class.getName());
+
     private DashboardWidgets() {
     }
 
@@ -39,15 +39,6 @@ public final class DashboardWidgets {
         return header;
     }
 
-    public static Node invoiceButton(ScreenNavigator navigator) {
-        javafx.scene.control.Button button =
-                new javafx.scene.control.Button("+ Tạo hóa đơn mới");
-        button.getStyleClass().add("btn-create-invoice");
-        button.setOnAction(event ->
-                navigator.navigate(Screen.INVOICE_CREATE, "Lập hóa đơn mới"));
-        return button;
-    }
-
     public static String money(BigDecimal value) {
         return Formats.money(value);
     }
@@ -63,19 +54,12 @@ public final class DashboardWidgets {
     }
 
     public static void showLoadError(VBox parent, IllegalStateException exception) {
-        Label error = new Label("Không thể tải dữ liệu từ QLCH_HappyTails: "
-                + exception.getMessage());
+        LOGGER.log(Level.SEVERE, "Không thể tải dữ liệu tổng quan.", exception);
+        Label error = new Label("Hiện chưa thể tải dữ liệu tổng quan. Vui lòng thử lại sau.");
         error.setWrapText(true);
         error.getStyleClass().add("welcome-sub");
         VBox panel = new VBox(error);
         panel.getStyleClass().add("card-panel");
         parent.getChildren().add(panel);
-        Platform.runLater(() -> {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Lỗi tải bảng điều khiển");
-            alert.setHeaderText("Không thể kết nối hoặc truy vấn dữ liệu.");
-            alert.setContentText(exception.getMessage());
-            alert.show();
-        });
     }
 }

@@ -18,6 +18,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Circle;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 public final class SidebarView extends VBox {
@@ -38,14 +39,14 @@ public final class SidebarView extends VBox {
     }
 
     private final ScreenNavigator navigator;
-    private final Map<Screen, Button> buttons = new EnumMap<>(Screen.class);
-    private final Map<Screen, String> labels = new EnumMap<>(Screen.class);
+    private final Map<Screen, java.util.List<Button>> buttons = new EnumMap<>(Screen.class);
+    private final Map<Button, String> labels = new java.util.IdentityHashMap<>();
     private final java.util.List<GroupRow> groups = new java.util.ArrayList<>();
     private final Label brandTitle = new Label("Happy Tails");
     private final Label brandSubtitle = new Label("Cửa hàng thú cưng");
     private boolean collapsed;
 
-    public SidebarView(MenuModel menu, ScreenNavigator navigator) {
+    public SidebarView(List<MenuModel.Section> menu, ScreenNavigator navigator) {
         this.navigator = navigator;
         getStyleClass().add("sidebar");
         HBox brand = new HBox(10);
@@ -69,9 +70,13 @@ public final class SidebarView extends VBox {
 
         VBox menuList = new VBox(4);
         menuList.setPadding(new Insets(10, 12, 10, 12));
-        menuList.getChildren().add(menuButton("❖  Tổng quan", Screen.OVERVIEW));
-        for (MenuModel.Section section : menu.sections()) {
-            menuList.getChildren().add(groupRow(section));
+        for (MenuModel.Section section : menu) {
+            if (section.group() == null) {
+                section.entries().forEach(entry ->
+                        menuList.getChildren().add(menuButton(entry.label(), entry.screen())));
+            } else {
+                menuList.getChildren().add(groupRow(section));
+            }
         }
         ScrollPane scroll = new ScrollPane(menuList);
         scroll.setFitToWidth(true);
@@ -134,8 +139,8 @@ public final class SidebarView extends VBox {
     }
 
     private void addButton(Button button, Screen screen) {
-        buttons.put(screen, button);
-        labels.put(screen, button.getText());
+        buttons.computeIfAbsent(screen, ignored -> new java.util.ArrayList<>()).add(button);
+        labels.put(button, button.getText());
         button.setTooltip(new Tooltip(button.getText()));
         button.setOnAction(event -> navigator.navigate(screen));
     }
@@ -148,17 +153,18 @@ public final class SidebarView extends VBox {
     }
 
     private void updateSelection(Screen selected) {
-        buttons.forEach((screen, button) -> {
+        buttons.forEach((screen, screenButtons) -> screenButtons.forEach(button -> {
             button.getStyleClass().remove("sidebar-btn-active");
             if (screen == selected) {
                 button.getStyleClass().add("sidebar-btn-active");
             }
-        });
+        }));
         for (GroupRow row : groups) {
             boolean contains = row.submenu.getChildren().stream()
                     .filter(Button.class::isInstance)
                     .map(Button.class::cast)
-                    .anyMatch(button -> buttons.get(selected) == button);
+                    .anyMatch(button -> buttons.getOrDefault(selected, java.util.List.of())
+                            .contains(button));
             if (contains && !row.submenu.isVisible()) {
                 toggle(row);
             }
@@ -175,8 +181,9 @@ public final class SidebarView extends VBox {
         brandTitle.setManaged(!collapsed);
         brandSubtitle.setVisible(!collapsed);
         brandSubtitle.setManaged(!collapsed);
-        buttons.forEach((screen, button) ->
-                button.setText(collapsed ? shortIcon(screen) : labels.get(screen)));
+        buttons.forEach((screen, screenButtons) -> screenButtons.forEach(button ->
+                button.setText(collapsed ? shortIcon(labels.get(button))
+                        : labels.get(button))));
         for (GroupRow row : groups) {
             row.title.setVisible(!collapsed);
             row.title.setManaged(!collapsed);
@@ -186,8 +193,7 @@ public final class SidebarView extends VBox {
         }
     }
 
-    private String shortIcon(Screen screen) {
-        String label = labels.get(screen);
+    private String shortIcon(String label) {
         return label == null || label.isBlank() ? "•" : label.substring(0, 1);
     }
 }

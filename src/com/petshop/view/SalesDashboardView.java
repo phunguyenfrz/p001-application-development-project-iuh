@@ -1,7 +1,6 @@
 package com.petshop.view;
 
 import com.petshop.controller.DashboardController;
-import com.petshop.controller.ScreenNavigator;
 import com.petshop.model.DashboardData.Appointment;
 import com.petshop.model.DashboardData.PendingOrder;
 import com.petshop.model.DashboardData.ProductStock;
@@ -9,29 +8,30 @@ import com.petshop.model.DashboardData.RecentInvoice;
 import com.petshop.model.DashboardData.SalesDashboard;
 import com.petshop.model.User;
 import com.petshop.util.Formats;
+import javafx.concurrent.Task;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.collections.ObservableList;
 
 import java.util.List;
 
 public final class SalesDashboardView extends VBox implements DashboardView {
-    private final ScreenNavigator navigator;
-
-    public SalesDashboardView(
-            User user, ScreenNavigator navigator, DashboardController controller) {
+    public SalesDashboardView(User user, DashboardController controller) {
         super(22);
-        this.navigator = navigator;
         getChildren().add(DashboardWidgets.welcomeHeader(user));
-        try {
-            compose(controller.loadSalesDashboard());
-        } catch (IllegalStateException exception) {
-            DashboardWidgets.showLoadError(this, exception);
-        }
+        Task<SalesDashboard> task = new Task<>() {
+            @Override
+            protected SalesDashboard call() {
+                return controller.loadSalesDashboard();
+            }
+        };
+        task.setOnSucceeded(event -> compose(task.getValue()));
+        task.setOnFailed(event -> DashboardWidgets.showLoadError(this,
+                new IllegalStateException("Không thể tải dữ liệu tổng quan.",
+                        task.getException())));
+        Thread worker = new Thread(task, "sales-dashboard-load");
+        worker.setDaemon(true);
+        worker.start();
     }
 
     private void compose(SalesDashboard data) {
@@ -71,26 +71,6 @@ public final class SalesDashboardView extends VBox implements DashboardView {
                 List.of("Mã lịch", "Giờ", "Thú cưng", "Dịch vụ"), appointments.stream()
                 .map(item -> List.of(item.code(), DashboardWidgets.time(item.time()),
                         item.pet(), item.services())).toList());
-        panel.addHeaderContent(DashboardWidgets.invoiceButton(navigator));
-        TableColumn<ObservableList<String>, String> action = new TableColumn<>("Thao tác");
-        action.setCellFactory(column -> new TableCell<>() {
-            private final Button button = new Button("Lập hóa đơn");
-
-            {
-                button.getStyleClass().add("sidebar-btn");
-                button.setOnAction(event -> {
-                    ObservableList<String> row = getTableView().getItems().get(getIndex());
-                    navigator.navigateToAppointmentInvoice(row.get(0));
-                });
-            }
-
-            @Override
-            protected void updateItem(String value, boolean empty) {
-                super.updateItem(value, empty);
-                setGraphic(empty ? null : button);
-            }
-        });
-        panel.table().getColumns().add(action);
         return panel;
     }
 
@@ -100,7 +80,6 @@ public final class SalesDashboardView extends VBox implements DashboardView {
                 invoices.stream().map(item -> List.of(item.code(), Formats.date(item.date()),
                         item.customer(), DashboardWidgets.money(item.total()), item.status()))
                         .toList());
-        panel.addHeaderContent(DashboardWidgets.invoiceButton(navigator));
         return panel;
     }
 

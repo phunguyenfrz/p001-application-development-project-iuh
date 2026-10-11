@@ -13,6 +13,7 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.layout.VBox;
+import javafx.concurrent.Task;
 
 public final class ChangePasswordDialog {
     private final PasswordController controller;
@@ -51,23 +52,52 @@ public final class ChangePasswordDialog {
                 savePassword(dialog, event, error, current, next);
             }
         });
-        dialog.showAndWait();
+        if (dialog.showAndWait().filter(saveType::equals).isPresent()) {
+            information("Mật khẩu đã được cập nhật.");
+        }
     }
 
     private void savePassword(
             Dialog<ButtonType> dialog, ActionEvent event, Label error,
             PasswordField current, PasswordField next) {
-        try {
-            if (!controller.changePassword(user.getMaTaiKhoan(), current.getText(), next.getText())) {
-                reject(event, error, "Mật khẩu hiện tại không chính xác.");
+        event.consume();
+        Button save = (Button) dialog.getDialogPane().lookupButton(
+                dialog.getDialogPane().getButtonTypes().get(0));
+        save.setDisable(true);
+        error.setText("Đang cập nhật mật khẩu...");
+        String oldPassword = current.getText();
+        String newPassword = next.getText();
+        Task<Boolean> task = new Task<>() {
+            @Override
+            protected Boolean call() {
+                return controller.changePassword(
+                        user.getMaTaiKhoan(), oldPassword, newPassword);
+            }
+        };
+        task.setOnSucceeded(done -> {
+            if (!task.getValue()) {
+                save.setDisable(false);
+                error.setText("Mật khẩu hiện tại không chính xác.");
                 return;
             }
-            information("Mật khẩu đã được cập nhật.");
-        } catch (PasswordChangedAuditException exception) {
-            error(exception.getMessage());
-        } catch (IllegalStateException exception) {
-            reject(event, error, exception.getMessage());
-        }
+            dialog.setResult(dialog.getDialogPane().getButtonTypes().get(0));
+            dialog.close();
+        });
+        task.setOnFailed(done -> {
+            Throwable failure = task.getException();
+            if (failure instanceof PasswordChangedAuditException auditFailure) {
+                dialog.setResult(dialog.getDialogPane().getButtonTypes().get(0));
+                dialog.close();
+                error(auditFailure.getMessage());
+                return;
+            }
+            save.setDisable(false);
+            error.setText(failure == null
+                    ? "Không thể cập nhật mật khẩu." : failure.getMessage());
+        });
+        Thread worker = new Thread(task, "password-change");
+        worker.setDaemon(true);
+        worker.start();
     }
 
     private void reject(ActionEvent event, Label label, String message) {

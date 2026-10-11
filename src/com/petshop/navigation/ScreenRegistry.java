@@ -4,9 +4,7 @@ import com.petshop.model.Role;
 import com.petshop.model.Screen;
 import com.petshop.view.AppView;
 import com.petshop.view.DashboardView;
-import com.petshop.view.InvoiceCreationView;
-import com.petshop.view.PlaceholderView;
-import com.petshop.view.ReportView;
+import com.petshop.view.ModuleViewFactory;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -20,7 +18,9 @@ public final class ScreenRegistry {
     private final Function<String, AppView> appointmentInvoiceFactory;
 
     public ScreenRegistry() {
-        this(Map.of(), InvoiceCreationView::new, Map.of(), null);
+        this(Map.of(), appointmentId ->
+                ModuleViewFactory.create(Screen.INVOICE_CREATE, "Lập hóa đơn"),
+                Map.of(), null);
     }
 
     public ScreenRegistry(
@@ -44,18 +44,27 @@ public final class ScreenRegistry {
 
         register(registered, factories, Screen.OVERVIEW, "Tổng quan", null,
                 dashboardFactory == null ? null : () -> dashboardFactory.get());
-        register(registered, factories, Screen.EMPLOYEES, "Nhân viên", MenuGroup.ACCOUNTS);
-        register(registered, factories, Screen.SHIFTS, "Ca trực", MenuGroup.ACCOUNTS);
-        register(registered, factories, Screen.SUPPLIERS, "Nhà cung cấp", MenuGroup.CATALOG);
-        register(registered, factories, Screen.CARE_SERVICES, "Dịch vụ chăm sóc", MenuGroup.CATALOG);
-        register(registered, factories, Screen.PROMOTIONS, "Khuyến mãi", MenuGroup.CATALOG);
-        register(registered, factories, Screen.REPORTS, "Thống kê & báo cáo", MenuGroup.REPORTS);
+        register(registered, factories, Screen.EMPLOYEES, "Danh sách nhân viên",
+                MenuGroup.EMPLOYEES_AND_SHIFTS);
+        register(registered, factories, Screen.SHIFTS, "Phân ca trực",
+                MenuGroup.EMPLOYEES_AND_SHIFTS);
+        register(registered, factories, Screen.SUPPLIERS, "Nhà cung cấp",
+                MenuGroup.PRODUCTS_AND_STOCK);
+        register(registered, factories, Screen.CARE_SERVICES, "Danh mục dịch vụ",
+                MenuGroup.CARE_SERVICES);
+        register(registered, factories, Screen.PROMOTIONS, "Khuyến mãi", MenuGroup.SALES);
+        register(registered, factories, Screen.REVENUE_REPORT, "Doanh thu", MenuGroup.REPORTS);
+        register(registered, factories, Screen.INVENTORY_REPORT, "Tồn kho", MenuGroup.REPORTS);
+        register(registered, factories, Screen.BEST_SELLERS_REPORT, "Bán chạy", MenuGroup.REPORTS);
         register(registered, factories, Screen.PRODUCTS, "Sản phẩm", MenuGroup.PRODUCTS_AND_STOCK);
         register(registered, factories, Screen.INVENTORY, "Tồn kho", MenuGroup.PRODUCTS_AND_STOCK);
         register(registered, factories, Screen.PURCHASE_ORDERS, "Đơn nhập", MenuGroup.PRODUCTS_AND_STOCK);
-        register(registered, factories, Screen.CUSTOMERS, "Khách hàng", MenuGroup.CUSTOMERS_AND_PETS);
-        register(registered, factories, Screen.PETS, "Hồ sơ thú cưng", MenuGroup.CUSTOMERS_AND_PETS);
-        register(registered, factories, Screen.APPOINTMENTS, "Lịch hẹn", MenuGroup.CUSTOMERS_AND_PETS);
+        register(registered, factories, Screen.CUSTOMERS, "Khách hàng",
+                MenuGroup.CUSTOMERS_AND_PETS);
+        register(registered, factories, Screen.PETS, "Hồ sơ thú cưng",
+                MenuGroup.CUSTOMERS_AND_PETS);
+        register(registered, factories, Screen.APPOINTMENTS, "Danh sách lịch hẹn",
+                MenuGroup.APPOINTMENTS);
         register(registered, factories, Screen.INVOICE_CREATE, "Lập hóa đơn", MenuGroup.SALES);
         register(registered, factories, Screen.INVOICE_HISTORY, "Lịch sử hóa đơn", MenuGroup.SALES);
         register(registered, factories, Screen.RETURNS, "Đổi/trả hàng", MenuGroup.SALES);
@@ -112,10 +121,6 @@ public final class ScreenRegistry {
     }
 
     private AppView defaultView(Screen screen, String label) {
-        return switch (screen) {
-            case REPORTS -> new ReportView(label);
-            case INVOICE_CREATE -> new InvoiceCreationView(null);
-            default -> new PlaceholderView(screen, label);
-        };
+        return ModuleViewFactory.create(screen, label);
     }
 }

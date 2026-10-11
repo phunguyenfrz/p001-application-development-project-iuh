@@ -1,12 +1,13 @@
 package com.petshop.navigation;
 
 public enum MenuGroup {
-    ACCOUNTS("Tài khoản & Nhân sự", "♙"),
-    CATALOG("Danh mục", "▤"),
-    PRODUCTS_AND_STOCK("Sản phẩm & Kho", "◈"),
+    EMPLOYEES_AND_SHIFTS("Nhân viên & Ca trực", "♙"),
     CUSTOMERS_AND_PETS("Khách hàng & Thú cưng", "♡"),
+    CARE_SERVICES("Dịch vụ chăm sóc", "✿"),
+    APPOINTMENTS("Lịch hẹn", "◷"),
+    PRODUCTS_AND_STOCK("Sản phẩm & Kho", "◈"),
     SALES("Bán hàng", "＄"),
-    REPORTS("Thống kê & báo cáo", "▥");
+    REPORTS("Báo cáo", "▥");
 
     private final String label;
     private final String icon;

@@ -20,8 +20,8 @@ class RoleTest {
     @Test
     void enforcesRoleScreenMatrix() {
         assertTrue(Role.QUAN_LY.canAccess(Screen.EMPLOYEES));
-        assertTrue(Role.QUAN_LY.canAccess(Screen.REPORTS));
-        assertFalse(Role.QUAN_LY.canAccess(Screen.PRODUCTS));
+        assertTrue(Role.QUAN_LY.canAccess(Screen.REVENUE_REPORT));
+        assertTrue(Role.QUAN_LY.canAccess(Screen.PRODUCTS));
         assertTrue(Role.BAN_HANG.canAccess(Screen.PRODUCTS));
         assertTrue(Role.BAN_HANG.canAccess(Screen.RETURNS));
         assertFalse(Role.BAN_HANG.canAccess(Screen.APPOINTMENTS));

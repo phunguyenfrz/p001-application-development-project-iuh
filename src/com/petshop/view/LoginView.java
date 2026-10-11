@@ -3,6 +3,7 @@ package com.petshop.view;
 import com.petshop.controller.AuthenticationController;
 import com.petshop.model.User;
 import com.petshop.util.DbConfig;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -25,6 +26,7 @@ public class LoginView extends StackPane {
     private final AuthenticationController loginController;
     private final LoginListener loginListener;
     private final Label errorLabel = new Label();
+    private final Button loginButton = new Button("Đăng nhập");
     private boolean isPasswordVisible = false;
 
     public LoginView(AuthenticationController loginController, LoginListener loginListener) {
@@ -87,7 +89,6 @@ public class LoginView extends StackPane {
         passBox.setAlignment(Pos.CENTER_LEFT);
 
         // 4. Nút Đăng nhập
-        Button loginButton = new Button("Đăng nhập");
         loginButton.getStyleClass().add("btn-login");
         loginButton.setMaxWidth(Double.MAX_VALUE);
         loginButton.setOnAction(event -> login());
@@ -177,21 +178,36 @@ public class LoginView extends StackPane {
 
         errorLabel.setText("");
 
-        User user;
-        try {
-            user = loginController.authenticate(username, password);
-        } catch (IllegalStateException e) {
-            errorLabel.setText(e.getMessage());
-            return;
-        }
-
-        if (user == null) {
-            errorLabel.setText("Tên đăng nhập hoặc mật khẩu không chính xác.");
-            passwordField.clear();
-            passwordTextField.clear();
-            return;
-        }
-
-        loginListener.onLoginSuccess(user);
+        loginButton.setDisable(true);
+        loginButton.setText("Đang xác thực...");
+        Task<User> task = new Task<>() {
+            @Override
+            protected User call() {
+                return loginController.authenticate(username, password);
+            }
+        };
+        task.setOnSucceeded(event -> {
+            loginButton.setDisable(false);
+            loginButton.setText("Đăng nhập");
+            User user = task.getValue();
+            if (user == null) {
+                errorLabel.setText("Tên đăng nhập hoặc mật khẩu không chính xác.");
+                passwordField.clear();
+                passwordTextField.clear();
+                return;
+            }
+            loginListener.onLoginSuccess(user);
+        });
+        task.setOnFailed(event -> {
+            loginButton.setDisable(false);
+            loginButton.setText("Đăng nhập");
+            Throwable failure = task.getException();
+            errorLabel.setText(failure == null
+                    ? "Không thể đăng nhập. Vui lòng thử lại."
+                    : failure.getMessage());
+        });
+        Thread worker = new Thread(task, "login-authentication");
+        worker.setDaemon(true);
+        worker.start();
     }
 }

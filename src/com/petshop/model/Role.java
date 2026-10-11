@@ -3,9 +3,7 @@ package com.petshop.model;
 import java.util.Set;
 
 public enum Role {
-    QUAN_LY("Quản lý", true, false, true, Set.of(
-            Screen.OVERVIEW, Screen.EMPLOYEES, Screen.SHIFTS, Screen.SUPPLIERS,
-            Screen.CARE_SERVICES, Screen.PROMOTIONS, Screen.REPORTS)),
+    QUAN_LY("Quản lý", true, false, true, Set.of(Screen.values())),
     BAN_HANG("Bán hàng", false, false, true, Set.of(
             Screen.OVERVIEW, Screen.PRODUCTS, Screen.INVENTORY, Screen.PURCHASE_ORDERS,
             Screen.CUSTOMERS, Screen.INVOICE_CREATE,
@@ -43,7 +41,7 @@ public enum Role {
 
     public String getHelpText() {
         return switch (this) {
-            case QUAN_LY -> "Quản lý nhân sự, danh mục, khuyến mãi và báo cáo.";
+            case QUAN_LY -> "Truy cập đầy đủ các chức năng quản lý cửa hàng.";
             case BAN_HANG -> "Quản lý sản phẩm, tồn kho, đơn nhập, khách hàng và bán hàng.";
             case CHAM_SOC -> "Quản lý lịch hẹn, thú cưng và tra cứu khách hàng.";
         };

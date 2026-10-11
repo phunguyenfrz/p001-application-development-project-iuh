@@ -1,11 +1,11 @@
 package com.petshop.view;
 
 import com.petshop.controller.DashboardController;
-import com.petshop.controller.ScreenNavigator;
 import com.petshop.model.DashboardData.AllergyPet;
 import com.petshop.model.DashboardData.Appointment;
 import com.petshop.model.DashboardData.CareDashboard;
 import com.petshop.model.User;
+import javafx.concurrent.Task;
 import javafx.scene.Node;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -14,14 +14,22 @@ import java.util.List;
 
 public final class CareDashboardView extends VBox implements DashboardView {
     public CareDashboardView(
-            User user, ScreenNavigator navigator, DashboardController controller) {
+            User user, DashboardController controller) {
         super(22);
         getChildren().add(DashboardWidgets.welcomeHeader(user));
-        try {
-            compose(controller.loadCareDashboard(user.getMaNhanVien()));
-        } catch (IllegalStateException exception) {
-            DashboardWidgets.showLoadError(this, exception);
-        }
+        Task<CareDashboard> task = new Task<>() {
+            @Override
+            protected CareDashboard call() {
+                return controller.loadCareDashboard(user.getMaNhanVien());
+            }
+        };
+        task.setOnSucceeded(event -> compose(task.getValue()));
+        task.setOnFailed(event -> DashboardWidgets.showLoadError(this,
+                new IllegalStateException("Không thể tải dữ liệu tổng quan.",
+                        task.getException())));
+        Thread worker = new Thread(task, "care-dashboard-load");
+        worker.setDaemon(true);
+        worker.start();
     }
 
     private void compose(CareDashboard data) {
