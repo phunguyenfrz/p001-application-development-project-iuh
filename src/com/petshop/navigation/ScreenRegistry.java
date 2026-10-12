@@ -2,14 +2,17 @@ package com.petshop.navigation;
 
 import com.petshop.model.Role;
 import com.petshop.model.Screen;
+import com.petshop.model.Permission;
 import com.petshop.view.AppView;
 import com.petshop.view.DashboardView;
 import com.petshop.view.ModuleViewFactory;
 
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -85,6 +88,23 @@ public final class ScreenRegistry {
 
     public Map<Screen, ScreenDefinition> definitions() {
         return definitions;
+    }
+
+    public static Set<Permission> permissionsFor(Screen screen, Role role) {
+        if (screen == null || role == null) {
+            return Set.of();
+        }
+        if (screen == Screen.PETS) {
+            return switch (role) {
+                case QUAN_LY, CHAM_SOC -> Set.of(Permission.VIEW);
+                case BAN_HANG -> EnumSet.allOf(Permission.class);
+            };
+        }
+        return role != null && role.canAccess(screen) ? Set.of(Permission.VIEW) : Set.of();
+    }
+
+    public static boolean hasPermission(Screen screen, Role role, Permission permission) {
+        return permissionsFor(screen, role).contains(permission);
     }
 
     public AppView create(Screen screen) {

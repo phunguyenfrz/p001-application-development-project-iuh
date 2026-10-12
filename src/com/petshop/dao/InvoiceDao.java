@@ -8,6 +8,7 @@ import com.petshop.model.InvoiceData.InvoiceReceipt;
 import com.petshop.model.InvoiceData.ProductOption;
 import com.petshop.model.InvoiceData.ReceiptLine;
 import com.petshop.util.DbConnection;
+import com.petshop.util.TextSearch;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -46,22 +47,24 @@ public final class InvoiceDao implements InvoiceRepository {
 
     @Override
     public List<ProductOption> searchProducts(String keyword) {
+        String query = keyword == null ? "" : keyword.trim();
         String sql = """
-                SELECT TOP (30) maSanPham, tenSanPham, maVach, giaBan, soLuongTon
+                SELECT """ + (query.isEmpty() ? "TOP (30) " : "") + """
+                maSanPham, tenSanPham, maVach, giaBan, soLuongTon
                 FROM SanPham
                 WHERE trangThai = 1 AND soLuongTon > 0
-                  AND (? = N'' OR maSanPham LIKE ? OR maVach LIKE ? OR tenSanPham LIKE ?)
+                """
+                + (query.isEmpty() ? "" : " AND " + TextSearch.likePredicate(query,
+                        "maSanPham", "maVach", "tenSanPham"))
+                + """
                 ORDER BY CASE WHEN maVach = ? THEN 0 ELSE 1 END, tenSanPham
                 """;
-        String query = keyword == null ? "" : keyword.trim();
-        String like = "%" + query + "%";
         try (Connection connection = DbConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, query);
-            statement.setString(2, like);
-            statement.setString(3, like);
-            statement.setNString(4, like);
-            statement.setString(5, query);
+            if (!query.isEmpty()) {
+                TextSearch.bindLikeParameters(statement, 1, query, 3);
+            }
+            statement.setString(TextSearch.termCount(query) * 3 + 1, query);
             try (ResultSet result = statement.executeQuery()) {
                 List<ProductOption> products = new ArrayList<>();
                 while (result.next()) {

@@ -4,6 +4,7 @@ import com.petshop.controller.AuditController;
 import com.petshop.controller.ProductController;
 import com.petshop.model.Product;
 import com.petshop.util.Formats;
+import com.petshop.util.TextSearch;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.scene.control.TableColumn;
 
@@ -51,6 +52,12 @@ public final class ProductView extends CrudListView<Product, String> {
     }
 
     @Override
+    protected boolean matches(Product product, String keyword) {
+        return TextSearch.matchesAll(keyword,
+                product.getMaSanPham(), product.getTenSanPham(), product.getMaVach());
+    }
+
+    @Override
     protected boolean canDeactivate(Product product) {
         return product.isTrangThai();
     }
@@ -80,4 +87,5 @@ public final class ProductView extends CrudListView<Product, String> {
     private String display(String value) {
         return value == null || value.isBlank() ? "-" : value;
     }
+
 }

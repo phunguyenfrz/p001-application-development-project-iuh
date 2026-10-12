@@ -2,6 +2,7 @@ package com.petshop.dao;
 
 import com.petshop.model.InvoiceSummary;
 import com.petshop.util.DbConnection;
+import com.petshop.util.TextSearch;
 
 import java.sql.Connection;
 import java.sql.Date;
@@ -20,26 +21,26 @@ public final class InvoiceHistoryDao implements InvoiceHistoryRepository {
     @Override
     public List<InvoiceSummary> search(String keyword, java.time.LocalDate from,
                                        java.time.LocalDate through) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
         String sql = """
-                SELECT TOP 200 hd.maHoaDon, hd.ngayLap, nv.hoTen AS tenNhanVien,
+                SELECT hd.maHoaDon, hd.ngayLap, nv.hoTen AS tenNhanVien,
                        COALESCE(kh.hoTen, N'Khách vãng lai') AS tenKhachHang,
                        hd.hinhThucThanhToan, hd.trangThaiThanhToan, hd.tongTien
                 FROM HoaDon hd
                 JOIN NhanVien nv ON nv.maNhanVien = hd.maNhanVien
                 LEFT JOIN KhachHang kh ON kh.maKhachHang = hd.maKhachHang
-                WHERE CAST(hd.ngayLap AS date) BETWEEN ? AND ?
-                  AND (hd.maHoaDon LIKE ? OR nv.hoTen LIKE ? OR kh.hoTen LIKE ?
-                       OR kh.soDienThoai LIKE ?)
+                WHERE CAST(hd.ngayLap AS date) BETWEEN ? AND ? AND
+                """ + TextSearch.likePredicate(keyword, "hd.maHoaDon", "nv.hoTen",
+                "kh.hoTen", "kh.soDienThoai") + """
                 ORDER BY hd.ngayLap DESC
                 """;
-        String pattern = "%" + (keyword == null ? "" : keyword.trim()) + "%";
         try (Connection connection = DbConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setDate(1, Date.valueOf(from));
             statement.setDate(2, Date.valueOf(through));
-            for (int index = 3; index <= 6; index++) {
-                statement.setString(index, pattern);
-            }
+            TextSearch.bindLikeParameters(statement, 3, keyword, 4);
             List<Header> headers = new ArrayList<>();
             try (ResultSet rows = statement.executeQuery()) {
                 while (rows.next()) {

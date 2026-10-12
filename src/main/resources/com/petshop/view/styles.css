@@ -620,6 +620,31 @@
     -fx-text-fill: #1a221e;
 }
 
+.table-view .table-row-cell:search-match {
+    -fx-background-color: #FFF3C4;
+    -fx-border-color: #F5B700;
+    -fx-border-width: 0 0 0 4;
+    -fx-text-fill: #1a221e;
+}
+
+.table-view .table-row-cell:search-match:selected {
+    -fx-background-color: #FFE08A;
+    -fx-text-fill: #1a221e;
+}
+
+.search-clear-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #526354;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-padding: 2px 10px;
+    -fx-cursor: hand;
+}
+
+.search-clear-button:hover {
+    -fx-text-fill: #1a221e;
+}
+
 /* Badge trạng thái */
 .status-badge-paid {
     -fx-background-color: #e1f5e5;

@@ -2,6 +2,7 @@ package com.petshop.dao;
 
 import com.petshop.model.Promotion;
 import com.petshop.util.DbConnection;
+import com.petshop.util.TextSearch;
 
 import java.sql.Connection;
 import java.sql.Date;
@@ -25,11 +26,15 @@ public final class PromotionDao implements CrudDao<Promotion, String> {
 
     @Override
     public List<Promotion> search(String keyword) {
-        String sql = SELECT + """
-                WHERE maKhuyenMai LIKE ? OR tenChuongTrinh LIKE ?
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+        String sql = SELECT + " WHERE "
+                + TextSearch.likePredicate(keyword, "maKhuyenMai", "tenChuongTrinh")
+                + """
                 ORDER BY ngayBatDau DESC, tenChuongTrinh
                 """;
-        return query(sql, "%" + (keyword == null ? "" : keyword.trim()) + "%");
+        return query(sql, keyword);
     }
 
     @Override
@@ -91,8 +96,7 @@ public final class PromotionDao implements CrudDao<Promotion, String> {
         try (Connection connection = DbConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             if (pattern != null) {
-                statement.setString(1, pattern);
-                statement.setString(2, pattern);
+                TextSearch.bindLikeParameters(statement, 1, pattern, 2);
             }
             try (ResultSet rows = statement.executeQuery()) {
                 List<Promotion> result = new ArrayList<>();

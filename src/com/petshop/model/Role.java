@@ -6,7 +6,7 @@ public enum Role {
     QUAN_LY("Quản lý", true, false, true, Set.of(Screen.values())),
     BAN_HANG("Bán hàng", false, false, true, Set.of(
             Screen.OVERVIEW, Screen.PRODUCTS, Screen.INVENTORY, Screen.PURCHASE_ORDERS,
-            Screen.CUSTOMERS, Screen.INVOICE_CREATE,
+            Screen.CUSTOMERS, Screen.PETS, Screen.INVOICE_CREATE,
             Screen.INVOICE_HISTORY, Screen.RETURNS)),
     CHAM_SOC("Chăm sóc", false, true, false, Set.of(
             Screen.OVERVIEW, Screen.APPOINTMENTS, Screen.PETS, Screen.CUSTOMERS));
@@ -42,8 +42,8 @@ public enum Role {
     public String getHelpText() {
         return switch (this) {
             case QUAN_LY -> "Truy cập đầy đủ các chức năng quản lý cửa hàng.";
-            case BAN_HANG -> "Quản lý sản phẩm, tồn kho, đơn nhập, khách hàng và bán hàng.";
-            case CHAM_SOC -> "Quản lý lịch hẹn, thú cưng và tra cứu khách hàng.";
+            case BAN_HANG -> "Quản lý sản phẩm, tồn kho, khách hàng, thú cưng và bán hàng.";
+            case CHAM_SOC -> "Quản lý lịch hẹn, xem thú cưng và tra cứu khách hàng.";
         };
     }
 

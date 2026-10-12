@@ -278,8 +278,13 @@ final class AppointmentFormDialog {
 
     private void fillPets(String customerId) {
         if (lookups != null) {
-            pet.getItems().setAll(lookups.pets().stream()
-                    .filter(option -> option.customerId().equals(customerId)).toList());
+            List<PetOption> customerPets = lookups.pets().stream()
+                    .filter(option -> option.customerId().equals(customerId)).toList();
+            pet.getItems().setAll(customerPets);
+            if (customerPets.isEmpty()) {
+                serviceHint.setText("Khách chưa có hồ sơ thú cưng. Vui lòng nhờ nhân viên "
+                        + "bán hàng tạo hồ sơ.");
+            }
         }
     }
 

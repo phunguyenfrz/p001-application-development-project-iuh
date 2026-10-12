@@ -12,29 +12,57 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class GlobalSearchServiceTest {
     @Test
-    void returnsOnlyGroupsVisibleToTheCurrentRoleInProviderOrder() {
+    void returnsBothCustomersForMixedCaseAndPartialGlobalSearches() {
+        SearchProvider customers = new StubProvider(
+                "Khách hàng", Set.of(Role.BAN_HANG),
+                List.of(
+                        new SearchResult("Khách hàng", "KH-1", "Hoangl Nguyen",
+                                "0900000001", Screen.CUSTOMERS),
+                        new SearchResult("Khách hàng", "KH-2", "Hoangl Tran",
+                                "0900000002", Screen.CUSTOMERS),
+                        new SearchResult("Khách hàng", "KH-3", "Nguyễn Văn A",
+                                "0900000003", Screen.CUSTOMERS)));
+        GlobalSearchService service = new GlobalSearchService(List.of(customers));
+
+        for (String query : List.of("Hoangl", "hoangl", "HOANGL", "Hoa")) {
+            assertEquals(List.of("KH-1", "KH-2"), service.search(query, Role.BAN_HANG)
+                    .stream().map(SearchResult::id).toList(), query);
+        }
+    }
+
+    @Test
+    void returnsAllSubstringMatchesWithoutCollapsingDuplicateNames() {
         SearchProvider customers = new StubProvider(
                 "Khách hàng", Set.of(Role.BAN_HANG, Role.CHAM_SOC),
-                new SearchResult("Khách hàng", "KH-1", "Minh Anh", "0900000000",
-                        Screen.CUSTOMERS));
+                List.of(
+                        new SearchResult("Khách hàng", "KH-1", "Nguyễn Thị Lan",
+                                "0900000001", Screen.CUSTOMERS),
+                        new SearchResult("Khách hàng", "KH-2", "Nguyễn Thị Lan",
+                                "0900000002", Screen.CUSTOMERS),
+                        new SearchResult("Khách hàng", "KH-3", "Hùng",
+                                "0900000003", Screen.CUSTOMERS)));
         SearchProvider pets = new StubProvider(
                 "Thú cưng", Set.of(Role.CHAM_SOC),
-                new SearchResult("Thú cưng", "TC-1", "Milo", "Khách hàng: Minh Anh",
-                        Screen.PETS));
+                List.of(new SearchResult("Thú cưng", "TC-1", "Milo",
+                        "Khách hàng: Lan Nguyễn", Screen.PETS)));
         GlobalSearchService service = new GlobalSearchService(List.of(customers, pets));
 
-        assertEquals(List.of("Khách hàng"), service.search("minh", Role.BAN_HANG)
-                .stream().map(SearchResult::groupName).toList());
-        assertEquals(List.of("Khách hàng", "Thú cưng"), service.search("minh", Role.CHAM_SOC)
-                .stream().map(SearchResult::groupName).toList());
+        assertEquals(List.of("KH-1", "KH-2"), service.search("lan", Role.BAN_HANG)
+                .stream().map(SearchResult::id).toList());
+        assertEquals(List.of("KH-1", "KH-2"), service.search("LAN", Role.BAN_HANG)
+                .stream().map(SearchResult::id).toList());
+        assertEquals(List.of("KH-1", "KH-2", "TC-1"),
+                service.search("nguyen lan", Role.CHAM_SOC)
+                        .stream().map(SearchResult::id).toList());
         assertEquals(List.of(), service.search(" ", Role.CHAM_SOC));
     }
 
     private record StubProvider(
-            String getGroupName, Set<Role> visibleTo, SearchResult result) implements SearchProvider {
+            String getGroupName, Set<Role> visibleTo, List<SearchResult> results)
+            implements SearchProvider {
         @Override
         public List<SearchResult> search(String keyword) {
-            return List.of(result);
+            return results;
         }
     }
 }

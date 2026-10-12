@@ -1,6 +1,7 @@
 package com.petshop.search;
 
 import com.petshop.model.SearchResult;
+import com.petshop.util.TextSearch;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -19,17 +20,15 @@ abstract class AbstractSqlSearchProvider implements SearchProvider {
     }
 
     protected final List<SearchResult> execute(
-            String keyword, String sql, int parameterCount) {
+            String keyword, String sql, String... fields) {
         if (keyword == null || keyword.isBlank()) {
             return List.of();
         }
-        String pattern = "%" + keyword.trim() + "%";
+        String query = sql.replace("{search}", TextSearch.likePredicate(keyword, fields));
         List<SearchResult> results = new ArrayList<>();
         try (Connection connection = connections.get();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            for (int index = 1; index <= parameterCount; index++) {
-                statement.setString(index, pattern);
-            }
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            TextSearch.bindLikeParameters(statement, 1, keyword, fields.length);
             try (ResultSet rows = statement.executeQuery()) {
                 while (rows.next()) {
                     results.add(map(rows));

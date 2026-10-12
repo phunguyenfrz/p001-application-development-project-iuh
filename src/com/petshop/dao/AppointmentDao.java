@@ -22,9 +22,49 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public final class AppointmentDao implements AppointmentRepository {
+    @Override
+    public Optional<Row> findById(String appointmentId) {
+        String sql = """
+                SELECT lh.maLichHen, lh.maKhachHang, kh.hoTen AS tenKhachHang,
+                       lh.maThuCung, tc.tenThuCung, lh.maNhanVien, nv.hoTen AS tenNhanVien,
+                       lh.ngayHen, lh.gioHen, lh.trangThai, lh.ghiChu,
+                       COALESCE(STRING_AGG(dv.tenDichVu, N', '), N'') AS dichVu
+                FROM LichHen lh
+                JOIN KhachHang kh ON kh.maKhachHang = lh.maKhachHang
+                JOIN ThuCung tc ON tc.maThuCung = lh.maThuCung
+                JOIN NhanVien nv ON nv.maNhanVien = lh.maNhanVien
+                LEFT JOIN ChiTietLichHen ctlh ON ctlh.maLichHen = lh.maLichHen
+                LEFT JOIN DichVuChamSoc dv ON dv.maDichVu = ctlh.maDichVu
+                WHERE lh.maLichHen = ?
+                GROUP BY lh.maLichHen, lh.maKhachHang, kh.hoTen, lh.maThuCung,
+                         tc.tenThuCung, lh.maNhanVien, nv.hoTen, lh.ngayHen,
+                         lh.gioHen, lh.trangThai, lh.ghiChu
+                """;
+        try (Connection connection = DbConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, appointmentId);
+            try (ResultSet rows = statement.executeQuery()) {
+                if (!rows.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(new Row(rows.getString("maLichHen"),
+                        rows.getString("maKhachHang"), rows.getString("tenKhachHang"),
+                        rows.getString("maThuCung"), rows.getString("tenThuCung"),
+                        rows.getString("maNhanVien"), rows.getString("tenNhanVien"),
+                        rows.getDate("ngayHen").toLocalDate(),
+                        rows.getTime("gioHen").toLocalTime(),
+                        rows.getString("trangThai"), rows.getString("ghiChu"),
+                        rows.getString("dichVu")));
+            }
+        } catch (SQLException exception) {
+            throw databaseFailure("Không thể tải lịch hẹn được chọn.", exception);
+        }
+    }
+
     @Override
     public List<Row> findByDate(LocalDate date) {
         String sql = """
@@ -151,7 +191,7 @@ public final class AppointmentDao implements AppointmentRepository {
     private List<PetOption> loadPets(Connection connection) throws SQLException {
         String sql = """
                 SELECT maThuCung, maKhachHang, tenThuCung, canNang
-                FROM ThuCung ORDER BY tenThuCung
+                FROM ThuCung WHERE trangThai = 1 ORDER BY tenThuCung
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet rows = statement.executeQuery()) {

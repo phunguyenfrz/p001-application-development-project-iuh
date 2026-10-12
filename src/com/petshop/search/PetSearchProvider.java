@@ -13,12 +13,12 @@ import java.util.function.Supplier;
 
 public final class PetSearchProvider extends AbstractSqlSearchProvider {
     private static final String SQL = """
-            SELECT TOP (5) tc.maThuCung, tc.tenThuCung, kh.hoTen, kh.soDienThoai
+            SELECT tc.maThuCung, tc.tenThuCung, tc.loaiThuCung, tc.giongLoai,
+                   kh.hoTen, kh.soDienThoai
             FROM ThuCung tc
             JOIN KhachHang kh ON kh.maKhachHang = tc.maKhachHang
-            WHERE tc.maThuCung LIKE ? OR tc.tenThuCung LIKE ?
-               OR kh.hoTen LIKE ? OR kh.soDienThoai LIKE ?
-            ORDER BY tc.tenThuCung
+            WHERE tc.trangThai = 1 AND {search}
+            ORDER BY tc.tenThuCung, tc.maThuCung
             """;
 
     public PetSearchProvider() {
@@ -36,18 +36,20 @@ public final class PetSearchProvider extends AbstractSqlSearchProvider {
 
     @Override
     public Set<Role> visibleTo() {
-        return Set.of(Role.CHAM_SOC);
+        return Set.of(Role.QUAN_LY, Role.BAN_HANG, Role.CHAM_SOC);
     }
 
     @Override
     public List<SearchResult> search(String keyword) {
-        return execute(keyword, SQL, 4);
+        return execute(keyword, SQL, "tc.maThuCung", "tc.tenThuCung",
+                "tc.loaiThuCung", "tc.giongLoai", "kh.hoTen", "kh.soDienThoai");
     }
 
     @Override
     protected SearchResult map(ResultSet row) throws SQLException {
         return new SearchResult(getGroupName(), row.getString("maThuCung"),
-                row.getString("tenThuCung"), "Chủ nuôi: " + row.getString("hoTen")
+                row.getString("tenThuCung"), row.getString("loaiThuCung") + " · "
+                + row.getString("giongLoai") + " · Chủ nuôi: " + row.getString("hoTen")
                 + " • " + row.getString("soDienThoai"), Screen.PETS);
     }
 }

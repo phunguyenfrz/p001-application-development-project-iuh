@@ -2,6 +2,7 @@ package com.petshop.search;
 
 import com.petshop.model.Role;
 import com.petshop.model.SearchResult;
+import com.petshop.util.TextSearch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +22,10 @@ public final class GlobalSearchService {
         List<SearchResult> results = new ArrayList<>();
         for (SearchProvider provider : providers) {
             if (provider.visibleTo().contains(role)) {
-                results.addAll(provider.search(keyword.trim()));
+                results.addAll(provider.search(keyword.trim()).stream()
+                        .filter(result -> TextSearch.matchesAll(keyword,
+                                result.id(), result.name(), result.detail()))
+                        .toList());
             }
         }
         return List.copyOf(results);

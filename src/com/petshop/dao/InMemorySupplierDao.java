@@ -1,6 +1,7 @@
 package com.petshop.dao;
 
 import com.petshop.model.NhaCungCap;
+import com.petshop.util.TextSearch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,14 +20,13 @@ public final class InMemorySupplierDao implements CrudDao<NhaCungCap, String> {
 
     @Override
     public List<NhaCungCap> search(String keyword) {
-        String query = keyword == null ? "" : keyword.trim().toLowerCase();
-        if (query.isEmpty()) {
-            return findAll();
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
         }
         return suppliers.stream()
-                .filter(supplier -> supplier.getMaNhaCungCap().toLowerCase().contains(query)
-                        || supplier.getTenNhaCungCap().toLowerCase().contains(query)
-                        || supplier.getSoDienThoai().toLowerCase().contains(query))
+                .filter(supplier -> TextSearch.matchesAll(keyword,
+                        supplier.getMaNhaCungCap(), supplier.getTenNhaCungCap(),
+                        supplier.getSoDienThoai()))
                 .toList();
     }
 

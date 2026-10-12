@@ -2,6 +2,7 @@ package com.petshop.dao;
 
 import com.petshop.model.InventoryItem;
 import com.petshop.util.DbConnection;
+import com.petshop.util.TextSearch;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,13 +28,16 @@ public final class InventoryDao implements InventoryRepository {
 
     @Override
     public List<InventoryItem> search(String keyword) {
-        String sql = SELECT + """
-                  AND (sp.maSanPham LIKE ? OR sp.tenSanPham LIKE ? OR sp.maVach LIKE ?
-                       OR ncc.tenNhaCungCap LIKE ?)
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+        String sql = SELECT + " AND "
+                + TextSearch.likePredicate(keyword, "sp.maSanPham", "sp.tenSanPham",
+                        "sp.maVach", "ncc.tenNhaCungCap")
+                + """
                 ORDER BY sp.tenSanPham
                 """;
-        String pattern = "%" + (keyword == null ? "" : keyword.trim()) + "%";
-        return query(sql, pattern);
+        return query(sql, keyword);
     }
 
     @Override
@@ -48,9 +52,7 @@ public final class InventoryDao implements InventoryRepository {
         try (Connection connection = DbConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             if (pattern != null) {
-                for (int parameter = 1; parameter <= 4; parameter++) {
-                    statement.setString(parameter, pattern);
-                }
+                TextSearch.bindLikeParameters(statement, 1, pattern, 4);
             }
             try (ResultSet rows = statement.executeQuery()) {
                 List<InventoryItem> items = new ArrayList<>();

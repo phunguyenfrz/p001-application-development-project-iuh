@@ -4,30 +4,38 @@ import com.petshop.controller.PurchaseOrderController;
 import com.petshop.model.PurchaseOrder;
 import com.petshop.model.User;
 import com.petshop.util.Formats;
+import com.petshop.util.TextSearch;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.concurrent.Task;
+import javafx.css.PseudoClass;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.animation.PauseTransition;
+import javafx.util.Duration;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
-public final class PurchaseOrderView extends VBox implements AppView {
+public final class PurchaseOrderView extends VBox implements AppView, SearchResultAware {
     private record Choices(List<PurchaseOrder.Choice> suppliers, List<PurchaseOrder.Choice> products) {
     }
 
@@ -35,7 +43,15 @@ public final class PurchaseOrderView extends VBox implements AppView {
     private final User user;
     private final TableView<PurchaseOrder> orders = new TableView<>();
     private final TableView<PurchaseOrder.Line> lines = new TableView<>();
+    private final TextField search = new TextField();
     private final Label feedback = new Label();
+    private final PauseTransition debounce = new PauseTransition(Duration.millis(300));
+    private final SearchResultPanel<PurchaseOrder> searchResults;
+    private List<PurchaseOrder> loadedOrders = List.of();
+    private Set<String> matchedIds = Set.of();
+    private String keyword = "";
+    private String pendingGlobalId;
+    private boolean settingGlobalSearch;
 
     public PurchaseOrderView(PurchaseOrderController controller, User user) {
         super(12);
@@ -46,20 +62,60 @@ public final class PurchaseOrderView extends VBox implements AppView {
         title.getStyleClass().add("welcome-title");
         Label description = new Label("UC011 · Lập đơn nhập và xác nhận riêng khi hàng đã nhận.");
         description.getStyleClass().add("welcome-sub");
+        search.setPromptText("Tìm mã đơn, nhà cung cấp, nhân viên hoặc sản phẩm...");
+        search.getStyleClass().add("search-field");
+        Button clearSearch = new Button("×");
+        clearSearch.getStyleClass().add("search-clear-button");
+        clearSearch.setAccessibleText("Xóa từ khóa tìm kiếm");
+        clearSearch.setOnAction(event -> search.clear());
+        StackPane searchInput = new StackPane(search, clearSearch);
+        StackPane.setAlignment(clearSearch, javafx.geometry.Pos.CENTER_RIGHT);
+        search.setPadding(new javafx.geometry.Insets(8, 38, 8, 12));
+        search.textProperty().addListener((observable, oldValue, value) -> {
+            keyword = value == null ? "" : value.trim();
+            if (!settingGlobalSearch) {
+                pendingGlobalId = null;
+            }
+            debounce.stop();
+            if (keyword.isBlank()) {
+                applySearch();
+            } else {
+                debounce.playFromStart();
+            }
+        });
+        debounce.setOnFinished(event -> applySearch());
         Button create = new Button("Lập đơn nhập");
         create.setOnAction(event -> prepareCreate());
         Button receive = new Button("Xác nhận nhận hàng");
         receive.setOnAction(event -> receiveSelected());
         Button refresh = new Button("Tải lại");
         refresh.setOnAction(event -> reload());
-        orders.getColumns().setAll(
+        List<TableColumn<PurchaseOrder, ?>> orderColumns = List.of(
                 column("Mã đơn", PurchaseOrder::id),
                 column("Ngày lập", value -> Formats.date(value.createdOn())),
                 column("Nhà cung cấp", PurchaseOrder::supplierName),
                 column("Nhân viên", PurchaseOrder::employeeName),
                 column("Tổng tiền", value -> Formats.money(value.total())),
                 column("Trạng thái", PurchaseOrder::status));
+        orders.getColumns().setAll(orderColumns);
         orders.setPlaceholder(new Label("Không có dữ liệu"));
+        orders.setRowFactory(ignored -> new TableRow<>() {
+            @Override
+            protected void updateItem(PurchaseOrder item, boolean empty) {
+                super.updateItem(item, empty);
+                pseudoClassStateChanged(PseudoClass.getPseudoClass("search-match"),
+                        !empty && item != null && matchedIds.contains(item.id()));
+            }
+        });
+        searchResults = new SearchResultPanel<>(orderColumns, false, false,
+                () -> search.clear(),
+                item -> {
+                    orders.getSelectionModel().select(item);
+                    orders.scrollTo(item);
+                },
+                item -> { },
+                item -> { },
+                this::showReadOnly);
         lines.getColumns().setAll(
                 column("Sản phẩm", PurchaseOrder.Line::productName),
                 column("Số lượng", value -> String.valueOf(value.quantity())),
@@ -69,10 +125,11 @@ public final class PurchaseOrderView extends VBox implements AppView {
         orders.getSelectionModel().selectedItemProperty().addListener(
                 (observable, oldValue, value) -> lines.getItems().setAll(
                         value == null ? List.of() : value.lines()));
-        HBox toolbar = new HBox(8, create, receive, refresh);
+        HBox toolbar = new HBox(8, searchInput, create, receive, refresh);
+        HBox.setHgrow(searchInput, Priority.ALWAYS);
         feedback.getStyleClass().add("feedback-error");
         VBox.setVgrow(orders, Priority.ALWAYS);
-        getChildren().addAll(title, description, toolbar, feedback, orders,
+        getChildren().addAll(title, description, toolbar, searchResults, feedback, orders,
                 new Label("Chi tiết đơn nhập"), lines);
         VBox.setVgrow(lines, Priority.SOMETIMES);
         reload();
@@ -88,11 +145,74 @@ public final class PurchaseOrderView extends VBox implements AppView {
         return "Đơn nhập hàng";
     }
 
+    @Override
+    public void showSearchResult(String id) {
+        pendingGlobalId = Objects.requireNonNull(id);
+        settingGlobalSearch = true;
+        search.setText(id);
+        settingGlobalSearch = false;
+        keyword = id.trim();
+        debounce.stop();
+        if (!loadedOrders.isEmpty()) {
+            applySearch();
+        }
+    }
+
+    @Override
+    public void showSearchKeyword(String query) {
+        pendingGlobalId = null;
+        search.setText(query == null ? "" : query);
+    }
+
     private void reload() {
         runTask(controller::findAll, values -> {
-            orders.getItems().setAll(values);
+            loadedOrders = values;
+            applySearch();
             feedback.setText("");
         });
+    }
+
+    private void applySearch() {
+        orders.getItems().setAll(loadedOrders);
+        if (keyword.isBlank()) {
+            matchedIds = Set.of();
+            searchResults.hideResults();
+        } else {
+            List<PurchaseOrder> matches = loadedOrders.stream()
+                    .filter(item -> pendingGlobalId != null
+                            ? item.id().equals(pendingGlobalId)
+                            : matches(item, keyword))
+                    .toList();
+            matchedIds = matches.stream().map(PurchaseOrder::id)
+                    .collect(java.util.stream.Collectors.toUnmodifiableSet());
+            searchResults.showResults(keyword, matches);
+            if (!matches.isEmpty()) {
+                orders.scrollTo(matches.get(0));
+            }
+        }
+        orders.refresh();
+    }
+
+    private boolean matches(PurchaseOrder item, String query) {
+        String itemFields = item.lines().stream()
+                .map(line -> line.productId() + " " + line.productName())
+                .collect(java.util.stream.Collectors.joining(" "));
+        return TextSearch.matchesAll(query, item.id(), item.supplierName(), itemFields);
+    }
+
+    private void showReadOnly(PurchaseOrder item) {
+        Alert details = new Alert(Alert.AlertType.INFORMATION);
+        details.setTitle("Chi tiết đơn nhập");
+        details.setHeaderText(item.id());
+        details.setContentText("Nhà cung cấp: " + item.supplierName()
+                + "\nNhân viên: " + item.employeeName()
+                + "\nNgày lập: " + Formats.date(item.createdOn())
+                + "\nTổng tiền: " + Formats.money(item.total())
+                + "\nTrạng thái: " + item.status()
+                + "\nMặt hàng: " + item.lines().stream()
+                        .map(line -> line.productName() + " × " + line.quantity())
+                        .collect(java.util.stream.Collectors.joining(", ")));
+        details.show();
     }
 
     private void prepareCreate() {

@@ -13,14 +13,13 @@ import java.util.function.Supplier;
 
 public final class AppointmentSearchProvider extends AbstractSqlSearchProvider {
     private static final String SQL = """
-            SELECT TOP (5) lh.maLichHen, tc.tenThuCung, kh.hoTen, kh.soDienThoai,
+            SELECT lh.maLichHen, tc.tenThuCung, kh.hoTen, kh.soDienThoai,
                    lh.ngayHen, lh.gioHen, lh.trangThai
             FROM LichHen lh
             JOIN ThuCung tc ON tc.maThuCung = lh.maThuCung
             JOIN KhachHang kh ON kh.maKhachHang = lh.maKhachHang
-            WHERE lh.maLichHen LIKE ? OR tc.tenThuCung LIKE ?
-               OR kh.hoTen LIKE ? OR kh.soDienThoai LIKE ?
-            ORDER BY lh.ngayHen DESC, lh.gioHen DESC
+            WHERE {search}
+            ORDER BY lh.ngayHen DESC, lh.gioHen DESC, lh.maLichHen
             """;
 
     public AppointmentSearchProvider() {
@@ -43,7 +42,7 @@ public final class AppointmentSearchProvider extends AbstractSqlSearchProvider {
 
     @Override
     public List<SearchResult> search(String keyword) {
-        return execute(keyword, SQL, 4);
+        return execute(keyword, SQL, "lh.maLichHen", "tc.tenThuCung", "kh.hoTen");
     }
 
     @Override

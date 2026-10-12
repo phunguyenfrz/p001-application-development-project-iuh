@@ -13,10 +13,10 @@ import java.util.function.Supplier;
 
 public final class CustomerSearchProvider extends AbstractSqlSearchProvider {
     private static final String SQL = """
-            SELECT TOP (5) maKhachHang, hoTen, soDienThoai
+            SELECT maKhachHang, hoTen, soDienThoai, email
             FROM KhachHang
-            WHERE maKhachHang LIKE ? OR hoTen LIKE ? OR soDienThoai LIKE ?
-            ORDER BY hoTen
+            WHERE {search}
+            ORDER BY hoTen, maKhachHang
             """;
 
     public CustomerSearchProvider() {
@@ -39,12 +39,13 @@ public final class CustomerSearchProvider extends AbstractSqlSearchProvider {
 
     @Override
     public List<SearchResult> search(String keyword) {
-        return execute(keyword, SQL, 3);
+        return execute(keyword, SQL, "maKhachHang", "hoTen", "soDienThoai", "email");
     }
 
     @Override
     protected SearchResult map(ResultSet row) throws SQLException {
         return new SearchResult(getGroupName(), row.getString("maKhachHang"),
-                row.getString("hoTen"), row.getString("soDienThoai"), Screen.CUSTOMERS);
+                row.getString("hoTen"), row.getString("soDienThoai") + " · "
+                        + nullToDash(row.getString("email")), Screen.CUSTOMERS);
     }
 }

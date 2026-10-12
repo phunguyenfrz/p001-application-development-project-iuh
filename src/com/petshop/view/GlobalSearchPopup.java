@@ -4,6 +4,7 @@ import com.petshop.controller.GlobalSearchController;
 import com.petshop.controller.ScreenNavigator;
 import com.petshop.model.Role;
 import com.petshop.model.SearchResult;
+import com.petshop.util.TextSearch;
 import javafx.animation.PauseTransition;
 import javafx.concurrent.Task;
 import javafx.scene.control.ContextMenu;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class GlobalSearchPopup {
@@ -110,14 +112,31 @@ public final class GlobalSearchPopup {
                 MenuItem heading = new MenuItem(group.getKey());
                 heading.setDisable(true);
                 popup.getItems().add(heading);
-                for (SearchResult result : group.getValue()) {
+                List<SearchResult> ranked = group.getValue().stream()
+                        .sorted(Comparator
+                                .comparing((SearchResult result) -> !TextSearch.startsWithAny(
+                                        searchField.getText(), result.id(), result.name(),
+                                        result.detail()))
+                                .thenComparing(result -> TextSearch.normalize(result.name()))
+                                .thenComparing(SearchResult::id))
+                        .toList();
+                for (SearchResult result : ranked.stream().limit(8).toList()) {
                     MenuItem item = new MenuItem(result.id() + " · " + result.name()
-                            + " — " + result.detail());
+                            + " — " + (result.detail() == null ? "" : result.detail()));
                     item.setOnAction(event -> {
                         popup.hide();
                         navigator.navigate(result);
                     });
                     popup.getItems().add(item);
+                }
+                int remaining = ranked.size() - 8;
+                if (remaining > 0) {
+                    MenuItem more = new MenuItem("Xem thêm " + remaining + " kết quả...");
+                    more.setOnAction(event -> {
+                        popup.hide();
+                        navigator.navigateSearch(ranked.get(0).screen(), searchField.getText().trim());
+                    });
+                    popup.getItems().add(more);
                 }
             }
         }

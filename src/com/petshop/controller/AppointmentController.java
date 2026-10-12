@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public final class AppointmentController {
     private static final Map<String, String> NEXT_STATUS = Map.of(
@@ -29,6 +30,13 @@ public final class AppointmentController {
 
     public List<Row> findByDate(LocalDate date) {
         return repository.findByDate(Objects.requireNonNull(date));
+    }
+
+    public Optional<Row> findById(String appointmentId) {
+        if (appointmentId == null || appointmentId.isBlank()) {
+            throw new IllegalArgumentException("Mã lịch hẹn không hợp lệ.");
+        }
+        return repository.findById(appointmentId);
     }
 
     public Lookups loadLookups(LocalDate date) {

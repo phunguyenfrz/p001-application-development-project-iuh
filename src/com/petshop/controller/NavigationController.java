@@ -55,6 +55,18 @@ public final class NavigationController implements ScreenNavigator {
     }
 
     @Override
+    public boolean navigateSearch(Screen screen, String keyword) {
+        if (!authorize(screen, screen == null ? "" : registry.definition(screen).label())) {
+            return false;
+        }
+        AppView view = registry.create(screen);
+        if (view instanceof SearchResultAware resultAware) {
+            resultAware.showSearchKeyword(keyword);
+        }
+        return show(screen, view, registry.definition(screen).label());
+    }
+
+    @Override
     public boolean navigateToAppointmentInvoice(String appointmentId) {
         Screen screen = Screen.INVOICE_CREATE;
         if (!authorize(screen, "Lập hóa đơn")) {

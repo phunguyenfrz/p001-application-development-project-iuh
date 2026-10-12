@@ -39,11 +39,16 @@ import com.petshop.dao.PasswordDao;
 import com.petshop.dao.SqlAuditDao;
 import com.petshop.dao.UserDao;
 import com.petshop.search.AppointmentSearchProvider;
+import com.petshop.search.EmployeeSearchProvider;
+import com.petshop.search.InventorySearchProvider;
+import com.petshop.search.PromotionSearchProvider;
+import com.petshop.search.PurchaseOrderSearchProvider;
 import com.petshop.search.CustomerSearchProvider;
 import com.petshop.search.GlobalSearchService;
 import com.petshop.search.PetSearchProvider;
 import com.petshop.search.ProductSearchProvider;
 import com.petshop.search.ServiceSearchProvider;
+import com.petshop.search.SupplierSearchProvider;
 import com.petshop.util.AuditService;
 import javafx.stage.Stage;
 
@@ -63,7 +68,12 @@ public final class AppContext {
                         new PetSearchProvider(),
                         new ProductSearchProvider(),
                         new ServiceSearchProvider(),
-                        new AppointmentSearchProvider()))),
+                        new AppointmentSearchProvider(),
+                        new EmployeeSearchProvider(),
+                        new InventorySearchProvider(),
+                        new SupplierSearchProvider(),
+                        new PromotionSearchProvider(),
+                        new PurchaseOrderSearchProvider()))),
                 new PasswordControllerImpl(new PasswordDao(), auditService),
                 new SessionControllerImpl(auditService),
                 new SupplierController(new SqlSupplierDao()),
@@ -75,7 +85,7 @@ public final class AppContext {
                 new ProductController(new ProductDao()),
                 new AppointmentController(new AppointmentDao(), auditController),
                 new CustomerController(new CustomerDao()),
-                new PetController(new PetDao()),
+                new PetController(new PetDao(), auditController),
                 new CareServiceController(new CareServiceDao()),
                 new PromotionController(new PromotionDao()),
                 new ShiftController(new ShiftDao()),

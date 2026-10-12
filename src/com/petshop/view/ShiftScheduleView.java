@@ -5,8 +5,11 @@ import com.petshop.controller.ShiftController;
 import com.petshop.model.ShiftAssignment;
 import com.petshop.model.User;
 import com.petshop.util.Formats;
+import com.petshop.util.TextSearch;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.concurrent.Task;
+import javafx.css.PseudoClass;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -15,18 +18,25 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.animation.PauseTransition;
+import javafx.util.Duration;
 
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Function;
 
-public final class ShiftScheduleView extends VBox implements AppView {
+public final class ShiftScheduleView extends VBox implements AppView, SearchResultAware {
     private record Choices(List<ShiftAssignment.Choice> employees,
                            List<ShiftAssignment.Choice> shifts) {
     }
@@ -35,10 +45,18 @@ public final class ShiftScheduleView extends VBox implements AppView {
     private final AuditController audit;
     private final User user;
     private final TableView<ShiftAssignment> table = new TableView<>();
+    private final TextField search = new TextField();
     private final DatePicker from = new DatePicker(LocalDate.now()
             .with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)));
     private final DatePicker through = new DatePicker(from.getValue().plusDays(6));
     private final Label feedback = new Label();
+    private final PauseTransition debounce = new PauseTransition(Duration.millis(300));
+    private final SearchResultPanel<ShiftAssignment> searchResults;
+    private List<ShiftAssignment> loadedRows = List.of();
+    private Set<String> matchedIds = Set.of();
+    private String keyword = "";
+    private String pendingGlobalId;
+    private boolean settingGlobalSearch;
 
     public ShiftScheduleView(ShiftController controller, AuditController audit, User user) {
         super(12);
@@ -54,6 +72,28 @@ public final class ShiftScheduleView extends VBox implements AppView {
         period.getItems().setAll("Tuần", "Tháng");
         period.setValue("Tuần");
         period.setOnAction(event -> setPeriod(period.getValue()));
+        search.setPromptText("Tìm nhân viên, ngày hoặc ca...");
+        search.getStyleClass().add("search-field");
+        Button clearSearch = new Button("×");
+        clearSearch.getStyleClass().add("search-clear-button");
+        clearSearch.setAccessibleText("Xóa từ khóa tìm kiếm");
+        clearSearch.setOnAction(event -> search.clear());
+        StackPane searchInput = new StackPane(search, clearSearch);
+        StackPane.setAlignment(clearSearch, javafx.geometry.Pos.CENTER_RIGHT);
+        search.setPadding(new Insets(8, 38, 8, 12));
+        search.textProperty().addListener((observable, oldValue, value) -> {
+            keyword = value == null ? "" : value.trim();
+            if (!settingGlobalSearch) {
+                pendingGlobalId = null;
+            }
+            debounce.stop();
+            if (keyword.isBlank()) {
+                applySearch();
+            } else {
+                debounce.playFromStart();
+            }
+        });
+        debounce.setOnFinished(event -> applySearch());
         Button load = new Button("Tra cứu");
         load.setOnAction(event -> refresh());
         Button add = new Button("Thêm ca");
@@ -62,17 +102,37 @@ public final class ShiftScheduleView extends VBox implements AppView {
         edit.setOnAction(event -> edit(table.getSelectionModel().getSelectedItem()));
         Button delete = new Button("Xóa ca");
         delete.setOnAction(event -> deleteSelected());
-        table.getColumns().setAll(
+        List<TableColumn<ShiftAssignment, ?>> shiftColumns = List.of(
                 column("Ngày", value -> Formats.date(value.workDate())),
                 column("Ca", ShiftAssignment::shiftName),
                 column("Thời gian", value -> Formats.time(value.startsAt())
                         + " - " + Formats.time(value.endsAt())),
                 column("Nhân viên", ShiftAssignment::employeeName),
                 column("Trạng thái", ShiftAssignment::status));
+        table.getColumns().setAll(shiftColumns);
         table.setPlaceholder(new Label("Không có dữ liệu"));
+        table.setRowFactory(ignored -> new TableRow<>() {
+            @Override
+            protected void updateItem(ShiftAssignment item, boolean empty) {
+                super.updateItem(item, empty);
+                pseudoClassStateChanged(PseudoClass.getPseudoClass("search-match"),
+                        !empty && item != null && matchedIds.contains(item.id()));
+            }
+        });
+        searchResults = new SearchResultPanel<>(shiftColumns, true, false,
+                () -> search.clear(),
+                item -> {
+                    table.getSelectionModel().select(item);
+                    table.scrollTo(item);
+                },
+                this::edit,
+                item -> { },
+                this::showReadOnly);
         HBox toolbar = new HBox(8, period, from, through, load, add, edit, delete);
+        toolbar.getChildren().add(0, searchInput);
+        HBox.setHgrow(searchInput, Priority.ALWAYS);
         feedback.getStyleClass().add("feedback-error");
-        getChildren().addAll(title, description, toolbar, feedback, table);
+        getChildren().addAll(title, description, toolbar, searchResults, feedback, table);
         VBox.setVgrow(table, Priority.ALWAYS);
         refresh();
     }
@@ -85,6 +145,25 @@ public final class ShiftScheduleView extends VBox implements AppView {
     @Override
     public String getTitle() {
         return "Phân ca trực";
+    }
+
+    @Override
+    public void showSearchResult(String id) {
+        pendingGlobalId = Objects.requireNonNull(id);
+        settingGlobalSearch = true;
+        search.setText(id);
+        settingGlobalSearch = false;
+        keyword = id.trim();
+        debounce.stop();
+        if (!loadedRows.isEmpty()) {
+            applySearch();
+        }
+    }
+
+    @Override
+    public void showSearchKeyword(String query) {
+        pendingGlobalId = null;
+        search.setText(query == null ? "" : query);
     }
 
     private void setPeriod(String mode) {
@@ -102,9 +181,48 @@ public final class ShiftScheduleView extends VBox implements AppView {
         LocalDate start = from.getValue();
         LocalDate end = through.getValue();
         runTask(() -> controller.findBetween(start, end), rows -> {
-            table.getItems().setAll(rows);
+            loadedRows = rows;
+            applySearch();
             feedback.setText("");
         });
+    }
+
+    private void applySearch() {
+        table.getItems().setAll(loadedRows);
+        if (keyword.isBlank()) {
+            matchedIds = Set.of();
+            searchResults.hideResults();
+        } else {
+            List<ShiftAssignment> matches = loadedRows.stream()
+                    .filter(item -> pendingGlobalId != null
+                            ? item.id().equals(pendingGlobalId)
+                            : matches(item, keyword))
+                    .toList();
+            matchedIds = matches.stream().map(ShiftAssignment::id)
+                    .collect(java.util.stream.Collectors.toUnmodifiableSet());
+            searchResults.showResults(keyword, matches);
+            if (!matches.isEmpty()) {
+                table.scrollTo(matches.get(0));
+            }
+        }
+        table.refresh();
+    }
+
+    private boolean matches(ShiftAssignment item, String query) {
+        return TextSearch.matchesAll(query, item.employeeName(),
+                Formats.date(item.workDate()), item.workDate().toString(), item.shiftName());
+    }
+
+    private void showReadOnly(ShiftAssignment item) {
+        javafx.scene.control.Alert details = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.INFORMATION);
+        details.setTitle("Chi tiết ca trực");
+        details.setHeaderText(item.employeeName() + " · " + item.shiftName());
+        details.setContentText("Ngày: " + Formats.date(item.workDate())
+                + "\nThời gian: " + Formats.time(item.startsAt())
+                + " - " + Formats.time(item.endsAt())
+                + "\nTrạng thái: " + item.status());
+        details.show();
     }
 
     private void edit(ShiftAssignment existing) {

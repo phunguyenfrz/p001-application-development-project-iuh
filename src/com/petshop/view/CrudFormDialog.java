@@ -23,6 +23,7 @@ public final class CrudFormDialog<T> {
     }
 
     private final Dialog<Void> dialog = new Dialog<>();
+    private final ButtonType saveButtonType = new ButtonType("Lưu", ButtonBar.ButtonData.OK_DONE);
     private final Map<String, Node> controls;
     private final Map<String, Label> errorLabels;
     private final Supplier<T> extractor;
@@ -50,14 +51,13 @@ public final class CrudFormDialog<T> {
         this.submit = Objects.requireNonNull(submit);
         dialog.setTitle(title);
         dialog.setHeaderText(null);
-        ButtonType save = new ButtonType("Lưu", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().setAll(save, ButtonType.CANCEL);
+        dialog.getDialogPane().getButtonTypes().setAll(saveButtonType, ButtonType.CANCEL);
         formError.getStyleClass().add("feedback-error");
         formError.setWrapText(true);
         VBox wrapper = new VBox(10, content, formError);
         dialog.getDialogPane().setContent(wrapper);
         dialog.getDialogPane().setMinWidth(430);
-        dialog.getDialogPane().lookupButton(save).addEventFilter(
+        dialog.getDialogPane().lookupButton(saveButtonType).addEventFilter(
                 ActionEvent.ACTION, event -> save(event));
         dialog.setOnCloseRequest(event -> {
             if (!saved && (saving
@@ -69,6 +69,10 @@ public final class CrudFormDialog<T> {
 
     public void show() {
         dialog.showAndWait();
+    }
+
+    public void setSaveEnabled(boolean enabled) {
+        dialog.getDialogPane().lookupButton(saveButtonType).setDisable(!enabled);
     }
 
     private void save(ActionEvent event) {

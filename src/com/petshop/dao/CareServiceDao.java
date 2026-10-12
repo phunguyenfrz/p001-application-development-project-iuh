@@ -2,6 +2,7 @@ package com.petshop.dao;
 
 import com.petshop.model.CareServiceData;
 import com.petshop.util.DbConnection;
+import com.petshop.util.TextSearch;
 
 import java.sql.Connection;
 import java.sql.Date;
@@ -38,10 +39,14 @@ public final class CareServiceDao implements CareServiceRepository {
 
     @Override
     public List<CareServiceData> search(String keyword) {
-        return query(QUERY + """
-                WHERE dv.maDichVu LIKE ? OR dv.tenDichVu LIKE ?
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+        return query(QUERY + " WHERE "
+                + TextSearch.likePredicate(keyword, "dv.maDichVu", "dv.tenDichVu")
+                + """
                 ORDER BY dv.tenDichVu
-                """, "%" + (keyword == null ? "" : keyword.trim()) + "%");
+                """, keyword);
     }
 
     @Override
@@ -103,8 +108,7 @@ public final class CareServiceDao implements CareServiceRepository {
         try (Connection connection = DbConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             if (pattern != null) {
-                statement.setString(1, pattern);
-                statement.setString(2, pattern);
+                TextSearch.bindLikeParameters(statement, 1, pattern, 2);
             }
             try (ResultSet rows = statement.executeQuery()) {
                 List<CareServiceData> result = new ArrayList<>();

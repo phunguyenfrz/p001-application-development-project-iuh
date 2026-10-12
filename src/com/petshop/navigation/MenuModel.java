@@ -42,7 +42,7 @@ public final class MenuModel {
                 entry("Phân ca trực", Screen.SHIFTS, Role.QUAN_LY));
         addSection(sections, MenuGroup.CUSTOMERS_AND_PETS,
                 entry("Khách hàng", Screen.CUSTOMERS, Role.BAN_HANG, Role.CHAM_SOC),
-                entry("Hồ sơ thú cưng", Screen.PETS, Role.CHAM_SOC));
+                entry("Hồ sơ thú cưng", Screen.PETS, Role.BAN_HANG, Role.CHAM_SOC));
         addSection(sections, MenuGroup.CARE_SERVICES,
                 entry("Danh mục dịch vụ", Screen.CARE_SERVICES, Role.QUAN_LY));
         addSection(sections, MenuGroup.APPOINTMENTS,

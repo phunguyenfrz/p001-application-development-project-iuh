@@ -3,6 +3,7 @@ package com.petshop.dao;
 import com.petshop.model.Employee;
 import com.petshop.model.Role;
 import com.petshop.util.DbConnection;
+import com.petshop.util.TextSearch;
 
 import java.sql.Connection;
 import java.sql.Date;
@@ -29,13 +30,16 @@ public final class EmployeeDao implements EmployeeRepository {
 
     @Override
     public List<Employee> search(String keyword) {
-        String sql = SELECT + """
-                 WHERE nv.maNhanVien LIKE ? OR nv.hoTen LIKE ? OR nv.soDienThoai LIKE ?
-                    OR tk.tenDangNhap LIKE ?
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+        String sql = SELECT + " WHERE "
+                + TextSearch.likePredicate(keyword,
+                        "nv.maNhanVien", "nv.hoTen", "nv.soDienThoai")
+                + """
                  ORDER BY nv.hoTen
                 """;
-        String pattern = "%" + (keyword == null ? "" : keyword.trim()) + "%";
-        return query(sql, pattern);
+        return query(sql, keyword);
     }
 
     @Override
@@ -137,9 +141,7 @@ public final class EmployeeDao implements EmployeeRepository {
         try (Connection connection = DbConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             if (searchPattern != null) {
-                for (int parameter = 1; parameter <= 4; parameter++) {
-                    statement.setString(parameter, searchPattern);
-                }
+                TextSearch.bindLikeParameters(statement, 1, searchPattern, 3);
             }
             try (ResultSet rows = statement.executeQuery()) {
                 List<Employee> employees = new ArrayList<>();

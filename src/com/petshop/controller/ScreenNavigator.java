@@ -11,6 +11,8 @@ public interface ScreenNavigator {
 
     boolean navigate(SearchResult result);
 
+    boolean navigateSearch(com.petshop.model.Screen screen, String keyword);
+
     boolean navigateToAppointmentInvoice(String appointmentId);
 
     ReadOnlyObjectProperty<Screen> currentScreenProperty();

@@ -13,10 +13,10 @@ import java.util.function.Supplier;
 
 public final class ServiceSearchProvider extends AbstractSqlSearchProvider {
     private static final String SQL = """
-            SELECT TOP (5) maDichVu, tenDichVu, moTa
+            SELECT maDichVu, tenDichVu, moTa
             FROM DichVuChamSoc
-            WHERE maDichVu LIKE ? OR tenDichVu LIKE ? OR moTa LIKE ?
-            ORDER BY tenDichVu
+            WHERE {search}
+            ORDER BY tenDichVu, maDichVu
             """;
 
     public ServiceSearchProvider() {
@@ -39,7 +39,7 @@ public final class ServiceSearchProvider extends AbstractSqlSearchProvider {
 
     @Override
     public List<SearchResult> search(String keyword) {
-        return execute(keyword, SQL, 3);
+        return execute(keyword, SQL, "maDichVu", "tenDichVu");
     }
 
     @Override
