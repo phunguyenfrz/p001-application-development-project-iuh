@@ -1,0 +1,5 @@
+# Copy this file to src/db.properties and replace the credentials for your SQL Server.
+url=jdbc:sqlserver://localhost:1433;databaseName=QLCH_HappyTails;encrypt=true;trustServerCertificate=true
+user=petshop
+password=change_me
+branch=Chi nhánh Quận 1

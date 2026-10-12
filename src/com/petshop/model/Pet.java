@@ -15,6 +15,12 @@ public class Pet {
     private LocalDate ngaySinh;
     private String diUng;
     private String gioiTinh;      // "Đực" / "Cái"
+    private String tenChu;
+    private String dienThoaiChu;
+    private String dacDiemNhanDang;
+    private String benhNen;
+    private String tinhCach;
+    private boolean active = true;
 
     public Pet() {}
 
@@ -57,6 +63,26 @@ public class Pet {
 
     public String getGioiTinh()                 { return gioiTinh; }
     public void setGioiTinh(String gioiTinh)    { this.gioiTinh = gioiTinh; }
+
+    public String getTenChu()                   { return tenChu; }
+    public void setTenChu(String tenChu)        { this.tenChu = tenChu; }
+
+    public String getDienThoaiChu()                   { return dienThoaiChu; }
+    public void setDienThoaiChu(String dienThoaiChu)  { this.dienThoaiChu = dienThoaiChu; }
+
+    public String getDacDiemNhanDang() { return dacDiemNhanDang; }
+    public void setDacDiemNhanDang(String dacDiemNhanDang) {
+        this.dacDiemNhanDang = dacDiemNhanDang;
+    }
+
+    public String getBenhNen() { return benhNen; }
+    public void setBenhNen(String benhNen) { this.benhNen = benhNen; }
+
+    public String getTinhCach() { return tinhCach; }
+    public void setTinhCach(String tinhCach) { this.tinhCach = tinhCach; }
+
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
 
     /** Phân loại kích thước theo cân nặng: Nhỏ (&lt;5kg), Vừa (5-10kg), Lớn (&gt;10kg). */
     public String getPhanLoaiKichThuoc() {
