@@ -1,11 +1,8 @@
 package com.petshop.view;
 
-import com.petshop.model.Invoice;
 import com.petshop.model.User;
-import com.petshop.util.SessionManager;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import com.petshop.service.AuthService;
+import com.petshop.service.MenuRegistry;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
@@ -14,62 +11,126 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.*;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Ellipse;
+import javafx.scene.shape.SVGPath;
 import javafx.stage.Stage;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Giao diện Bảng điều khiển (Dashboard) chuẩn theo thiết kế Happy Tails.
+ * Giao diện Bảng điều khiển (Dashboard) chuẩn Hướng Đối Tượng của Happy Tails.
+ * Sidebar được dựng tự động 100% từ MenuRegistry theo đúng 11 mục đối tượng.
  */
 public class MainDashboard extends BorderPane {
 
     private final Stage stage;
     private final User user;
+    private final AuthService authService;
+
+    // Vùng nội dung chính (Container Swapping)
+    private final StackPane contentArea;
+
+    // Quản lý Accordion (chỉ mở 1 đối tượng tại 1 thời điểm)
+    private final List<VBox> allSubMenus = new ArrayList<>();
+    private final List<Label> allArrows = new ArrayList<>();
+    private final List<Label> allBullets = new ArrayList<>();
+
+    // Thu gọn sidebar
+    private boolean isSidebarCollapsed = false;
+    private StackPane sidebarContainer;
+
+    // Highlight mục đang chọn
+    private Node currentActiveItemNode;
+
+    private TextField searchField;
 
     public MainDashboard(Stage stage) {
         this.stage = stage;
-        this.user = SessionManager.getCurrentUser();
+        this.authService = new AuthService();
+        this.user = authService.getCurrentUser();
 
         getStyleClass().add("dashboard");
 
         // 1. Sidebar bên trái
-        setLeft(createSidebar());
+        this.sidebarContainer = new StackPane();
+        renderSidebar();
+        setLeft(sidebarContainer);
 
-        // 2. Nội dung chính (Topbar + Scrollable Body)
+        // 2. Nội dung chính
         VBox mainContainer = new VBox();
         HBox.setHgrow(mainContainer, Priority.ALWAYS);
 
+        this.contentArea = new StackPane();
+        VBox.setVgrow(contentArea, Priority.ALWAYS);
+
+        // Mặc định nạp màn hình Tổng quan
+        showOverview();
+
         mainContainer.getChildren().addAll(
                 createTopbar(),
-                createScrollableBody()
+                contentArea
         );
 
         setCenter(mainContainer);
+
+        // Đăng ký phím tắt Ctrl + K để focus vào ô tìm kiếm nhanh
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                newScene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+                    if (event.isControlDown() && event.getCode() == javafx.scene.input.KeyCode.K) {
+                        if (searchField != null) {
+                            searchField.requestFocus();
+                            searchField.selectAll();
+                            event.consume();
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    private void renderSidebar() {
+        sidebarContainer.getChildren().clear();
+        if (isSidebarCollapsed) {
+            sidebarContainer.getChildren().add(createCollapsedSidebar());
+        } else {
+            sidebarContainer.getChildren().add(createExpandedSidebar());
+        }
     }
 
     // =========================================================================
-    // 1. SIDEBAR (CỘT ĐIỀU HƯỚNG TRÁI)
+    // 1. SIDEBAR MỞ RỘNG (EXPANDED) - ACCORDION HƯỚNG ĐỐI TƯỢNG
     // =========================================================================
-    private VBox createSidebar() {
+    private VBox createExpandedSidebar() {
         VBox sidebar = new VBox();
         sidebar.getStyleClass().add("sidebar");
 
-        // Brand Logo + Tên + Nút thu gọn
+        allSubMenus.clear();
+        allArrows.clear();
+        allBullets.clear();
+
+        // Brand Logo + Nút thu gọn
         HBox brandBox = new HBox(10);
         brandBox.setAlignment(Pos.CENTER_LEFT);
         brandBox.getStyleClass().add("sidebar-brand-box");
 
-        // Logo tròn màu cam
         StackPane logoCircle = new StackPane();
         Circle circle = new Circle(17, Color.web("#d97736"));
         Group paw = createMiniPawWhite();
         logoCircle.getChildren().addAll(circle, paw);
+        logoCircle.setOnMouseClicked(e -> showOverview());
+        logoCircle.setStyle("-fx-cursor: hand;");
 
         VBox brandText = new VBox(1);
         Label title = new Label("Happy Tails");
         title.getStyleClass().add("sidebar-title");
+        title.setOnMouseClicked(e -> showOverview());
+        title.setStyle("-fx-cursor: hand;");
+
         Label subtitle = new Label("Cửa hàng thú cưng");
         subtitle.getStyleClass().add("sidebar-subtitle");
         brandText.getChildren().addAll(title, subtitle);
@@ -79,107 +140,38 @@ public class MainDashboard extends BorderPane {
 
         Button btnCollapse = new Button("«");
         btnCollapse.getStyleClass().add("btn-collapse");
+        btnCollapse.setTooltip(new Tooltip("Thu gọn thanh điều hướng"));
+        btnCollapse.setOnAction(e -> {
+            isSidebarCollapsed = true;
+            renderSidebar();
+        });
 
         brandBox.getChildren().addAll(logoCircle, brandText, spacer, btnCollapse);
 
-        // Menu items
+        // Danh sách Menu
         VBox menuList = new VBox(4);
         menuList.setPadding(new Insets(10, 12, 10, 12));
 
-        // Nút "Tổng quan" (Active)
-        Button btnOverview = createMenuButton("❖  Tổng quan", true);
+        // Nút "Tổng quan" (Trang chủ)
+        Button btnOverview = new Button("❖  Tổng quan");
+        btnOverview.setMaxWidth(Double.MAX_VALUE);
+        btnOverview.getStyleClass().add("sidebar-btn-active");
+        btnOverview.setTooltip(new Tooltip("Trang chủ bảng điều khiển"));
+        this.currentActiveItemNode = btnOverview;
+        btnOverview.setOnAction(e -> {
+            setActiveNode(btnOverview);
+            collapseAllAccordions();
+            showOverview();
+        });
         menuList.getChildren().add(btnOverview);
 
-        User.Role role = user != null ? user.getRole() : User.Role.QUAN_LY;
+        // Dựng 11 Menu Đối Tượng từ MenuRegistry
+        User.Role role = (user != null) ? user.getRole() : User.Role.ADMIN;
+        List<MenuRegistry.ObjectMenu> objectMenus = MenuRegistry.getMenusForRole(role);
 
-        if (role == User.Role.QUAN_LY) {
-            // ScreenFlow Quản lý (02A):
-            // - Nhân viên (03): Danh sách nhân viên, Thêm/Sửa nhân viên, Chi tiết nhân viên
-            VBox fnEmployees = createNavDropdownItem("Nhân viên",
-                    createSubMenuButton("Danh sách nhân viên"),
-                    createSubMenuButton("Thêm nhân viên mới")
-            );
-            // - Ca trực (06): Lịch ca trực, Thêm/Điều chỉnh ca
-            VBox fnShifts = createNavDropdownItem("Ca trực",
-                    createSubMenuButton("Bảng phân ca trực"),
-                    createSubMenuButton("Thêm / Gán ca trực")
-            );
-            // - Nhà cung cấp (08): Danh sách nhà cung cấp, Thêm/Sửa nhà cung cấp
-            VBox fnSuppliers = createNavDropdownItem("Nhà cung cấp",
-                    createSubMenuButton("Danh sách đối tác NCC"),
-                    createSubMenuButton("Thêm nhà cung cấp")
-            );
-            // - Dịch vụ (10): Danh mục dịch vụ, Thêm/Sửa gói & bảng giá
-            VBox fnServices = createNavDropdownItem("Dịch vụ",
-                    createSubMenuButton("Danh mục dịch vụ Spa"),
-                    createSubMenuButton("Thêm gói / Bảng giá")
-            );
-            // - Khuyến mãi (12): Danh sách khuyến mãi, Tạo mã voucher/khuyến mãi
-            VBox fnPromos = createNavDropdownItem("Khuyến mãi",
-                    createSubMenuButton("Chương trình ưu đãi"),
-                    createSubMenuButton("Tạo khuyến mãi mới")
-            );
-            // - Báo cáo (14): Thống kê doanh thu, Xuất báo cáo
-            VBox fnReports = createNavDropdownItem("Báo cáo",
-                    createSubMenuButton("Thống kê doanh thu"),
-                    createSubMenuButton("Báo cáo dịch vụ & hàng hóa")
-            );
-
-            menuList.getChildren().addAll(fnEmployees, fnShifts, fnSuppliers, fnServices, fnPromos, fnReports);
-
-        } else if (role == User.Role.BAN_HANG) {
-            // ScreenFlow Bán hàng (02B):
-            // - Bán hàng POS (24): Màn hình lập hóa đơn, Tính tiền tại quầy
-            VBox fnPos = createNavDropdownItem("Bán hàng (POS)",
-                    createSubMenuButton("Lập hóa đơn mới"),
-                    createSubMenuButton("Quét mã vạch bán lẻ")
-            );
-            // - Hóa đơn (25): Danh sách hóa đơn, Tra cứu & Đổi trả
-            VBox fnInvoices = createNavDropdownItem("Hóa đơn",
-                    createSubMenuButton("Lịch sử hóa đơn"),
-                    createSubMenuButton("Phiếu đổi trả hàng")
-            );
-            // - Khách hàng (21): Danh sách khách hàng, Thêm/Sửa khách hàng, Hồ sơ khách hàng
-            VBox fnCustomers = createNavDropdownItem("Khách hàng",
-                    createSubMenuButton("Tra cứu khách hàng"),
-                    createSubMenuButton("Thêm khách hàng mới")
-            );
-            // - Sản phẩm (15): Danh mục sản phẩm, Thêm/Sửa sản phẩm
-            VBox fnProducts = createNavDropdownItem("Sản phẩm",
-                    createSubMenuButton("Danh mục sản phẩm"),
-                    createSubMenuButton("Thêm sản phẩm mới")
-            );
-            // - Tồn kho (17): Tồn kho sản phẩm, Cảnh báo sắp hết hàng
-            VBox fnInventory = createNavDropdownItem("Tồn kho",
-                    createSubMenuButton("Kiểm kê tồn kho"),
-                    createSubMenuButton("Cảnh báo chạm ngưỡng")
-            );
-            // - Đơn hàng nhập (18): Danh sách đơn nhập, Lập đơn nhập kho
-            VBox fnImports = createNavDropdownItem("Đơn hàng nhập",
-                    createSubMenuButton("Danh sách đơn nhập"),
-                    createSubMenuButton("Lập đơn nhập kho mới")
-            );
-
-            menuList.getChildren().addAll(fnPos, fnInvoices, fnCustomers, fnProducts, fnInventory, fnImports);
-
-        } else if (role == User.Role.CHAM_SOC) {
-            // ScreenFlow Chăm sóc (02C):
-            // - Lịch hẹn (26): Danh sách lịch hẹn, Đặt lịch mới, Chi tiết ca chăm sóc
-            VBox fnAppointments = createNavDropdownItem("Lịch hẹn",
-                    createSubMenuButton("Lịch chăm sóc hôm nay"),
-                    createSubMenuButton("Đặt lịch hẹn mới")
-            );
-            // - Thú cưng (29): Hồ sơ thú cưng, Thêm/Sửa thú cưng, Lịch sử y tế
-            VBox fnPets = createNavDropdownItem("Thú cưng",
-                    createSubMenuButton("Hồ sơ thú cưng"),
-                    createSubMenuButton("Đăng ký thú cưng mới")
-            );
-            // - Thanh toán (24): Chuyển ca hoàn thành sang POS
-            VBox fnPos = createNavDropdownItem("Thanh toán (POS)",
-                    createSubMenuButton("Thanh toán ca hoàn tất")
-            );
-
-            menuList.getChildren().addAll(fnAppointments, fnPets, fnPos);
+        for (MenuRegistry.ObjectMenu menu : objectMenus) {
+            VBox accordionItem = createAccordionItem(menu);
+            menuList.getChildren().add(accordionItem);
         }
 
         ScrollPane menuScroll = new ScrollPane(menuList);
@@ -187,7 +179,7 @@ public class MainDashboard extends BorderPane {
         menuScroll.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
         VBox.setVgrow(menuScroll, Priority.ALWAYS);
 
-        // Footer Branch Card ở đáy sidebar
+        // Footer Branch Card
         VBox footerBox = new VBox();
         footerBox.setPadding(new Insets(12, 12, 16, 12));
 
@@ -218,79 +210,181 @@ public class MainDashboard extends BorderPane {
         return sidebar;
     }
 
-    /**
-     * Tạo mục chức năng to ở ngoài Sidebar, khi click sẽ toggle sổ xuống các chức năng con.
-     * Mặc định ban đầu ở trạng thái đóng (collapsed).
-     */
-    private VBox createNavDropdownItem(String title, Button... subButtons) {
+    private VBox createAccordionItem(MenuRegistry.ObjectMenu menu) {
         VBox itemBox = new VBox(2);
         itemBox.setPadding(new Insets(2, 0, 2, 0));
 
-        // Thanh chức năng to ở ngoài (Icon tròn rỗng/đầy + Tên chức năng + Mũi tên đóng/mở)
-        HBox headerBtn = new HBox(10);
+        HBox headerBtn = new HBox(8);
         headerBtn.setAlignment(Pos.CENTER_LEFT);
         headerBtn.getStyleClass().add("sidebar-nav-item");
 
         Label bullet = new Label("○");
         bullet.getStyleClass().add("sidebar-nav-bullet");
+        allBullets.add(bullet);
 
-        Label lblTitle = new Label(title);
+        Label lblTitle = new Label(menu.getTitle());
         lblTitle.getStyleClass().add("sidebar-nav-text");
+        lblTitle.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(lblTitle, Priority.ALWAYS);
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+        Tooltip tooltip = new Tooltip("Đối tượng: " + menu.getTitle());
+        Tooltip.install(headerBtn, tooltip);
 
-        // Ban đầu đóng -> mũi tên trỏ sang phải
         Label lblArrow = new Label("▸");
         lblArrow.getStyleClass().add("sidebar-nav-arrow");
+        allArrows.add(lblArrow);
 
-        headerBtn.getChildren().addAll(bullet, lblTitle, spacer, lblArrow);
+        headerBtn.getChildren().addAll(bullet, lblTitle, lblArrow);
 
-        // Danh sách các chức năng con bên trong (mặc định đóng, ẩn)
+        // Danh sách chức năng con
         VBox subMenuList = new VBox(2);
-        subMenuList.getChildren().addAll(subButtons);
+        for (MenuRegistry.SubAction action : menu.getSubActions()) {
+            Button subBtn = new Button(action.getName());
+            subBtn.setMaxWidth(Double.MAX_VALUE);
+            subBtn.getStyleClass().add("sidebar-sub-btn");
+            if (action.getShortcut() != null) {
+                subBtn.setTooltip(new Tooltip(action.getName() + " (" + action.getShortcut() + ")"));
+            } else {
+                subBtn.setTooltip(new Tooltip(action.getName()));
+            }
+
+            subBtn.setOnAction(e -> {
+                setActiveNode(subBtn);
+                contentArea.getChildren().setAll(new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut()));
+            });
+            subMenuList.getChildren().add(subBtn);
+        }
+
         subMenuList.setVisible(false);
         subMenuList.setManaged(false);
+        allSubMenus.add(subMenuList);
 
-        // Sự kiện click toggle
+        // Accordion: chỉ mở 1 đối tượng tại một thời điểm
         headerBtn.setOnMouseClicked(e -> {
-            boolean isVisible = !subMenuList.isVisible();
-            subMenuList.setVisible(isVisible);
-            subMenuList.setManaged(isVisible);
-            lblArrow.setText(isVisible ? "▾" : "▸");
-            bullet.setText(isVisible ? "●" : "○");
+            boolean isCurrentlyOpen = subMenuList.isVisible();
+            collapseAllAccordions();
+            if (!isCurrentlyOpen) {
+                subMenuList.setVisible(true);
+                subMenuList.setManaged(true);
+                lblArrow.setText("▾");
+                bullet.setText("●");
+            }
         });
 
         itemBox.getChildren().addAll(headerBtn, subMenuList);
         return itemBox;
     }
 
-    private Button createMenuButton(String text, boolean active) {
-        Button btn = new Button(text);
-        btn.setMaxWidth(Double.MAX_VALUE);
-        btn.getStyleClass().add(active ? "sidebar-btn-active" : "sidebar-btn");
-        if (!active) {
-            btn.setOnAction(e -> showPlaceholder(text));
+    private void collapseAllAccordions() {
+        for (int i = 0; i < allSubMenus.size(); i++) {
+            allSubMenus.get(i).setVisible(false);
+            allSubMenus.get(i).setManaged(false);
+            if (i < allArrows.size()) allArrows.get(i).setText("▸");
+            if (i < allBullets.size()) allBullets.get(i).setText("○");
         }
-        return btn;
-    }
-
-    private Button createSubMenuButton(String text) {
-        Button btn = new Button(text);
-        btn.setMaxWidth(Double.MAX_VALUE);
-        btn.getStyleClass().add("sidebar-sub-btn");
-        btn.setOnAction(e -> showPlaceholder(text));
-        return btn;
     }
 
     // =========================================================================
-    // 2. TOPBAR (THANH TÌM KIẾM + PROFILE)
+    // 2. SIDEBAR THU GỌN (COLLAPSED)
+    // =========================================================================
+    private VBox createCollapsedSidebar() {
+        VBox sidebar = new VBox();
+        sidebar.getStyleClass().add("sidebar-collapsed");
+        sidebar.setAlignment(Pos.TOP_CENTER);
+
+        VBox topBox = new VBox(10);
+        topBox.setAlignment(Pos.CENTER);
+        topBox.setPadding(new Insets(16, 0, 12, 0));
+
+        StackPane logoCircle = new StackPane();
+        Circle circle = new Circle(17, Color.web("#d97736"));
+        Group paw = createMiniPawWhite();
+        logoCircle.getChildren().addAll(circle, paw);
+        logoCircle.setOnMouseClicked(e -> showOverview());
+        logoCircle.setStyle("-fx-cursor: hand;");
+
+        Button btnExpand = new Button("»");
+        btnExpand.getStyleClass().add("btn-collapse");
+        btnExpand.setTooltip(new Tooltip("Mở rộng thanh điều hướng"));
+        btnExpand.setOnAction(e -> {
+            isSidebarCollapsed = false;
+            renderSidebar();
+        });
+
+        topBox.getChildren().addAll(logoCircle, btnExpand);
+
+        VBox menuList = new VBox(6);
+        menuList.setAlignment(Pos.TOP_CENTER);
+        menuList.setPadding(new Insets(8, 0, 8, 0));
+
+        // Nút tổng quan thu gọn
+        Button btnHome = new Button("❖");
+        btnHome.getStyleClass().add("sidebar-collapsed-btn");
+        btnHome.setTooltip(new Tooltip("Tổng quan"));
+        btnHome.setOnAction(e -> {
+            setActiveNode(btnHome);
+            showOverview();
+        });
+        menuList.getChildren().add(btnHome);
+
+        User.Role role = (user != null) ? user.getRole() : User.Role.ADMIN;
+        List<MenuRegistry.ObjectMenu> objectMenus = MenuRegistry.getMenusForRole(role);
+
+        for (MenuRegistry.ObjectMenu menu : objectMenus) {
+            Button btnObj = new Button(menu.getTitle().substring(0, 1));
+            btnObj.getStyleClass().add("sidebar-collapsed-btn");
+            btnObj.setTooltip(new Tooltip("Đối tượng: " + menu.getTitle()));
+            btnObj.setOnAction(e -> {
+                // Click vào đối tượng ở chế độ thu gọn -> tự bung mở sidebar để chọn chức năng con
+                isSidebarCollapsed = false;
+                renderSidebar();
+            });
+            menuList.getChildren().add(btnObj);
+        }
+
+        ScrollPane menuScroll = new ScrollPane(menuList);
+        menuScroll.setFitToWidth(true);
+        menuScroll.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
+        VBox.setVgrow(menuScroll, Priority.ALWAYS);
+
+        sidebar.getChildren().addAll(topBox, menuScroll);
+        return sidebar;
+    }
+
+    private void setActiveNode(Node node) {
+        if (currentActiveItemNode != null) {
+            currentActiveItemNode.getStyleClass().remove("sidebar-btn-active");
+            currentActiveItemNode.getStyleClass().remove("sidebar-sub-btn-active");
+            currentActiveItemNode.getStyleClass().remove("sidebar-collapsed-btn-active");
+            if (currentActiveItemNode instanceof Button) {
+                if (((Button) currentActiveItemNode).getText().contains("Tổng quan")) {
+                    currentActiveItemNode.getStyleClass().add("sidebar-btn");
+                } else {
+                    currentActiveItemNode.getStyleClass().add("sidebar-sub-btn");
+                }
+            }
+        }
+        this.currentActiveItemNode = node;
+        if (node instanceof Button) {
+            if (((Button) node).getText().contains("Tổng quan")) {
+                node.getStyleClass().remove("sidebar-btn");
+                node.getStyleClass().add("sidebar-btn-active");
+            } else if (((Button) node).getStyleClass().contains("sidebar-collapsed-btn")) {
+                node.getStyleClass().add("sidebar-collapsed-btn-active");
+            } else {
+                node.getStyleClass().remove("sidebar-sub-btn");
+                node.getStyleClass().add("sidebar-sub-btn-active");
+            }
+        }
+    }
+
+    // =========================================================================
+    // 3. TOPBAR (HEADER DÙNG CHUNG)
     // =========================================================================
     private HBox createTopbar() {
         HBox topbar = new HBox(16);
         topbar.getStyleClass().add("topbar");
 
-        // Thanh tìm kiếm nhanh
         HBox searchBox = new HBox(8);
         searchBox.setAlignment(Pos.CENTER_LEFT);
         searchBox.getStyleClass().add("search-box");
@@ -301,11 +395,11 @@ public class MainDashboard extends BorderPane {
         searchIcon.setScaleX(0.7);
         searchIcon.setScaleY(0.7);
 
-        TextField searchField = new TextField();
-        searchField.setPromptText("Tìm kiếm nhanh...");
+        this.searchField = new TextField();
+        searchField.setPromptText("Tìm kiếm nhanh (Ctrl + K)...");
         searchField.getStyleClass().add("search-field");
 
-        Label badgeK = new Label("⌘ K");
+        Label badgeK = new Label("Ctrl K");
         badgeK.getStyleClass().add("shortcut-badge");
 
         searchBox.getChildren().addAll(searchIcon, searchField, badgeK);
@@ -313,14 +407,9 @@ public class MainDashboard extends BorderPane {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        // Các nút icon phụ trợ: ?, Mail, Bell
-        Button btnHelp = createIconButton("?");
-        Button btnMail = createIconButton("✉");
-        Button btnBell = createIconButton("🔔");
-
         // Profile Avatar + Thông tin User
-        String fullName = (user != null) ? user.getFullName() : "Nhân viên";
-        String roleName = (user != null) ? user.getRole().getDisplayName() : "Bán hàng";
+        String fullName = (user != null) ? user.getFullName() : "Admin";
+        String roleName = (user != null) ? user.getRole().getDisplayName() : "Admin";
         String initials = getInitials(fullName);
 
         StackPane avatarCircle = new StackPane();
@@ -336,78 +425,71 @@ public class MainDashboard extends BorderPane {
         userRoleLbl.getStyleClass().add("topbar-user-role");
         userDetails.getChildren().addAll(userNameLbl, userRoleLbl);
 
-        // Bấm vào profile để Đăng xuất
+        // Menu tài khoản: Đổi mật khẩu & Đăng xuất
         MenuButton profileMenu = new MenuButton();
         profileMenu.setGraphic(new HBox(8, avatarCircle, userDetails));
         profileMenu.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
-        MenuItem logoutItem = new MenuItem("Đăng xuất");
+
+        MenuItem changePassItem = new MenuItem("🔑 Đổi mật khẩu");
+        changePassItem.setOnAction(e -> showChangePasswordDialog());
+
+        MenuItem logoutItem = new MenuItem("🚪 Đăng xuất");
         logoutItem.setOnAction(e -> logout());
-        profileMenu.getItems().add(logoutItem);
+
+        profileMenu.getItems().addAll(changePassItem, new SeparatorMenuItem(), logoutItem);
 
         topbar.getChildren().addAll(
                 searchBox,
                 spacer,
-                btnHelp, btnMail, btnBell,
                 profileMenu
         );
         return topbar;
     }
 
-    private Button createIconButton(String icon) {
-        Button btn = new Button(icon);
-        btn.getStyleClass().add("icon-btn");
-        return btn;
+    // =========================================================================
+    // 4. MÀN HÌNH TỔNG QUAN (OVERVIEW)
+    // =========================================================================
+    private void showOverview() {
+        contentArea.getChildren().setAll(createScrollableOverview());
     }
 
-    // =========================================================================
-    // 3. MAIN BODY (WELCOME + STATS + CHARTS + TABLE)
-    // =========================================================================
-    private ScrollPane createScrollableBody() {
+    private ScrollPane createScrollableOverview() {
         VBox content = new VBox(22);
         content.getStyleClass().add("dashboard-content");
 
-        // Header: Welcome back, [Tên] + Ngày tháng
         HBox welcomeHeader = new HBox();
         welcomeHeader.setAlignment(Pos.CENTER_LEFT);
 
-        String empName = (user != null) ? user.getFullName() : "Ngọc Linh";
+        String empName = (user != null) ? user.getFullName() : "Quản trị viên";
         VBox welcomeTextBox = new VBox(4);
-        Label welcomeTitle = new Label("Welcome back, " + empName);
+        Label welcomeTitle = new Label("Xin chào, " + empName);
         welcomeTitle.getStyleClass().add("welcome-title");
-        Label welcomeSub = new Label("Mọi điều tốt đẹp bắt đầu từ một chiếc đuôi hạnh phúc.");
+        Label welcomeSub = new Label("Hệ thống quản lý cửa hàng thú cưng Happy Tails theo mô hình Hướng Đối Tượng.");
         welcomeSub.getStyleClass().add("welcome-sub");
         welcomeTextBox.getChildren().addAll(welcomeTitle, welcomeSub);
 
         Region headerSpacer = new Region();
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);
 
-        // Badge ngày
         String todayStr = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
         Label dateBadge = new Label(todayStr + "  📅");
         dateBadge.getStyleClass().add("date-badge");
 
         welcomeHeader.getChildren().addAll(welcomeTextBox, headerSpacer, dateBadge);
 
-        // 4 Thẻ Stat Cards
+        // Thẻ KPI
         HBox statsRow = createStatsRow();
 
-        // Khu vực giữa: Biểu đồ doanh thu (trái) + Lịch hẹn sắp tới (phải)
-        HBox middleRow = new HBox(20);
-        VBox chartPanel = createRevenueChartPanel();
-        VBox appointmentPanel = createUpcomingAppointmentsPanel();
-        HBox.setHgrow(chartPanel, Priority.ALWAYS);
-        appointmentPanel.setPrefWidth(350);
-        middleRow.getChildren().addAll(chartPanel, appointmentPanel);
+        // Hoạt động gần đây
+        VBox summaryPanel = new VBox(14);
+        summaryPanel.getStyleClass().add("chart-panel");
+        Label title = new Label("Hoạt động gần đây");
+        title.getStyleClass().add("panel-title");
+        Label sub = new Label("Chưa có hoạt động hôm nay.");
+        sub.setStyle("-fx-font-size: 13px; -fx-text-fill: #7d8f82;");
+        summaryPanel.getChildren().addAll(title, sub);
 
-        // Khu vực dưới: Hóa đơn gần đây (Bảng dữ liệu)
-        VBox invoicePanel = createRecentInvoicesPanel();
-
-        content.getChildren().addAll(
-                welcomeHeader,
-                statsRow,
-                middleRow,
-                invoicePanel
-        );
+        content.getChildren().addAll(welcomeHeader, statsRow, summaryPanel);
 
         ScrollPane scrollPane = new ScrollPane(content);
         scrollPane.setFitToWidth(true);
@@ -416,263 +498,99 @@ public class MainDashboard extends BorderPane {
         return scrollPane;
     }
 
-    /**
-     * Hàng 4 thẻ thống kê
-     */
     private HBox createStatsRow() {
         HBox row = new HBox(16);
 
-        // Card 1: Doanh thu hôm nay (Nổi bật màu xanh rêu)
-        VBox card1 = new VBox(6);
-        card1.getStyleClass().add("stat-card-featured");
-        HBox.setHgrow(card1, Priority.ALWAYS);
-        Label c1Title = new Label("📈  Doanh thu hôm nay");
-        c1Title.getStyleClass().add("stat-title-white");
-        Label c1Value = new Label("8.450.000 đ");
-        c1Value.getStyleClass().add("stat-value-white");
-        Label c1Sub = new Label("↑ +12.5% so với hôm qua");
-        c1Sub.getStyleClass().add("stat-sub-white");
-        card1.getChildren().addAll(c1Title, c1Value, c1Sub);
+        // Thẻ 1: Doanh thu hôm nay
+        VBox c1 = new VBox(6);
+        c1.getStyleClass().add("stat-card-featured");
+        HBox.setHgrow(c1, Priority.ALWAYS);
+        Label t1 = new Label("📈  Doanh thu hôm nay");
+        t1.getStyleClass().add("stat-title-white");
+        Label v1 = new Label("0 đ");
+        v1.getStyleClass().add("stat-value-white");
+        Label d1 = new Label("Tổng thanh toán trong ngày");
+        d1.getStyleClass().add("stat-sub-white");
+        c1.getChildren().addAll(t1, v1, d1);
 
-        // Card 2: Lịch hẹn hôm nay
-        VBox card2 = new VBox(6);
-        card2.getStyleClass().add("stat-card");
-        HBox.setHgrow(card2, Priority.ALWAYS);
-        Label c2Title = new Label("📅  Lịch hẹn hôm nay");
-        c2Title.getStyleClass().add("stat-title");
-        Label c2Value = new Label("24");
-        c2Value.getStyleClass().add("stat-value");
-        Label c2Sub = new Label("6 lịch hẹn mới trong giờ qua");
-        c2Sub.getStyleClass().add("stat-sub");
-        card2.getChildren().addAll(c2Title, c2Value, c2Sub);
+        // Thẻ 2: Lịch hẹn
+        VBox c2 = new VBox(6);
+        c2.getStyleClass().add("stat-card");
+        HBox.setHgrow(c2, Priority.ALWAYS);
+        Label t2 = new Label("📅  Lịch hẹn hôm nay");
+        t2.getStyleClass().add("stat-title");
+        Label v2 = new Label("0");
+        v2.getStyleClass().add("stat-value");
+        Label d2 = new Label("Lịch hẹn cần phục vụ");
+        d2.getStyleClass().add("stat-sub");
+        c2.getChildren().addAll(t2, v2, d2);
 
-        // Card 3: Khách hàng mới
-        VBox card3 = new VBox(6);
-        card3.getStyleClass().add("stat-card");
-        HBox.setHgrow(card3, Priority.ALWAYS);
-        Label c3Title = new Label("👥  Khách hàng mới");
-        c3Title.getStyleClass().add("stat-title");
-        Label c3Value = new Label("18");
-        c3Value.getStyleClass().add("stat-value");
-        Label c3Sub = new Label("↑ +8% so với trung bình tuần");
-        c3Sub.getStyleClass().add("stat-sub");
-        card3.getChildren().addAll(c3Title, c3Value, c3Sub);
+        // Thẻ 3: Hết hàng (hiển thị '0' thay vì '00')
+        VBox c3 = new VBox(6);
+        c3.getStyleClass().add("stat-card");
+        HBox.setHgrow(c3, Priority.ALWAYS);
+        Label t3 = new Label("⚠  Sản phẩm sắp hết hàng");
+        t3.getStyleClass().add("stat-title");
+        Label v3 = new Label("0");
+        v3.getStyleClass().add("stat-value");
+        Label d3 = new Label("Tồn kho dưới ngưỡng an toàn");
+        d3.getStyleClass().add("stat-sub");
+        c3.getChildren().addAll(t3, v3, d3);
 
-        // Card 4: Sản phẩm sắp hết hàng
-        VBox card4 = new VBox(6);
-        card4.getStyleClass().add("stat-card");
-        HBox.setHgrow(card4, Priority.ALWAYS);
-        Label c4Title = new Label("⚠  Sản phẩm sắp hết hàng");
-        c4Title.getStyleClass().add("stat-title");
-        Label c4Value = new Label("05");
-        c4Value.getStyleClass().add("stat-value-alert");
-        Label c4Sub = new Label("Cần nhập thêm hàng ngay");
-        c4Sub.getStyleClass().add("stat-sub-alert");
-        card4.getChildren().addAll(c4Title, c4Value, c4Sub);
-
-        row.getChildren().addAll(card1, card2, card3, card4);
+        row.getChildren().addAll(c1, c2, c3);
         return row;
     }
 
-    /**
-     * Biểu đồ Doanh thu tuần này (Bar Chart mô phỏng pixel-perfect)
-     */
-    private VBox createRevenueChartPanel() {
-        VBox panel = new VBox(14);
-        panel.getStyleClass().add("card-panel");
+    // =========================================================================
+    // 5. TIỆN ÍCH TÀI KHOẢN
+    // =========================================================================
+    private void showChangePasswordDialog() {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Đổi mật khẩu");
+        dialog.setHeaderText("Cập nhật mật khẩu tài khoản");
 
-        HBox header = new HBox();
-        header.setAlignment(Pos.CENTER_LEFT);
+        VBox form = new VBox(10);
+        form.setPadding(new Insets(20));
 
-        VBox titleBox = new VBox(3);
-        Label title = new Label("Doanh thu tuần này");
-        title.getStyleClass().add("card-title");
-        Label sub = new Label("Tổng: 54.800.000 đ");
-        sub.getStyleClass().add("card-sub");
-        titleBox.getChildren().addAll(title, sub);
+        PasswordField oldPass = new PasswordField();
+        oldPass.setPromptText("Mật khẩu hiện tại");
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+        PasswordField newPass = new PasswordField();
+        newPass.setPromptText("Mật khẩu mới");
 
-        Label badgeCurrentWeek = new Label("● Tuần hiện tại");
-        badgeCurrentWeek.getStyleClass().add("status-badge-paid");
+        PasswordField confirmPass = new PasswordField();
+        confirmPass.setPromptText("Xác nhận mật khẩu mới");
 
-        header.getChildren().addAll(titleBox, spacer, badgeCurrentWeek);
-
-        // Vẽ biểu đồ 7 cột (T2 -> CN)
-        HBox chartBox = new HBox(24);
-        chartBox.setAlignment(Pos.BOTTOM_CENTER);
-        chartBox.setPadding(new Insets(24, 16, 8, 16));
-
-        String[] days = {"T2", "T3", "T4", "T5", "T6", "T7", "CN"};
-        double[] heights = {85, 105, 95, 140, 115, 160, 130};
-
-        for (int i = 0; i < days.length; i++) {
-            boolean isPeak = (i == 5); // T7 là cột cao nhất nổi bật
-
-            VBox barCol = new VBox(8);
-            barCol.setAlignment(Pos.BOTTOM_CENTER);
-
-            if (isPeak) {
-                Label tooltip = new Label("● 10.200.000 đ");
-                tooltip.setStyle("-fx-font-size: 10px; -fx-text-fill: #2f4f38; -fx-font-weight: bold;");
-                barCol.getChildren().add(tooltip);
-            }
-
-            Rectangle bar = new Rectangle(36, heights[i]);
-            bar.setArcWidth(8);
-            bar.setArcHeight(8);
-            bar.setFill(isPeak ? Color.web("#2f4f38") : Color.web("#bdd7c3"));
-
-            Label dayLbl = new Label(days[i]);
-            dayLbl.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #829485; -fx-font-weight: 600;");
-
-            barCol.getChildren().addAll(bar, dayLbl);
-            chartBox.getChildren().add(barCol);
-            HBox.setHgrow(barCol, Priority.ALWAYS);
-        }
-
-        panel.getChildren().addAll(header, chartBox);
-        return panel;
-    }
-
-    /**
-     * Danh sách Lịch hẹn sắp tới
-     */
-    private VBox createUpcomingAppointmentsPanel() {
-        VBox panel = new VBox(12);
-        panel.getStyleClass().add("card-panel");
-
-        HBox header = new HBox();
-        header.setAlignment(Pos.CENTER_LEFT);
-
-        VBox titleBox = new VBox(2);
-        Label title = new Label("Lịch hẹn sắp tới");
-        title.getStyleClass().add("card-title");
-        Label sub = new Label("Trong ngày hôm nay");
-        sub.getStyleClass().add("card-sub");
-        titleBox.getChildren().addAll(title, sub);
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Hyperlink linkAll = new Hyperlink("Xem tất cả");
-        linkAll.setStyle("-fx-font-size: 12px; -fx-text-fill: #d97736;");
-        linkAll.setOnAction(e -> showPlaceholder("Xem toàn bộ lịch hẹn"));
-
-        header.getChildren().addAll(titleBox, spacer, linkAll);
-
-        // 3 Thẻ lịch hẹn mẫu chuẩn theo thiết kế
-        VBox app1 = createAppointmentCard("Bé Lu (Chó)", "Nguyễn Minh Anh • Tắm & Vệ sinh", "NV: Bình An", "09:30");
-        VBox app2 = createAppointmentCard("Mimi (Mèo)", "Lê Thu Hà • Cắt tỉa lông", "NV: Mai Phương", "11:00");
-        VBox app3 = createAppointmentCard("Bông (Chó)", "Trần Quốc Bảo • Tắm & Vệ sinh", "NV: Bình An", "14:00");
-
-        panel.getChildren().addAll(header, app1, app2, app3);
-        return panel;
-    }
-
-    private VBox createAppointmentCard(String petName, String serviceDetail, String staff, String time) {
-        VBox item = new VBox(4);
-        item.getStyleClass().add("appointment-item");
-
-        HBox rowTop = new HBox(8);
-        rowTop.setAlignment(Pos.CENTER_LEFT);
-
-        Label calIcon = new Label("📅");
-        Label nameLbl = new Label(petName);
-        nameLbl.getStyleClass().add("pet-name-title");
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Label timeLbl = new Label(time + "  ●");
-        timeLbl.getStyleClass().add("appointment-time");
-
-        rowTop.getChildren().addAll(calIcon, nameLbl, spacer, timeLbl);
-
-        Label detailLbl = new Label(serviceDetail + "\n" + staff);
-        detailLbl.getStyleClass().add("appointment-details");
-
-        item.getChildren().addAll(rowTop, detailLbl);
-        return item;
-    }
-
-    /**
-     * Bảng Hóa đơn gần đây
-     */
-    private VBox createRecentInvoicesPanel() {
-        VBox panel = new VBox(12);
-        panel.getStyleClass().add("card-panel");
-
-        HBox header = new HBox();
-        header.setAlignment(Pos.CENTER_LEFT);
-
-        Label title = new Label("Hóa đơn gần đây");
-        title.getStyleClass().add("card-title");
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Button btnCreate = new Button("+ Tạo hóa đơn mới");
-        btnCreate.getStyleClass().add("btn-create-invoice");
-        btnCreate.setOnAction(e -> showPlaceholder("Tạo hóa đơn mới"));
-
-        header.getChildren().addAll(title, spacer, btnCreate);
-
-        // TableView hiển thị hóa đơn
-        TableView<InvoiceRow> table = new TableView<>();
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-
-        TableColumn<InvoiceRow, String> colCode = new TableColumn<>("MÃ HĐ");
-        colCode.setCellValueFactory(d -> d.getValue().code);
-
-        TableColumn<InvoiceRow, String> colCustomer = new TableColumn<>("KHÁCH HÀNG");
-        colCustomer.setCellValueFactory(d -> d.getValue().customer);
-
-        TableColumn<InvoiceRow, String> colPet = new TableColumn<>("THÚ CƯNG");
-        colPet.setCellValueFactory(d -> d.getValue().pet);
-
-        TableColumn<InvoiceRow, String> colTotal = new TableColumn<>("TỔNG TIỀN");
-        colTotal.setCellValueFactory(d -> d.getValue().total);
-
-        TableColumn<InvoiceRow, String> colStatus = new TableColumn<>("TRẠNG THÁI");
-        colStatus.setCellValueFactory(d -> d.getValue().status);
-        colStatus.setCellFactory(col -> new TableCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setGraphic(null);
-                } else {
-                    Label badge = new Label(item);
-                    badge.getStyleClass().add(item.contains("Đã thanh toán") ? "status-badge-paid" : "status-badge-pending");
-                    setGraphic(badge);
-                }
-            }
-        });
-
-        table.getColumns().addAll(colCode, colCustomer, colPet, colTotal, colStatus);
-
-        ObservableList<InvoiceRow> data = FXCollections.observableArrayList(
-                new InvoiceRow("HD-20261005-001", "Nguyễn Thu Trang", "Mochi (Mèo)", "350.000 đ", "Đã thanh toán"),
-                new InvoiceRow("HD-20261005-002", "Lê Hoàng Nam", "Bông (Chó)", "180.000 đ", "Đã thanh toán"),
-                new InvoiceRow("HD-20261005-003", "Võ Thị Mai", "Lu (Chó)", "220.000 đ", "Chưa thanh toán")
+        form.getChildren().addAll(
+                new Label("Mật khẩu hiện tại:"), oldPass,
+                new Label("Mật khẩu mới:"), newPass,
+                new Label("Xác nhận mật khẩu:"), confirmPass
         );
-        table.setItems(data);
 
-        panel.getChildren().addAll(header, table);
-        return panel;
+        dialog.getDialogPane().setContent(form);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        dialog.showAndWait();
+    }
+
+    private void logout() {
+        authService.logout();
+        stage.setTitle("Happy Tails | Đăng nhập hệ thống");
+        Scene scene = new Scene(new LoginView(stage), 600, 680);
+        scene.getStylesheets().add(getClass().getResource("/com/petshop/view/styles.css").toExternalForm());
+        stage.setScene(scene);
+        stage.centerOnScreen();
     }
 
     private Group createMiniPawWhite() {
         Group group = new Group();
         Color c = Color.WHITE;
-        Ellipse pad = new Ellipse(0, 3, 7, 5);
+        Ellipse pad = new Ellipse(0, 3, 6, 4.5);
         pad.setFill(c);
-        Circle t1 = new Circle(-6, -4, 2.3, c);
-        Circle t2 = new Circle(-2, -7, 2.5, c);
-        Circle t3 = new Circle(2, -7, 2.5, c);
-        Circle t4 = new Circle(6, -4, 2.3, c);
+        Circle t1 = new Circle(-5.5, -4, 1.8, c);
+        Circle t2 = new Circle(-2, -6.5, 2.0, c);
+        Circle t3 = new Circle(2, -6.5, 2.0, c);
+        Circle t4 = new Circle(5.5, -4, 1.8, c);
         group.getChildren().addAll(pad, t1, t2, t3, t4);
         return group;
     }
@@ -682,38 +600,5 @@ public class MainDashboard extends BorderPane {
         String[] parts = name.trim().split("\\s+");
         if (parts.length == 1) return parts[0].substring(0, Math.min(2, parts[0].length())).toUpperCase();
         return ("" + parts[parts.length - 2].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-    }
-
-    private void showPlaceholder(String module) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(module);
-        alert.setHeaderText(null);
-        alert.setContentText("Phân hệ [" + module + "] đang được kết nối với cơ sở dữ liệu.");
-        alert.showAndWait();
-    }
-
-    private void logout() {
-        SessionManager.logout();
-        stage.setTitle("Happy Tails | Đăng nhập hệ thống");
-        Scene scene = new Scene(new LoginView(stage), 600, 680);
-        scene.getStylesheets().add(getClass().getResource("/com/petshop/view/styles.css").toExternalForm());
-        stage.setScene(scene);
-        stage.centerOnScreen();
-    }
-
-    public static class InvoiceRow {
-        public final SimpleStringProperty code;
-        public final SimpleStringProperty customer;
-        public final SimpleStringProperty pet;
-        public final SimpleStringProperty total;
-        public final SimpleStringProperty status;
-
-        public InvoiceRow(String c, String cu, String p, String t, String s) {
-            this.code = new SimpleStringProperty(c);
-            this.customer = new SimpleStringProperty(cu);
-            this.pet = new SimpleStringProperty(p);
-            this.total = new SimpleStringProperty(t);
-            this.status = new SimpleStringProperty(s);
-        }
     }
 }

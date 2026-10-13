@@ -6,6 +6,7 @@ package com.petshop.model;
 public class User {
     /** Vai trò — displayName khớp giá trị cột phanQuyen trong DB. */
     public enum Role {
+        ADMIN("Admin"),
         QUAN_LY("Quản lý"),
         BAN_HANG("Bán hàng"),
         CHAM_SOC("Chăm sóc");
@@ -22,7 +23,7 @@ public class User {
 
         public static Role fromDisplayName(String value) {
             for (Role r : values()) {
-                if (r.displayName.equals(value)) return r;
+                if (r.displayName.equalsIgnoreCase(value) || r.name().equalsIgnoreCase(value)) return r;
             }
             throw new IllegalArgumentException("Phân quyền không hợp lệ: " + value);
         }
