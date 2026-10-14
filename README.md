@@ -56,5 +56,6 @@ Ung dung ket noi SQL Server (database `QLCH_HappyTails`).
 | `quanly` | `123456` | Quan ly |
 | `banhang` | `123456` | Ban hang |
 | `chamsoc` | `123456` | Cham soc |
+| `admin` | `admin123` | tai khoan admin | 
 
 Cac nut nghiep vu hien la placeholder de bo sung tung module sau.
