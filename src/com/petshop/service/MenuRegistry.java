@@ -56,93 +56,91 @@ public class MenuRegistry {
     static {
         // 1. Khách hàng
         ALL_MENUS.add(new ObjectMenu("CUSTOMER", "Khách hàng", "CUSTOMER", List.of(
-                new SubAction("CUS_CRUD", "Thêm/Sửa/Xóa khách hàng", "Alt+C"),
+                new SubAction("CUS_CRUD", "Cập nhật khách hàng", "Alt+C"),
                 new SubAction("CUS_SEARCH", "Tìm kiếm khách hàng", "Ctrl+F"),
-                new SubAction("CUS_HISTORY", "Lịch sử mua hàng / sử dụng dịch vụ", null)
+                new SubAction("CUS_HISTORY", "Lịch sử giao dịch", null)
         )));
 
         // 2. Thú cưng
         ALL_MENUS.add(new ObjectMenu("PET", "Thú cưng", "PET", List.of(
-                new SubAction("PET_CRUD", "Thêm/Sửa/Xóa thú cưng", "Alt+P"),
+                new SubAction("PET_CRUD", "Cập nhật thú cưng", "Alt+P"),
                 new SubAction("PET_SEARCH", "Tìm kiếm thú cưng", "Ctrl+F"),
-                new SubAction("PET_WEIGHT", "Cập nhật sức khỏe / Cân nặng", null),
+                new SubAction("PET_WEIGHT", "Theo dõi sức khỏe", null),
                 new SubAction("PET_HISTORY", "Lịch sử chăm sóc", null)
         )));
 
         // 3. Lịch hẹn
         ALL_MENUS.add(new ObjectMenu("APPOINTMENT", "Lịch hẹn", "APPOINTMENT", List.of(
-                new SubAction("APT_CREATE", "Đặt lịch hẹn mới", null),
-                new SubAction("APT_STATUS", "Quản lý trạng thái lịch hẹn", null),
-                new SubAction("APT_RESCHEDULE", "Dời / Hủy lịch hẹn", null),
+                new SubAction("APT_CREATE", "Đặt lịch hẹn", null),
+                new SubAction("APT_STATUS", "Cập nhật trạng thái", null),
+                new SubAction("APT_RESCHEDULE", "Dời hoặc hủy lịch", null),
                 new SubAction("APT_SEARCH", "Tìm kiếm lịch hẹn", "Ctrl+F")
         )));
 
         // 4. Nhân viên
         ALL_MENUS.add(new ObjectMenu("EMPLOYEE", "Nhân viên", "EMPLOYEE", List.of(
-                new SubAction("EMP_CRUD", "Thêm/Sửa/Ngừng hoạt động nhân viên", "Alt+E"),
+                new SubAction("EMP_CRUD", "Cập nhật nhân viên", "Alt+E"),
                 new SubAction("EMP_SEARCH", "Tìm kiếm nhân viên", "Ctrl+F"),
-                new SubAction("EMP_ROLES", "Phân quyền tài khoản", null),
-                new SubAction("EMP_ACCOUNT", "Quản lý tài khoản (khóa/mở khóa, đổi mật khẩu)", null)
+                new SubAction("EMP_ROLES", "Phân quyền", null),
+                new SubAction("EMP_ACCOUNT", "Tài khoản đăng nhập", null)
         )));
 
         // 5. Ca trực
         ALL_MENUS.add(new ObjectMenu("SHIFT", "Ca trực", "SHIFT", List.of(
-                new SubAction("SHF_CRUD", "Thêm/Sửa/Xóa ca làm việc", null),
+                new SubAction("SHF_CRUD", "Cập nhật ca làm việc", null),
                 new SubAction("SHF_ASSIGN", "Phân công ca trực", null),
-                new SubAction("SHF_VIEW", "Xem lịch ca trực", null)
+                new SubAction("SHF_VIEW", "Lịch ca trực", null)
         )));
 
         // 6. Nhà cung cấp
         ALL_MENUS.add(new ObjectMenu("SUPPLIER", "Nhà cung cấp", "SUPPLIER", List.of(
-                new SubAction("SUP_CRUD", "Thêm/Sửa/Ngừng nhà cung cấp", null),
+                new SubAction("SUP_CRUD", "Cập nhật nhà cung cấp", null),
                 new SubAction("SUP_SEARCH", "Tìm kiếm nhà cung cấp", "Ctrl+F")
         )));
 
         // 7. Đơn hàng nhập
         ALL_MENUS.add(new ObjectMenu("IMPORT_ORDER", "Đơn hàng nhập", "IMPORT_ORDER", List.of(
-                new SubAction("IMP_CREATE", "Lập đơn hàng mới", null),
-                new SubAction("IMP_CONFIRM", "Xác nhận nhận hàng", null),
-                new SubAction("IMP_CANCEL", "Sửa / Hủy đơn hàng", null),
-                new SubAction("IMP_SEARCH", "Tìm kiếm đơn hàng", "Ctrl+F")
+                new SubAction("IMP_CREATE", "Lập đơn nhập", null),
+                new SubAction("IMP_CONFIRM", "Nhận hàng", null),
+                new SubAction("IMP_CANCEL", "Cập nhật đơn nhập", null),
+                new SubAction("IMP_SEARCH", "Tìm kiếm đơn nhập", "Ctrl+F")
         )));
 
         // 8. Sản phẩm
         ALL_MENUS.add(new ObjectMenu("PRODUCT", "Sản phẩm", "PRODUCT", List.of(
-                new SubAction("PRD_CRUD", "Thêm/Sửa/Ngừng kinh doanh sản phẩm", null),
+                new SubAction("PRD_CRUD", "Cập nhật sản phẩm", null),
                 new SubAction("PRD_SEARCH", "Tìm kiếm sản phẩm", "Ctrl+F"),
-                new SubAction("PRD_INVENTORY", "Quản lý tồn kho", null),
-                new SubAction("PRD_LOW_STOCK", "Cảnh báo hết hàng", null),
-                new SubAction("PRD_REPORT", "Báo cáo tồn kho / sản phẩm bán chạy", null)
+                new SubAction("PRD_INVENTORY", "Tồn kho", null),
+                new SubAction("PRD_LOW_STOCK", "Hàng sắp hết", null),
+                new SubAction("PRD_REPORT", "Báo cáo sản phẩm", null)
         )));
 
         // 9. Dịch vụ chăm sóc
         ALL_MENUS.add(new ObjectMenu("SERVICE", "Dịch vụ chăm sóc", "SERVICE", List.of(
-                new SubAction("SRV_CRUD", "Thêm/Sửa/Ngừng cung cấp dịch vụ", null),
+                new SubAction("SRV_CRUD", "Cập nhật dịch vụ", null),
                 new SubAction("SRV_SEARCH", "Tìm kiếm dịch vụ", "Ctrl+F"),
-                new SubAction("SRV_PRICING", "Bảng giá theo cân nặng", null),
-                new SubAction("SRV_REPORT", "Báo cáo dịch vụ bán chạy", null)
+                new SubAction("SRV_PRICING", "Bảng giá dịch vụ", null),
+                new SubAction("SRV_REPORT", "Báo cáo dịch vụ", null)
         )));
 
         // 10. Khuyến mãi
         ALL_MENUS.add(new ObjectMenu("PROMOTION", "Khuyến mãi", "PROMOTION", List.of(
-                new SubAction("PROMO_CREATE", "Tạo khuyến mãi", null),
-                new SubAction("PROMO_EDIT", "Sửa khuyến mãi", null),
-                new SubAction("PROMO_CANCEL", "Hủy/Dừng khuyến mãi", null),
+                new SubAction("PROMO_CRUD", "Cập nhật khuyến mãi", null),
                 new SubAction("PROMO_SEARCH", "Tìm kiếm khuyến mãi", "Ctrl+F")
         )));
 
         // 11. Hóa đơn
         ALL_MENUS.add(new ObjectMenu("INVOICE", "Hóa đơn", "INVOICE", List.of(
-                new SubAction("INV_CREATE", "Lập hóa đơn (Thanh toán)", null),
-                new SubAction("INV_SEARCH", "Tìm kiếm / In hóa đơn", "Ctrl+F"),
+                new SubAction("INV_CREATE", "Lập hóa đơn", null),
+                new SubAction("INV_SEARCH", "Tìm kiếm hóa đơn", "Ctrl+F"),
                 new SubAction("INV_CANCEL", "Hủy hóa đơn", null),
-                new SubAction("INV_REVENUE", "Thống kê doanh thu", null)
+                new SubAction("INV_REVENUE", "Doanh thu", null)
         )));
 
         // 12. Phiếu đổi trả
         ALL_MENUS.add(new ObjectMenu("RETURN_NOTE", "Phiếu đổi trả", "RETURN_NOTE", List.of(
                 new SubAction("RET_CREATE", "Lập phiếu đổi trả", null),
-                new SubAction("RET_CONFIRM", "Xác nhận / Từ chối đổi trả", null),
+                new SubAction("RET_CONFIRM", "Xử lý đổi trả", null),
                 new SubAction("RET_SEARCH", "Tìm kiếm phiếu đổi trả", "Ctrl+F")
         )));
 
