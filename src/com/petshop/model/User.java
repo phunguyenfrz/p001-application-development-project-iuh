@@ -22,10 +22,14 @@ public class User {
         }
 
         public static Role fromDisplayName(String value) {
+            String normalizedValue = value == null ? "" : value.trim();
             for (Role r : values()) {
-                if (r.displayName.equalsIgnoreCase(value) || r.name().equalsIgnoreCase(value)) return r;
+                if (r.displayName.equalsIgnoreCase(normalizedValue)
+                        || r.name().equalsIgnoreCase(normalizedValue)) {
+                    return r;
+                }
             }
-            throw new IllegalArgumentException("Phân quyền không hợp lệ: " + value);
+            throw new IllegalArgumentException("Vai trò không hợp lệ: " + value);
         }
     }
 
