@@ -239,11 +239,17 @@ public class LoginView extends StackPane {
         // Đăng nhập thành công -> chuyển sang Dashboard
         SessionManager.login(user);
         stage.setTitle("Happy Tails | Bảng điều khiển");
-        Scene scene = new Scene(new MainDashboard(stage), 1220, 800);
+
+        // Tính toán kích thước cửa sổ vừa vặn màn hình khả dụng (trừ taskbar)
+        javafx.geometry.Rectangle2D visualBounds = javafx.stage.Screen.getPrimary().getVisualBounds();
+        double targetWidth = Math.min(1280, visualBounds.getWidth() * 0.94);
+        double targetHeight = Math.min(760, visualBounds.getHeight() * 0.94);
+
+        Scene scene = new Scene(new MainDashboard(stage), targetWidth, targetHeight);
         scene.getStylesheets().add(getClass().getResource("/com/petshop/view/styles.css").toExternalForm());
         stage.setScene(scene);
-        stage.setMinWidth(1100);
-        stage.setMinHeight(750);
+        stage.setMinWidth(1024);
+        stage.setMinHeight(640);
         stage.centerOnScreen();
     }
 }

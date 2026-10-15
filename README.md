@@ -30,7 +30,24 @@ src/
 └── main/resources/com/petshop/view/
     └── styles.css
 ```
+### Cập nhật database cho chức năng khách hàng
 
+Sau khi pull code, chạy file:
+
+db/01_add_customer_status.sql
+
+Cách chạy:
+1. Mở SQL Server Management Studio (SSMS).
+2. Kết nối SQL Server đang dùng cho ứng dụng.
+3. Mở file SQL trên.
+4. Nhấn Execute hoặc F5.
+5. Sau khi chạy thành công, khởi động lại ứng dụng.
+
+Yêu cầu: database QLCH_HappyTails và bảng dbo.KhachHang đã tồn tại.
+
+Script giữ nguyên dữ liệu hiện có.
+Khách hàng hiện có được đặt trangThai = 1.
+Nếu cột đã tồn tại, script bỏ qua việc thêm cột.
 ## Chay ung dung
 
 Yeu cau JDK 17 va Maven:
@@ -56,5 +73,6 @@ Ung dung ket noi SQL Server (database `QLCH_HappyTails`).
 | `quanly` | `123456` | Quan ly |
 | `banhang` | `123456` | Ban hang |
 | `chamsoc` | `123456` | Cham soc |
+| `admin` | `admin123` | tai khoan admin | 
 
 Cac nut nghiep vu hien la placeholder de bo sung tung module sau.
