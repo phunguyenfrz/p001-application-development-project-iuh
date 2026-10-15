@@ -250,7 +250,20 @@ public class MainDashboard extends BorderPane {
 
             subBtn.setOnAction(e -> {
                 setActiveNode(subBtn);
-                contentArea.getChildren().setAll(new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut()));
+
+                // Menu Cập nhật khách hàng mở màn hình dữ liệu thật.
+                if ("CUS_CRUD".equals(action.getId())) {
+                    contentArea.getChildren().setAll(new CustomerView());
+                } else {
+                    // Các menu khác tiếp tục dùng màn hình hiện có.
+                    contentArea.getChildren().setAll(
+                            new ModuleListView(
+                                    menu.getTitle(),
+                                    action.getName(),
+                                    action.getShortcut()
+                            )
+                    );
+                }
             });
             subMenuList.getChildren().add(subBtn);
         }
