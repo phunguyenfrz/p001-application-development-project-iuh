@@ -250,7 +250,14 @@ public class MainDashboard extends BorderPane {
 
             subBtn.setOnAction(e -> {
                 setActiveNode(subBtn);
-                contentArea.getChildren().setAll(new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut()));
+                String actionId = action.getId();
+                if (List.of("SRV_CRUD", "SRV_SEARCH", "SRV_PRICING", "APT_CREATE", "APT_STATUS",
+                    "APT_RESCHEDULE", "APT_SEARCH", "INV_CREATE", "INV_SEARCH", "INV_CANCEL")
+                    .contains(actionId)) {
+                    contentArea.getChildren().setAll(new AssignedModuleView(actionId, action.getName(), user));
+                } else {
+                    contentArea.getChildren().setAll(new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut()));
+                }
             });
             subMenuList.getChildren().add(subBtn);
         }
