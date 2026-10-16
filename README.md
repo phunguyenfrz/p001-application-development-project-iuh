@@ -21,7 +21,7 @@ src/
 │   │   ├── Product.java
 │   │   └── User.java
 │   ├── util/
-│   │   ├── DatabaseInit.java
+│   │   ├── DatabaseInitializer.java
 │   │   ├── DatabaseManager.java
 │   │   └── SessionManager.java
 │   └── view/

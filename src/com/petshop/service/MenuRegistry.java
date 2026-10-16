@@ -12,12 +12,12 @@ import java.util.*;
  */
 public class MenuRegistry {
 
-    public static class SubAction {
+    public static class MenuAction {
         private final String id;
         private final String name;
         private final String shortcut;
 
-        public SubAction(String id, String name, String shortcut) {
+        public MenuAction(String id, String name, String shortcut) {
             this.id = id;
             this.name = name;
             this.shortcut = shortcut;
@@ -28,133 +28,130 @@ public class MenuRegistry {
         public String getShortcut() { return shortcut; }
     }
 
-    public static class ObjectMenu {
+    public static class MenuGroup {
         private final String id;
         private final String title;
         private final String iconType;
-        private final List<SubAction> subActions;
+        private final List<MenuAction> actions;
 
-        public ObjectMenu(String id, String title, String iconType, List<SubAction> subActions) {
+        public MenuGroup(String id, String title, String iconType, List<MenuAction> actions) {
             this.id = id;
             this.title = title;
             this.iconType = iconType;
-            this.subActions = subActions;
+            this.actions = actions;
         }
 
         public String getId() { return id; }
         public String getTitle() { return title; }
         public String getIconType() { return iconType; }
-        public List<SubAction> getSubActions() { return subActions; }
+        public List<MenuAction> getActions() { return actions; }
     }
 
     // Danh sách menu theo thứ tự hiển thị trên thanh điều hướng; mục Tổng quan được dựng riêng.
-    private static final List<ObjectMenu> ALL_MENUS = new ArrayList<>();
+    private static final List<MenuGroup> ALL_MENUS = new ArrayList<>();
 
     // Bảng quyền tập trung ánh xạ mã chức năng sang các vai trò được phép.
     private static final Map<String, Set<User.Role>> PERMISSION_MAP = new HashMap<>();
 
     static {
         // 1. Khách hàng
-        ALL_MENUS.add(new ObjectMenu("CUSTOMER", "Khách hàng", "CUSTOMER", List.of(
-                new SubAction("CUS_CRUD", "Cập nhật khách hàng", "Alt+C"),
-                new SubAction("CUS_SEARCH", "Tìm kiếm khách hàng", "Ctrl+F"),
-                new SubAction("CUS_HISTORY", "Lịch sử giao dịch", null)
+        ALL_MENUS.add(new MenuGroup("CUSTOMER", "Khách hàng", "CUSTOMER", List.of(
+                new MenuAction("CUS_UPDATE", "Cập nhật khách hàng", "Alt+C"),
+                new MenuAction("CUS_SEARCH", "Tìm kiếm khách hàng", "Ctrl+F"),
+                new MenuAction("CUS_HISTORY", "Lịch sử giao dịch", null)
         )));
 
         // 2. Thú cưng
-        ALL_MENUS.add(new ObjectMenu("PET", "Thú cưng", "PET", List.of(
-                new SubAction("PET_CRUD", "Cập nhật thú cưng", "Alt+P"),
-                new SubAction("PET_SEARCH", "Tìm kiếm thú cưng", "Ctrl+F"),
-                new SubAction("PET_WEIGHT", "Theo dõi sức khỏe", null),
-                new SubAction("PET_HISTORY", "Lịch sử chăm sóc", null)
+        ALL_MENUS.add(new MenuGroup("PET", "Thú cưng", "PET", List.of(
+                new MenuAction("PET_UPDATE", "Cập nhật thú cưng", "Alt+P"),
+                new MenuAction("PET_SEARCH", "Tìm kiếm thú cưng", "Ctrl+F"),
+                new MenuAction("PET_CARE", "Theo dõi chăm sóc", null)
         )));
 
         // 3. Lịch hẹn
-        ALL_MENUS.add(new ObjectMenu("APPOINTMENT", "Lịch hẹn", "APPOINTMENT", List.of(
-                new SubAction("APT_CREATE", "Đặt lịch hẹn", null),
-                new SubAction("APT_STATUS", "Cập nhật trạng thái", null),
-                new SubAction("APT_RESCHEDULE", "Dời hoặc hủy lịch", null),
-                new SubAction("APT_SEARCH", "Tìm kiếm lịch hẹn", "Ctrl+F")
+        ALL_MENUS.add(new MenuGroup("APPOINTMENT", "Lịch hẹn", "APPOINTMENT", List.of(
+                new MenuAction("APT_CREATE", "Đặt lịch hẹn", null),
+                new MenuAction("APT_UPDATE", "Cập nhật lịch hẹn", null),
+                new MenuAction("APT_SEARCH", "Tìm kiếm lịch hẹn", "Ctrl+F")
         )));
 
         // 4. Nhân viên
-        ALL_MENUS.add(new ObjectMenu("EMPLOYEE", "Nhân viên", "EMPLOYEE", List.of(
-                new SubAction("EMP_CRUD", "Cập nhật nhân viên", "Alt+E"),
-                new SubAction("EMP_SEARCH", "Tìm kiếm nhân viên", "Ctrl+F"),
-                new SubAction("EMP_ROLES", "Phân quyền", null),
-                new SubAction("EMP_ACCOUNT", "Tài khoản đăng nhập", null)
+        ALL_MENUS.add(new MenuGroup("EMPLOYEE", "Nhân viên", "EMPLOYEE", List.of(
+                new MenuAction("EMP_UPDATE", "Cập nhật nhân viên", "Alt+E"),
+                new MenuAction("EMP_SEARCH", "Tìm kiếm nhân viên", "Ctrl+F"),
+                new MenuAction("EMP_ROLES", "Phân quyền", null),
+                new MenuAction("EMP_ACCOUNT", "Tài khoản đăng nhập", null)
         )));
 
         // 5. Ca trực
-        ALL_MENUS.add(new ObjectMenu("SHIFT", "Ca trực", "SHIFT", List.of(
-                new SubAction("SHF_CRUD", "Cập nhật ca làm việc", null),
-                new SubAction("SHF_ASSIGN", "Phân công ca trực", null),
-                new SubAction("SHF_VIEW", "Lịch ca trực", null)
+        ALL_MENUS.add(new MenuGroup("SHIFT", "Ca trực", "SHIFT", List.of(
+                new MenuAction("SHF_UPDATE", "Cập nhật ca trực", null),
+                new MenuAction("SHF_ASSIGN", "Phân công ca trực", null),
+                new MenuAction("SHF_VIEW", "Lịch ca trực", null)
         )));
 
         // 6. Nhà cung cấp
-        ALL_MENUS.add(new ObjectMenu("SUPPLIER", "Nhà cung cấp", "SUPPLIER", List.of(
-                new SubAction("SUP_CRUD", "Cập nhật nhà cung cấp", null),
-                new SubAction("SUP_SEARCH", "Tìm kiếm nhà cung cấp", "Ctrl+F")
+        ALL_MENUS.add(new MenuGroup("SUPPLIER", "Nhà cung cấp", "SUPPLIER", List.of(
+                new MenuAction("SUP_UPDATE", "Cập nhật nhà cung cấp", null),
+                new MenuAction("SUP_SEARCH", "Tìm kiếm nhà cung cấp", "Ctrl+F")
         )));
 
         // 7. Đơn hàng nhập
-        ALL_MENUS.add(new ObjectMenu("IMPORT_ORDER", "Đơn hàng nhập", "IMPORT_ORDER", List.of(
-                new SubAction("IMP_CREATE", "Lập đơn nhập", null),
-                new SubAction("IMP_CONFIRM", "Nhận hàng", null),
-                new SubAction("IMP_CANCEL", "Cập nhật đơn nhập", null),
-                new SubAction("IMP_SEARCH", "Tìm kiếm đơn nhập", "Ctrl+F")
+        ALL_MENUS.add(new MenuGroup("IMPORT_ORDER", "Đơn hàng nhập", "IMPORT_ORDER", List.of(
+                new MenuAction("IMP_CREATE", "Lập đơn nhập", null),
+                new MenuAction("IMP_RECEIVE", "Nhận hàng", null),
+                new MenuAction("IMP_UPDATE", "Cập nhật đơn nhập", null),
+                new MenuAction("IMP_SEARCH", "Tìm kiếm đơn nhập", "Ctrl+F")
         )));
 
         // 8. Sản phẩm
-        ALL_MENUS.add(new ObjectMenu("PRODUCT", "Sản phẩm", "PRODUCT", List.of(
-                new SubAction("PRD_CRUD", "Cập nhật sản phẩm", null),
-                new SubAction("PRD_SEARCH", "Tìm kiếm sản phẩm", "Ctrl+F"),
-                new SubAction("PRD_INVENTORY", "Tồn kho", null),
-                new SubAction("PRD_LOW_STOCK", "Hàng sắp hết", null),
-                new SubAction("PRD_REPORT", "Báo cáo sản phẩm", null)
+        ALL_MENUS.add(new MenuGroup("PRODUCT", "Sản phẩm", "PRODUCT", List.of(
+                new MenuAction("PRD_UPDATE", "Cập nhật sản phẩm", null),
+                new MenuAction("PRD_SEARCH", "Tìm kiếm sản phẩm", "Ctrl+F"),
+                new MenuAction("PRD_INVENTORY", "Tồn kho", null),
+                new MenuAction("PRD_REPORT", "Báo cáo sản phẩm", null)
         )));
 
         // 9. Dịch vụ chăm sóc
-        ALL_MENUS.add(new ObjectMenu("SERVICE", "Dịch vụ chăm sóc", "SERVICE", List.of(
-                new SubAction("SRV_CRUD", "Cập nhật dịch vụ", null),
-                new SubAction("SRV_SEARCH", "Tìm kiếm dịch vụ", "Ctrl+F"),
-                new SubAction("SRV_PRICING", "Bảng giá dịch vụ", null),
-                new SubAction("SRV_REPORT", "Báo cáo dịch vụ", null)
+        ALL_MENUS.add(new MenuGroup("CARE_SERVICE", "Dịch vụ chăm sóc", "CARE_SERVICE", List.of(
+                new MenuAction("CAR_UPDATE", "Cập nhật dịch vụ", null),
+                new MenuAction("CAR_SEARCH", "Tìm kiếm dịch vụ", "Ctrl+F"),
+                new MenuAction("CAR_PRICING", "Bảng giá dịch vụ", null),
+                new MenuAction("CAR_REPORT", "Báo cáo dịch vụ", null)
         )));
 
         // 10. Khuyến mãi
-        ALL_MENUS.add(new ObjectMenu("PROMOTION", "Khuyến mãi", "PROMOTION", List.of(
-                new SubAction("PROMO_CRUD", "Cập nhật khuyến mãi", null),
-                new SubAction("PROMO_SEARCH", "Tìm kiếm khuyến mãi", "Ctrl+F")
+        ALL_MENUS.add(new MenuGroup("PROMOTION", "Khuyến mãi", "PROMOTION", List.of(
+                new MenuAction("PRM_UPDATE", "Cập nhật khuyến mãi", null),
+                new MenuAction("PRM_SEARCH", "Tìm kiếm khuyến mãi", "Ctrl+F")
         )));
 
         // 11. Hóa đơn
-        ALL_MENUS.add(new ObjectMenu("INVOICE", "Hóa đơn", "INVOICE", List.of(
-                new SubAction("INV_CREATE", "Lập hóa đơn", null),
-                new SubAction("INV_SEARCH", "Tìm kiếm hóa đơn", "Ctrl+F"),
-                new SubAction("INV_CANCEL", "Hủy hóa đơn", null),
-                new SubAction("INV_REVENUE", "Doanh thu", null)
+        ALL_MENUS.add(new MenuGroup("INVOICE", "Hóa đơn", "INVOICE", List.of(
+                new MenuAction("INV_CREATE", "Lập hóa đơn", null),
+                new MenuAction("INV_SEARCH", "Tìm kiếm hóa đơn", "Ctrl+F"),
+                new MenuAction("INV_UPDATE", "Cập nhật hóa đơn", null),
+                new MenuAction("INV_REVENUE", "Báo cáo doanh thu", null)
         )));
 
         // 12. Phiếu đổi trả
-        ALL_MENUS.add(new ObjectMenu("RETURN_NOTE", "Phiếu đổi trả", "RETURN_NOTE", List.of(
-                new SubAction("RET_CREATE", "Lập phiếu đổi trả", null),
-                new SubAction("RET_CONFIRM", "Xử lý đổi trả", null),
-                new SubAction("RET_SEARCH", "Tìm kiếm phiếu đổi trả", "Ctrl+F")
+        ALL_MENUS.add(new MenuGroup("RETURN_NOTE", "Phiếu đổi trả", "RETURN_NOTE", List.of(
+                new MenuAction("RET_CREATE", "Lập phiếu đổi trả", null),
+                new MenuAction("RET_PROCESS", "Xử lý đổi trả", null),
+                new MenuAction("RET_SEARCH", "Tìm kiếm phiếu đổi trả", "Ctrl+F")
         )));
 
         // Khởi tạo quyền cho quản lý, bán hàng và chăm sóc; quản trị viên luôn có toàn quyền.
-        for (ObjectMenu menu : ALL_MENUS) {
-            for (SubAction action : menu.getSubActions()) {
+        for (MenuGroup menu : ALL_MENUS) {
+            for (MenuAction action : menu.getActions()) {
                 Set<User.Role> roles = new HashSet<>();
                 roles.add(User.Role.ADMIN);
 
                 // Quản lý được phép dùng các menu quản trị và xem báo cáo được chỉ định.
                 if (menu.getId().equals("EMPLOYEE") || menu.getId().equals("SHIFT") ||
-                    menu.getId().equals("SUPPLIER") || menu.getId().equals("SERVICE") ||
+                    menu.getId().equals("SUPPLIER") || menu.getId().equals("CARE_SERVICE") ||
                     menu.getId().equals("PROMOTION") || action.getId().equals("INV_REVENUE") ||
-                    action.getId().equals("PRD_LOW_STOCK") || action.getId().equals("PRD_REPORT")) {
+                    action.getId().equals("PRD_INVENTORY") || action.getId().equals("PRD_REPORT")) {
                     roles.add(User.Role.QUAN_LY);
                 }
 
@@ -179,7 +176,7 @@ public class MenuRegistry {
     /**
      * Lấy toàn bộ danh sách menu gốc (dành cho Admin hoặc tham chiếu).
      */
-    public static List<ObjectMenu> getAllMenus() {
+    public static List<MenuGroup> getAllMenus() {
         return Collections.unmodifiableList(ALL_MENUS);
     }
 
@@ -187,20 +184,20 @@ public class MenuRegistry {
      * Lấy danh sách menu sau khi đã lọc theo vai trò của người dùng.
      * Mục cha chỉ xuất hiện nếu có ít nhất 1 chức năng con được phép truy cập.
      */
-    public static List<ObjectMenu> getMenusForRole(User.Role role) {
+    public static List<MenuGroup> getMenusForRole(User.Role role) {
         if (role == null) return Collections.emptyList();
         if (role == User.Role.ADMIN) return getAllMenus();
 
-        List<ObjectMenu> filtered = new ArrayList<>();
-        for (ObjectMenu menu : ALL_MENUS) {
-            List<SubAction> permittedActions = new ArrayList<>();
-            for (SubAction action : menu.getSubActions()) {
+        List<MenuGroup> filtered = new ArrayList<>();
+        for (MenuGroup menu : ALL_MENUS) {
+            List<MenuAction> permittedActions = new ArrayList<>();
+            for (MenuAction action : menu.getActions()) {
                 if (hasPermission(role, action.getId())) {
                     permittedActions.add(action);
                 }
             }
             if (!permittedActions.isEmpty()) {
-                filtered.add(new ObjectMenu(menu.getId(), menu.getTitle(), menu.getIconType(), permittedActions));
+                filtered.add(new MenuGroup(menu.getId(), menu.getTitle(), menu.getIconType(), permittedActions));
             }
         }
         return filtered;
