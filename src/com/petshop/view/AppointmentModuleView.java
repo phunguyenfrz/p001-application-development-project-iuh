@@ -35,38 +35,34 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
+/** Appointment creation, lifecycle, rescheduling, and search workflows. */
 public class AppointmentModuleView extends VBox {
 
-    private static final List<String> STATUSES = List.of("Đã đặt", "Đã xác nhận", "Đang thực hiện", "Hoàn thành", "Đã hủy");
+    // End states intentionally have no outgoing transitions.
     private static final Map<String, List<String>> NEXT_STATUSES = Map.of(
             "Đã đặt", List.of("Đã xác nhận", "Đã hủy"),
             "Đã xác nhận", List.of("Đang thực hiện", "Đã hủy"),
             "Đang thực hiện", List.of("Hoàn thành", "Đã hủy"));
 
     private final AssignedOperationsDao dao = new AssignedOperationsDao();
-    private final String actionId;
-    private final String actionName;
-    private final TextField searchField = new TextField();
-    private final Label feedback = new Label();
-    private final TableView<AppointmentRow> table = new TableView<>();
+    private final TextField txtSearch = new TextField();
+    private final Label lblFeedback = new Label();
+    private final TableView<AppointmentRow> tblAppointments = new TableView<>();
 
     public AppointmentModuleView(String actionId, String actionName) {
-        this.actionId = actionId;
-        this.actionName = actionName;
         setSpacing(16);
         setPadding(new Insets(24, 28, 28, 28));
         setStyle("-fx-background-color: #f3f6f3;");
 
-        Label title = new Label("Lịch hẹn  /  " + actionName);
-        title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #1f2923;");
-        Label subtitle = new Label("Theo dõi lịch chăm sóc, trạng thái và thay đổi thời gian hẹn.");
-        subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6e7c70;");
-        getChildren().add(new VBox(4, title, subtitle));
+        Label lblTitle = new Label("Lịch hẹn  /  " + actionName);
+        lblTitle.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #1f2923;");
+        Label lblSubtitle = new Label("Theo dõi lịch chăm sóc, trạng thái và thay đổi thời gian hẹn.");
+        lblSubtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6e7c70;");
+        getChildren().add(new VBox(4, lblTitle, lblSubtitle));
 
-        table.getColumns().addAll(
+        tblAppointments.getColumns().addAll(
                 column("Mã lịch hẹn", 180, AppointmentRow::id),
                 column("Khách hàng", 145, AppointmentRow::customer),
                 column("Thú cưng", 130, AppointmentRow::pet),
@@ -75,43 +71,43 @@ public class AppointmentModuleView extends VBox {
                 column("Giờ hẹn", 90, row -> row.time().format(DateTimeFormatter.ofPattern("HH:mm"))),
                 column("Trạng thái", 130, AppointmentRow::status),
                 column("Ghi chú", 180, row -> value(row.note())));
-        table.setPlaceholder(new Label("Không có lịch hẹn phù hợp."));
-        VBox.setVgrow(table, Priority.ALWAYS);
+        tblAppointments.setPlaceholder(new Label("Không có lịch hẹn phù hợp."));
+        VBox.setVgrow(tblAppointments, Priority.ALWAYS);
 
-        searchField.setPromptText("Mã lịch, khách hàng, thú cưng hoặc trạng thái");
-        searchField.getStyleClass().add("search-field");
-        searchField.setPrefWidth(330);
-        searchField.setOnAction(event -> loadAppointments());
-        Button search = button("Tìm kiếm", false);
-        search.setOnAction(event -> loadAppointments());
-        Button refresh = button("Làm mới", false);
-        refresh.setOnAction(event -> {
-            searchField.clear();
+        txtSearch.setPromptText("Mã lịch, khách hàng, thú cưng hoặc trạng thái");
+        txtSearch.getStyleClass().add("search-field");
+        txtSearch.setPrefWidth(330);
+        txtSearch.setOnAction(event -> loadAppointments());
+        Button btnSearch = button("Tìm kiếm", false);
+        btnSearch.setOnAction(event -> loadAppointments());
+        Button btnRefresh = button("Làm mới", false);
+        btnRefresh.setOnAction(event -> {
+            txtSearch.clear();
             loadAppointments();
         });
-        HBox toolbar = new HBox(8, searchField, search, refresh);
+        HBox toolbar = new HBox(8, txtSearch, btnSearch, btnRefresh);
         toolbar.setAlignment(Pos.CENTER_LEFT);
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         toolbar.getChildren().add(spacer);
 
         if ("APT_CREATE".equals(actionId)) {
-            Button create = button("Đặt lịch hẹn", true);
-            create.setOnAction(event -> createAppointment());
-            toolbar.getChildren().add(create);
+            Button btnCreateAppointment = button("Đặt lịch hẹn", true);
+            btnCreateAppointment.setOnAction(event -> createAppointment());
+            toolbar.getChildren().add(btnCreateAppointment);
         } else if ("APT_STATUS".equals(actionId)) {
-            Button updateStatus = button("Cập nhật trạng thái", true);
-            updateStatus.setOnAction(event -> updateStatus());
-            toolbar.getChildren().add(updateStatus);
+            Button btnUpdateStatus = button("Cập nhật trạng thái", true);
+            btnUpdateStatus.setOnAction(event -> updateStatus());
+            toolbar.getChildren().add(btnUpdateStatus);
         } else if ("APT_RESCHEDULE".equals(actionId)) {
-            Button reschedule = button("Dời lịch", true);
-            reschedule.setOnAction(event -> rescheduleAppointment());
-            Button cancel = button("Hủy lịch", false);
-            cancel.setOnAction(event -> cancelAppointment());
-            toolbar.getChildren().addAll(reschedule, cancel);
+            Button btnReschedule = button("Dời lịch", true);
+            btnReschedule.setOnAction(event -> rescheduleAppointment());
+            Button btnCancelAppointment = button("Hủy lịch", false);
+            btnCancelAppointment.setOnAction(event -> cancelAppointment());
+            toolbar.getChildren().addAll(btnReschedule, btnCancelAppointment);
         }
 
-        VBox card = new VBox(12, toolbar, feedback, table);
+        VBox card = new VBox(12, toolbar, lblFeedback, tblAppointments);
         card.setPadding(new Insets(16));
         card.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: #e5ebe5; -fx-border-radius: 8px;");
         VBox.setVgrow(card, Priority.ALWAYS);
@@ -121,11 +117,11 @@ public class AppointmentModuleView extends VBox {
 
     private void loadAppointments() {
         try {
-            table.setItems(FXCollections.observableArrayList(dao.findAppointments(searchField.getText())));
-            feedback.setText("Hiển thị " + table.getItems().size() + " lịch hẹn.");
+            tblAppointments.setItems(FXCollections.observableArrayList(dao.findAppointments(txtSearch.getText())));
+            lblFeedback.setText("Hiển thị " + tblAppointments.getItems().size() + " lịch hẹn.");
         } catch (RuntimeException exception) {
-            table.getItems().clear();
-            feedback.setText(exception.getMessage());
+            tblAppointments.getItems().clear();
+            lblFeedback.setText(exception.getMessage());
         }
     }
 
@@ -142,74 +138,74 @@ public class AppointmentModuleView extends VBox {
             return;
         }
 
-        Dialog<AppointmentForm> dialog = new Dialog<>();
-        dialog.setTitle("Đặt lịch hẹn");
-        ButtonType save = new ButtonType("Đặt lịch", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(save, ButtonType.CANCEL);
+        Dialog<AppointmentForm> dlgAppointment = new Dialog<>();
+        dlgAppointment.setTitle("Đặt lịch hẹn");
+        ButtonType btnTypeSave = new ButtonType("Đặt lịch", ButtonBar.ButtonData.OK_DONE);
+        dlgAppointment.getDialogPane().getButtonTypes().addAll(btnTypeSave, ButtonType.CANCEL);
 
-        ComboBox<LookupOption> customer = new ComboBox<>(FXCollections.observableArrayList(customers));
-        ComboBox<LookupOption> pet = new ComboBox<>();
-        ComboBox<LookupOption> employee = new ComboBox<>(FXCollections.observableArrayList(employees));
-        ComboBox<LookupOption> service = new ComboBox<>(FXCollections.observableArrayList(services));
-        customer.setMaxWidth(Double.MAX_VALUE);
-        pet.setMaxWidth(Double.MAX_VALUE);
-        employee.setMaxWidth(Double.MAX_VALUE);
-        service.setMaxWidth(Double.MAX_VALUE);
-        customer.valueProperty().addListener((observable, oldValue, selected) -> {
-            pet.getItems().clear();
+        ComboBox<LookupOption> cboCustomer = new ComboBox<>(FXCollections.observableArrayList(customers));
+        ComboBox<LookupOption> cboPet = new ComboBox<>();
+        ComboBox<LookupOption> cboEmployee = new ComboBox<>(FXCollections.observableArrayList(employees));
+        ComboBox<LookupOption> cboService = new ComboBox<>(FXCollections.observableArrayList(services));
+        cboCustomer.setMaxWidth(Double.MAX_VALUE);
+        cboPet.setMaxWidth(Double.MAX_VALUE);
+        cboEmployee.setMaxWidth(Double.MAX_VALUE);
+        cboService.setMaxWidth(Double.MAX_VALUE);
+        cboCustomer.valueProperty().addListener((observable, oldValue, selected) -> {
+            cboPet.getItems().clear();
             if (selected != null) {
                 try {
-                    pet.setItems(FXCollections.observableArrayList(dao.findPetOptions(selected.id())));
-                    pet.getSelectionModel().selectFirst();
+                    cboPet.setItems(FXCollections.observableArrayList(dao.findPetOptions(selected.id())));
+                    cboPet.getSelectionModel().selectFirst();
                 } catch (RuntimeException exception) {
                     showAlert(Alert.AlertType.ERROR, "Không tải được thú cưng", exception.getMessage());
                 }
             }
         });
-        customer.getSelectionModel().selectFirst();
-        employee.getSelectionModel().selectFirst();
-        service.getSelectionModel().selectFirst();
+        cboCustomer.getSelectionModel().selectFirst();
+        cboEmployee.getSelectionModel().selectFirst();
+        cboService.getSelectionModel().selectFirst();
 
-        DatePicker date = new DatePicker(LocalDate.now());
-        TextField time = new TextField("09:00");
-        time.setPromptText("HH:mm");
-        time.setTextFormatter(new TextFormatter<String>(change ->
+        DatePicker dtpDate = new DatePicker(LocalDate.now());
+        TextField txtTime = new TextField("09:00");
+        txtTime.setPromptText("HH:mm");
+        txtTime.setTextFormatter(new TextFormatter<String>(change ->
                 change.getControlNewText().matches("\\d{0,2}(:\\d{0,2})?") ? change : null));
-        TextField weight = new TextField("4.00");
-        weight.setTextFormatter(new TextFormatter<String>(change ->
+        TextField txtWeight = new TextField("4.00");
+        txtWeight.setTextFormatter(new TextFormatter<String>(change ->
                 change.getControlNewText().matches("\\d{0,3}([.,]\\d{0,2})?") ? change : null));
-        TextArea note = new TextArea();
-        note.setPromptText("Ghi chú (không bắt buộc)");
-        note.setPrefRowCount(2);
+        TextArea txtNote = new TextArea();
+        txtNote.setPromptText("Ghi chú (không bắt buộc)");
+        txtNote.setPrefRowCount(2);
 
-        GridPane fields = new GridPane();
-        fields.setHgap(12);
-        fields.setVgap(10);
-        fields.addRow(0, new Label("Khách hàng"), customer);
-        fields.addRow(1, new Label("Thú cưng"), pet);
-        fields.addRow(2, new Label("Nhân viên"), employee);
-        fields.addRow(3, new Label("Dịch vụ"), service);
-        fields.addRow(4, new Label("Ngày hẹn"), date);
-        fields.addRow(5, new Label("Giờ hẹn"), time);
-        fields.addRow(6, new Label("Cân nặng (kg)"), weight);
-        fields.addRow(7, new Label("Ghi chú"), note);
-        dialog.getDialogPane().setContent(fields);
-        Node saveButton = dialog.getDialogPane().lookupButton(save);
-        saveButton.addEventFilter(ActionEvent.ACTION, event -> {
-            boolean invalidTime = !validTime(time.getText());
-            boolean invalidWeight = !validWeight(weight.getText());
-            if (customer.getValue() == null || pet.getValue() == null || employee.getValue() == null
-                    || service.getValue() == null || date.getValue() == null || date.getValue().isBefore(LocalDate.now())
-                    || invalidTime || invalidWeight || note.getText().length() > 255) {
+        GridPane gridFields = new GridPane();
+        gridFields.setHgap(12);
+        gridFields.setVgap(10);
+        gridFields.addRow(0, new Label("Khách hàng"), cboCustomer);
+        gridFields.addRow(1, new Label("Thú cưng"), cboPet);
+        gridFields.addRow(2, new Label("Nhân viên"), cboEmployee);
+        gridFields.addRow(3, new Label("Dịch vụ"), cboService);
+        gridFields.addRow(4, new Label("Ngày hẹn"), dtpDate);
+        gridFields.addRow(5, new Label("Giờ hẹn"), txtTime);
+        gridFields.addRow(6, new Label("Cân nặng (kg)"), txtWeight);
+        gridFields.addRow(7, new Label("Ghi chú"), txtNote);
+        dlgAppointment.getDialogPane().setContent(gridFields);
+        Node btnSave = dlgAppointment.getDialogPane().lookupButton(btnTypeSave);
+        btnSave.addEventFilter(ActionEvent.ACTION, event -> {
+            boolean invalidTime = !validTime(txtTime.getText());
+            boolean invalidWeight = !validWeight(txtWeight.getText());
+            if (cboCustomer.getValue() == null || cboPet.getValue() == null || cboEmployee.getValue() == null
+                || cboService.getValue() == null || dtpDate.getValue() == null || dtpDate.getValue().isBefore(LocalDate.now())
+                || invalidTime || invalidWeight || txtNote.getText().length() > 255) {
                 showAlert(Alert.AlertType.WARNING, "Kiểm tra dữ liệu", "Chọn đủ thông tin; ngày, giờ, cân nặng hoặc ghi chú chưa hợp lệ.");
                 event.consume();
             }
         });
-        dialog.setResultConverter(button -> button == save
-                ? new AppointmentForm(customer.getValue(), pet.getValue(), employee.getValue(), service.getValue(),
-                        date.getValue(), LocalTime.parse(time.getText()), Double.parseDouble(weight.getText().replace(',', '.')), note.getText())
+        dlgAppointment.setResultConverter(btnType -> btnType == btnTypeSave
+            ? new AppointmentForm(cboCustomer.getValue(), cboPet.getValue(), cboEmployee.getValue(), cboService.getValue(),
+                dtpDate.getValue(), LocalTime.parse(txtTime.getText()), Double.parseDouble(txtWeight.getText().replace(',', '.')), txtNote.getText())
                 : null);
-        dialog.showAndWait().ifPresent(form -> {
+        dlgAppointment.showAndWait().ifPresent(form -> {
             try {
                 dao.createAppointment(form.customer().id(), form.pet().id(), form.employee().id(), form.service().id(),
                         form.weight(), form.date(), form.time(), form.note());
@@ -230,11 +226,11 @@ public class AppointmentModuleView extends VBox {
             showAlert(Alert.AlertType.INFORMATION, "Không thể cập nhật", "Lịch đã ở trạng thái kết thúc.");
             return;
         }
-        ChoiceDialog<String> dialog = new ChoiceDialog<>(allowed.get(0), allowed);
-        dialog.setTitle("Cập nhật trạng thái");
-        dialog.setHeaderText(selected.id() + " · " + selected.status());
-        dialog.setContentText("Trạng thái mới:");
-        dialog.showAndWait().ifPresent(status -> runStatusUpdate(selected, status));
+        ChoiceDialog<String> dlgStatus = new ChoiceDialog<>(allowed.get(0), allowed);
+        dlgStatus.setTitle("Cập nhật trạng thái");
+        dlgStatus.setHeaderText(selected.id() + " · " + selected.status());
+        dlgStatus.setContentText("Trạng thái mới:");
+        dlgStatus.showAndWait().ifPresent(status -> runStatusUpdate(selected, status));
     }
 
     private void runStatusUpdate(AppointmentRow selected, String status) {
@@ -255,29 +251,29 @@ public class AppointmentModuleView extends VBox {
             showAlert(Alert.AlertType.INFORMATION, "Không thể dời lịch", "Chỉ lịch đã đặt hoặc đã xác nhận mới được dời.");
             return;
         }
-        Dialog<RescheduleForm> dialog = new Dialog<>();
-        dialog.setTitle("Dời lịch hẹn");
-        ButtonType save = new ButtonType("Lưu lịch mới", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(save, ButtonType.CANCEL);
-        DatePicker date = new DatePicker(selected.date());
-        TextField time = new TextField(selected.time().format(DateTimeFormatter.ofPattern("HH:mm")));
-        time.setTextFormatter(new TextFormatter<String>(change ->
+        Dialog<RescheduleForm> dlgReschedule = new Dialog<>();
+        dlgReschedule.setTitle("Dời lịch hẹn");
+        ButtonType btnTypeSave = new ButtonType("Lưu lịch mới", ButtonBar.ButtonData.OK_DONE);
+        dlgReschedule.getDialogPane().getButtonTypes().addAll(btnTypeSave, ButtonType.CANCEL);
+        DatePicker dtpDate = new DatePicker(selected.date());
+        TextField txtTime = new TextField(selected.time().format(DateTimeFormatter.ofPattern("HH:mm")));
+        txtTime.setTextFormatter(new TextFormatter<String>(change ->
                 change.getControlNewText().matches("\\d{0,2}(:\\d{0,2})?") ? change : null));
-        GridPane fields = new GridPane();
-        fields.setHgap(12);
-        fields.setVgap(10);
-        fields.addRow(0, new Label("Ngày mới"), date);
-        fields.addRow(1, new Label("Giờ mới (HH:mm)"), time);
-        dialog.getDialogPane().setContent(fields);
-        dialog.getDialogPane().lookupButton(save).addEventFilter(ActionEvent.ACTION, event -> {
-            if (date.getValue() == null || date.getValue().isBefore(LocalDate.now()) || !validTime(time.getText())) {
+        GridPane gridFields = new GridPane();
+        gridFields.setHgap(12);
+        gridFields.setVgap(10);
+        gridFields.addRow(0, new Label("Ngày mới"), dtpDate);
+        gridFields.addRow(1, new Label("Giờ mới (HH:mm)"), txtTime);
+        dlgReschedule.getDialogPane().setContent(gridFields);
+        dlgReschedule.getDialogPane().lookupButton(btnTypeSave).addEventFilter(ActionEvent.ACTION, event -> {
+            if (dtpDate.getValue() == null || dtpDate.getValue().isBefore(LocalDate.now()) || !validTime(txtTime.getText())) {
                 showAlert(Alert.AlertType.WARNING, "Kiểm tra dữ liệu", "Chọn ngày không ở quá khứ và giờ theo định dạng HH:mm.");
                 event.consume();
             }
         });
-        dialog.setResultConverter(button -> button == save
-                ? new RescheduleForm(date.getValue(), LocalTime.parse(time.getText())) : null);
-        dialog.showAndWait().ifPresent(form -> {
+        dlgReschedule.setResultConverter(btnType -> btnType == btnTypeSave
+            ? new RescheduleForm(dtpDate.getValue(), LocalTime.parse(txtTime.getText())) : null);
+        dlgReschedule.showAndWait().ifPresent(form -> {
             try {
                 dao.rescheduleAppointment(selected.id(), form.date(), form.time());
                 loadAppointments();
@@ -306,7 +302,7 @@ public class AppointmentModuleView extends VBox {
     }
 
     private AppointmentRow selectedAppointment() {
-        AppointmentRow selected = table.getSelectionModel().getSelectedItem();
+        AppointmentRow selected = tblAppointments.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showAlert(Alert.AlertType.INFORMATION, "Chưa chọn lịch", "Chọn một lịch hẹn trong bảng trước.");
         }
@@ -332,16 +328,16 @@ public class AppointmentModuleView extends VBox {
     }
 
     private static <T> TableColumn<T, String> column(String title, double width, Function<T, String> value) {
-        TableColumn<T, String> column = new TableColumn<>(title);
-        column.setPrefWidth(width);
-        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
-        return column;
+        TableColumn<T, String> tblColumn = new TableColumn<>(title);
+        tblColumn.setPrefWidth(width);
+        tblColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
+        return tblColumn;
     }
 
     private static Button button(String text, boolean primary) {
-        Button button = new Button(text);
-        button.getStyleClass().add(primary ? "btn-action-primary" : "btn-action-secondary");
-        return button;
+        Button btn = new Button(text);
+        btn.getStyleClass().add(primary ? "btn-action-primary" : "btn-action-secondary");
+        return btn;
     }
 
     private static String value(String text) {

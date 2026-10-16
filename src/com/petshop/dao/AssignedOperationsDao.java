@@ -11,10 +11,12 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Types;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public final class AssignedOperationsDao {
 
@@ -42,6 +44,13 @@ public final class AssignedOperationsDao {
         @Override
         public String toString() {
             return name + " | " + String.format("%,.0f đ", price);
+        }
+    }
+
+    public record PromotionOption(String id, String name, double percent) {
+        @Override
+        public String toString() {
+            return name + " (giảm " + String.format("%.0f%%", percent) + ")";
         }
     }
 
@@ -239,6 +248,8 @@ public final class AssignedOperationsDao {
             try {
                 String size = petWeight < 5 ? "Nhỏ" : petWeight <= 10 ? "Vừa" : "Lớn";
                 double price = findCurrentServicePrice(connection, serviceId, size, date);
+                int duration = findServiceDuration(connection, serviceId);
+                ensureNoAppointmentConflict(connection, employeeId, petId, date, time, duration, null);
                 String id = nextId(connection, "LichHen", "maLichHen", "LH");
                 try (PreparedStatement appointment = connection.prepareStatement("""
                         INSERT INTO LichHen
@@ -283,29 +294,110 @@ public final class AssignedOperationsDao {
     }
 
     public void rescheduleAppointment(String id, LocalDate date, LocalTime time) {
-        String sql = "UPDATE LichHen SET ngayHen = ?, gioHen = ? WHERE maLichHen = ? AND trangThai <> N'Đã hủy'";
         try (Connection connection = DatabaseManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setDate(1, Date.valueOf(date));
-            statement.setTime(2, Time.valueOf(time));
-            statement.setString(3, id);
-            if (statement.executeUpdate() == 0) {
-                throw new IllegalStateException("Không tìm thấy lịch hẹn hoặc lịch đã bị hủy.");
+             PreparedStatement appointment = connection.prepareStatement("""
+                     SELECT lh.maNhanVien, lh.maThuCung, SUM(dv.thoiLuong) AS thoiLuong
+                     FROM LichHen lh
+                     JOIN ChiTietLichHen ctl ON ctl.maLichHen = lh.maLichHen
+                     JOIN DichVuChamSoc dv ON dv.maDichVu = ctl.maDichVu
+                     WHERE lh.maLichHen = ? AND lh.trangThai <> N'Đã hủy'
+                     GROUP BY lh.maNhanVien, lh.maThuCung
+                     """)) {
+            appointment.setString(1, id);
+            try (ResultSet result = appointment.executeQuery()) {
+                if (!result.next()) {
+                    throw new IllegalStateException("Không tìm thấy lịch hẹn hoặc lịch đã bị hủy.");
+                }
+                ensureNoAppointmentConflict(connection, result.getString("maNhanVien"),
+                        result.getString("maThuCung"), date, time, result.getInt("thoiLuong"), id);
+            }
+            try (PreparedStatement update = connection.prepareStatement(
+                    "UPDATE LichHen SET ngayHen = ?, gioHen = ? WHERE maLichHen = ? AND trangThai <> N'Đã hủy'")) {
+                update.setDate(1, Date.valueOf(date));
+                update.setTime(2, Time.valueOf(time));
+                update.setString(3, id);
+                if (update.executeUpdate() == 0) {
+                    throw new IllegalStateException("Không tìm thấy lịch hẹn hoặc lịch đã bị hủy.");
+                }
             }
         } catch (SQLException exception) {
             throw databaseError("Không dời được lịch hẹn", exception);
         }
     }
 
+    private int findServiceDuration(Connection connection, String serviceId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT thoiLuong FROM DichVuChamSoc WHERE maDichVu = ? AND trangThai = 1")) {
+            statement.setString(1, serviceId);
+            try (ResultSet result = statement.executeQuery()) {
+                if (!result.next()) {
+                    throw new IllegalStateException("Dịch vụ không tồn tại hoặc đã ngừng cung cấp.");
+                }
+                return result.getInt("thoiLuong");
+            }
+        }
+    }
+
+    // Treat appointments as intervals and ignore cancelled or explicitly excluded rows.
+    private void ensureNoAppointmentConflict(Connection connection, String employeeId, String petId,
+                                            LocalDate date, LocalTime time, int duration,
+                                            String excludedAppointmentId) throws SQLException {
+        String sql = """
+                SELECT lh.maLichHen, lh.maNhanVien, lh.maThuCung, lh.ngayHen, lh.gioHen,
+                       SUM(dv.thoiLuong) AS thoiLuong
+                FROM LichHen lh
+                JOIN ChiTietLichHen ctl ON ctl.maLichHen = lh.maLichHen
+                JOIN DichVuChamSoc dv ON dv.maDichVu = ctl.maDichVu
+                WHERE lh.ngayHen BETWEEN ? AND ? AND lh.trangThai <> N'Đã hủy'
+                  AND (lh.maNhanVien = ? OR lh.maThuCung = ?)
+                """ + (excludedAppointmentId == null ? "" : " AND lh.maLichHen <> ? ") + """
+                GROUP BY lh.maLichHen, lh.maNhanVien, lh.maThuCung, lh.ngayHen, lh.gioHen
+                """;
+        LocalDateTime candidateStart = LocalDateTime.of(date, time);
+        LocalDateTime candidateEnd = candidateStart.plusMinutes(duration);
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setDate(1, Date.valueOf(date.minusDays(1)));
+            statement.setDate(2, Date.valueOf(date.plusDays(1)));
+            statement.setString(3, employeeId);
+            statement.setString(4, petId);
+            if (excludedAppointmentId != null) {
+                statement.setString(5, excludedAppointmentId);
+            }
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    LocalDateTime existingStart = LocalDateTime.of(result.getDate("ngayHen").toLocalDate(),
+                            result.getTime("gioHen").toLocalTime());
+                    LocalDateTime existingEnd = existingStart.plusMinutes(result.getInt("thoiLuong"));
+                    boolean sameEmployee = employeeId.equals(result.getString("maNhanVien"));
+                    boolean samePet = petId.equals(result.getString("maThuCung"));
+                    if ((sameEmployee || samePet) && candidateStart.isBefore(existingEnd)
+                            && existingStart.isBefore(candidateEnd)) {
+                        throw new IllegalStateException("Thời gian bị trùng với lịch hẹn "
+                                + result.getString("maLichHen") + " của nhân viên hoặc thú cưng.");
+                    }
+                }
+            }
+        }
+    }
+
     public List<InvoiceRow> findInvoices(String filter) {
+        return findInvoices(filter, false);
+    }
+
+    public List<InvoiceRow> findPaidInvoices(String filter) {
+        return findInvoices(filter, true);
+    }
+
+    private List<InvoiceRow> findInvoices(String filter, boolean paidOnly) {
         String sql = """
                 SELECT hd.maHoaDon, hd.ngayLap, ISNULL(kh.hoTen, N'Khách vãng lai') AS tenKhach,
                        nv.hoTen AS tenNhanVien, hd.tongTien, hd.trangThaiThanhToan, hd.hinhThucThanhToan
                 FROM HoaDon hd
                 LEFT JOIN KhachHang kh ON kh.maKhachHang = hd.maKhachHang
                 JOIN NhanVien nv ON nv.maNhanVien = hd.maNhanVien
-                WHERE hd.maHoaDon LIKE ? OR ISNULL(kh.hoTen, N'Khách vãng lai') LIKE ?
-                   OR hd.trangThaiThanhToan LIKE ?
+                WHERE (hd.maHoaDon LIKE ? OR ISNULL(kh.hoTen, N'Khách vãng lai') LIKE ?
+                   OR hd.trangThaiThanhToan LIKE ?)
+                """ + (paidOnly ? " AND hd.trangThaiThanhToan = N'Đã thanh toán' " : "") + """
                 ORDER BY hd.ngayLap DESC, hd.maHoaDon DESC
                 """;
         String pattern = pattern(filter);
@@ -327,6 +419,52 @@ public final class AssignedOperationsDao {
             return rows;
         } catch (SQLException exception) {
             throw databaseError("Không tải được danh sách hóa đơn", exception);
+        }
+    }
+
+    public Optional<CatalogOption> findProductByBarcode(String barcode) {
+        String sql = """
+                SELECT maSanPham, tenSanPham, giaBan
+                FROM SanPham
+                WHERE maVach = ? AND trangThai = 1
+                """;
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, barcode.trim());
+            try (ResultSet result = statement.executeQuery()) {
+                if (!result.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(new CatalogOption(result.getString("maSanPham"),
+                        result.getString("tenSanPham"), false, null, result.getDouble("giaBan")));
+            }
+        } catch (SQLException exception) {
+            throw databaseError("Không tra được mã vạch sản phẩm", exception);
+        }
+    }
+
+    /** Returns promotions active on the invoice date, not merely active today. */
+    public List<PromotionOption> findActivePromotions(LocalDate date) {
+        String sql = """
+                SELECT maKhuyenMai, tenChuongTrinh, phanTramGiam
+                FROM KhuyenMai
+                WHERE trangThai = 1 AND ngayBatDau <= ? AND ngayKetThuc >= ?
+                ORDER BY tenChuongTrinh
+                """;
+        List<PromotionOption> promotions = new ArrayList<>();
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setDate(1, Date.valueOf(date));
+            statement.setDate(2, Date.valueOf(date));
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    promotions.add(new PromotionOption(result.getString("maKhuyenMai"),
+                            result.getString("tenChuongTrinh"), result.getDouble("phanTramGiam")));
+                }
+            }
+            return promotions;
+        } catch (SQLException exception) {
+            throw databaseError("Không tải được khuyến mãi đang hiệu lực", exception);
         }
     }
 
@@ -361,13 +499,27 @@ public final class AssignedOperationsDao {
 
     public void createInvoice(String customerId, String appointmentId, String employeeId,
                               String paymentMethod, List<InvoiceItem> items) {
+        createInvoice(customerId, appointmentId, employeeId, LocalDate.now(), null, paymentMethod, items);
+    }
+
+    /** Persists the discounted total and stock changes in one transaction. */
+    public void createInvoice(String customerId, String appointmentId, String employeeId, LocalDate invoiceDate,
+                              String promotionId, String paymentMethod, List<InvoiceItem> items) {
         if (items == null || items.isEmpty()) {
             throw new IllegalArgumentException("Hóa đơn cần ít nhất một mặt hàng.");
+        }
+        if (invoiceDate == null) {
+            throw new IllegalArgumentException("Ngày lập hóa đơn không được để trống.");
         }
         double total = items.stream().mapToDouble(InvoiceItem::getThanhTien).sum();
         try (Connection connection = DatabaseManager.getConnection()) {
             connection.setAutoCommit(false);
             try {
+                String selectedPromotionId = blankToNull(promotionId);
+                if (selectedPromotionId != null) {
+                    double discount = findPromotionDiscount(connection, selectedPromotionId, invoiceDate);
+                    total *= 1 - discount / 100;
+                }
                 if (appointmentId != null && !appointmentId.isBlank()) {
                     try (PreparedStatement appointment = connection.prepareStatement(
                             "SELECT maKhachHang FROM LichHen WHERE maLichHen = ?")) {
@@ -391,16 +543,17 @@ public final class AssignedOperationsDao {
                         INSERT INTO HoaDon
                             (maHoaDon, maLichHen, maNhanVien, maKhachHang, ngayLap,
                              hinhThucThanhToan, trangThaiThanhToan, maKhuyenMai, tongTien)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """)) {
                     invoice.setString(1, id);
                     setNullableString(invoice, 2, appointmentId);
                     invoice.setString(3, employeeId);
                     setNullableString(invoice, 4, customerId);
-                    invoice.setDate(5, Date.valueOf(LocalDate.now()));
+                    invoice.setDate(5, Date.valueOf(invoiceDate));
                     setNullableString(invoice, 6, paymentMethod);
                     invoice.setString(7, paymentStatus);
-                    invoice.setDouble(8, total);
+                    setNullableString(invoice, 8, selectedPromotionId);
+                    invoice.setDouble(9, total);
                     invoice.executeUpdate();
                 }
                 for (InvoiceItem item : items) {
@@ -452,6 +605,26 @@ public final class AssignedOperationsDao {
             }
         } catch (SQLException exception) {
             throw databaseError("Không lập được hóa đơn", exception);
+        }
+    }
+
+    private double findPromotionDiscount(Connection connection, String promotionId, LocalDate date)
+            throws SQLException {
+        String sql = """
+                SELECT phanTramGiam
+                FROM KhuyenMai
+                WHERE maKhuyenMai = ? AND trangThai = 1 AND ngayBatDau <= ? AND ngayKetThuc >= ?
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, promotionId);
+            statement.setDate(2, Date.valueOf(date));
+            statement.setDate(3, Date.valueOf(date));
+            try (ResultSet result = statement.executeQuery()) {
+                if (!result.next()) {
+                    throw new IllegalStateException("Khuyến mãi không còn hiệu lực vào ngày lập hóa đơn.");
+                }
+                return result.getDouble("phanTramGiam");
+            }
         }
     }
 
