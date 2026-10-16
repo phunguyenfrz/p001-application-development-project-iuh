@@ -65,7 +65,7 @@ public class MenuRegistry {
         ALL_MENUS.add(new MenuGroup("PET", "Thú cưng", "PET", List.of(
                 new MenuAction("PET_UPDATE", "Cập nhật thú cưng", "Alt+P"),
                 new MenuAction("PET_SEARCH", "Tìm kiếm thú cưng", "Ctrl+F"),
-                new MenuAction("PET_CARE", "Theo dõi chăm sóc", null)
+                new MenuAction("PET_CARE", "Lịch sử chăm sóc", null)
         )));
 
         // 3. Lịch hẹn
