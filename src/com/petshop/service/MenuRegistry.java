@@ -164,7 +164,7 @@ public class MenuRegistry {
 
                 // Chăm sóc được phép dùng lịch hẹn, thú cưng và tra cứu khách hàng, dịch vụ.
                 if (menu.getId().equals("APPOINTMENT") || menu.getId().equals("PET") ||
-                    action.getId().equals("CUS_SEARCH") || action.getId().equals("SRV_SEARCH")) {
+                    action.getId().equals("CUS_SEARCH") || action.getId().equals("CAR_SEARCH")) {
                     roles.add(User.Role.CHAM_SOC);
                 }
 

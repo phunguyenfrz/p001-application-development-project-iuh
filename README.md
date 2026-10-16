@@ -20,13 +20,17 @@ src/
 │   │   ├── Pet.java
 │   │   ├── Product.java
 │   │   └── User.java
+│   ├── service/
+│   │   ├── AuthService.java
+│   │   └── MenuRegistry.java
 │   ├── util/
 │   │   ├── DatabaseInitializer.java
 │   │   ├── DatabaseManager.java
 │   │   └── SessionManager.java
 │   └── view/
 │       ├── LoginView.java
-│       └── MainDashboard.java
+│       ├── MainDashboard.java
+│       └── ModuleListView.java
 └── main/resources/com/petshop/view/
     └── styles.css
 ```
@@ -44,18 +48,18 @@ Hoac chay class `com.petshop.main.Main` truc tiep trong VS Code/IDE co ho tro Ja
 
 ## Co so du lieu
 
-Ung dung ket noi SQL Server (database `QLCH_HappyTails`).
+Ung dung ket noi SQL Server (database `QLCH_HappyTails`) qua TCP/IP cong 1433.
 
 1. Chay script `QLCH_HappyTails_Database_Full.sql` trong SSMS (luu y: script DROP va tao lai toan bo bang).
-2. Neu can, dat bien moi truong `DB_URL`, `DB_USER`, `DB_PASSWORD` (mac dinh: localhost:1433, user `sa`).
+2. Neu can, dat bien moi truong `DB_URL`, `DB_USER`, `DB_PASSWORD` (mac dinh trong `DatabaseManager`: `localhost:1433`, user `petshop`, password `Petshop@123`).
 
 ## Tai khoan mau
 
 | Tai khoan | Mat khau | Quyen |
 | --- | --- | --- |
+| `admin` | `admin123` | Admin (Toan quyen) |
 | `quanly` | `123456` | Quan ly |
 | `banhang` | `123456` | Ban hang |
 | `chamsoc` | `123456` | Cham soc |
-| `admin` | `admin123` | tai khoan admin | 
 
-Cac nut nghiep vu hien la placeholder de bo sung tung module sau.
+Cac nut nghiep vu hien la placeholder (`ModuleListView`) de cac thanh vien bo sung tung module.

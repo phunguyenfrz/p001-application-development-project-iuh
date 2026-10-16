@@ -123,7 +123,7 @@ CREATE TABLE TaiKhoan (
     maNhanVien VARCHAR(20) NOT NULL UNIQUE,
     tenDangNhap VARCHAR(50) NOT NULL UNIQUE CHECK (LEN(LTRIM(RTRIM(tenDangNhap))) > 0),
     matKhau VARCHAR(255) NOT NULL,
-    phanQuyen NVARCHAR(30) NOT NULL CHECK (phanQuyen IN (N'Quản lý', N'Bán hàng', N'Chăm sóc')),
+    phanQuyen NVARCHAR(30) NOT NULL CHECK (phanQuyen IN (N'Admin', N'Quản lý', N'Bán hàng', N'Chăm sóc')),
     trangThai BIT NOT NULL DEFAULT 1, -- 1: Hoạt động, 0: Bị khóa
     CONSTRAINT FK_TaiKhoan_NhanVien FOREIGN KEY (maNhanVien) REFERENCES NhanVien(maNhanVien)
 );
@@ -354,19 +354,21 @@ GO
 -- NẠP DỮ LIỆU MẪU BAN ĐẦU CHUẨN ĐỒ ÁN HAPPY TAILS
 -- =========================================================================
 
--- 1. NhanVien (3 vai trò chính)
+-- 1. NhanVien (Admin + 3 vai trò chính)
 INSERT INTO NhanVien (maNhanVien, hoTen, soDienThoai, chucVu, ngaySinh, gioiTinh, trangThai)
 VALUES 
-('NV-20261005-000001', N'Nguyễn Thị Lan', '0901234567', N'Quản lý', '1985-05-15', 0, N'Đang làm'),
-('NV-20261005-000002', N'Trần Văn Minh', '0902345678', N'Bán hàng', '1998-08-20', 1, N'Đang làm'),
-('NV-20261005-000003', N'Phạm Thị Hoa',  '0903456789', N'Chăm sóc', '1995-12-10', 0, N'Đang làm');
+('NV-20261005-000000', N'Quản trị hệ thống', '0909000000', N'Quản lý', '1990-01-01', 1, N'Đang làm'),
+('NV-20261005-000001', N'Nguyễn Thị Lan',    '0901234567', N'Quản lý', '1985-05-15', 0, N'Đang làm'),
+('NV-20261005-000002', N'Trần Văn Minh',    '0902345678', N'Bán hàng', '1998-08-20', 1, N'Đang làm'),
+('NV-20261005-000003', N'Phạm Thị Hoa',     '0903456789', N'Chăm sóc', '1995-12-10', 0, N'Đang làm');
 
--- 2. TaiKhoan (3 tài khoản mẫu)
+-- 2. TaiKhoan (Admin + 3 tài khoản mẫu)
 INSERT INTO TaiKhoan (maTaiKhoan, maNhanVien, tenDangNhap, matKhau, phanQuyen, trangThai)
 VALUES 
-('TK-20261005-000001', 'NV-20261005-000001', 'quanly',  '123456', N'Quản lý', 1),
-('TK-20261005-000002', 'NV-20261005-000002', 'banhang', '123456', N'Bán hàng', 1),
-('TK-20261005-000003', 'NV-20261005-000003', 'chamsoc', '123456', N'Chăm sóc', 1);
+('TK-20261005-000000', 'NV-20261005-000000', 'admin',   'admin123', N'Admin', 1),
+('TK-20261005-000001', 'NV-20261005-000001', 'quanly',  '123456',   N'Quản lý', 1),
+('TK-20261005-000002', 'NV-20261005-000002', 'banhang', '123456',   N'Bán hàng', 1),
+('TK-20261005-000003', 'NV-20261005-000003', 'chamsoc', '123456',   N'Chăm sóc', 1);
 
 -- 3. KhachHang
 INSERT INTO KhachHang (maKhachHang, hoTen, soDienThoai, email, diemTichLuy, diaChi, ghiChu)
