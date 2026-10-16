@@ -77,7 +77,7 @@ public class ModuleListView extends VBox {
         TableColumn<String, String> colStatus = new TableColumn<>("Trạng thái");
         colStatus.setPrefWidth(140);
 
-        tblRecords.getColumns().addAll(colIdentifier, colMainInfo, colUpdatedAt, colStatus);
+        tblRecords.getColumns().addAll(java.util.List.of(colIdentifier, colMainInfo, colUpdatedAt, colStatus));
 
         pnlCard.getChildren().addAll(pnlToolbar, tblRecords);
         getChildren().addAll(pnlHeaderBox, pnlCard);

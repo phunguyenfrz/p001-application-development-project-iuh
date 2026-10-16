@@ -250,7 +250,7 @@ public class MainDashboard extends BorderPane {
 
             mnuAction.setOnAction(e -> {
                 setActiveNode(mnuAction);
-                pnlContentArea.getChildren().setAll(new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut()));
+                openModuleScreen(menu, action);
             });
             pnlSubMenuList.getChildren().add(mnuAction);
         }
@@ -449,8 +449,40 @@ public class MainDashboard extends BorderPane {
     }
 
     // =========================================================================
-    // 4. MÀN HÌNH TỔNG QUAN (OVERVIEW)
+    // 4. ĐIỀU HƯỚNG MÀN HÌNH MODULE & MÀN HÌNH TỔNG QUAN
     // =========================================================================
+    private void openModuleScreen(MenuRegistry.MenuGroup menu, MenuRegistry.MenuAction action) {
+        // Kiểm tra phân quyền ở tầng Service trước khi mở màn hình
+        authService.checkPermission(action.getId());
+
+        // Mỗi thành viên khi hoàn thành View riêng chỉ sửa vào đúng nhánh case của đối tượng mình phụ trách:
+        Node targetView = switch (menu.getId()) {
+            // --- Nhóm 1: Khách hàng & Thú cưng & Lịch hẹn ---
+            case "CUSTOMER"     -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "PET"          -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "APPOINTMENT"  -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+
+            // --- Nhóm 2: Nhân viên & Ca trực & Dịch vụ chăm sóc ---
+            case "EMPLOYEE"     -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "SHIFT"        -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "CARE_SERVICE" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+
+            // --- Nhóm 3: Nhà cung cấp & Đơn hàng nhập & Sản phẩm ---
+            case "SUPPLIER"     -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "IMPORT_ORDER" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "PRODUCT"      -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+
+            // --- Nhóm 4: Khuyến mãi & Hóa đơn & Phiếu đổi trả ---
+            case "PROMOTION"    -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "INVOICE"      -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "RETURN_NOTE"  -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+
+            default -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+        };
+
+        pnlContentArea.getChildren().setAll(targetView);
+    }
+
     private void showOverview() {
         pnlContentArea.getChildren().setAll(createScrollableOverview());
     }
