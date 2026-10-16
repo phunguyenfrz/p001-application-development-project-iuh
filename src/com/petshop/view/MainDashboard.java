@@ -458,7 +458,7 @@ public class MainDashboard extends BorderPane {
         // Mỗi thành viên khi hoàn thành View riêng chỉ sửa vào đúng nhánh case của đối tượng mình phụ trách:
         Node targetView = switch (menu.getId()) {
             // --- Nhóm 1: Khách hàng & Thú cưng & Lịch hẹn ---
-            case "CUSTOMER"     -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "CUSTOMER"     -> new CustomerView(action.getId());
             case "PET"          -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
             case "APPOINTMENT"  -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
