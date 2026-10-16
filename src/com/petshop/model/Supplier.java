@@ -2,7 +2,7 @@ package com.petshop.model;
 
 /**
  * Lớp thực thể đại diện cho đối tượng Nhà cung cấp (bảng NhaCungCap - mục 2.14 OOAD).
- * Hỗ trợ quản lý thông tin liên hệ và trạng thái hoạt động (xóa mềm).
+ * Quản lý thông tin liên hệ, mặt hàng cung cấp và trạng thái hoạt động (xóa mềm).
  */
 public class Supplier {
 
@@ -11,32 +11,21 @@ public class Supplier {
     private String soDienThoai;     // 10 chữ số bắt đầu bằng 0
     private String email;           // Địa chỉ email liên hệ
     private String diaChi;
+    private String matHangCungCap;  // Mặt hàng cung cấp chính
     private boolean trangThai = true; // true (1): Đang hợp tác, false (0): Ngừng hoạt động (xóa mềm)
 
-    /**
-     * Khởi tạo nhà cung cấp mặc định.
-     */
     public Supplier() {
     }
 
-    /**
-     * Khởi tạo nhà cung cấp với đầy đủ thông tin.
-     */
     public Supplier(String maNhaCungCap, String tenNhaCungCap, String soDienThoai,
-                    String email, String diaChi, boolean trangThai) {
+                    String email, String diaChi, String matHangCungCap, boolean trangThai) {
         this.maNhaCungCap = maNhaCungCap;
         this.tenNhaCungCap = tenNhaCungCap;
         this.soDienThoai = soDienThoai;
         this.email = email;
         this.diaChi = diaChi;
+        this.matHangCungCap = matHangCungCap;
         this.trangThai = trangThai;
-    }
-
-    /**
-     * Khởi tạo nhà cung cấp (tương thích với 4 cột cơ bản).
-     */
-    public Supplier(String maNhaCungCap, String tenNhaCungCap, String soDienThoai, String diaChi) {
-        this(maNhaCungCap, tenNhaCungCap, soDienThoai, "", diaChi, true);
     }
 
     public String getMaNhaCungCap() {
@@ -79,6 +68,14 @@ public class Supplier {
         this.diaChi = diaChi;
     }
 
+    public String getMatHangCungCap() {
+        return matHangCungCap;
+    }
+
+    public void setMatHangCungCap(String matHangCungCap) {
+        this.matHangCungCap = matHangCungCap;
+    }
+
     public boolean isTrangThai() {
         return trangThai;
     }
@@ -87,9 +84,6 @@ public class Supplier {
         this.trangThai = trangThai;
     }
 
-    /**
-     * Lấy chuỗi hiển thị trạng thái tiếng Việt.
-     */
     public String getTenTrangThai() {
         return trangThai ? "Đang hợp tác" : "Ngừng hoạt động";
     }
@@ -99,4 +93,3 @@ public class Supplier {
         return maNhaCungCap + " - " + tenNhaCungCap;
     }
 }
-

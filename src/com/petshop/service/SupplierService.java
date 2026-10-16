@@ -24,47 +24,16 @@ public class SupplierService {
     private final SupplierDao supplierDao;
     private final AuthService authService;
 
-    /**
-     * Khởi tạo SupplierService mặc định.
-     */
     public SupplierService() {
         this.supplierDao = new SupplierDao();
         this.authService = new AuthService();
     }
 
     /**
-     * Khởi tạo SupplierService với DAO và AuthService tùy chỉnh.
-     */
-    public SupplierService(SupplierDao supplierDao, AuthService authService) {
-        this.supplierDao = supplierDao;
-        this.authService = authService;
-    }
-
-    /**
-     * Lấy danh sách tất cả nhà cung cấp (bao gồm cả ngừng hoạt động nếu cần).
+     * Tìm kiếm hoặc lấy danh sách nhà cung cấp theo từ khóa và trạng thái.
      *
-     * @param includeInactive true để lấy cả nhà cung cấp đã ngừng hoạt động
-     * @return Danh sách Supplier
-     */
-    public List<Supplier> getAllSuppliers(boolean includeInactive) {
-        return supplierDao.findAll(includeInactive);
-    }
-
-    /**
-     * Lấy danh sách các nhà cung cấp đang hợp tác (phục vụ hộp thoại chọn NCC khi lập đơn nhập).
-     *
-     * @return Danh sách Supplier đang hoạt động
-     */
-    public List<Supplier> getActiveSuppliers() {
-        return supplierDao.findAll(false);
-    }
-
-    /**
-     * Tìm kiếm nhà cung cấp theo từ khóa và trạng thái.
-     *
-     * @param keyword      Từ khóa tìm kiếm (mã, tên, SĐT, email, địa chỉ)
+     * @param keyword      Từ khóa tìm kiếm (rỗng nếu lấy tất cả)
      * @param activeFilter null: tất cả, true: Đang hợp tác, false: Ngừng hoạt động
-     * @return Danh sách kết quả
      */
     public List<Supplier> searchSuppliers(String keyword, Boolean activeFilter) {
         return supplierDao.searchSuppliers(keyword, activeFilter);
@@ -72,8 +41,6 @@ public class SupplierService {
 
     /**
      * Sinh mã nhà cung cấp mới tự động theo chuẩn NCC-YYYYMMDD-NNNNNN.
-     *
-     * @return Mã nhà cung cấp mới
      */
     public String generateNextSupplierId() {
         return supplierDao.generateNextSupplierId();
@@ -81,10 +48,6 @@ public class SupplierService {
 
     /**
      * Thêm mới nhà cung cấp sau khi kiểm tra quyền và xác thực dữ liệu bằng Regex.
-     *
-     * @param supplier Đối tượng nhà cung cấp cần thêm
-     * @throws IllegalArgumentException nếu dữ liệu không hợp lệ
-     * @throws SecurityException        nếu tài khoản không có quyền SUP_UPDATE
      */
     public void addSupplier(Supplier supplier) {
         authService.checkPermission("SUP_UPDATE");
@@ -99,10 +62,6 @@ public class SupplierService {
 
     /**
      * Cập nhật thông tin nhà cung cấp sau khi kiểm tra quyền và xác thực Regex.
-     *
-     * @param supplier Đối tượng nhà cung cấp cần cập nhật
-     * @throws IllegalArgumentException nếu dữ liệu không hợp lệ
-     * @throws SecurityException        nếu tài khoản không có quyền SUP_UPDATE
      */
     public void updateSupplier(Supplier supplier) {
         authService.checkPermission("SUP_UPDATE");
@@ -117,9 +76,6 @@ public class SupplierService {
 
     /**
      * Ngừng hoạt động nhà cung cấp (Xóa mềm - đặt trangThai = false).
-     *
-     * @param maNhaCungCap Mã nhà cung cấp cần ngừng hoạt động
-     * @throws SecurityException nếu tài khoản không có quyền SUP_UPDATE
      */
     public void deactivateSupplier(String maNhaCungCap) {
         authService.checkPermission("SUP_UPDATE");
@@ -131,9 +87,6 @@ public class SupplierService {
 
     /**
      * Kiểm tra tính hợp lệ của thông tin nhà cung cấp bằng biểu thức chính quy (Regex).
-     *
-     * @param supplier Đối tượng nhà cung cấp cần kiểm tra
-     * @throws IllegalArgumentException nếu có trường vi phạm ràng buộc
      */
     public void validateSupplierData(Supplier supplier) {
         if (supplier == null) {
@@ -162,16 +115,21 @@ public class SupplierService {
         supplier.setSoDienThoai(phone);
 
         String email = supplier.getEmail() != null ? supplier.getEmail().trim() : "";
-        if (!email.isEmpty() && !REGEX_EMAIL.matcher(email).matches()) {
+        if (email.isEmpty()) {
+            throw new IllegalArgumentException("Email không được để trống!");
+        }
+        if (!REGEX_EMAIL.matcher(email).matches()) {
             throw new IllegalArgumentException("Địa chỉ email không đúng định dạng (ví dụ: ten@domain.com)!");
         }
         supplier.setEmail(email);
 
         String address = supplier.getDiaChi() != null ? supplier.getDiaChi().trim() : "";
-        if (address.isEmpty()) {
-            throw new IllegalArgumentException("Địa chỉ nhà cung cấp không được để trống!");
-        }
         supplier.setDiaChi(address);
+
+        String productItems = supplier.getMatHangCungCap() != null ? supplier.getMatHangCungCap().trim() : "";
+        if (productItems.isEmpty()) {
+            throw new IllegalArgumentException("Mặt hàng cung cấp không được để trống!");
+        }
+        supplier.setMatHangCungCap(productItems);
     }
 }
-

@@ -11,237 +11,279 @@ import java.util.List;
 
 /**
  * Lớp DAO xử lý truy vấn cơ sở dữ liệu cho bảng NhaCungCap.
- * Đảm bảo tuân thủ kiến trúc n-Tier và hỗ trợ xóa mềm (ngừng hoạt động).
+ * Đảm bảo tuân thủ kiến trúc n-Tier, tái sử dụng kết nối và hỗ trợ xóa mềm (ngừng hoạt động).
  */
 public class SupplierDao {
 
+    private static final Object DB_LOCK = new Object();
+    private static Connection sharedConnection;
     private static boolean schemaVerified = false;
 
     /**
-     * Tự động kiểm tra và bổ sung cột email, trangThai (xóa mềm) vào bảng NhaCungCap
-     * nếu cơ sở dữ liệu hiện tại chưa có hai cột này.
+     * Lấy kết nối CSDL đang mở (hoặc tạo mới nếu chưa có / đã đóng).
      */
-    public synchronized void ensureSupplierSchema() {
-        if (schemaVerified) {
-            return;
-        }
-        try (Connection conn = DatabaseManager.getConnection();
-             Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("""
-                IF COL_LENGTH('NhaCungCap', 'email') IS NULL
-                BEGIN
-                    ALTER TABLE NhaCungCap ADD email VARCHAR(100) NULL;
-                END
-                IF COL_LENGTH('NhaCungCap', 'trangThai') IS NULL
-                BEGIN
-                    ALTER TABLE NhaCungCap ADD trangThai BIT NOT NULL CONSTRAINT DF_NhaCungCap_TrangThai DEFAULT 1;
-                END
-            """);
-
-            // Cập nhật email mẫu cho dữ liệu khởi tạo nếu đang NULL
-            stmt.executeUpdate("""
-                UPDATE NhaCungCap SET email = 'contact@royalcanin.vn'
-                WHERE maNhaCungCap = 'NCC-20261005-000001' AND email IS NULL;
-                UPDATE NhaCungCap SET email = 'sales@petcare.vn'
-                WHERE maNhaCungCap = 'NCC-20261005-000002' AND email IS NULL;
-            """);
-
-            schemaVerified = true;
-        } catch (SQLException e) {
-            System.err.println("[SupplierDao] Lưu ý kiểm tra schema NhaCungCap: " + e.getMessage());
+    private Connection getActiveConnection() throws SQLException {
+        synchronized (DB_LOCK) {
+            if (sharedConnection == null || sharedConnection.isClosed()) {
+                sharedConnection = DatabaseManager.getConnection();
+            }
+            return sharedConnection;
         }
     }
 
     /**
-     * Lấy danh sách nhà cung cấp từ cơ sở dữ liệu.
-     *
-     * @param includeInactive true nếu lấy cả nhà cung cấp đã ngừng hoạt động, false nếu chỉ lấy đang hoạt động
-     * @return Danh sách Supplier
+     * Đóng kết nối hiện tại nếu phát hiện lỗi đường truyền để lần gọi sau tự kết nối lại.
      */
-    public List<Supplier> findAll(boolean includeInactive) {
-        ensureSupplierSchema();
-        List<Supplier> suppliers = new ArrayList<>();
-        String sql = "SELECT maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, trangThai " +
-                     "FROM NhaCungCap " +
-                     (includeInactive ? "" : "WHERE trangThai = 1 ") +
-                     "ORDER BY maNhaCungCap DESC";
-
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                suppliers.add(mapRowToSupplier(rs));
+    private void resetConnectionOnError() {
+        synchronized (DB_LOCK) {
+            if (sharedConnection != null) {
+                try {
+                    sharedConnection.close();
+                } catch (SQLException ignored) {
+                }
+                sharedConnection = null;
             }
-        } catch (SQLException e) {
-            throw new IllegalStateException("Không thể tải danh sách nhà cung cấp: " + e.getMessage(), e);
         }
-        return suppliers;
+    }
+
+    /**
+     * Tự động kiểm tra và bổ sung cột email, matHangCungCap, trangThai (xóa mềm)
+     * vào bảng NhaCungCap nếu cơ sở dữ liệu hiện tại chưa có.
+     */
+    public void ensureSupplierSchema() {
+        if (schemaVerified) {
+            return;
+        }
+        synchronized (DB_LOCK) {
+            if (schemaVerified) {
+                return;
+            }
+            try {
+                Connection conn = getActiveConnection();
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.executeUpdate("""
+                        IF COL_LENGTH('NhaCungCap', 'email') IS NULL
+                        BEGIN
+                            ALTER TABLE NhaCungCap ADD email VARCHAR(100) NULL;
+                        END
+                    """);
+                    stmt.executeUpdate("""
+                        IF COL_LENGTH('NhaCungCap', 'matHangCungCap') IS NULL
+                        BEGIN
+                            ALTER TABLE NhaCungCap ADD matHangCungCap NVARCHAR(200) NULL;
+                        END
+                    """);
+                    stmt.executeUpdate("""
+                        IF COL_LENGTH('NhaCungCap', 'trangThai') IS NULL
+                        BEGIN
+                            ALTER TABLE NhaCungCap ADD trangThai BIT NOT NULL CONSTRAINT DF_NhaCungCap_TrangThai DEFAULT 1;
+                        END
+                    """);
+
+                    stmt.executeUpdate("""
+                        UPDATE NhaCungCap
+                        SET email = COALESCE(email, 'contact@royalcanin.vn'),
+                            matHangCungCap = COALESCE(matHangCungCap, N'Thức ăn hạt, Pate thú cưng')
+                        WHERE maNhaCungCap = 'NCC-20261005-000001';
+
+                        UPDATE NhaCungCap
+                        SET email = COALESCE(email, 'sales@petcare.vn'),
+                            matHangCungCap = COALESCE(matHangCungCap, N'Phụ kiện, Đồ chơi thú cưng')
+                        WHERE maNhaCungCap = 'NCC-20261005-000002';
+
+                        IF NOT EXISTS (SELECT 1 FROM NhaCungCap WHERE maNhaCungCap = 'NCC-20261005-000003')
+                        BEGIN
+                            INSERT INTO NhaCungCap (maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, matHangCungCap, trangThai)
+                            VALUES ('NCC-20261005-000003', N'Pet Distribution Việt Nam', '0283822889', 'info@petdistribution.vn', N'125 Nguyễn Văn Cừ, Quận 5, TP. HCM', N'Thức ăn dinh dưỡng, Sữa thú cưng', 1);
+                        END
+
+                        IF NOT EXISTS (SELECT 1 FROM NhaCungCap WHERE maNhaCungCap = 'NCC-20261005-000004')
+                        BEGIN
+                            INSERT INTO NhaCungCap (maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, matHangCungCap, trangThai)
+                            VALUES ('NCC-20261005-000004', N'Bio-Groom Việt Nam', '0283930112', 'contact@biogroom.vn', N'48 Võ Văn Tần, Quận 3, TP. HCM', N'Sữa tắm, Mỹ phẩm chăm sóc lông', 1);
+                        END
+
+                        IF NOT EXISTS (SELECT 1 FROM NhaCungCap WHERE maNhaCungCap = 'NCC-20261005-000005')
+                        BEGIN
+                            INSERT INTO NhaCungCap (maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, matHangCungCap, trangThai)
+                            VALUES ('NCC-20261005-000005', N'Pet City', '0283512334', 'support@petcity.vn', N'89 Điện Biên Phủ, Bình Thạnh, TP. HCM', N'Chuồng nệm, Phụ kiện tổng hợp', 1);
+                        END
+                    """);
+                }
+            } catch (SQLException e) {
+                System.err.println("[SupplierDao] Lưu ý kiểm tra schema NhaCungCap: " + e.getMessage());
+            } finally {
+                schemaVerified = true;
+            }
+        }
     }
 
     /**
      * Tìm nhà cung cấp theo mã định danh.
-     *
-     * @param maNhaCungCap Mã nhà cung cấp
-     * @return Đối tượng Supplier hoặc null nếu không tìm thấy
      */
     public Supplier findById(String maNhaCungCap) {
         ensureSupplierSchema();
-        String sql = "SELECT maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, trangThai " +
+        String sql = "SELECT maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, matHangCungCap, trangThai " +
                      "FROM NhaCungCap WHERE maNhaCungCap = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, maNhaCungCap);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return mapRowToSupplier(rs);
+        synchronized (DB_LOCK) {
+            try (PreparedStatement ps = getActiveConnection().prepareStatement(sql)) {
+                ps.setString(1, maNhaCungCap);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return mapRowToSupplier(rs);
+                    }
+                    return null;
                 }
-                return null;
+            } catch (SQLException e) {
+                resetConnectionOnError();
+                throw new IllegalStateException("Lỗi khi tra cứu nhà cung cấp: " + e.getMessage(), e);
             }
-        } catch (SQLException e) {
-            throw new IllegalStateException("Lỗi khi tra cứu nhà cung cấp: " + e.getMessage(), e);
         }
     }
 
     /**
-     * Tìm kiếm nhà cung cấp theo từ khóa (mã, tên, SĐT, email, địa chỉ) và lọc trạng thái.
+     * Lấy danh sách hoặc tìm kiếm nhà cung cấp theo từ khóa và lọc trạng thái.
      *
-     * @param keyword      Từ khóa tìm kiếm (có thể rỗng)
+     * @param keyword      Từ khóa tìm kiếm (rỗng nếu lấy tất cả)
      * @param activeFilter null: tất cả, true: Đang hợp tác, false: Ngừng hoạt động
-     * @return Danh sách nhà cung cấp thỏa điều kiện
      */
     public List<Supplier> searchSuppliers(String keyword, Boolean activeFilter) {
         ensureSupplierSchema();
         List<Supplier> results = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
-                "SELECT maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, trangThai " +
+                "SELECT maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, matHangCungCap, trangThai " +
                 "FROM NhaCungCap WHERE 1=1 ");
 
         boolean hasKeyword = keyword != null && !keyword.isBlank();
         if (hasKeyword) {
-            sql.append("AND (maNhaCungCap LIKE ? OR tenNhaCungCap LIKE ? OR soDienThoai LIKE ? " +
-                       "OR COALESCE(email, '') LIKE ? OR COALESCE(diaChi, '') LIKE ?) ");
+            sql.append("AND (maNhaCungCap LIKE ? OR ('NCC-' + RIGHT(maNhaCungCap, 3)) LIKE ? " +
+                       "OR tenNhaCungCap LIKE ? OR soDienThoai LIKE ? " +
+                       "OR COALESCE(email, '') LIKE ? OR COALESCE(diaChi, '') LIKE ? " +
+                       "OR COALESCE(matHangCungCap, '') LIKE ?) ");
         }
         if (activeFilter != null) {
             sql.append("AND trangThai = ? ");
         }
-        sql.append("ORDER BY maNhaCungCap DESC");
+        sql.append("ORDER BY maNhaCungCap ASC");
 
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-            int paramIdx = 1;
-            if (hasKeyword) {
-                String pattern = "%" + keyword.trim() + "%";
-                ps.setString(paramIdx++, pattern);
-                ps.setString(paramIdx++, pattern);
-                ps.setString(paramIdx++, pattern);
-                ps.setString(paramIdx++, pattern);
-                ps.setString(paramIdx++, pattern);
-            }
-            if (activeFilter != null) {
-                ps.setBoolean(paramIdx, activeFilter);
-            }
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    results.add(mapRowToSupplier(rs));
+        synchronized (DB_LOCK) {
+            try (PreparedStatement ps = getActiveConnection().prepareStatement(sql.toString())) {
+                int paramIdx = 1;
+                if (hasKeyword) {
+                    String trimmed = keyword.trim();
+                    String pattern = "%" + trimmed + "%";
+                    String phonePattern = "%" + trimmed.replaceAll("\\s+", "") + "%";
+                    ps.setString(paramIdx++, pattern);
+                    ps.setString(paramIdx++, pattern);
+                    ps.setString(paramIdx++, pattern);
+                    ps.setString(paramIdx++, phonePattern);
+                    ps.setString(paramIdx++, pattern);
+                    ps.setString(paramIdx++, pattern);
+                    ps.setString(paramIdx++, pattern);
                 }
+                if (activeFilter != null) {
+                    ps.setBoolean(paramIdx, activeFilter);
+                }
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        results.add(mapRowToSupplier(rs));
+                    }
+                }
+            } catch (SQLException e) {
+                resetConnectionOnError();
+                throw new IllegalStateException("Lỗi khi tìm kiếm nhà cung cấp: " + e.getMessage(), e);
             }
-        } catch (SQLException e) {
-            throw new IllegalStateException("Lỗi khi tìm kiếm nhà cung cấp: " + e.getMessage(), e);
         }
         return results;
     }
 
     /**
      * Thêm mới một nhà cung cấp vào cơ sở dữ liệu.
-     *
-     * @param supplier Thông tin nhà cung cấp cần thêm
-     * @return true nếu thêm thành công
      */
     public boolean insertSupplier(Supplier supplier) {
         ensureSupplierSchema();
-        String sql = "INSERT INTO NhaCungCap (maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, trangThai) " +
-                     "VALUES (?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, supplier.getMaNhaCungCap());
-            ps.setString(2, supplier.getTenNhaCungCap());
-            ps.setString(3, supplier.getSoDienThoai());
-            ps.setString(4, supplier.getEmail());
-            ps.setString(5, supplier.getDiaChi());
-            ps.setBoolean(6, supplier.isTrangThai());
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            throw new IllegalStateException("Không thể thêm nhà cung cấp: " + e.getMessage(), e);
+        String sql = "INSERT INTO NhaCungCap (maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, matHangCungCap, trangThai) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        synchronized (DB_LOCK) {
+            try (PreparedStatement ps = getActiveConnection().prepareStatement(sql)) {
+                ps.setString(1, supplier.getMaNhaCungCap());
+                ps.setString(2, supplier.getTenNhaCungCap());
+                ps.setString(3, supplier.getSoDienThoai());
+                ps.setString(4, supplier.getEmail());
+                ps.setString(5, supplier.getDiaChi());
+                ps.setString(6, supplier.getMatHangCungCap());
+                ps.setBoolean(7, supplier.isTrangThai());
+                return ps.executeUpdate() > 0;
+            } catch (SQLException e) {
+                resetConnectionOnError();
+                throw new IllegalStateException("Không thể thêm nhà cung cấp: " + e.getMessage(), e);
+            }
         }
     }
 
     /**
      * Cập nhật thông tin nhà cung cấp.
-     *
-     * @param supplier Thông tin nhà cung cấp cần cập nhật
-     * @return true nếu cập nhật thành công
      */
     public boolean updateSupplier(Supplier supplier) {
         ensureSupplierSchema();
         String sql = "UPDATE NhaCungCap SET tenNhaCungCap = ?, soDienThoai = ?, email = ?, " +
-                     "diaChi = ?, trangThai = ? WHERE maNhaCungCap = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, supplier.getTenNhaCungCap());
-            ps.setString(2, supplier.getSoDienThoai());
-            ps.setString(3, supplier.getEmail());
-            ps.setString(4, supplier.getDiaChi());
-            ps.setBoolean(5, supplier.isTrangThai());
-            ps.setString(6, supplier.getMaNhaCungCap());
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            throw new IllegalStateException("Không thể cập nhật nhà cung cấp: " + e.getMessage(), e);
+                     "diaChi = ?, matHangCungCap = ?, trangThai = ? WHERE maNhaCungCap = ?";
+        synchronized (DB_LOCK) {
+            try (PreparedStatement ps = getActiveConnection().prepareStatement(sql)) {
+                ps.setString(1, supplier.getTenNhaCungCap());
+                ps.setString(2, supplier.getSoDienThoai());
+                ps.setString(3, supplier.getEmail());
+                ps.setString(4, supplier.getDiaChi());
+                ps.setString(5, supplier.getMatHangCungCap());
+                ps.setBoolean(6, supplier.isTrangThai());
+                ps.setString(7, supplier.getMaNhaCungCap());
+                return ps.executeUpdate() > 0;
+            } catch (SQLException e) {
+                resetConnectionOnError();
+                throw new IllegalStateException("Không thể cập nhật nhà cung cấp: " + e.getMessage(), e);
+            }
         }
     }
 
     /**
      * Ngừng hoạt động nhà cung cấp (Xóa mềm - trangThai = 0) theo tài liệu OOAD.
-     *
-     * @param maNhaCungCap Mã nhà cung cấp cần ngừng hoạt động
-     * @return true nếu cập nhật trạng thái thành công
      */
     public boolean deactivateSupplier(String maNhaCungCap) {
         ensureSupplierSchema();
         String sql = "UPDATE NhaCungCap SET trangThai = 0 WHERE maNhaCungCap = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, maNhaCungCap);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            throw new IllegalStateException("Không thể ngừng hoạt động nhà cung cấp: " + e.getMessage(), e);
+        synchronized (DB_LOCK) {
+            try (PreparedStatement ps = getActiveConnection().prepareStatement(sql)) {
+                ps.setString(1, maNhaCungCap);
+                return ps.executeUpdate() > 0;
+            } catch (SQLException e) {
+                resetConnectionOnError();
+                throw new IllegalStateException("Không thể ngừng hoạt động nhà cung cấp: " + e.getMessage(), e);
+            }
         }
     }
 
     /**
      * Sinh mã nhà cung cấp tiếp theo theo chuẩn NCC-YYYYMMDD-NNNNNN.
-     *
-     * @return Mã nhà cung cấp mới
      */
     public String generateNextSupplierId() {
         ensureSupplierSchema();
         String datePart = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String sql = "SELECT MAX(RIGHT(maNhaCungCap, 6)) AS maxSeq FROM NhaCungCap";
         int nextSeq = 1;
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            if (rs.next() && rs.getString("maxSeq") != null) {
-                nextSeq = Integer.parseInt(rs.getString("maxSeq")) + 1;
+        synchronized (DB_LOCK) {
+            try (PreparedStatement ps = getActiveConnection().prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getString("maxSeq") != null) {
+                    nextSeq = Integer.parseInt(rs.getString("maxSeq")) + 1;
+                }
+            } catch (Exception ignored) {
+                resetConnectionOnError();
             }
-        } catch (Exception ignored) {
         }
         return String.format("NCC-%s-%06d", datePart, nextSeq);
     }
 
-    /**
-     * Ánh xạ một dòng ResultSet thành đối tượng Supplier.
-     */
     private Supplier mapRowToSupplier(ResultSet rs) throws SQLException {
         return new Supplier(
                 rs.getString("maNhaCungCap"),
@@ -249,8 +291,8 @@ public class SupplierDao {
                 rs.getString("soDienThoai"),
                 rs.getString("email") != null ? rs.getString("email") : "",
                 rs.getString("diaChi") != null ? rs.getString("diaChi") : "",
+                rs.getString("matHangCungCap") != null ? rs.getString("matHangCungCap") : "",
                 rs.getBoolean("trangThai")
         );
     }
 }
-
