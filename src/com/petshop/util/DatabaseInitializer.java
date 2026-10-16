@@ -8,9 +8,9 @@ import java.sql.SQLException;
  * Schema và dữ liệu mẫu được tạo bằng script QLCH_HappyTails_Database_Full.sql
  * (chạy trên SQL Server trước khi mở ứng dụng).
  */
-public final class DatabaseInit {
+public final class DatabaseInitializer {
 
-    private DatabaseInit() {}
+    private DatabaseInitializer() {}
 
     /**
      * Thử mở kết nối tới database.
@@ -20,7 +20,7 @@ public final class DatabaseInit {
         try (Connection conn = DatabaseManager.getConnection()) {
             return conn.isValid(3);
         } catch (SQLException e) {
-            System.err.println("[DatabaseInit] Không kết nối được database: " + e.getMessage());
+            System.err.println("[DatabaseInitializer] Không kết nối được database: " + e.getMessage());
             return false;
         }
     }

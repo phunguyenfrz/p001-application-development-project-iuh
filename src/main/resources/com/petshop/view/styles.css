@@ -149,12 +149,15 @@
     -fx-letter-spacing: 0.8px;
 }
 
-/* Mục chức năng chính ở ngoài sidebar có thể bấm Dropdown */
+/* Mục chức năng chính ở ngoài sidebar có thể bấm Dropdown (Accordion) */
 .sidebar-nav-item {
     -fx-pref-height: 42px;
     -fx-background-color: transparent;
     -fx-background-radius: 10px;
-    -fx-padding: 0 14px;
+    -fx-padding: 0 12px;
+    -fx-border-color: transparent;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
     -fx-cursor: hand;
 }
 
@@ -162,10 +165,17 @@
     -fx-background-color: #f2f7f2;
 }
 
+.sidebar-nav-item-active {
+    -fx-background-color: #dcf0dc;
+    -fx-border-color: #b8deb8;
+}
+
 .sidebar-nav-bullet {
     -fx-font-size: 14px;
     -fx-text-fill: #9ca89e;
-    -fx-padding: 0 4px 0 0;
+    -fx-min-width: 16px;
+    -fx-pref-width: 16px;
+    -fx-alignment: center;
 }
 
 .sidebar-nav-item:hover .sidebar-nav-bullet {
@@ -173,9 +183,9 @@
 }
 
 .sidebar-nav-text {
-    -fx-font-size: 14px;
+    -fx-font-size: 13.5px;
     -fx-font-weight: 600;
-    -fx-text-fill: #3b4740;
+    -fx-text-fill: #2f3e34;
 }
 
 .sidebar-nav-item:hover .sidebar-nav-text {
@@ -186,6 +196,9 @@
     -fx-font-size: 11px;
     -fx-font-weight: bold;
     -fx-text-fill: #9ca89e;
+    -fx-min-width: 14px;
+    -fx-pref-width: 14px;
+    -fx-alignment: center-right;
 }
 
 .sidebar-nav-item:hover .sidebar-nav-arrow {
@@ -198,10 +211,13 @@
     -fx-background-color: transparent;
     -fx-background-radius: 8px;
     -fx-alignment: center-left;
-    -fx-padding: 0 14px 0 34px;
+    -fx-padding: 0 12px 0 28px;
+    -fx-border-color: transparent;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
     -fx-font-size: 13px;
     -fx-font-weight: 500;
-    -fx-text-fill: #5a695e;
+    -fx-text-fill: #4b5a50;
     -fx-cursor: hand;
 }
 
@@ -211,16 +227,34 @@
     -fx-font-weight: 600;
 }
 
-/* Nút menu sidebar */
+.sidebar-sub-btn-active {
+    -fx-pref-height: 36px;
+    -fx-background-color: #dcf0dc;
+    -fx-background-radius: 8px;
+    -fx-border-color: #b8deb8;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-alignment: center-left;
+    -fx-padding: 0 12px 0 28px;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #235432;
+    -fx-cursor: hand;
+}
+
+/* Nút menu sidebar chính */
 .sidebar-btn {
     -fx-pref-height: 40px;
     -fx-background-color: transparent;
     -fx-background-radius: 10px;
     -fx-alignment: center-left;
-    -fx-padding: 0 16px;
+    -fx-padding: 0 12px;
+    -fx-border-color: transparent;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
     -fx-font-size: 13.5px;
     -fx-font-weight: 600;
-    -fx-text-fill: #556358;
+    -fx-text-fill: #445448;
     -fx-cursor: hand;
 }
 
@@ -234,12 +268,88 @@
     -fx-pref-height: 40px;
     -fx-background-color: #dcf0dc;
     -fx-background-radius: 10px;
+    -fx-border-color: #b8deb8;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
     -fx-alignment: center-left;
-    -fx-padding: 0 16px;
+    -fx-padding: 0 12px;
     -fx-font-size: 13.5px;
     -fx-font-weight: bold;
     -fx-text-fill: #235432;
     -fx-cursor: hand;
+}
+
+/* Sidebar thu gọn */
+.sidebar-collapsed {
+    -fx-background-color: #ffffff;
+    -fx-pref-width: 68px;
+    -fx-min-width: 68px;
+    -fx-max-width: 68px;
+    -fx-border-color: transparent #e5ebe5 transparent transparent;
+    -fx-border-width: 1px;
+}
+
+.sidebar-collapsed-btn {
+    -fx-pref-height: 40px;
+    -fx-pref-width: 40px;
+    -fx-background-color: transparent;
+    -fx-background-radius: 10px;
+    -fx-alignment: center;
+    -fx-cursor: hand;
+    -fx-padding: 0;
+}
+
+.sidebar-collapsed-btn:hover {
+    -fx-background-color: #f2f7f2;
+}
+
+.sidebar-collapsed-btn-active {
+    -fx-pref-height: 40px;
+    -fx-pref-width: 40px;
+    -fx-background-color: #dcf0dc;
+    -fx-background-radius: 10px;
+    -fx-border-color: #b8deb8;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+    -fx-alignment: center;
+    -fx-cursor: hand;
+    -fx-padding: 0;
+}
+
+/* Nút hành động toolbar */
+.btn-action-primary {
+    -fx-pref-height: 36px;
+    -fx-background-color: #3e634c;
+    -fx-background-radius: 8px;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 12.5px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 14px;
+    -fx-cursor: hand;
+}
+
+.btn-action-primary:hover {
+    -fx-background-color: #2c4936;
+}
+
+.btn-action-secondary {
+    -fx-pref-height: 36px;
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 8px;
+    -fx-border-color: #d1ded1;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-text-fill: #3e4e42;
+    -fx-font-size: 12.5px;
+    -fx-font-weight: 600;
+    -fx-padding: 0 12px;
+    -fx-cursor: hand;
+}
+
+.btn-action-secondary:hover {
+    -fx-background-color: #f2f7f2;
+    -fx-border-color: #3e634c;
+    -fx-text-fill: #1f3326;
 }
 
 /* Thẻ chi nhánh ở đáy sidebar */
