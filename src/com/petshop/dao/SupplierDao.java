@@ -58,58 +58,38 @@ public class SupplierDao {
             if (schemaVerified) {
                 return;
             }
-            try {
-                Connection conn = getActiveConnection();
-                try (Statement stmt = conn.createStatement()) {
-                    stmt.executeUpdate("""
-                        IF COL_LENGTH('NhaCungCap', 'email') IS NULL
-                        BEGIN
-                            ALTER TABLE NhaCungCap ADD email VARCHAR(100) NULL;
-                        END
-                    """);
-                    stmt.executeUpdate("""
-                        IF COL_LENGTH('NhaCungCap', 'matHangCungCap') IS NULL
-                        BEGIN
-                            ALTER TABLE NhaCungCap ADD matHangCungCap NVARCHAR(200) NULL;
-                        END
-                    """);
-                    stmt.executeUpdate("""
-                        IF COL_LENGTH('NhaCungCap', 'trangThai') IS NULL
-                        BEGIN
-                            ALTER TABLE NhaCungCap ADD trangThai BIT NOT NULL CONSTRAINT DF_NhaCungCap_TrangThai DEFAULT 1;
-                        END
-                    """);
+            try (Statement stmt = getActiveConnection().createStatement()) {
+                stmt.executeUpdate("""
+                    IF COL_LENGTH('NhaCungCap', 'email') IS NULL
+                        ALTER TABLE NhaCungCap ADD email VARCHAR(100) NULL;
+                    IF COL_LENGTH('NhaCungCap', 'matHangCungCap') IS NULL
+                        ALTER TABLE NhaCungCap ADD matHangCungCap NVARCHAR(200) NULL;
+                    IF COL_LENGTH('NhaCungCap', 'trangThai') IS NULL
+                        ALTER TABLE NhaCungCap ADD trangThai BIT NOT NULL CONSTRAINT DF_NhaCungCap_TrangThai DEFAULT 1;
+                """);
+                stmt.executeUpdate("""
+                    UPDATE NhaCungCap
+                    SET email = COALESCE(email, 'contact@royalcanin.vn'),
+                        matHangCungCap = COALESCE(matHangCungCap, N'Thức ăn hạt, Pate thú cưng')
+                    WHERE maNhaCungCap = 'NCC-20261005-000001';
 
-                    stmt.executeUpdate("""
-                        UPDATE NhaCungCap
-                        SET email = COALESCE(email, 'contact@royalcanin.vn'),
-                            matHangCungCap = COALESCE(matHangCungCap, N'Thức ăn hạt, Pate thú cưng')
-                        WHERE maNhaCungCap = 'NCC-20261005-000001';
+                    UPDATE NhaCungCap
+                    SET email = COALESCE(email, 'sales@petcare.vn'),
+                        matHangCungCap = COALESCE(matHangCungCap, N'Phụ kiện, Đồ chơi thú cưng')
+                    WHERE maNhaCungCap = 'NCC-20261005-000002';
 
-                        UPDATE NhaCungCap
-                        SET email = COALESCE(email, 'sales@petcare.vn'),
-                            matHangCungCap = COALESCE(matHangCungCap, N'Phụ kiện, Đồ chơi thú cưng')
-                        WHERE maNhaCungCap = 'NCC-20261005-000002';
+                    IF NOT EXISTS (SELECT 1 FROM NhaCungCap WHERE maNhaCungCap = 'NCC-20261005-000003')
+                        INSERT INTO NhaCungCap (maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, matHangCungCap, trangThai)
+                        VALUES ('NCC-20261005-000003', N'Pet Distribution Việt Nam', '0283822889', 'info@petdistribution.vn', N'125 Nguyễn Văn Cừ, Quận 5, TP. HCM', N'Thức ăn dinh dưỡng, Sữa thú cưng', 1);
 
-                        IF NOT EXISTS (SELECT 1 FROM NhaCungCap WHERE maNhaCungCap = 'NCC-20261005-000003')
-                        BEGIN
-                            INSERT INTO NhaCungCap (maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, matHangCungCap, trangThai)
-                            VALUES ('NCC-20261005-000003', N'Pet Distribution Việt Nam', '0283822889', 'info@petdistribution.vn', N'125 Nguyễn Văn Cừ, Quận 5, TP. HCM', N'Thức ăn dinh dưỡng, Sữa thú cưng', 1);
-                        END
+                    IF NOT EXISTS (SELECT 1 FROM NhaCungCap WHERE maNhaCungCap = 'NCC-20261005-000004')
+                        INSERT INTO NhaCungCap (maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, matHangCungCap, trangThai)
+                        VALUES ('NCC-20261005-000004', N'Bio-Groom Việt Nam', '0283930112', 'contact@biogroom.vn', N'48 Võ Văn Tần, Quận 3, TP. HCM', N'Sữa tắm, Mỹ phẩm chăm sóc lông', 1);
 
-                        IF NOT EXISTS (SELECT 1 FROM NhaCungCap WHERE maNhaCungCap = 'NCC-20261005-000004')
-                        BEGIN
-                            INSERT INTO NhaCungCap (maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, matHangCungCap, trangThai)
-                            VALUES ('NCC-20261005-000004', N'Bio-Groom Việt Nam', '0283930112', 'contact@biogroom.vn', N'48 Võ Văn Tần, Quận 3, TP. HCM', N'Sữa tắm, Mỹ phẩm chăm sóc lông', 1);
-                        END
-
-                        IF NOT EXISTS (SELECT 1 FROM NhaCungCap WHERE maNhaCungCap = 'NCC-20261005-000005')
-                        BEGIN
-                            INSERT INTO NhaCungCap (maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, matHangCungCap, trangThai)
-                            VALUES ('NCC-20261005-000005', N'Pet City', '0283512334', 'support@petcity.vn', N'89 Điện Biên Phủ, Bình Thạnh, TP. HCM', N'Chuồng nệm, Phụ kiện tổng hợp', 1);
-                        END
-                    """);
-                }
+                    IF NOT EXISTS (SELECT 1 FROM NhaCungCap WHERE maNhaCungCap = 'NCC-20261005-000005')
+                        INSERT INTO NhaCungCap (maNhaCungCap, tenNhaCungCap, soDienThoai, email, diaChi, matHangCungCap, trangThai)
+                        VALUES ('NCC-20261005-000005', N'Pet City', '0283512334', 'support@petcity.vn', N'89 Điện Biên Phủ, Bình Thạnh, TP. HCM', N'Chuồng nệm, Phụ kiện tổng hợp', 1);
+                """);
             } catch (SQLException e) {
                 System.err.println("[SupplierDao] Lưu ý kiểm tra schema NhaCungCap: " + e.getMessage());
             } finally {
@@ -129,14 +109,46 @@ public class SupplierDao {
             try (PreparedStatement ps = getActiveConnection().prepareStatement(sql)) {
                 ps.setString(1, maNhaCungCap);
                 try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        return mapRowToSupplier(rs);
-                    }
-                    return null;
+                    return rs.next() ? mapRowToSupplier(rs) : null;
                 }
             } catch (SQLException e) {
                 resetConnectionOnError();
                 throw new IllegalStateException("Lỗi khi tra cứu nhà cung cấp: " + e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
+     * Kiểm tra số điện thoại đã tồn tại trong bảng NhaCungCap hay chưa.
+     */
+    public boolean existsByPhone(String soDienThoai, String excludeId) {
+        return existsByCondition("soDienThoai = ?", soDienThoai, excludeId);
+    }
+
+    /**
+     * Kiểm tra địa chỉ email đã tồn tại trong bảng NhaCungCap hay chưa (không phân biệt hoa thường).
+     */
+    public boolean existsByEmail(String email, String excludeId) {
+        return existsByCondition("LOWER(LTRIM(RTRIM(COALESCE(email, '')))) = LOWER(?)", email.trim(), excludeId);
+    }
+
+    private boolean existsByCondition(String fieldCondition, String value, String excludeId) {
+        ensureSupplierSchema();
+        String sql = excludeId == null
+                ? "SELECT COUNT(1) FROM NhaCungCap WHERE " + fieldCondition
+                : "SELECT COUNT(1) FROM NhaCungCap WHERE " + fieldCondition + " AND maNhaCungCap <> ?";
+        synchronized (DB_LOCK) {
+            try (PreparedStatement ps = getActiveConnection().prepareStatement(sql)) {
+                ps.setString(1, value);
+                if (excludeId != null) {
+                    ps.setString(2, excludeId);
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next() && rs.getInt(1) > 0;
+                }
+            } catch (SQLException e) {
+                resetConnectionOnError();
+                throw new IllegalStateException("Lỗi khi kiểm tra trùng dữ liệu nhà cung cấp: " + e.getMessage(), e);
             }
         }
     }

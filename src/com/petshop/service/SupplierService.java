@@ -47,7 +47,7 @@ public class SupplierService {
     }
 
     /**
-     * Thêm mới nhà cung cấp sau khi kiểm tra quyền và xác thực dữ liệu bằng Regex.
+     * Thêm mới nhà cung cấp sau khi kiểm tra quyền, xác thực Regex và kiểm tra trùng SĐT / Email.
      */
     public void addSupplier(Supplier supplier) {
         authService.checkPermission("SUP_UPDATE");
@@ -56,19 +56,32 @@ public class SupplierService {
         if (supplierDao.findById(supplier.getMaNhaCungCap()) != null) {
             throw new IllegalArgumentException("Mã nhà cung cấp [" + supplier.getMaNhaCungCap() + "] đã tồn tại!");
         }
+        if (supplierDao.existsByPhone(supplier.getSoDienThoai(), null)) {
+            throw new IllegalArgumentException("Số điện thoại [" + supplier.getSoDienThoai() + "] đã tồn tại trên hệ thống!");
+        }
+        if (supplierDao.existsByEmail(supplier.getEmail(), null)) {
+            throw new IllegalArgumentException("Địa chỉ email [" + supplier.getEmail() + "] đã tồn tại trên hệ thống!");
+        }
 
         supplierDao.insertSupplier(supplier);
     }
 
     /**
-     * Cập nhật thông tin nhà cung cấp sau khi kiểm tra quyền và xác thực Regex.
+     * Cập nhật thông tin nhà cung cấp sau khi kiểm tra quyền, xác thực Regex và kiểm tra trùng SĐT / Email.
      */
     public void updateSupplier(Supplier supplier) {
         authService.checkPermission("SUP_UPDATE");
         validateSupplierData(supplier);
 
-        if (supplierDao.findById(supplier.getMaNhaCungCap()) == null) {
-            throw new IllegalArgumentException("Không tìm thấy nhà cung cấp có mã [" + supplier.getMaNhaCungCap() + "]!");
+        String currentId = supplier.getMaNhaCungCap();
+        if (supplierDao.findById(currentId) == null) {
+            throw new IllegalArgumentException("Không tìm thấy nhà cung cấp có mã [" + currentId + "]!");
+        }
+        if (supplierDao.existsByPhone(supplier.getSoDienThoai(), currentId)) {
+            throw new IllegalArgumentException("Số điện thoại [" + supplier.getSoDienThoai() + "] đã được nhà cung cấp khác sử dụng!");
+        }
+        if (supplierDao.existsByEmail(supplier.getEmail(), currentId)) {
+            throw new IllegalArgumentException("Địa chỉ email [" + supplier.getEmail() + "] đã được nhà cung cấp khác sử dụng!");
         }
 
         supplierDao.updateSupplier(supplier);

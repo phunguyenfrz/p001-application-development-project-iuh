@@ -12,10 +12,7 @@ public class Supplier {
     private String email;           // Địa chỉ email liên hệ
     private String diaChi;
     private String matHangCungCap;  // Mặt hàng cung cấp chính
-    private boolean trangThai = true; // true (1): Đang hợp tác, false (0): Ngừng hoạt động (xóa mềm)
-
-    public Supplier() {
-    }
+    private final boolean trangThai; // true (1): Đang hợp tác, false (0): Ngừng hoạt động (xóa mềm)
 
     public Supplier(String maNhaCungCap, String tenNhaCungCap, String soDienThoai,
                     String email, String diaChi, String matHangCungCap, boolean trangThai) {
@@ -80,16 +77,7 @@ public class Supplier {
         return trangThai;
     }
 
-    public void setTrangThai(boolean trangThai) {
-        this.trangThai = trangThai;
-    }
-
     public String getTenTrangThai() {
         return trangThai ? "Đang hợp tác" : "Ngừng hoạt động";
-    }
-
-    @Override
-    public String toString() {
-        return maNhaCungCap + " - " + tenNhaCungCap;
     }
 }

@@ -59,15 +59,13 @@ public class SupplierView extends StackPane {
     private Button btnNextPage;
     private HBox pnlPageNumbers;
 
-    // Các điều khiển trong Modal Thêm / Sửa Nhà cung cấp (09 · Thêm / Sửa NCC)
+    // Các điều khiển trong Modal Nhà cung cấp
     private TextField txtTenNhaCungCap;
     private TextField txtSoDienThoai;
     private TextField txtEmail;
     private TextField txtDiaChi;
     private TextField txtMatHangCungCap;
     private Label lblFormError;
-    private Button btnCancelModal;
-    private Button btnSaveModal;
 
     /**
      * Khởi tạo màn hình Nhà cung cấp theo mã chức năng.
@@ -207,7 +205,7 @@ public class SupplierView extends StackPane {
                     "-fx-font-weight: bold; -fx-padding: 0 20px; -fx-pref-height: 40px; " +
                     "-fx-background-radius: 10px; -fx-cursor: hand;"
             );
-            btnAddSupplier.setOnAction(e -> showSupplierFormModal(null));
+            btnAddSupplier.setOnAction(e -> showAddSupplierModal());
 
             pnlToolbar.getChildren().addAll(pnlSpacer, btnAddSupplier);
         }
@@ -315,7 +313,7 @@ public class SupplierView extends StackPane {
                         int idx = getIndex();
                         if (idx >= 0 && idx < getTableView().getItems().size()) {
                             Supplier current = getTableView().getItems().get(idx);
-                            showSupplierFormModal(current);
+                            showDetailSupplierModal(current, current, null);
                         }
                     });
 
@@ -377,166 +375,218 @@ public class SupplierView extends StackPane {
     }
 
     /**
-     * Hiển thị Modal "Thêm / Sửa Nhà cung cấp" chuẩn thiết kế Figma (09 · Thêm / Sửa NCC).
-     *
-     * @param existingSupplier null nếu Thêm mới, hoặc đối tượng Supplier cần Xem / Sửa
+     * Màn hình 1: Hiển thị Modal "Thêm nhà cung cấp" (dành riêng cho chức năng Thêm mới).
      */
-    public void showSupplierFormModal(Supplier existingSupplier) {
-        boolean isEditMode = (existingSupplier != null);
+    public void showAddSupplierModal() {
+        VBox pnlModalCard = createModalCard(460, "Thêm nhà cung cấp");
+        appendSupplierFormFields(pnlModalCard, null);
+        pnlModalCard.getChildren().add(createModalActionBar("Hủy", this::closeModalOverlay, "Lưu", "#3f6148", this::handleAddSupplier));
 
-        VBox pnlModalCard = new VBox(14);
-        pnlModalCard.setMaxWidth(460);
-        pnlModalCard.setPrefWidth(460);
-        pnlModalCard.setMaxHeight(Region.USE_PREF_SIZE);
-        pnlModalCard.setPadding(new Insets(26, 28, 24, 28));
-        pnlModalCard.setStyle(
-                "-fx-background-color: #ffffff; -fx-background-radius: 16px; " +
-                "-fx-border-color: #e6e8e3; -fx-border-radius: 16px; -fx-border-width: 1px;"
-        );
-        pnlModalCard.setEffect(new DropShadow(28, 0, 8, Color.rgb(0, 0, 0, 0.18)));
-
-        // Tiêu đề: Thêm / Sửa Nhà cung cấp
-        Label lblModalTitle = new Label("Thêm / Sửa Nhà cung cấp");
-        lblModalTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #1b211c;");
-        VBox.setMargin(lblModalTitle, new Insets(0, 0, 4, 0));
-
-        // 1. Tên nhà cung cấp *
-        txtTenNhaCungCap = createModalTextField(
-                "Nhập tên nhà cung cấp...",
-                isEditMode ? existingSupplier.getTenNhaCungCap() : ""
-        );
-        VBox pnlFieldTen = createLabeledField("Tên nhà cung cấp", true, txtTenNhaCungCap);
-
-        // 2. Số điện thoại *
-        txtSoDienThoai = createModalTextField(
-                "Nhập số điện thoại...",
-                isEditMode ? existingSupplier.getSoDienThoai() : ""
-        );
-        VBox pnlFieldPhone = createLabeledField("Số điện thoại", true, txtSoDienThoai);
-
-        // 3. Email *
-        txtEmail = createModalTextField(
-                "Nhập email...",
-                isEditMode ? existingSupplier.getEmail() : ""
-        );
-        VBox pnlFieldEmail = createLabeledField("Email", true, txtEmail);
-
-        // 4. Địa chỉ
-        txtDiaChi = createModalTextField(
-                "Nhập địa chỉ...",
-                isEditMode ? existingSupplier.getDiaChi() : ""
-        );
-        VBox pnlFieldAddress = createLabeledField("Địa chỉ", false, txtDiaChi);
-
-        // 5. Mặt hàng cung cấp *
-        txtMatHangCungCap = createModalTextField(
-                "Nhập mặt hàng cung cấp...",
-                isEditMode ? existingSupplier.getMatHangCungCap() : ""
-        );
-        VBox pnlFieldItems = createLabeledField("Mặt hàng cung cấp", true, txtMatHangCungCap);
-
-        // Nhãn báo lỗi kiểm tra Regex SĐT / Email
-        lblFormError = new Label();
-        lblFormError.setWrapText(true);
-        lblFormError.setVisible(false);
-        lblFormError.setManaged(false);
-        lblFormError.setStyle(
-                "-fx-text-fill: #c94444; -fx-font-size: 12.5px; -fx-font-weight: bold; " +
-                "-fx-background-color: #fdf0f0; -fx-padding: 8px 12px; -fx-background-radius: 8px;"
-        );
-
-        // Hàng nút dưới cùng: Hủy (trái) và Lưu (phải)
-        HBox pnlModalActions = new HBox(12);
-        pnlModalActions.setAlignment(Pos.CENTER_LEFT);
-        VBox.setMargin(pnlModalActions, new Insets(6, 0, 0, 0));
-
-        btnCancelModal = new Button("Hủy");
-        btnCancelModal.setStyle(
-                "-fx-background-color: #ffffff; -fx-border-color: #dcded8; -fx-border-radius: 8px; " +
-                "-fx-background-radius: 8px; -fx-text-fill: #2b312c; -fx-font-size: 13px; " +
-                "-fx-font-weight: bold; -fx-padding: 8px 18px; -fx-cursor: hand;"
-        );
-        btnCancelModal.setOnAction(e -> closeModalOverlay());
-
-        Region pnlActionSpacer = new Region();
-        HBox.setHgrow(pnlActionSpacer, Priority.ALWAYS);
-
-        btnSaveModal = new Button("Lưu");
-        btnSaveModal.setStyle(
-                "-fx-background-color: #3f6148; -fx-background-radius: 8px; " +
-                "-fx-text-fill: #ffffff; -fx-font-size: 13px; " +
-                "-fx-font-weight: bold; -fx-padding: 8px 22px; -fx-cursor: hand;"
-        );
-        btnSaveModal.setOnAction(e -> handleSaveSupplier(existingSupplier));
-
-        pnlModalActions.getChildren().addAll(btnCancelModal, pnlActionSpacer, btnSaveModal);
-
-        pnlModalCard.getChildren().addAll(
-                lblModalTitle,
-                pnlFieldTen,
-                pnlFieldPhone,
-                pnlFieldEmail,
-                pnlFieldAddress,
-                pnlFieldItems,
-                lblFormError,
-                pnlModalActions
-        );
-
-        pnlModalOverlay.getChildren().setAll(pnlModalCard);
-        pnlModalOverlay.setVisible(true);
-        pnlModalOverlay.setManaged(true);
-
+        openModalOverlay(pnlModalCard);
         Platform.runLater(() -> txtTenNhaCungCap.requestFocus());
     }
 
     /**
-     * Xử lý kiểm tra Regex (SĐT 0 + 9 chữ số, Email) và lưu Nhà cung cấp từ Modal.
+     * Màn hình 2: Hiển thị màn hình "Thông tin chi tiết" của nhà cung cấp khi nhấn nút Xem.
      */
-    private void handleSaveSupplier(Supplier existingSupplier) {
-        boolean isEditMode = (existingSupplier != null);
-        String name = txtTenNhaCungCap.getText() != null ? txtTenNhaCungCap.getText().trim() : "";
-        String phone = txtSoDienThoai.getText() != null ? txtSoDienThoai.getText().trim().replaceAll("\\s+", "") : "";
-        String email = txtEmail.getText() != null ? txtEmail.getText().trim() : "";
-        String address = txtDiaChi.getText() != null ? txtDiaChi.getText().trim() : "";
-        String items = txtMatHangCungCap.getText() != null ? txtMatHangCungCap.getText().trim() : "";
+    public void showDetailSupplierModal(Supplier originalSupplier, Supplier currentValues, String initialError) {
+        if (originalSupplier == null || currentValues == null) {
+            return;
+        }
+
+        VBox pnlModalCard = createModalCard(460, "Thông tin chi tiết");
+
+        TextField txtMaNCCReadOnly = createModalTextField("", formatDisplayId(originalSupplier.getMaNhaCungCap()));
+        txtMaNCCReadOnly.setEditable(false);
+        txtMaNCCReadOnly.setStyle(
+                "-fx-background-color: #f4f4f0; -fx-background-radius: 8px; " +
+                "-fx-border-color: #e2e4de; -fx-border-radius: 8px; -fx-border-width: 1px; " +
+                "-fx-padding: 0 12px; -fx-font-size: 13px; -fx-text-fill: #6e736c; -fx-font-weight: bold;"
+        );
+        pnlModalCard.getChildren().add(createLabeledField("Mã nhà cung cấp", false, txtMaNCCReadOnly));
+
+        appendSupplierFormFields(pnlModalCard, currentValues);
+        if (initialError != null && !initialError.isBlank()) {
+            showInlineFormError(initialError);
+        }
+
+        pnlModalCard.getChildren().add(createModalActionBar(
+                "Hủy", this::closeModalOverlay,
+                "Lưu", "#3f6148", () -> handleProceedToEditConfirm(originalSupplier)
+        ));
+
+        openModalOverlay(pnlModalCard);
+        Platform.runLater(() -> {
+            if (initialError != null) {
+                focusFieldOnDuplicateError(initialError);
+            } else {
+                txtTenNhaCungCap.requestFocus();
+            }
+        });
+    }
+
+    /**
+     * Xử lý nghiệp vụ Thêm mới Nhà cung cấp (kiểm tra Regex và kiểm tra trùng SĐT / Email).
+     */
+    private void handleAddSupplier() {
+        if (!validateFormInputs()) {
+            return;
+        }
+        try {
+            String newId = supplierController.generateNewSupplierId();
+            Supplier newSupplier = buildSupplierFromForm(newId);
+            supplierController.createSupplier(newSupplier);
+            applySearchAndFilter();
+            showSuccessMessageModal("Đã lưu thành công",
+                    "Đã lưu nhà cung cấp \"" + newSupplier.getTenNhaCungCap() +
+                    "\" (" + formatDisplayId(newId) + ") thành công!");
+        } catch (Exception ex) {
+            focusFieldOnDuplicateError(ex.getMessage());
+            showInlineFormError(ex.getMessage());
+        }
+    }
+
+    /**
+     * Kiểm tra thông tin thay đổi từ màn hình "Thông tin chi tiết" và chuyển sang màn hình "Xác nhận chỉnh sửa".
+     */
+    private void handleProceedToEditConfirm(Supplier originalSupplier) {
+        if (!validateFormInputs()) {
+            return;
+        }
+        Supplier updatedSupplier = buildSupplierFromForm(originalSupplier.getMaNhaCungCap());
+        List<String> changes = collectSupplierChanges(originalSupplier, updatedSupplier);
+        if (changes.isEmpty()) {
+            showInlineFormError("Bạn chưa thay đổi thông tin nào của nhà cung cấp.");
+            return;
+        }
+        showEditConfirmModal(originalSupplier, updatedSupplier, changes);
+    }
+
+    /**
+     * Màn hình 3: Hiển thị màn hình "Xác nhận chỉnh sửa" khi người dùng thay đổi thông tin từ màn "Thông tin chi tiết".
+     */
+    private void showEditConfirmModal(Supplier originalSupplier, Supplier updatedSupplier, List<String> changes) {
+        VBox pnlConfirmCard = createModalCard(450, "Xác nhận chỉnh sửa");
+
+        Label lblConfirmDesc = new Label(
+                "Bạn có chắc chắn muốn cập nhật các thông tin đã thay đổi cho nhà cung cấp \"" +
+                originalSupplier.getTenNhaCungCap() + "\" (" + formatDisplayId(originalSupplier.getMaNhaCungCap()) + ") không?"
+        );
+        lblConfirmDesc.setWrapText(true);
+        lblConfirmDesc.setStyle("-fx-font-size: 13.5px; -fx-text-fill: #5a6058;");
+
+        VBox pnlChangesBox = new VBox(6);
+        pnlChangesBox.setPadding(new Insets(10, 12, 10, 12));
+        pnlChangesBox.setStyle(
+                "-fx-background-color: #f6f7f4; -fx-background-radius: 10px; " +
+                "-fx-border-color: #e6e8e3; -fx-border-radius: 10px;"
+        );
+        for (String diff : changes) {
+            Label lblDiff = new Label("• " + diff);
+            lblDiff.setWrapText(true);
+            lblDiff.setStyle("-fx-font-size: 12.5px; -fx-text-fill: #2b312c;");
+            pnlChangesBox.getChildren().add(lblDiff);
+        }
+
+        HBox pnlActions = createModalActionBar(
+                "Quay lại", () -> showDetailSupplierModal(originalSupplier, updatedSupplier, null),
+                "Xác nhận", "#3f6148", () -> {
+                    try {
+                        supplierController.modifySupplier(updatedSupplier);
+                        applySearchAndFilter();
+                        showSuccessMessageModal("Đã lưu thành công",
+                                "Đã lưu thông tin chỉnh sửa cho nhà cung cấp \"" +
+                                updatedSupplier.getTenNhaCungCap() + "\" (" + formatDisplayId(updatedSupplier.getMaNhaCungCap()) + ") thành công!");
+                    } catch (Exception ex) {
+                        showDetailSupplierModal(originalSupplier, updatedSupplier, ex.getMessage());
+                    }
+                }
+        );
+
+        pnlConfirmCard.getChildren().addAll(lblConfirmDesc, pnlChangesBox, pnlActions);
+        openModalOverlay(pnlConfirmCard);
+    }
+
+    /**
+     * So sánh và trả về danh sách các trường thông tin đã thay đổi giữa dữ liệu gốc và dữ liệu chỉnh sửa.
+     */
+    private List<String> collectSupplierChanges(Supplier original, Supplier updated) {
+        List<String> diffs = new ArrayList<>();
+        if (!safeStr(original.getTenNhaCungCap()).equals(safeStr(updated.getTenNhaCungCap()))) {
+            diffs.add("Tên NCC: " + safeStr(original.getTenNhaCungCap()) + " → " + safeStr(updated.getTenNhaCungCap()));
+        }
+        if (!safeStr(original.getSoDienThoai()).equals(safeStr(updated.getSoDienThoai()))) {
+            diffs.add("Số điện thoại: " + safeStr(original.getSoDienThoai()) + " → " + safeStr(updated.getSoDienThoai()));
+        }
+        if (!safeStr(original.getEmail()).equalsIgnoreCase(safeStr(updated.getEmail()))) {
+            diffs.add("Email: " + safeStr(original.getEmail()) + " → " + safeStr(updated.getEmail()));
+        }
+        if (!safeStr(original.getDiaChi()).equals(safeStr(updated.getDiaChi()))) {
+            diffs.add("Địa chỉ: " + safeStr(original.getDiaChi()) + " → " + safeStr(updated.getDiaChi()));
+        }
+        if (!safeStr(original.getMatHangCungCap()).equals(safeStr(updated.getMatHangCungCap()))) {
+            diffs.add("Mặt hàng: " + safeStr(original.getMatHangCungCap()) + " → " + safeStr(updated.getMatHangCungCap()));
+        }
+        return diffs;
+    }
+
+    private String safeStr(String s) {
+        return s != null ? s.trim() : "";
+    }
+
+    /**
+     * Kiểm tra các trường nhập trên form theo chuẩn Regex trước khi gửi xuống Controller.
+     */
+    private boolean validateFormInputs() {
+        String name = safeStr(txtTenNhaCungCap.getText());
+        String phone = safeStr(txtSoDienThoai.getText()).replaceAll("\\s+", "");
+        String email = safeStr(txtEmail.getText());
+        String items = safeStr(txtMatHangCungCap.getText());
 
         if (name.isEmpty()) {
             showInlineFormError("Vui lòng nhập Tên nhà cung cấp (*).");
             txtTenNhaCungCap.requestFocus();
-            return;
+            return false;
         }
         if (!SupplierService.REGEX_PHONE.matcher(phone).matches()) {
             showInlineFormError("Số điện thoại không hợp lệ! Phải bắt đầu bằng số 0 và gồm đúng 10 chữ số (0 + 9 chữ số).");
             txtSoDienThoai.requestFocus();
-            return;
+            return false;
         }
         if (email.isEmpty() || !SupplierService.REGEX_EMAIL.matcher(email).matches()) {
             showInlineFormError("Email không đúng định dạng (ví dụ: contact@domain.com)!");
             txtEmail.requestFocus();
-            return;
+            return false;
         }
         if (items.isEmpty()) {
             showInlineFormError("Vui lòng nhập Mặt hàng cung cấp (*).");
             txtMatHangCungCap.requestFocus();
+            return false;
+        }
+        return true;
+    }
+
+    private Supplier buildSupplierFromForm(String supplierId) {
+        return new Supplier(
+                supplierId,
+                safeStr(txtTenNhaCungCap.getText()),
+                safeStr(txtSoDienThoai.getText()).replaceAll("\\s+", ""),
+                safeStr(txtEmail.getText()),
+                safeStr(txtDiaChi.getText()),
+                safeStr(txtMatHangCungCap.getText()),
+                true
+        );
+    }
+
+    private void focusFieldOnDuplicateError(String errorMsg) {
+        if (errorMsg == null) {
             return;
         }
-
-        try {
-            String supplierId = isEditMode
-                    ? existingSupplier.getMaNhaCungCap()
-                    : supplierController.generateNewSupplierId();
-
-            Supplier supplier = new Supplier(supplierId, name, phone, email, address, items, true);
-            if (isEditMode) {
-                supplierController.modifySupplier(supplier);
-            } else {
-                supplierController.createSupplier(supplier);
-            }
-
-            closeModalOverlay();
-            applySearchAndFilter();
-        } catch (Exception ex) {
-            showInlineFormError(ex.getMessage());
+        String lower = errorMsg.toLowerCase();
+        if (lower.contains("số điện thoại") && txtSoDienThoai != null) {
+            txtSoDienThoai.requestFocus();
+        } else if (lower.contains("email") && txtEmail != null) {
+            txtEmail.requestFocus();
         }
     }
 
@@ -548,19 +598,7 @@ public class SupplierView extends StackPane {
             return;
         }
 
-        VBox pnlConfirmCard = new VBox(14);
-        pnlConfirmCard.setMaxWidth(420);
-        pnlConfirmCard.setPrefWidth(420);
-        pnlConfirmCard.setMaxHeight(Region.USE_PREF_SIZE);
-        pnlConfirmCard.setPadding(new Insets(24, 26, 22, 26));
-        pnlConfirmCard.setStyle(
-                "-fx-background-color: #ffffff; -fx-background-radius: 16px; " +
-                "-fx-border-color: #e6e8e3; -fx-border-radius: 16px; -fx-border-width: 1px;"
-        );
-        pnlConfirmCard.setEffect(new DropShadow(28, 0, 8, Color.rgb(0, 0, 0, 0.18)));
-
-        Label lblConfirmTitle = new Label("Xác nhận ngừng hoạt động");
-        lblConfirmTitle.setStyle("-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #1b211c;");
+        VBox pnlConfirmCard = createModalCard(420, "Xác nhận ngừng hoạt động");
 
         Label lblConfirmDesc = new Label(
                 "Bạn có chắc chắn muốn ngừng hợp tác (xóa mềm) với nhà cung cấp \"" +
@@ -569,48 +607,137 @@ public class SupplierView extends StackPane {
         lblConfirmDesc.setWrapText(true);
         lblConfirmDesc.setStyle("-fx-font-size: 13.5px; -fx-text-fill: #5a6058;");
 
-        HBox pnlActions = new HBox(10);
-        pnlActions.setAlignment(Pos.CENTER_LEFT);
+        HBox pnlActions = createModalActionBar(
+                "Hủy", this::closeModalOverlay,
+                "Xóa", "#c94444", () -> {
+                    try {
+                        supplierController.removeSupplierSoftly(supplier.getMaNhaCungCap());
+                        applySearchAndFilter();
+                        showSuccessMessageModal("Đã xóa thành công",
+                                "Đã xóa nhà cung cấp \"" + supplier.getTenNhaCungCap() +
+                                "\" (" + formatDisplayId(supplier.getMaNhaCungCap()) + ") thành công!");
+                    } catch (Exception ex) {
+                        lblConfirmDesc.setText("Lỗi: " + ex.getMessage());
+                        lblConfirmDesc.setStyle("-fx-font-size: 13px; -fx-text-fill: #c94444; -fx-font-weight: bold;");
+                    }
+                }
+        );
+
+        pnlConfirmCard.getChildren().addAll(lblConfirmDesc, pnlActions);
+        openModalOverlay(pnlConfirmCard);
+    }
+
+    /**
+     * Hiển thị hộp thoại thông báo hoàn tất ("Đã lưu thành công" hoặc "Đã xóa thành công").
+     */
+    private void showSuccessMessageModal(String title, String detailMessage) {
+        VBox pnlSuccessCard = createModalCard(400, title);
+
+        Label lblMessage = new Label(detailMessage);
+        lblMessage.setWrapText(true);
+        lblMessage.setStyle("-fx-font-size: 13.5px; -fx-text-fill: #2f5e3d; -fx-font-weight: bold;");
+
+        HBox pnlActions = new HBox();
+        pnlActions.setAlignment(Pos.CENTER_RIGHT);
         VBox.setMargin(pnlActions, new Insets(6, 0, 0, 0));
 
-        Button btnCancel = new Button("Hủy");
-        btnCancel.setStyle(
+        Button btnCloseSuccess = new Button("Đóng");
+        btnCloseSuccess.setStyle(
+                "-fx-background-color: #3f6148; -fx-background-radius: 8px; " +
+                "-fx-text-fill: #ffffff; -fx-font-size: 13px; " +
+                "-fx-font-weight: bold; -fx-padding: 8px 24px; -fx-cursor: hand;"
+        );
+        btnCloseSuccess.setOnAction(e -> closeModalOverlay());
+
+        pnlActions.getChildren().add(btnCloseSuccess);
+        pnlSuccessCard.getChildren().addAll(lblMessage, pnlActions);
+
+        openModalOverlay(pnlSuccessCard);
+        Platform.runLater(btnCloseSuccess::requestFocus);
+    }
+
+    private VBox createModalCard(double width, String titleText) {
+        VBox pnlModalCard = new VBox(14);
+        pnlModalCard.setMaxWidth(width);
+        pnlModalCard.setPrefWidth(width);
+        pnlModalCard.setMaxHeight(Region.USE_PREF_SIZE);
+        pnlModalCard.setPadding(new Insets(24, 26, 22, 26));
+        pnlModalCard.setStyle(
+                "-fx-background-color: #ffffff; -fx-background-radius: 16px; " +
+                "-fx-border-color: #e6e8e3; -fx-border-radius: 16px; -fx-border-width: 1px;"
+        );
+        pnlModalCard.setEffect(new DropShadow(28, 0, 8, Color.rgb(0, 0, 0, 0.18)));
+
+        Label lblModalTitle = new Label(titleText);
+        lblModalTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #1b211c;");
+        VBox.setMargin(lblModalTitle, new Insets(0, 0, 2, 0));
+        pnlModalCard.getChildren().add(lblModalTitle);
+        return pnlModalCard;
+    }
+
+    private void appendSupplierFormFields(VBox pnlModalCard, Supplier values) {
+        txtTenNhaCungCap = createModalTextField("Nhập tên nhà cung cấp...", values != null ? values.getTenNhaCungCap() : "");
+        txtSoDienThoai = createModalTextField("Nhập số điện thoại...", values != null ? values.getSoDienThoai() : "");
+        txtEmail = createModalTextField("Nhập email...", values != null ? values.getEmail() : "");
+        txtDiaChi = createModalTextField("Nhập địa chỉ...", values != null ? values.getDiaChi() : "");
+        txtMatHangCungCap = createModalTextField("Nhập mặt hàng cung cấp...", values != null ? values.getMatHangCungCap() : "");
+
+        lblFormError = new Label();
+        lblFormError.setWrapText(true);
+        lblFormError.setVisible(false);
+        lblFormError.setManaged(false);
+        lblFormError.setStyle(
+                "-fx-text-fill: #c94444; -fx-font-size: 12.5px; -fx-font-weight: bold; " +
+                "-fx-background-color: #fdf0f0; -fx-padding: 8px 12px; -fx-background-radius: 8px;"
+        );
+
+        pnlModalCard.getChildren().addAll(
+                createLabeledField("Tên nhà cung cấp", true, txtTenNhaCungCap),
+                createLabeledField("Số điện thoại", true, txtSoDienThoai),
+                createLabeledField("Email", true, txtEmail),
+                createLabeledField("Địa chỉ", false, txtDiaChi),
+                createLabeledField("Mặt hàng cung cấp", true, txtMatHangCungCap),
+                lblFormError
+        );
+    }
+
+    private HBox createModalActionBar(String cancelText, Runnable onCancel,
+                                      String primaryText, String primaryColor, Runnable onPrimary) {
+        HBox pnlModalActions = new HBox(12);
+        pnlModalActions.setAlignment(Pos.CENTER_LEFT);
+        VBox.setMargin(pnlModalActions, new Insets(6, 0, 0, 0));
+
+        Button btnCancelModal = new Button(cancelText);
+        btnCancelModal.setStyle(
                 "-fx-background-color: #ffffff; -fx-border-color: #dcded8; -fx-border-radius: 8px; " +
                 "-fx-background-radius: 8px; -fx-text-fill: #2b312c; -fx-font-size: 13px; " +
                 "-fx-font-weight: bold; -fx-padding: 8px 18px; -fx-cursor: hand;"
         );
-        btnCancel.setOnAction(e -> closeModalOverlay());
+        btnCancelModal.setOnAction(e -> onCancel.run());
 
-        Region pnlSpacer = new Region();
-        HBox.setHgrow(pnlSpacer, Priority.ALWAYS);
+        Region pnlActionSpacer = new Region();
+        HBox.setHgrow(pnlActionSpacer, Priority.ALWAYS);
 
-        Button btnConfirmDelete = new Button("Xóa");
-        btnConfirmDelete.setStyle(
-                "-fx-background-color: #c94444; -fx-background-radius: 8px; " +
+        Button btnSaveModal = new Button(primaryText);
+        btnSaveModal.setStyle(
+                "-fx-background-color: " + primaryColor + "; -fx-background-radius: 8px; " +
                 "-fx-text-fill: #ffffff; -fx-font-size: 13px; " +
-                "-fx-font-weight: bold; -fx-padding: 8px 20px; -fx-cursor: hand;"
+                "-fx-font-weight: bold; -fx-padding: 8px 22px; -fx-cursor: hand;"
         );
-        btnConfirmDelete.setOnAction(e -> {
-            try {
-                supplierController.removeSupplierSoftly(supplier.getMaNhaCungCap());
-                closeModalOverlay();
-                applySearchAndFilter();
-            } catch (Exception ex) {
-                lblConfirmDesc.setText("Lỗi: " + ex.getMessage());
-                lblConfirmDesc.setStyle("-fx-font-size: 13px; -fx-text-fill: #c94444; -fx-font-weight: bold;");
-            }
-        });
+        btnSaveModal.setOnAction(e -> onPrimary.run());
 
-        pnlActions.getChildren().addAll(btnCancel, pnlSpacer, btnConfirmDelete);
-        pnlConfirmCard.getChildren().addAll(lblConfirmTitle, lblConfirmDesc, pnlActions);
+        pnlModalActions.getChildren().addAll(btnCancelModal, pnlActionSpacer, btnSaveModal);
+        return pnlModalActions;
+    }
 
-        pnlModalOverlay.getChildren().setAll(pnlConfirmCard);
+    private void openModalOverlay(Region pnlCard) {
+        pnlModalOverlay.getChildren().setAll(pnlCard);
         pnlModalOverlay.setVisible(true);
         pnlModalOverlay.setManaged(true);
     }
 
     /**
-     * Đóng lớp phủ Modal (09 · Thêm / Sửa NCC).
+     * Đóng lớp phủ Modal.
      */
     private void closeModalOverlay() {
         pnlModalOverlay.setVisible(false);
@@ -677,7 +804,7 @@ public class SupplierView extends StackPane {
                 closeModalOverlay();
                 event.consume();
             } else if (!isSearchMode && event.isControlDown() && event.getCode() == KeyCode.N && !pnlModalOverlay.isVisible()) {
-                showSupplierFormModal(null);
+                showAddSupplierModal();
                 event.consume();
             } else if (event.getCode() == KeyCode.F5 && !pnlModalOverlay.isVisible()) {
                 applySearchAndFilter();
