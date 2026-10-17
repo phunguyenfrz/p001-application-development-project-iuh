@@ -26,6 +26,15 @@ public class CustomerController {
     }
 
     /**
+     * Lấy khách hàng đang hoạt động cho trang Cập nhật.
+     *
+     * @return Danh sách khách hàng đang hoạt động.
+     * @throws IllegalStateException Khi không đọc được dữ liệu.
+     */
+    public List<Customer> loadActiveCustomers() {
+        return customer_service.findActive();
+    }
+    /**
      * Yêu cầu thêm khách hàng mới.
      * Service tự tạo mã và đặt điểm tích lũy bằng 0.
      *
@@ -49,11 +58,11 @@ public class CustomerController {
     }
 
     /**
-     * Yêu cầu xóa hẳn khách hàng theo mã.
+     * Yêu cầu ngừng hoạt động khách hàng bằng xóa mềm.
      *
-     * @param customer_id Mã khách hàng cần xóa.
+     * @param customer_id Mã khách hàng cần ngừng hoạt động.
      * @throws IllegalArgumentException Khi mã không hợp lệ.
-     * @throws IllegalStateException Khi không được phép xóa hoặc lỗi SQL.
+     * @throws IllegalStateException Khi cập nhật trạng thái thất bại.
      */
     public void deleteCustomer(String customer_id) {
         customer_service.delete(customer_id);

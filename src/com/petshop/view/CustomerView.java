@@ -42,6 +42,9 @@ import java.util.function.Supplier;
  */
 public class CustomerView extends VBox {
 
+        // Trang Cập nhật chỉ hiển thị khách hàng đang hoạt động.
+        private boolean update_mode = false;
+
         // Controller tiếp nhận yêu cầu từ giao diện.
         private final CustomerController customer_controller = new CustomerController();
 
@@ -65,7 +68,7 @@ public class CustomerView extends VBox {
 
         private final Button btnEdit = new Button("Sửa khách hàng");
 
-        private final Button btnDelete = new Button("Xóa");
+        private final Button btnDelete = new Button("Ngừng hoạt động");
 
         // Các nút trên trang tìm kiếm.
         private final Button btnSearch = new Button("Tìm kiếm");
@@ -110,9 +113,10 @@ public class CustomerView extends VBox {
 
         /**
          * Dựng trang cập nhật khách hàng.
-         * Trang này chỉ có các nút Thêm, Sửa và Xóa.
+         * Trang này có các nút Thêm, Sửa và Ngừng hoạt động.
          */
         private void initializeUpdateScreen() {
+                update_mode = true;
                 getStyleClass().add("customer-page");
                 setSpacing(20);
                 setPadding(new Insets(28));
@@ -424,7 +428,9 @@ public class CustomerView extends VBox {
                 lblStatus.setText("Đang tải khách hàng...");
 
                 executeBackground(
-                                () -> customer_controller.loadCustomers(),
+                                () -> update_mode
+                                        ? customer_controller.loadActiveCustomers()
+                                        : customer_controller.loadCustomers(),
                                 customers -> {
                                         tblCustomers.getSelectionModel().clearSelection();
 
@@ -721,8 +727,8 @@ public class CustomerView extends VBox {
         }
 
         /**
-         * Mở hộp xác nhận xóa khách hàng.
-         * Chỉ xóa sau khi người dùng xác nhận.
+         * Mở hộp xác nhận ngừng hoạt động khách hàng.
+         * Chỉ ngừng hoạt động sau khi người dùng xác nhận.
          */
         private void showDeleteDialog() {
                 // Khách hàng được chọn trong bảng.
@@ -732,17 +738,18 @@ public class CustomerView extends VBox {
                         return;
                 }
 
-                // Hộp thoại xác nhận xóa hẳn.
+                // Hộp thoại xác nhận ngừng hoạt động bằng xóa mềm.
                 Dialog<ButtonType> dialog = new Dialog<>();
                 configureDialog(dialog, 600);
 
                 // Tiêu đề hộp thoại.
-                Label lblTitle = new Label("Xóa khách hàng");
+                Label lblTitle = new Label("Ngừng hoạt động khách hàng");
                 lblTitle.getStyleClass().add("customer-dialog-title");
 
                 // Cảnh báo về hành động xóa.
                 Label lblWarning = new Label(
-                                "Hành động này không thể hoàn tác.");
+                                "Khách hàng sẽ ngừng hoạt động. Thông tin và lịch sử giao dịch được giữ nguyên.");
+                lblWarning.setWrapText(true);
                 lblWarning.getStyleClass().add("customer-field-label");
 
                 // Nhãn báo lỗi nếu database không cho phép xóa.
@@ -768,7 +775,7 @@ public class CustomerView extends VBox {
                                 ButtonBar.ButtonData.CANCEL_CLOSE);
 
                 ButtonType delete_type = new ButtonType(
-                                "Xác nhận xóa",
+                                "Xác nhận ngừng hoạt động",
                                 ButtonBar.ButtonData.OK_DONE);
 
                 dialog.getDialogPane().getButtonTypes().addAll(
@@ -788,7 +795,7 @@ public class CustomerView extends VBox {
                 btnConfirm.disableProperty().bind(busy);
                 btnCancel.disableProperty().bind(busy);
 
-                // Không cho đóng hộp thoại khi đang xóa.
+                // Không cho đóng hộp thoại khi đang cập nhật trạng thái.
                 dialog.setOnCloseRequest(event -> {
                         if (busy.get()) {
                                 event.consume();
@@ -796,7 +803,7 @@ public class CustomerView extends VBox {
                 });
 
                 btnConfirm.addEventFilter(ActionEvent.ACTION, event -> {
-                        // Chỉ đóng hộp thoại khi xóa thành công.
+                        // Chỉ đóng hộp thoại khi ngừng hoạt động thành công.
                         event.consume();
                         lblError.setText("");
 
