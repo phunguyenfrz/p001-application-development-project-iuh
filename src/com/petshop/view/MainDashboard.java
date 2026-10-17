@@ -473,7 +473,9 @@ public class MainDashboard extends BorderPane {
             case "PRODUCT"      -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
             // --- Nhóm 4: Khuyến mãi & Hóa đơn & Phiếu đổi trả ---
-            case "PROMOTION"    -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "PROMOTION"    -> "PRM_SEARCH".equals(action.getId())
+                                        ? new PromotionSearchView()
+                                        : new PromotionUpdateView();
             case "INVOICE"      -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
             case "RETURN_NOTE"  -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
