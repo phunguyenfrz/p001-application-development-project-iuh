@@ -86,6 +86,16 @@ public class CustomerView extends VBox {
          * @param action_id Mã chức năng từ MenuRegistry.
          */
         public CustomerView(String action_id) {
+                // Mở màn lịch sử giao dịch khách hàng.
+                if ("CUS_HISTORY".equals(action_id)) {
+                // View riêng xử lý toàn bộ giao diện lịch sử.
+                CustomerTransactionView history_view =
+                        new CustomerTransactionView();
+
+                VBox.setVgrow(history_view, Priority.ALWAYS);
+                getChildren().add(history_view);
+                return;
+                }
                 // Mở trang tìm kiếm khách hàng.
                 if ("CUS_SEARCH".equals(action_id)) {
                         initializeSearchScreen();
