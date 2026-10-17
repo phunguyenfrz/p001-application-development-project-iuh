@@ -77,6 +77,9 @@ public class CustomerView extends VBox {
 
         private final Button btnRefresh = new Button("Làm mới");
 
+        // Lọc khách hàng theo trạng thái trên trang Tìm kiếm.
+        private final ComboBox<String> cboCustomerStatus = new ComboBox<>();
+
         // Nhãn thông báo số lượng hoặc trạng thái xử lý.
         private final Label lblStatus = new Label();
 
@@ -218,13 +221,27 @@ public class CustomerView extends VBox {
                 Region search_spacer = new Region();
                 HBox.setHgrow(search_spacer, Priority.ALWAYS);
 
-                // Hàng nhập từ khóa và các nút.
+                // Ba lựa chọn trạng thái, mặc định tra cứu tất cả khách hàng.
+                cboCustomerStatus.getItems().addAll(
+                                "Tất cả", "Đang hoạt động", "Ngừng hoạt động");
+                cboCustomerStatus.setValue("Tất cả");
+                cboCustomerStatus.setPrefWidth(165);
+                cboCustomerStatus.getStyleClass().add("customer-status-filter");
+
+                // Đặt nút Tìm kiếm sát ô nhập theo mẫu Figma.
+                HBox search_box = new HBox(0, txtSearch, btnSearch);
+                search_box.setAlignment(Pos.CENTER_LEFT);
+                search_box.getStyleClass().add("customer-search-group");
+                txtSearch.setPrefWidth(350);
+                HBox.setHgrow(txtSearch, Priority.ALWAYS);
+
+                // Xem thông tin, trạng thái và Làm mới nằm bên phải.
                 HBox search_bar = new HBox(
                                 10,
-                                txtSearch,
+                                search_box,
                                 search_spacer,
-                                btnSearch,
                                 btnViewInfo,
+                                cboCustomerStatus,
                                 btnRefresh);
                 search_bar.setAlignment(Pos.CENTER_LEFT);
 
@@ -243,6 +260,7 @@ public class CustomerView extends VBox {
 
                 // Không cho thao tác khi đang tải dữ liệu.
                 btnSearch.disableProperty().bind(busy);
+                cboCustomerStatus.disableProperty().bind(busy);
                 btnRefresh.disableProperty().bind(busy);
                 txtSearch.disableProperty().bind(busy);
                 tblCustomers.disableProperty().bind(busy);
@@ -260,10 +278,17 @@ public class CustomerView extends VBox {
 
                 btnViewInfo.setOnAction(event -> showCustomerInfo());
 
+                // Đổi trạng thái sẽ lọc ngay trên từ khóa đã tìm trước đó.
+                cboCustomerStatus.setOnAction(event -> {
+                        tblCustomers.getSelectionModel().clearSelection();
+                        filterCustomers();
+                });
+
                 // Làm mới sẽ xóa bộ lọc và tải lại dữ liệu.
                 btnRefresh.setOnAction(event -> {
                         txtSearch.clear();
                         search_keyword = "";
+                        cboCustomerStatus.setValue("Tất cả");
 
                         tblCustomers.getSelectionModel().clearSelection();
 
@@ -465,25 +490,34 @@ public class CustomerView extends VBox {
          * Không phân biệt chữ hoa, chữ thường và dấu tiếng Việt.
          */
         private void filterCustomers() {
-                // Từ khóa đã được người dùng xác nhận.
+                // Từ khóa chỉ thay đổi sau khi bấm Tìm kiếm hoặc Enter.
                 String keyword = normalizeText(search_keyword);
 
-                filtered_customers.setPredicate(customer -> keyword.isEmpty()
-                                || normalizeText(customer.getMaKhachHang())
-                                                .contains(keyword)
-                                || normalizeText(customer.getHoTen())
-                                                .contains(keyword)
-                                || normalizeText(customer.getSoDienThoai())
-                                                .contains(keyword)
-                                || normalizeText(customer.getEmail())
-                                                .contains(keyword));
+                // Trang Cập nhật không áp dụng bộ lọc của trang Tìm kiếm.
+                String selected_status = update_mode
+                                ? "Tất cả" : cboCustomerStatus.getValue();
 
-                lblStatus.setText(
-                                "Hiển thị "
-                                                + filtered_customers.size()
-                                                + " / "
-                                                + customer_list.size()
-                                                + " khách hàng");
+                filtered_customers.setPredicate(customer -> {
+                        // Kiểm tra thông tin khớp từ khóa, không phân biệt dấu.
+                        boolean matches_keyword = keyword.isEmpty()
+                                        || normalizeText(customer.getMaKhachHang()).contains(keyword)
+                                        || normalizeText(customer.getHoTen()).contains(keyword)
+                                        || normalizeText(customer.getSoDienThoai()).contains(keyword)
+                                        || normalizeText(customer.getEmail()).contains(keyword);
+
+                        // Kết hợp từ khóa VÀ trạng thái, không lọc từng điều kiện riêng.
+                        boolean matches_status = selected_status == null
+                                        || "Tất cả".equals(selected_status)
+                                        || ("Đang hoạt động".equals(selected_status)
+                                                && customer.isTrangThai())
+                                        || ("Ngừng hoạt động".equals(selected_status)
+                                                && !customer.isTrangThai());
+
+                        return matches_keyword && matches_status;
+                });
+
+                lblStatus.setText("Hiển thị " + filtered_customers.size()
+                                + " / " + customer_list.size() + " khách hàng");
         }
 
         /**
@@ -834,26 +868,29 @@ public class CustomerView extends VBox {
          */
         private HBox createProfileCard(Customer customer) {
                 // Avatar lấy chữ viết tắt từ họ tên.
-                Label lblAvatar = new Label(
-                                getInitials(customer.getHoTen()));
+                Label lblAvatar = new Label(getInitials(customer.getHoTen()));
                 lblAvatar.getStyleClass().add("customer-avatar");
 
-                // Họ tên đầy đủ của khách hàng.
+                // Tên khách hàng và trạng thái được lấy từ dữ liệu SQL.
                 Label lblName = new Label(customer.getHoTen());
                 lblName.setStyle("-fx-font-weight: bold;");
                 lblName.setWrapText(true);
 
-                HBox.setHgrow(lblName, Priority.ALWAYS);
+                Label lblActivityStatus = new Label(
+                                customer.isTrangThai() ? "Đang hoạt động" : "Ngừng hoạt động");
+                lblActivityStatus.getStyleClass().addAll(
+                                "customer-activity-badge",
+                                customer.isTrangThai()
+                                        ? "customer-activity-active" : "customer-activity-inactive");
 
-                // Thẻ thông tin tên khách hàng.
-                HBox profile = new HBox(
-                                14,
-                                lblAvatar,
-                                lblName);
+                // Badge dưới tên, dùng chung cho hộp thông tin và xác nhận ngừng hoạt động.
+                VBox name_box = new VBox(7, lblName, lblActivityStatus);
+                name_box.setAlignment(Pos.CENTER_LEFT);
+                HBox.setHgrow(name_box, Priority.ALWAYS);
 
+                HBox profile = new HBox(14, lblAvatar, name_box);
                 profile.setAlignment(Pos.CENTER_LEFT);
                 profile.getStyleClass().add("customer-info-card");
-
                 return profile;
         }
 

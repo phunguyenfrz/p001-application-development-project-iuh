@@ -29,7 +29,7 @@ public class CustomerDao {
         // Đọc đúng các cột trong cấu trúc SQL ban đầu.
         String sql_query = """
                 SELECT maKhachHang, hoTen, soDienThoai, email,
-                       diemTichLuy, diaChi, ghiChu
+                       diemTichLuy, diaChi, ghiChu, trangThai
                 FROM dbo.KhachHang
                 ORDER BY hoTen, maKhachHang
                 """;
@@ -65,7 +65,7 @@ public class CustomerDao {
         // Không đưa khách đã ngừng hoạt động vào trang Cập nhật.
         String sql_query = """
                 SELECT maKhachHang, hoTen, soDienThoai, email,
-                       diemTichLuy, diaChi, ghiChu
+                       diemTichLuy, diaChi, ghiChu, trangThai
                 FROM dbo.KhachHang
                 WHERE trangThai = 1
                 ORDER BY hoTen, maKhachHang
@@ -196,8 +196,8 @@ public class CustomerDao {
      */
     private Customer mapCustomer(ResultSet result_set)
             throws SQLException {
-
-        return new Customer(
+        // Tạo khách hàng từ các trường thông tin cá nhân.
+        Customer customer = new Customer(
                 result_set.getString("maKhachHang"),
                 result_set.getString("hoTen"),
                 result_set.getString("soDienThoai"),
@@ -206,5 +206,9 @@ public class CustomerDao {
                 result_set.getString("diaChi"),
                 result_set.getString("ghiChu")
         );
+
+        // Lấy trạng thái thực tế, không suy đoán theo màn hình đang mở.
+        customer.setTrangThai(result_set.getBoolean("trangThai"));
+        return customer;
     }
 }
