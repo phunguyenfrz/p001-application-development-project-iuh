@@ -669,20 +669,23 @@
     -fx-padding: 3px 10px;
 }
 
-/* === MODULE CUSTOMER === */
+/* === MODULE UPDATECUSTOMER === */
 
+/* Nền và font chung của màn khách hàng. */
 .customer-page {
     -fx-background-color: #f6f5f1;
     -fx-font-family: "Segoe UI";
     -fx-font-size: 13px;
 }
 
+/* Tiêu đề trang Cập nhật khách hàng. */
 .customer-page .customer-title {
     -fx-font-size: 24px;
     -fx-font-weight: bold;
     -fx-text-fill: #20251f;
 }
 
+/* Thẻ trắng bo góc chứa bảng khách hàng. */
 .customer-page .customer-card {
     -fx-background-color: white;
     -fx-background-radius: 14px;
@@ -693,6 +696,7 @@
     );
 }
 
+/* Kiểu chung của các nút Thêm, Lưu, Xóa và nút phụ. */
 .customer-page .customer-add,
 .customer-dialog .customer-save,
 .customer-page .customer-danger,
@@ -706,16 +710,19 @@
     -fx-font-size: 12px;
 }
 
+/* Nút Thêm khách hàng màu cam. */
 .customer-page .customer-add {
     -fx-background-color: #ff7518;
     -fx-text-fill: white;
     -fx-font-weight: bold;
 }
 
+/* Màu nút Thêm khi đưa chuột vào. */
 .customer-page .customer-add:hover {
     -fx-background-color: #e9630b;
 }
 
+/* Nút Xóa trên trang và nút Xác nhận xóa trong hộp thoại. */
 .customer-page .customer-danger,
 .customer-dialog .customer-danger {
     -fx-background-color: #f43f46;
@@ -723,11 +730,13 @@
     -fx-font-weight: bold;
 }
 
+/* Màu nút Xóa khi đưa chuột vào. */
 .customer-page .customer-danger:hover,
 .customer-dialog .customer-danger:hover {
     -fx-background-color: #dc3039;
 }
 
+/* Nút phụ: Sửa, Xem thông tin, Làm mới, Hủy và Đóng. */
 .customer-page .customer-secondary,
 .customer-dialog .customer-secondary {
     -fx-background-color: white;
@@ -735,21 +744,25 @@
     -fx-text-fill: #303730;
 }
 
+/* Màu nền nút phụ khi đưa chuột vào. */
 .customer-page .customer-secondary:hover,
 .customer-dialog .customer-secondary:hover {
     -fx-background-color: #f4f7f4;
 }
 
+/* Nút Lưu khách hàng hoặc Cập nhật trên form. */
 .customer-dialog .customer-save {
     -fx-background-color: #2c6b50;
     -fx-text-fill: white;
     -fx-font-weight: bold;
 }
 
+/* Màu nút Lưu khi đưa chuột vào. */
 .customer-dialog .customer-save:hover {
     -fx-background-color: #23563f;
 }
 
+/* Kiểu chung cho ô tìm kiếm và các ô nhập trong form. */
 .customer-page .customer-search,
 .customer-dialog .customer-input {
     -fx-background-color: white;
@@ -760,17 +773,24 @@
     -fx-prompt-text-fill: #9aa4b2;
 }
 
+/* Viền ô nhập khi nhận tiêu điểm bàn phím. */
 .customer-page .customer-search:focused,
 .customer-dialog .customer-input:focused {
     -fx-border-color: #69a588;
 }
 
+/* Nhãn số lượng khách hàng và trạng thái tải dữ liệu. */
 .customer-page .customer-status {
     -fx-text-fill: #748075;
     -fx-font-size: 12px;
 }
 
-/* Bảng chỉ sử dụng đường phân cách ngang. */
+/* --------------------------------------------------------------------------
+   BẢNG KHÁCH HÀNG
+   Dùng chung cho trang Cập nhật và trang Tìm kiếm.
+   -------------------------------------------------------------------------- */
+
+/* Nền bảng và loại bỏ đường viền mặc định. */
 .customer-page .customer-table {
     -fx-background-color: white;
     -fx-border-width: 0;
@@ -778,11 +798,13 @@
     -fx-table-cell-border-color: transparent;
 }
 
+/* Nền hàng tiêu đề của bảng. */
 .customer-page .customer-table .column-header-background {
     -fx-background-color: #f8f8f4;
     -fx-background-radius: 7px;
 }
 
+/* Nền và chiều cao các ô tiêu đề, kể cả phần trống cuối hàng. */
 .customer-page .customer-table .column-header,
 .customer-page .customer-table .filler {
     -fx-background-color: transparent;
@@ -790,6 +812,7 @@
     -fx-pref-height: 44px;
 }
 
+/* Chữ và căn lề trong hàng tiêu đề. */
 .customer-page .customer-table .column-header .label {
     -fx-text-fill: #60695f;
     -fx-font-size: 12px;
@@ -798,6 +821,7 @@
     -fx-padding: 0 10px;
 }
 
+/* Dòng dữ liệu có đường phân cách ngang ở phía dưới. */
 .customer-page .customer-table .table-row-cell {
     -fx-background-color: white;
     -fx-border-color: transparent transparent #eceee9 transparent;
@@ -805,35 +829,46 @@
     -fx-cell-size: 64px;
 }
 
+/* Dòng trống không hiển thị đường phân cách. */
 .customer-page .customer-table .table-row-cell:empty {
     -fx-background-color: white;
     -fx-border-width: 0;
 }
 
+/* Màu nền khi đưa chuột vào dòng có dữ liệu. */
 .customer-page .customer-table .table-row-cell:filled:hover {
     -fx-background-color: #f1f8f1;
 }
 
+/* Màu nền dòng khách hàng đang được chọn. */
 .customer-page .customer-table .table-row-cell:filled:selected {
     -fx-background-color: #d8efdc;
 }
 
+/* Khoảng cách và căn lề nội dung trong từng ô. */
 .customer-page .customer-table .table-cell {
     -fx-border-width: 0;
     -fx-padding: 10px;
     -fx-alignment: center-left;
 }
 
+/* Kiểu chữ của nhãn hiển thị dữ liệu trong ô. */
 .customer-page .customer-table .customer-cell-text {
     -fx-font-size: 12px;
     -fx-text-fill: #536052;
 }
 
+/* Màu chữ của dòng đang được chọn. */
 .customer-page .customer-table .table-row-cell:selected .customer-cell-text {
     -fx-text-fill: #183d27;
 }
 
-/* Form thêm, sửa và hộp xác nhận xóa. */
+/* --------------------------------------------------------------------------
+   HỘP THOẠI KHÁCH HÀNG
+   Form Thêm/Sửa, hộp Xác nhận xóa và hộp Xem thông tin.
+   -------------------------------------------------------------------------- */
+
+/* Khung trắng bo góc và font chung của hộp thoại. */
 .customer-dialog {
     -fx-background-color: white;
     -fx-background-radius: 12px;
@@ -844,26 +879,31 @@
     -fx-font-size: 12px;
 }
 
+/* Khoảng cách giữa nội dung và hàng nút phía dưới. */
 .customer-dialog > .content {
     -fx-padding: 0 0 12px 0;
 }
 
+/* Tiêu đề của form hoặc hộp thông tin. */
 .customer-dialog .customer-dialog-title {
     -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-text-fill: #252c25;
 }
 
+/* Nhãn tên trường và lời nhắc trong hộp thoại. */
 .customer-dialog .customer-field-label {
     -fx-text-fill: #76808e;
     -fx-font-size: 11px;
 }
 
+/* Thông báo lỗi nhập liệu hoặc lỗi thao tác database. */
 .customer-dialog .customer-error {
     -fx-text-fill: #cc3039;
     -fx-font-size: 12px;
 }
 
+/* Thẻ tên khách hàng và thẻ thông tin cá nhân. */
 .customer-dialog .customer-info-card {
     -fx-background-color: white;
     -fx-background-radius: 10px;
@@ -872,6 +912,7 @@
     -fx-padding: 16px;
 }
 
+/* Avatar tròn chứa chữ viết tắt của họ tên. */
 .customer-dialog .customer-avatar {
     -fx-min-width: 48px;
     -fx-min-height: 48px;
@@ -883,4 +924,70 @@
     -fx-text-fill: #2c7255;
     -fx-font-size: 18px;
     -fx-font-weight: bold;
+}
+
+/* === MODULE CUSTOMER SEARCH === */
+
+/* Nền trắng riêng của trang Tìm kiếm khách hàng. */
+.customer-page.customer-search-page {
+    -fx-background-color: white;
+}
+
+/* Tiêu đề trang tìm kiếm không in đậm. */
+.customer-page.customer-search-page .customer-title {
+    -fx-font-size: 23px;
+    -fx-font-weight: normal;
+    -fx-text-fill: #29382e;
+}
+
+/* Nhãn mô tả phía trên ô nhập từ khóa. */
+.customer-page .customer-search-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #29382e;
+}
+
+/* Ô tìm kiếm có viền xanh theo mẫu Figma. */
+.customer-page.customer-search-page .customer-search {
+    -fx-background-color: white;
+    -fx-background-radius: 6px;
+    -fx-border-color: #2c6b50;
+    -fx-border-radius: 6px;
+    -fx-border-width: 1px;
+    -fx-padding: 9px 12px;
+    -fx-prompt-text-fill: #9aa4b2;
+}
+
+/* Viền ô tìm kiếm khi nhận tiêu điểm bàn phím. */
+.customer-page.customer-search-page .customer-search:focused {
+    -fx-border-color: #23563f;
+}
+
+/* Nút Tìm kiếm màu xanh đậm. */
+.customer-page.customer-search-page .customer-save {
+    -fx-background-color: #2c6b50;
+    -fx-background-radius: 7px;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-padding: 9px 15px;
+    -fx-cursor: hand;
+}
+
+/* Màu nút Tìm kiếm khi đưa chuột vào. */
+.customer-page.customer-search-page .customer-save:hover {
+    -fx-background-color: #23563f;
+}
+
+/* Giảm độ đậm khi nút bị khóa trong lúc tải dữ liệu. */
+.customer-page.customer-search-page .customer-save:disabled {
+    -fx-opacity: 0.45;
+}
+
+/* Thẻ trắng chứa bảng kết quả tìm kiếm. */
+.customer-page.customer-search-page .customer-card {
+    -fx-background-color: white;
+    -fx-background-radius: 14px;
+    -fx-border-color: #e8e9e5;
+    -fx-border-radius: 14px;
+    -fx-border-width: 1px;
 }
