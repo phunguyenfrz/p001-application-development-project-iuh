@@ -78,6 +78,14 @@ public class PetView extends VBox {
      * @param action_id Mã chức năng từ MenuRegistry.
      */
     public PetView(String action_id) {
+        // Trang tìm kiếm dùng giao diện tra cứu riêng, giữ nguyên trang cập nhật.
+        if ("PET_SEARCH".equals(action_id)) {
+            PetSearchView search_view = new PetSearchView();
+            VBox.setVgrow(search_view, Priority.ALWAYS);
+            getChildren().add(search_view);
+            return;
+        }
+
         // Các trang khác sẽ được triển khai ở bước sau.
         if (!"PET_UPDATE".equals(action_id)) {
             // Tên chức năng của màn mẫu.
