@@ -459,7 +459,7 @@ public class MainDashboard extends BorderPane {
         Node targetView = switch (menu.getId()) {
             // --- Nhóm 1: Khách hàng & Thú cưng & Lịch hẹn ---
             case "CUSTOMER"     -> new CustomerView(action.getId());
-            case "PET"          -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "PET"          -> new PetView(action.getId());
             case "APPOINTMENT"  -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
             // --- Nhóm 2: Nhân viên & Ca trực & Dịch vụ chăm sóc ---
