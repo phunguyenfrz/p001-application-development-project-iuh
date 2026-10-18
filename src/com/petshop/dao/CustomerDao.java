@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * Truy cập dữ liệu khách hàng trong bảng KhachHang.
- * Hỗ trợ đọc, thêm, sửa và xóa hẳn khách hàng.
+ * Hỗ trợ đọc, thêm, sửa và ngừng hoạt động khách hàng bằng xóa mềm.
  */
 public class CustomerDao {
 
@@ -29,7 +29,7 @@ public class CustomerDao {
         // Đọc đúng các cột trong cấu trúc SQL ban đầu.
         String sql_query = """
                 SELECT maKhachHang, hoTen, soDienThoai, email,
-                       diemTichLuy, diaChi, ghiChu
+                       diemTichLuy, diaChi, ghiChu, trangThai
                 FROM dbo.KhachHang
                 ORDER BY hoTen, maKhachHang
                 """;
@@ -52,6 +52,36 @@ public class CustomerDao {
         return customer_list;
     }
 
+    /**
+     * Lấy khách hàng đang hoạt động cho trang Cập nhật.
+     *
+     * @return Danh sách khách hàng có trạng thái bằng 1.
+     * @throws SQLException Khi truy vấn database thất bại.
+     */
+    public List<Customer> findActive() throws SQLException {
+        // Danh sách khách hàng được phép cập nhật.
+        List<Customer> customer_list = new ArrayList<>();
+
+        // Không đưa khách đã ngừng hoạt động vào trang Cập nhật.
+        String sql_query = """
+                SELECT maKhachHang, hoTen, soDienThoai, email,
+                       diemTichLuy, diaChi, ghiChu, trangThai
+                FROM dbo.KhachHang
+                WHERE trangThai = 1
+                ORDER BY hoTen, maKhachHang
+                """;
+
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql_query);
+             ResultSet result_set = statement.executeQuery()) {
+            // Chuyển từng dòng dữ liệu thành đối tượng khách hàng.
+            while (result_set.next()) {
+                customer_list.add(mapCustomer(result_set));
+            }
+        }
+
+        return customer_list;
+    }
     /**
      * Thêm khách hàng mới.
      * Service cung cấp mã khách hàng và đặt điểm tích lũy bằng 0.
@@ -104,7 +134,7 @@ public class CustomerDao {
                     email = ?,
                     diaChi = ?,
                     ghiChu = ?
-                WHERE maKhachHang = ?
+                WHERE maKhachHang = ? AND trangThai = 1
                 """;
 
         try (Connection connection = DatabaseManager.getConnection();
@@ -118,27 +148,28 @@ public class CustomerDao {
             statement.setString(5, customer.getGhiChu());
             statement.setString(6, customer.getMaKhachHang());
 
-            // Khách hàng có thể đã bị xóa bởi người dùng khác.
+            // Khách hàng có thể đã ngừng hoạt động bởi người dùng khác.
             if (statement.executeUpdate() != 1) {
                 throw new SQLException(
-                        "Khách hàng không còn tồn tại. Hãy làm mới danh sách."
+                        "Khách hàng không tồn tại hoặc đã ngừng hoạt động. Hãy làm mới danh sách."
                 );
             }
         }
     }
 
     /**
-     * Xóa hẳn khách hàng theo mã.
-     * Khóa ngoại của database chặn xóa nếu có dữ liệu liên quan.
+     * Ngừng hoạt động khách hàng theo mã bằng xóa mềm.
+     * Giữ nguyên bản ghi, thú cưng, hóa đơn và lịch sử giao dịch liên quan.
      *
-     * @param customer_id Mã khách hàng cần xóa.
-     * @throws SQLException Khi xóa thất bại hoặc vi phạm khóa ngoại.
+     * @param customer_id Mã khách hàng cần ngừng hoạt động.
+     * @throws SQLException Khi cập nhật trạng thái thất bại.
      */
     public void delete(String customer_id) throws SQLException {
-        // Chỉ xóa bản ghi có mã trùng tham số được truyền vào.
+        // Chuyển trạng thái sang ngừng hoạt động, không xóa bản ghi.
         String sql_query = """
-                DELETE FROM dbo.KhachHang
-                WHERE maKhachHang = ?
+                UPDATE dbo.KhachHang
+                SET trangThai = 0
+                WHERE maKhachHang = ? AND trangThai = 1
                 """;
 
         try (Connection connection = DatabaseManager.getConnection();
@@ -147,10 +178,10 @@ public class CustomerDao {
 
             statement.setString(1, customer_id);
 
-            // Báo lỗi nếu không có khách hàng nào được xóa.
+            // Báo lỗi nếu khách hàng không còn tồn tại hoặc đã ngừng hoạt động.
             if (statement.executeUpdate() != 1) {
                 throw new SQLException(
-                        "Khách hàng không còn tồn tại. Hãy làm mới danh sách."
+                        "Khách hàng không tồn tại hoặc đã ngừng hoạt động. Hãy làm mới danh sách."
                 );
             }
         }
@@ -165,8 +196,8 @@ public class CustomerDao {
      */
     private Customer mapCustomer(ResultSet result_set)
             throws SQLException {
-
-        return new Customer(
+        // Tạo khách hàng từ các trường thông tin cá nhân.
+        Customer customer = new Customer(
                 result_set.getString("maKhachHang"),
                 result_set.getString("hoTen"),
                 result_set.getString("soDienThoai"),
@@ -175,5 +206,9 @@ public class CustomerDao {
                 result_set.getString("diaChi"),
                 result_set.getString("ghiChu")
         );
+
+        // Lấy trạng thái thực tế, không suy đoán theo màn hình đang mở.
+        customer.setTrangThai(result_set.getBoolean("trangThai"));
+        return customer;
     }
 }

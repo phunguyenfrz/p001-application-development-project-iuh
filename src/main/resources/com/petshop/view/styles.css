@@ -991,6 +991,7 @@
     -fx-border-radius: 14px;
     -fx-border-width: 1px;
 }
+<<<<<<< HEAD
 /* === MODULE CUSTOMER TRANSACTION HISTORY === */
 
 /* Nền và chữ chung của trang lịch sử. */
@@ -1199,10 +1200,48 @@
 /* Hóa đơn đã thanh toán. */
 .customer-history-page .history-paid,
 .history-dialog .history-paid {
+=======
+
+/* === MODULE CUSTOMER SEARCH - TRẠNG THÁI KHÁCH HÀNG === */
+
+/* Ghép ô nhập và nút Tìm kiếm thành nhóm sát nhau theo Figma. */
+.customer-page.customer-search-page .customer-search-group .customer-search {
+    -fx-background-radius: 6px 0 0 6px;
+    -fx-border-radius: 6px 0 0 6px;
+    -fx-pref-height: 36px;
+}
+
+/* Nút tìm kiếm nằm ngay bên phải ô nhập. */
+.customer-page.customer-search-page .customer-search-group .customer-save {
+    -fx-background-radius: 0 6px 6px 0;
+    -fx-pref-height: 36px;
+}
+
+/* Bộ lọc Tất cả, Đang hoạt động và Ngừng hoạt động. */
+.customer-page.customer-search-page .customer-status-filter {
+    -fx-background-color: white;
+    -fx-background-radius: 7px;
+    -fx-border-color: #e3e6e8;
+    -fx-border-radius: 7px;
+    -fx-pref-height: 36px;
+    -fx-font-size: 12px;
+}
+
+/* Kiểu chung cho badge trạng thái trong hộp thông tin khách hàng. */
+.customer-dialog .customer-activity-badge {
+    -fx-padding: 3px 9px;
+    -fx-background-radius: 12px;
+    -fx-font-size: 11px;
+}
+
+/* Khách hàng đang hoạt động hiển thị màu xanh. */
+.customer-dialog .customer-activity-active {
+>>>>>>> feature/customer_search_hoangdz
     -fx-background-color: #d8f3df;
     -fx-text-fill: #267347;
 }
 
+<<<<<<< HEAD
 /* Hóa đơn chưa thanh toán. */
 .customer-history-page .history-pending,
 .history-dialog .history-pending {
@@ -1266,4 +1305,10 @@
 /* Giữ chữ dễ đọc trên nền xanh nhạt. */
 .history-customer-suggestions .menu-item:focused .label {
     -fx-text-fill: #24543b;
+=======
+/* Khách hàng ngừng hoạt động hiển thị màu đỏ nhạt. */
+.customer-dialog .customer-activity-inactive {
+    -fx-background-color: #ffe2e4;
+    -fx-text-fill: #b8313a;
+>>>>>>> feature/customer_search_hoangdz
 }

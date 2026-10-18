@@ -40,6 +40,20 @@ public class CustomerService {
     }
 
     /**
+     * Lấy khách hàng đang hoạt động cho trang Cập nhật.
+     *
+     * @return Danh sách khách hàng đang hoạt động.
+     * @throws IllegalStateException Khi không đọc được dữ liệu.
+     */
+    public List<Customer> findActive() {
+        try {
+            return customer_dao.findActive();
+        } catch (SQLException exception) {
+            throw new IllegalStateException(
+                    "Không tải được khách hàng đang hoạt động.", exception);
+        }
+    }
+    /**
      * Thêm khách hàng mới sau khi kiểm tra dữ liệu.
      *
      * @param customer Thông tin khách hàng do Controller truyền vào.
@@ -88,28 +102,19 @@ public class CustomerService {
     }
 
     /**
-     * Xóa hẳn khách hàng nếu database cho phép.
+     * Ngừng hoạt động khách hàng bằng xóa mềm.
      *
-     * @param customer_id Mã khách hàng cần xóa.
+     * @param customer_id Mã khách hàng cần ngừng hoạt động.
      * @throws IllegalArgumentException Khi mã khách hàng không hợp lệ.
-     * @throws IllegalStateException Khi có dữ liệu liên quan hoặc lỗi SQL.
+     * @throws IllegalStateException Khi cập nhật trạng thái thất bại.
      */
     public void delete(String customer_id) {
         validateCustomerId(customer_id);
 
         try {
+            // DAO cập nhật trạng thái, giữ nguyên dữ liệu liên quan.
             customer_dao.delete(customer_id.trim());
         } catch (SQLException exception) {
-            // SQL Server trả mã 547 khi thao tác vi phạm ràng buộc.
-            // Với DELETE này, thường là khách hàng đang được tham chiếu.
-            if (exception.getErrorCode() == 547) {
-                throw new IllegalStateException(
-                        "Không thể xóa khách hàng vì có dữ liệu liên quan "
-                                + "như thú cưng, lịch hẹn hoặc hóa đơn.",
-                        exception
-                );
-            }
-
             throw translateSqlError(exception);
         }
     }
@@ -247,7 +252,7 @@ public class CustomerService {
                 || exception.getErrorCode() == 2627) {
             return new IllegalStateException(
                     "Số điện thoại hoặc mã khách hàng đã tồn tại. "
-                            + "Kiểm tra số điện thoại; nếu số chưa trùng, "
+                            + "Số điện thoại của khách đã ngừng hoạt động vẫn được giữ; nếu số chưa trùng, "
                             + "hãy thử thêm lại.",
                     exception
             );
