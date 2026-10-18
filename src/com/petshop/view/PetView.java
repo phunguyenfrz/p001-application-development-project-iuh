@@ -86,6 +86,14 @@ public class PetView extends VBox {
             return;
         }
 
+        // Mở màn lịch sử chăm sóc, không đi vào màn mẫu bên dưới.
+        if ("PET_CARE".equals(action_id)) {
+            PetCareHistoryView care_view = new PetCareHistoryView();
+            VBox.setVgrow(care_view, Priority.ALWAYS);
+            getChildren().add(care_view);
+            return;
+        }
+
         // Các trang khác sẽ được triển khai ở bước sau.
         if (!"PET_UPDATE".equals(action_id)) {
             // Tên chức năng của màn mẫu.

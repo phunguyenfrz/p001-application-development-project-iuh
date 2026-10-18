@@ -1806,3 +1806,126 @@
 .pet-dialog.pet-info-dialog > .button-bar > .container {
     -fx-padding: 14px 0 0 0;
 }
+/* === MODULE PET - LỊCH SỬ CHĂM SÓC === */
+/* Dùng chung CSS pet-page, pet-table và pet-dialog đã có từ màn cập nhật. */
+.pet-care-page .care-primary {
+    -fx-background-color: #2c6b52;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+.pet-care-page .care-primary:hover { -fx-background-color: #245940; }
+.pet-care-page .text-field,
+.pet-care-page .date-picker,
+.pet-care-page .combo-box {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-border-color: #dce3df;
+    -fx-border-radius: 7px;
+    -fx-background-radius: 7px;
+    -fx-pref-height: 36px;
+}
+.pet-care-page .text-field {
+    -fx-padding: 8px 10px;
+    -fx-border-color: #2c6b52;
+}
+.pet-care-page .date-picker > .text-field {
+    -fx-border-width: 0;
+    -fx-background-color: transparent;
+}
+.pet-care-page .date-picker > .arrow-button { -fx-background-color: transparent; }
+.pet-care-page .care-profile-card,
+.care-dialog .care-detail-card {
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-border-color: #e5e8ec;
+    -fx-border-radius: 12px;
+    -fx-padding: 14px;
+}
+.pet-care-page .care-pet-name { -fx-font-weight: bold; }
+.pet-care-page .care-field-label,
+.care-dialog .care-field-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #77808c;
+}
+.pet-care-page .care-error,
+.care-dialog .care-error {
+    -fx-text-fill: #dc4545;
+    -fx-wrap-text: true;
+}
+/* Hàng tự tăng chiều cao khi ghi chú dài. */
+.pet-care-page .pet-table .table-row-cell,
+.care-dialog .pet-table .table-row-cell { -fx-cell-size: -1; }
+.pet-care-page .pet-table .column-header .label,
+.pet-care-page .pet-table .pet-cell-text,
+.care-dialog .pet-table .column-header .label,
+.care-dialog .pet-table .pet-cell-text { -fx-wrap-text: true; }
+/* Style riêng vì bảng chi tiết nằm trong hộp thoại, bên ngoài pet-page. */
+.care-dialog .pet-table {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-table-cell-border-color: transparent;
+}
+.care-dialog .pet-table .column-header-background { -fx-background-color: #f8f8f4; }
+.care-dialog .pet-table .column-header,
+.care-dialog .pet-table .filler {
+    -fx-background-color: transparent;
+    -fx-pref-height: 42px;
+    -fx-border-width: 0;
+}
+.care-dialog .pet-table .column-header .label {
+    -fx-alignment: CENTER_LEFT;
+    -fx-font-size: 11px;
+    -fx-text-fill: #68726b;
+}
+.care-dialog .pet-table .table-row-cell { -fx-background-color: white; }
+.care-dialog .pet-table .table-row-cell:filled {
+    -fx-border-color: transparent transparent #edf0ec transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.care-dialog .pet-table .table-cell {
+    -fx-padding: 12px 8px;
+    -fx-border-width: 0;
+    -fx-alignment: CENTER_LEFT;
+}
+.care-dialog .pet-cell-text { -fx-font-size: 12px; -fx-text-fill: #34463b; }
+.care-dialog .text-area {
+    -fx-background-color: white;
+    -fx-border-color: #e3e7e4;
+    -fx-border-radius: 7px;
+    -fx-background-radius: 7px;
+}
+.care-dialog .text-area .content { -fx-background-color: white; }
+.care-pet-suggestions {
+    -fx-background-color: white;
+    -fx-background-radius: 7px;
+    -fx-border-color: #e3e7e4;
+    -fx-border-radius: 7px;
+    -fx-padding: 5px;
+}
+.care-pet-suggestions .menu-item { -fx-padding: 12px 8px; }
+.care-pet-suggestions .menu-item .label { -fx-font-size: 11px; -fx-text-fill: #34463b; }
+.care-pet-suggestions .menu-item:focused { -fx-background-color: #e6f2e8; }
+
+/* Thẻ thú cưng gọn như Figma, dành chiều cao cho bảng lịch sử. */
+.pet-care-page .care-profile-card.care-profile-compact {
+    -fx-padding: 10px 14px;
+    -fx-font-size: 11px;
+}
+.pet-care-page .care-profile-compact .care-field-label {
+    -fx-font-size: 10px;
+}
+.pet-care-page .care-profile-compact .pet-muted {
+    -fx-font-size: 10px;
+}
+.pet-care-page .care-profile-compact .care-pet-name {
+    -fx-font-size: 12px;
+}
+.pet-care-page .care-profile-compact .button {
+    -fx-font-size: 11px;
+    -fx-padding: 7px 12px;
+}
+.pet-care-page .care-profile-compact .separator .line {
+    -fx-border-color: #edf0ec;
+    -fx-border-width: 1px 0 0 0;
+}
