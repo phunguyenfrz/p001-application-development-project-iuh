@@ -458,8 +458,8 @@ public class MainDashboard extends BorderPane {
         // Mỗi thành viên khi hoàn thành View riêng chỉ sửa vào đúng nhánh case của đối tượng mình phụ trách:
         Node targetView = switch (menu.getId()) {
             // --- Nhóm 1: Khách hàng & Thú cưng & Lịch hẹn ---
-            case "CUSTOMER"     -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "PET"          -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "CUSTOMER"     -> new CustomerView(action.getId());
+            case "PET"          -> new PetView(action.getId());
             case "APPOINTMENT"  -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
             // --- Nhóm 2: Nhân viên & Ca trực & Dịch vụ chăm sóc ---
@@ -468,12 +468,14 @@ public class MainDashboard extends BorderPane {
             case "CARE_SERVICE" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
             // --- Nhóm 3: Nhà cung cấp & Đơn hàng nhập & Sản phẩm ---
-            case "SUPPLIER"     -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "SUPPLIER"     -> new SupplierView(action.getId());
             case "IMPORT_ORDER" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
             case "PRODUCT"      -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
             // --- Nhóm 4: Khuyến mãi & Hóa đơn & Phiếu đổi trả ---
-            case "PROMOTION"    -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "PROMOTION"    -> "PRM_SEARCH".equals(action.getId())
+                                        ? new PromotionSearchView()
+                                        : new PromotionUpdateView();
             case "INVOICE"      -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
             case "RETURN_NOTE"  -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
