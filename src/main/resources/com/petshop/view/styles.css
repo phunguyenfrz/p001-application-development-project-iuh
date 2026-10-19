@@ -668,3 +668,1264 @@
     -fx-background-radius: 12px;
     -fx-padding: 3px 10px;
 }
+
+/* === MODULE UPDATECUSTOMER === */
+
+/* Nền và font chung của màn khách hàng. */
+.customer-page {
+    -fx-background-color: #f6f5f1;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 13px;
+}
+
+/* Tiêu đề trang Cập nhật khách hàng. */
+.customer-page .customer-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #20251f;
+}
+
+/* Thẻ trắng bo góc chứa bảng khách hàng. */
+.customer-page .customer-card {
+    -fx-background-color: white;
+    -fx-background-radius: 14px;
+    -fx-border-color: #e8e9e5;
+    -fx-border-radius: 14px;
+    -fx-effect: dropshadow(
+        gaussian, rgba(0, 0, 0, 0.04), 10, 0, 0, 3
+    );
+}
+
+/* Kiểu chung của các nút Thêm, Lưu, Xóa và nút phụ. */
+.customer-page .customer-add,
+.customer-dialog .customer-save,
+.customer-page .customer-danger,
+.customer-dialog .customer-danger,
+.customer-page .customer-secondary,
+.customer-dialog .customer-secondary {
+    -fx-padding: 9px 15px;
+    -fx-background-radius: 7px;
+    -fx-border-radius: 7px;
+    -fx-cursor: hand;
+    -fx-font-size: 12px;
+}
+
+/* Nút Thêm khách hàng màu cam. */
+.customer-page .customer-add {
+    -fx-background-color: #ff7518;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* Màu nút Thêm khi đưa chuột vào. */
+.customer-page .customer-add:hover {
+    -fx-background-color: #e9630b;
+}
+
+/* Nút Xóa trên trang và nút Xác nhận xóa trong hộp thoại. */
+.customer-page .customer-danger,
+.customer-dialog .customer-danger {
+    -fx-background-color: #f43f46;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* Màu nút Xóa khi đưa chuột vào. */
+.customer-page .customer-danger:hover,
+.customer-dialog .customer-danger:hover {
+    -fx-background-color: #dc3039;
+}
+
+/* Nút phụ: Sửa, Xem thông tin, Làm mới, Hủy và Đóng. */
+.customer-page .customer-secondary,
+.customer-dialog .customer-secondary {
+    -fx-background-color: white;
+    -fx-border-color: #e3e6e8;
+    -fx-text-fill: #303730;
+}
+
+/* Màu nền nút phụ khi đưa chuột vào. */
+.customer-page .customer-secondary:hover,
+.customer-dialog .customer-secondary:hover {
+    -fx-background-color: #f4f7f4;
+}
+
+/* Nút Lưu khách hàng hoặc Cập nhật trên form. */
+.customer-dialog .customer-save {
+    -fx-background-color: #2c6b50;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* Màu nút Lưu khi đưa chuột vào. */
+.customer-dialog .customer-save:hover {
+    -fx-background-color: #23563f;
+}
+
+/* Kiểu chung cho ô tìm kiếm và các ô nhập trong form. */
+.customer-page .customer-search,
+.customer-dialog .customer-input {
+    -fx-background-color: white;
+    -fx-background-radius: 7px;
+    -fx-border-color: #e2e6eb;
+    -fx-border-radius: 7px;
+    -fx-padding: 9px 11px;
+    -fx-prompt-text-fill: #9aa4b2;
+}
+
+/* Viền ô nhập khi nhận tiêu điểm bàn phím. */
+.customer-page .customer-search:focused,
+.customer-dialog .customer-input:focused {
+    -fx-border-color: #69a588;
+}
+
+/* Nhãn số lượng khách hàng và trạng thái tải dữ liệu. */
+.customer-page .customer-status {
+    -fx-text-fill: #748075;
+    -fx-font-size: 12px;
+}
+
+/* --------------------------------------------------------------------------
+   BẢNG KHÁCH HÀNG
+   Dùng chung cho trang Cập nhật và trang Tìm kiếm.
+   -------------------------------------------------------------------------- */
+
+/* Nền bảng và loại bỏ đường viền mặc định. */
+.customer-page .customer-table {
+    -fx-background-color: white;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-table-cell-border-color: transparent;
+}
+
+/* Nền hàng tiêu đề của bảng. */
+.customer-page .customer-table .column-header-background {
+    -fx-background-color: #f8f8f4;
+    -fx-background-radius: 7px;
+}
+
+/* Nền và chiều cao các ô tiêu đề, kể cả phần trống cuối hàng. */
+.customer-page .customer-table .column-header,
+.customer-page .customer-table .filler {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-pref-height: 44px;
+}
+
+/* Chữ và căn lề trong hàng tiêu đề. */
+.customer-page .customer-table .column-header .label {
+    -fx-text-fill: #60695f;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-alignment: center-left;
+    -fx-padding: 0 10px;
+}
+
+/* Dòng dữ liệu có đường phân cách ngang ở phía dưới. */
+.customer-page .customer-table .table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #eceee9 transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-cell-size: 64px;
+}
+
+/* Dòng trống không hiển thị đường phân cách. */
+.customer-page .customer-table .table-row-cell:empty {
+    -fx-background-color: white;
+    -fx-border-width: 0;
+}
+
+/* Màu nền khi đưa chuột vào dòng có dữ liệu. */
+.customer-page .customer-table .table-row-cell:filled:hover {
+    -fx-background-color: #f1f8f1;
+}
+
+/* Màu nền dòng khách hàng đang được chọn. */
+.customer-page .customer-table .table-row-cell:filled:selected {
+    -fx-background-color: #d8efdc;
+}
+
+/* Khoảng cách và căn lề nội dung trong từng ô. */
+.customer-page .customer-table .table-cell {
+    -fx-border-width: 0;
+    -fx-padding: 10px;
+    -fx-alignment: center-left;
+}
+
+/* Kiểu chữ của nhãn hiển thị dữ liệu trong ô. */
+.customer-page .customer-table .customer-cell-text {
+    -fx-font-size: 12px;
+    -fx-text-fill: #536052;
+}
+
+/* Màu chữ của dòng đang được chọn. */
+.customer-page .customer-table .table-row-cell:selected .customer-cell-text {
+    -fx-text-fill: #183d27;
+}
+
+/* --------------------------------------------------------------------------
+   HỘP THOẠI KHÁCH HÀNG
+   Form Thêm/Sửa, hộp Xác nhận xóa và hộp Xem thông tin.
+   -------------------------------------------------------------------------- */
+
+/* Khung trắng bo góc và font chung của hộp thoại. */
+.customer-dialog {
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-border-color: #e7e9ed;
+    -fx-border-radius: 12px;
+    -fx-padding: 22px;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+}
+
+/* Khoảng cách giữa nội dung và hàng nút phía dưới. */
+.customer-dialog > .content {
+    -fx-padding: 0 0 12px 0;
+}
+
+/* Tiêu đề của form hoặc hộp thông tin. */
+.customer-dialog .customer-dialog-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #252c25;
+}
+
+/* Nhãn tên trường và lời nhắc trong hộp thoại. */
+.customer-dialog .customer-field-label {
+    -fx-text-fill: #76808e;
+    -fx-font-size: 11px;
+}
+
+/* Thông báo lỗi nhập liệu hoặc lỗi thao tác database. */
+.customer-dialog .customer-error {
+    -fx-text-fill: #cc3039;
+    -fx-font-size: 12px;
+}
+
+/* Thẻ tên khách hàng và thẻ thông tin cá nhân. */
+.customer-dialog .customer-info-card {
+    -fx-background-color: white;
+    -fx-background-radius: 10px;
+    -fx-border-color: #f0f1ed;
+    -fx-border-radius: 10px;
+    -fx-padding: 16px;
+}
+
+/* Avatar tròn chứa chữ viết tắt của họ tên. */
+.customer-dialog .customer-avatar {
+    -fx-min-width: 48px;
+    -fx-min-height: 48px;
+    -fx-max-width: 48px;
+    -fx-max-height: 48px;
+    -fx-alignment: center;
+    -fx-background-color: #d8f3dd;
+    -fx-background-radius: 24px;
+    -fx-text-fill: #2c7255;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+/* === MODULE CUSTOMER SEARCH === */
+
+/* Nền trắng riêng của trang Tìm kiếm khách hàng. */
+.customer-page.customer-search-page {
+    -fx-background-color: white;
+}
+
+/* Tiêu đề trang tìm kiếm không in đậm. */
+.customer-page.customer-search-page .customer-title {
+    -fx-font-size: 23px;
+    -fx-font-weight: normal;
+    -fx-text-fill: #29382e;
+}
+
+/* Nhãn mô tả phía trên ô nhập từ khóa. */
+.customer-page .customer-search-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #29382e;
+}
+
+/* Ô tìm kiếm có viền xanh theo mẫu Figma. */
+.customer-page.customer-search-page .customer-search {
+    -fx-background-color: white;
+    -fx-background-radius: 6px;
+    -fx-border-color: #2c6b50;
+    -fx-border-radius: 6px;
+    -fx-border-width: 1px;
+    -fx-padding: 9px 12px;
+    -fx-prompt-text-fill: #9aa4b2;
+}
+
+/* Viền ô tìm kiếm khi nhận tiêu điểm bàn phím. */
+.customer-page.customer-search-page .customer-search:focused {
+    -fx-border-color: #23563f;
+}
+
+/* Nút Tìm kiếm màu xanh đậm. */
+.customer-page.customer-search-page .customer-save {
+    -fx-background-color: #2c6b50;
+    -fx-background-radius: 7px;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-padding: 9px 15px;
+    -fx-cursor: hand;
+}
+
+/* Màu nút Tìm kiếm khi đưa chuột vào. */
+.customer-page.customer-search-page .customer-save:hover {
+    -fx-background-color: #23563f;
+}
+
+/* Giảm độ đậm khi nút bị khóa trong lúc tải dữ liệu. */
+.customer-page.customer-search-page .customer-save:disabled {
+    -fx-opacity: 0.45;
+}
+
+/* Thẻ trắng chứa bảng kết quả tìm kiếm. */
+.customer-page.customer-search-page .customer-card {
+    -fx-background-color: white;
+    -fx-background-radius: 14px;
+    -fx-border-color: #e8e9e5;
+    -fx-border-radius: 14px;
+    -fx-border-width: 1px;
+}
+/* === MODULE CUSTOMER TRANSACTION HISTORY === */
+
+/* Nền và chữ chung của trang lịch sử. */
+.customer-history-page {
+    -fx-background-color: white;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+}
+
+/* Tiêu đề chính của trang. */
+.customer-history-page .history-title {
+    -fx-font-size: 23px;
+    -fx-text-fill: #29382e;
+}
+
+/* Tiêu đề các khu vực và hộp chi tiết. */
+.customer-history-page .history-section-title,
+.history-dialog .history-section-title {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #29382e;
+}
+
+/* Chữ phụ và lời hướng dẫn. */
+.customer-history-page .history-muted,
+.history-dialog .history-muted {
+    -fx-font-size: 11px;
+    -fx-text-fill: #7d8793;
+}
+
+/* Nhãn phía trên bộ lọc. */
+.customer-history-page .history-field-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #34463b;
+}
+
+/* Thẻ danh sách và thẻ thông tin khách hàng. */
+.customer-history-page .history-card,
+.customer-history-page .history-profile,
+.history-dialog .history-profile {
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-border-color: #e6e9ed;
+    -fx-border-radius: 12px;
+    -fx-padding: 14px;
+}
+
+/* Avatar của khách hàng đã chọn. */
+.customer-history-page .history-avatar {
+    -fx-min-width: 42px;
+    -fx-min-height: 42px;
+    -fx-max-width: 42px;
+    -fx-max-height: 42px;
+    -fx-background-color: #d8f3dd;
+    -fx-background-radius: 21px;
+    -fx-alignment: center;
+    -fx-font-size: 15px;
+    -fx-text-fill: #2c7255;
+    -fx-font-weight: bold;
+}
+
+/* Ô tìm khách hàng và các điều khiển lọc. */
+.customer-history-page .history-input {
+    -fx-background-color: white;
+    -fx-background-radius: 6px;
+    -fx-border-color: #dfe5e4;
+    -fx-border-radius: 6px;
+    -fx-pref-height: 35px;
+}
+
+/* Khoảng cách trong ô tìm kiếm. */
+.customer-history-page .text-field.history-input {
+    -fx-padding: 8px 10px;
+    -fx-prompt-text-fill: #9aa4ad;
+    -fx-border-color: #2c6b50;
+}
+
+/* Trường nhập bên trong DatePicker. */
+.customer-history-page .date-picker .text-field {
+    -fx-background-color: white;
+    -fx-prompt-text-fill: #9aa4ad;
+}
+
+/* Nút chính và nút phụ của màn lịch sử. */
+.customer-history-page .history-primary,
+.customer-history-page .history-secondary,
+.history-dialog .history-secondary {
+    -fx-padding: 8px 13px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-font-size: 12px;
+    -fx-cursor: hand;
+}
+
+/* Nút Tìm kiếm, Áp dụng, Chọn khách hàng, Xem chi tiết. */
+.customer-history-page .history-primary {
+    -fx-background-color: #2c6b50;
+    -fx-text-fill: white;
+}
+
+/* Màu nút chính khi đưa chuột vào. */
+.customer-history-page .history-primary:hover {
+    -fx-background-color: #23563f;
+}
+
+/* Nút Làm mới, Đổi khách hàng, Xóa bộ lọc và Đóng. */
+.customer-history-page .history-secondary,
+.history-dialog .history-secondary {
+    -fx-background-color: white;
+    -fx-border-color: #e0e5e7;
+    -fx-text-fill: #34463b;
+}
+
+/* Màu nút phụ khi đưa chuột vào. */
+.customer-history-page .history-secondary:hover,
+.history-dialog .history-secondary:hover {
+    -fx-background-color: #f4f8f4;
+}
+
+/* Thông báo lỗi của bộ lọc. */
+.customer-history-page .history-error {
+    -fx-text-fill: #d63b42;
+}
+
+/* Tổng tiền thực tế và tổng đã thanh toán. */
+.customer-history-page .history-total,
+.history-dialog .history-total {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #246a4b;
+}
+
+/* Bảng hóa đơn và bảng chi tiết. */
+.customer-history-page .history-table,
+.history-dialog .history-table {
+    -fx-background-color: white;
+    -fx-border-width: 0;
+    -fx-table-cell-border-color: transparent;
+}
+
+/* Nền tiêu đề bảng. */
+.customer-history-page .history-table .column-header-background,
+.history-dialog .history-table .column-header-background {
+    -fx-background-color: #f8f8f4;
+}
+
+/* Các ô tiêu đề và phần trống cuối hàng tiêu đề. */
+.customer-history-page .history-table .column-header,
+.customer-history-page .history-table .filler,
+.history-dialog .history-table .column-header,
+.history-dialog .history-table .filler {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-pref-height: 40px;
+}
+
+/* Chữ trong tiêu đề bảng. */
+.customer-history-page .history-table .column-header .label,
+.history-dialog .history-table .column-header .label {
+    -fx-alignment: center-left;
+    -fx-padding: 0 8px;
+    -fx-text-fill: #637062;
+    -fx-font-size: 11px;
+}
+
+/* Dòng dữ liệu với đường phân cách ngang. */
+.customer-history-page .history-table .table-row-cell,
+.history-dialog .history-table .table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #eceee9 transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-pref-height: 44px;
+}
+
+/* Dòng được chọn có nền xanh nhạt. */
+.customer-history-page .history-table .table-row-cell:filled:selected,
+.history-dialog .history-table .table-row-cell:filled:selected {
+    -fx-background-color: #d8efdc;
+}
+
+/* Dòng trống không có đường phân cách. */
+.customer-history-page .history-table .table-row-cell:empty,
+.history-dialog .history-table .table-row-cell:empty {
+    -fx-background-color: white;
+    -fx-border-width: 0;
+}
+
+/* Căn lề và màu chữ trong ô dữ liệu. */
+.customer-history-page .history-table .table-cell,
+.history-dialog .history-table .table-cell {
+    -fx-border-width: 0;
+    -fx-padding: 9px 8px;
+    -fx-alignment: center-left;
+    -fx-text-fill: #46564a;
+    -fx-font-size: 11px;
+}
+
+/* Kiểu chung của badge trạng thái. */
+.customer-history-page .history-badge,
+.history-dialog .history-badge {
+    -fx-background-radius: 12px;
+    -fx-padding: 4px 8px;
+    -fx-font-size: 10px;
+}
+
+/* Hóa đơn đã thanh toán. */
+.customer-history-page .history-paid,
+.history-dialog .history-paid {
+    -fx-background-color: #d8f3df;
+    -fx-text-fill: #267347;
+}
+
+/* === MODULE CUSTOMER SEARCH - TRẠNG THÁI KHÁCH HÀNG === */
+
+/* Ghép ô nhập và nút Tìm kiếm thành nhóm sát nhau theo Figma. */
+.customer-page.customer-search-page .customer-search-group .customer-search {
+    -fx-background-radius: 6px 0 0 6px;
+    -fx-border-radius: 6px 0 0 6px;
+    -fx-pref-height: 36px;
+}
+
+/* Nút tìm kiếm nằm ngay bên phải ô nhập. */
+.customer-page.customer-search-page .customer-search-group .customer-save {
+    -fx-background-radius: 0 6px 6px 0;
+    -fx-pref-height: 36px;
+}
+
+/* Bộ lọc Tất cả, Đang hoạt động và Ngừng hoạt động. */
+.customer-page.customer-search-page .customer-status-filter {
+    -fx-background-color: white;
+    -fx-background-radius: 7px;
+    -fx-border-color: #e3e6e8;
+    -fx-border-radius: 7px;
+    -fx-pref-height: 36px;
+    -fx-font-size: 12px;
+}
+
+/* Kiểu chung cho badge trạng thái trong hộp thông tin khách hàng. */
+.customer-dialog .customer-activity-badge {
+    -fx-padding: 3px 9px;
+    -fx-background-radius: 12px;
+    -fx-font-size: 11px;
+}
+
+/* Khách hàng đang hoạt động hiển thị màu xanh. */
+.customer-dialog .customer-activity-active {
+    -fx-background-color: #d8f3df;
+    -fx-text-fill: #267347;
+}
+
+/* Hóa đơn chưa thanh toán. */
+.customer-history-page .history-pending,
+.history-dialog .history-pending {
+    -fx-background-color: #fff2cc;
+    -fx-text-fill: #8d6500;
+}
+
+/* Hóa đơn đã hủy. */
+.customer-history-page .history-cancelled,
+.history-dialog .history-cancelled {
+    -fx-background-color: #ffe2e4;
+    -fx-text-fill: #d1303a;
+}
+
+/* Hộp chi tiết giao dịch. */
+.history-dialog {
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-border-color: #e6e9ed;
+    -fx-border-radius: 12px;
+    -fx-padding: 20px;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+}
+
+/* Nền vùng cuộn trong hộp chi tiết. */
+.history-dialog .history-scroll,
+.history-dialog .history-scroll > .viewport {
+    -fx-background-color: white;
+    -fx-border-width: 0;
+}
+/* === CUSTOMER HISTORY - GỢI Ý KHÁCH HÀNG === */
+
+/* Popup gợi ý bên dưới ô tìm kiếm. */
+.history-customer-suggestions {
+    -fx-background-color: white;
+    -fx-background-radius: 8px;
+    -fx-border-color: #dde5df;
+    -fx-border-radius: 8px;
+    -fx-padding: 5px;
+}
+
+/* Khoảng cách của từng dòng gợi ý. */
+.history-customer-suggestions .menu-item {
+    -fx-padding: 10px 12px;
+    -fx-background-radius: 5px;
+}
+
+/* Chữ trong dòng gợi ý. */
+.history-customer-suggestions .menu-item .label {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-text-fill: #34463b;
+}
+
+/* Gợi ý đang được trỏ chuột hoặc chọn bằng bàn phím. */
+.history-customer-suggestions .menu-item:focused {
+    -fx-background-color: #d8efdc;
+}
+
+/* Giữ chữ dễ đọc trên nền xanh nhạt. */
+.history-customer-suggestions .menu-item:focused .label {
+    -fx-text-fill: #24543b;
+}
+/* Khách hàng ngừng hoạt động hiển thị màu đỏ nhạt. */
+.customer-dialog .customer-activity-inactive {
+    -fx-background-color: #ffe2e4;
+    -fx-text-fill: #b8313a;
+}
+/* =========================================================
+   MODULE PET - TRANG CẬP NHẬT THÚ CƯNG
+   ========================================================= */
+
+/* Nền và kiểu chữ chung của trang. */
+.pet-page {
+    -fx-background-color: #f5f4ef;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+}
+
+/* Tiêu đề trang. */
+.pet-page .pet-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #202522;
+}
+
+/* Thẻ trắng chứa bảng và thông tin dòng đang chọn. */
+.pet-page .pet-card {
+    -fx-background-color: white;
+    -fx-background-radius: 14px;
+    -fx-border-color: #e8e9e5;
+    -fx-border-radius: 14px;
+}
+
+/* Chữ phụ và thông báo dưới bảng. */
+.pet-page .pet-muted {
+    -fx-font-size: 11px;
+    -fx-text-fill: #89918c;
+}
+
+/* Kiểu chung của các nút trên trang. */
+.pet-page .button {
+    -fx-background-insets: 0;
+    -fx-background-radius: 7px;
+    -fx-border-radius: 7px;
+    -fx-padding: 10px 16px;
+    -fx-font-size: 12px;
+    -fx-cursor: hand;
+}
+
+/* Nút thêm thú cưng màu cam. */
+.pet-page .pet-add {
+    -fx-background-color: #ff7912;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.pet-page .pet-add:hover {
+    -fx-background-color: #ed6b08;
+}
+
+/* Nút sửa và ngừng theo dõi. */
+.pet-page .pet-secondary {
+    -fx-background-color: white;
+    -fx-border-color: #e3e6e8;
+    -fx-text-fill: #303b34;
+}
+
+.pet-page .pet-secondary:hover {
+    -fx-background-color: #f2f6f3;
+}
+
+/* Làm mờ nút khi chưa chọn thú cưng hoặc đang tải. */
+.pet-page .button:disabled {
+    -fx-opacity: 0.45;
+}
+
+/* Bỏ nền và đường viền mặc định của bảng JavaFX. */
+.pet-page .pet-table {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+    -fx-table-cell-border-color: transparent;
+}
+
+/* Nền hàng tiêu đề bảng. */
+.pet-page .pet-table .column-header-background {
+    -fx-background-color: #f8f8f4;
+    -fx-background-radius: 7px;
+}
+
+.pet-page .pet-table .column-header,
+.pet-page .pet-table .filler {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-pref-height: 42px;
+}
+
+/* Căn trái tên cột và dùng chữ nhỏ như thiết kế. */
+.pet-page .pet-table .column-header .label {
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 0 8px;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #68726b;
+}
+
+/* Các dòng có nền trắng, không kẻ ô dọc. */
+.pet-page .pet-table .table-row-cell {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+}
+
+/* Chỉ kẻ đường phân cách dưới dòng có dữ liệu. */
+.pet-page .pet-table .table-row-cell:filled {
+    -fx-border-color: transparent transparent #edf0ec transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+/* Khoảng cách và căn chỉnh nội dung mỗi ô. */
+.pet-page .pet-table .table-cell {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 10px 8px;
+    -fx-alignment: CENTER_LEFT;
+}
+
+/* Nhãn hiển thị dữ liệu trong ô. */
+.pet-page .pet-table .pet-cell-text {
+    -fx-font-size: 11px;
+    -fx-text-fill: #536158;
+}
+
+/* Dòng đang chọn có nền xanh nhạt. */
+.pet-page .pet-table .table-row-cell:filled:selected {
+    -fx-background-color: #e5f0ff;
+}
+
+.pet-page .pet-table .table-row-cell:filled:selected .pet-cell-text {
+    -fx-text-fill: #263d32;
+}
+
+
+/* =========================================================
+   MODULE PET - HỘP THÊM, SỬA VÀ NGỪNG THEO DÕI
+   ========================================================= */
+
+/* Nền trắng và khoảng cách chung của hộp thoại. */
+.pet-dialog {
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-border-width: 0;
+    -fx-padding: 18px;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+}
+
+/* Tiêu đề hộp thoại. */
+.pet-dialog .pet-dialog-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #242b26;
+}
+
+/* Bỏ nền xám và viền mặc định của vùng cuộn. */
+.pet-dialog .pet-form-scroll,
+.pet-dialog .pet-form-scroll > .viewport {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
+/* Nhãn phía trên các trường nhập liệu. */
+.pet-dialog .pet-field-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #68736b;
+}
+
+/* Kiểu chung của ô nhập, hộp chọn và ngày sinh. */
+.pet-dialog .text-field,
+.pet-dialog .combo-box,
+.pet-dialog .date-picker {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-background-radius: 7px;
+    -fx-border-color: #e3e7e4;
+    -fx-border-radius: 7px;
+    -fx-border-width: 1px;
+    -fx-pref-height: 36px;
+}
+
+/* Nội dung và chữ gợi ý trong ô nhập. */
+.pet-dialog .text-field {
+    -fx-padding: 8px 10px;
+    -fx-prompt-text-fill: #a0aaa3;
+    -fx-text-fill: #34463b;
+}
+
+/* Viền xanh khi trường đang được nhập. */
+.pet-dialog .text-field:focused,
+.pet-dialog .combo-box:focused,
+.pet-dialog .date-picker:focused {
+    -fx-border-color: #2c6b52;
+}
+
+/* Nội dung của hộp chọn. */
+.pet-dialog .combo-box .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #34463b;
+    -fx-padding: 8px 10px;
+}
+
+/* Ô nhập bên trong hộp chọn dùng viền của phần bao ngoài. */
+.pet-dialog .combo-box > .text-field {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+}
+
+/* Ô ngày sinh dùng chung viền với nút lịch. */
+.pet-dialog .date-picker > .text-field {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+}
+
+/* Bỏ nền xám của nút lịch và mũi tên hộp chọn. */
+.pet-dialog .date-picker > .arrow-button,
+.pet-dialog .combo-box > .arrow-button {
+    -fx-background-color: transparent;
+}
+
+/* Thẻ thông tin chủ nuôi đã chọn. */
+.pet-dialog .pet-owner-info {
+    -fx-background-color: #f8f9f5;
+    -fx-background-radius: 7px;
+    -fx-padding: 12px;
+    -fx-text-fill: #34463b;
+}
+
+/* Chữ phụ, ví dụ đơn vị kg. */
+.pet-dialog .pet-muted {
+    -fx-font-size: 11px;
+    -fx-text-fill: #89918c;
+}
+
+/* Thông báo kiểm tra dữ liệu. */
+.pet-dialog .pet-error {
+    -fx-font-size: 11px;
+    -fx-text-fill: #dc4545;
+}
+
+/* Nền và khoảng cách hàng nút cuối hộp thoại. */
+.pet-dialog > .button-bar > .container {
+    -fx-background-color: white;
+    -fx-padding: 12px 0 0 0;
+    -fx-spacing: 8px;
+}
+
+/* Đặt nút Hủy trước nút Lưu hoặc Xác nhận. */
+.pet-dialog > .button-bar {
+    -fx-button-order: "C+O";
+}
+
+/* Kiểu chung của nút trong hộp thoại. */
+.pet-dialog .button {
+    -fx-background-insets: 0;
+    -fx-background-radius: 7px;
+    -fx-border-radius: 7px;
+    -fx-padding: 9px 15px;
+    -fx-cursor: hand;
+}
+
+/* Nút lưu và cập nhật màu xanh. */
+.pet-dialog .pet-primary {
+    -fx-background-color: #2c6b52;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.pet-dialog .pet-primary:hover {
+    -fx-background-color: #245940;
+}
+
+/* Nút hủy nền trắng. */
+.pet-dialog .pet-secondary {
+    -fx-background-color: white;
+    -fx-border-color: #e3e7e4;
+    -fx-text-fill: #34463b;
+}
+
+.pet-dialog .pet-secondary:hover {
+    -fx-background-color: #f2f6f3;
+}
+
+/* Nút xác nhận ngừng theo dõi màu đỏ. */
+.pet-dialog .pet-danger {
+    -fx-background-color: #ef4444;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.pet-dialog .pet-danger:hover {
+    -fx-background-color: #dc3535;
+}
+
+/* Làm mờ nút trong lúc xử lý dữ liệu. */
+.pet-dialog .button:disabled {
+    -fx-opacity: 0.45;
+}
+
+
+/* =========================================================
+   MODULE PET - GỢI Ý CHỦ NUÔI
+   ========================================================= */
+
+/* Khung danh sách gợi ý dưới ô tìm chủ nuôi. */
+.pet-owner-suggestions {
+    -fx-background-color: white;
+    -fx-background-radius: 7px;
+    -fx-border-color: #e3e7e4;
+    -fx-border-radius: 7px;
+    -fx-padding: 5px;
+}
+
+/* Khoảng cách từng kết quả gợi ý. */
+.pet-owner-suggestions .menu-item {
+    -fx-padding: 10px 12px;
+}
+
+/* Chữ trong kết quả gợi ý. */
+.pet-owner-suggestions .menu-item .label {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 11px;
+    -fx-text-fill: #34463b;
+}
+
+/* Nền xanh nhạt khi trỏ chuột hoặc chọn bằng bàn phím. */
+.pet-owner-suggestions .menu-item:focused {
+    -fx-background-color: #e6f2e8;
+}
+
+.pet-owner-suggestions .menu-item:focused .label {
+    -fx-text-fill: #24543b;
+}
+/* Nút ngừng theo dõi trên trang danh sách. */
+.pet-page .pet-danger {
+    -fx-background-color: #ef4444;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.pet-page .pet-danger:hover {
+    -fx-background-color: #dc3535;
+}
+/* Nội dung dài xuống dòng, không cắt bằng dấu ba chấm. */
+.pet-page .pet-table .pet-cell-text {
+    -fx-wrap-text: true;
+    -fx-text-overrun: clip;
+}
+
+/* Tiêu đề cột dài cũng được xuống dòng. */
+.pet-page .pet-table .column-header .label {
+    -fx-wrap-text: true;
+    -fx-text-overrun: clip;
+}
+/* === MODULE PET - TÌM KIẾM THÚ CƯNG === */
+/* Ô tìm kiếm và bộ lọc cùng chiều cao với nút thao tác. */
+.pet-search-page .text-field,
+.pet-search-page .combo-box {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-background-radius: 7px;
+    -fx-border-color: #e3e7e4;
+    -fx-border-radius: 7px;
+    -fx-pref-height: 38px;
+}
+.pet-search-page .text-field {
+    -fx-border-color: #2c6b52;
+    -fx-padding: 8px 12px;
+    -fx-prompt-text-fill: #939f97;
+}
+.pet-search-page .pet-search-primary {
+    -fx-background-color: #2c6b52;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+.pet-search-page .pet-search-primary:hover {
+    -fx-background-color: #245940;
+}
+/* Dòng tìm kiếm được chọn có nền xanh lá theo thiết kế. */
+.pet-search-page .pet-table .table-row-cell:filled:selected {
+    -fx-background-color: #d8f1dc;
+}
+/* Hàng tự tăng chiều cao, nội dung dài được xuống dòng. */
+.pet-search-page .pet-table .table-row-cell {
+    -fx-cell-size: -1;
+}
+.pet-search-page .pet-table .column-header .label,
+.pet-search-page .pet-table .pet-cell-text {
+    -fx-wrap-text: true;
+}
+/* Trạng thái hồ sơ trong hộp thông tin chỉ đọc. */
+.pet-dialog .pet-search-active,
+.pet-dialog .pet-search-inactive {
+    -fx-background-radius: 12px;
+    -fx-padding: 5px 10px;
+    -fx-font-size: 11px;
+}
+.pet-dialog .pet-search-active {
+    -fx-background-color: #d8f3df;
+    -fx-text-fill: #267347;
+}
+.pet-dialog .pet-search-inactive {
+    -fx-background-color: #ffe2e4;
+    -fx-text-fill: #b8313a;
+}
+
+/* Khung trắng với viền ngoài mảnh. */
+.pet-dialog.pet-info-dialog {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-background-radius: 12px;
+    -fx-border-color: #e5e8ec;
+    -fx-border-width: 1px;
+    -fx-border-radius: 12px;
+    -fx-padding: 18px;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+}
+
+/* Tiêu đề nhỏ, đậm như mẫu. */
+.pet-dialog.pet-info-dialog .pet-dialog-title {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #242824;
+}
+
+/* Thẻ bao quanh tên và mã thú cưng. */
+.pet-dialog.pet-info-dialog .pet-info-card {
+    -fx-background-color: white;
+    -fx-background-radius: 11px;
+    -fx-border-color: #e5e8ed;
+    -fx-border-width: 1px;
+    -fx-border-radius: 11px;
+    -fx-padding: 16px;
+}
+
+/* Nhãn trường màu xám, nhỏ hơn giá trị. */
+.pet-dialog.pet-info-dialog .pet-info-field-title {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 11px;
+    -fx-font-weight: normal;
+    -fx-text-fill: #737c8d;
+}
+
+/* Nội dung dễ đọc, tự xuống dòng. */
+.pet-dialog.pet-info-dialog .pet-info-field-value {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+    -fx-text-fill: #333a35;
+    -fx-wrap-text: true;
+}
+
+/* Vùng cuộn không có nền hoặc viền mặc định. */
+.pet-dialog.pet-info-dialog .pet-form-scroll,
+.pet-dialog.pet-info-dialog .pet-form-scroll > .viewport {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
+/* Đường phân cách nhạt giữa các nhóm. */
+.pet-dialog.pet-info-dialog .separator {
+    -fx-padding: 0;
+}
+
+.pet-dialog.pet-info-dialog .separator .line {
+    -fx-border-color: #e9edf1;
+    -fx-border-width: 1px 0 0 0;
+    -fx-background-color: transparent;
+}
+
+/* Nút Đóng gọn, viền xám nhạt. */
+.pet-dialog.pet-info-dialog .pet-secondary {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-background-radius: 7px;
+    -fx-border-color: #e5e8ed;
+    -fx-border-width: 1px;
+    -fx-border-radius: 7px;
+    -fx-padding: 8px 14px;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 11px;
+    -fx-text-fill: #303630;
+}
+
+.pet-dialog.pet-info-dialog > .button-bar > .container {
+    -fx-padding: 14px 0 0 0;
+}
+/* === MODULE PET - LỊCH SỬ CHĂM SÓC === */
+/* Dùng chung CSS pet-page, pet-table và pet-dialog đã có từ màn cập nhật. */
+.pet-care-page .care-primary {
+    -fx-background-color: #2c6b52;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+.pet-care-page .care-primary:hover { -fx-background-color: #245940; }
+.pet-care-page .text-field,
+.pet-care-page .date-picker,
+.pet-care-page .combo-box {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-border-color: #dce3df;
+    -fx-border-radius: 7px;
+    -fx-background-radius: 7px;
+    -fx-pref-height: 36px;
+}
+.pet-care-page .text-field {
+    -fx-padding: 8px 10px;
+    -fx-border-color: #2c6b52;
+}
+.pet-care-page .date-picker > .text-field {
+    -fx-border-width: 0;
+    -fx-background-color: transparent;
+}
+.pet-care-page .date-picker > .arrow-button { -fx-background-color: transparent; }
+.pet-care-page .care-profile-card,
+.care-dialog .care-detail-card {
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-border-color: #e5e8ec;
+    -fx-border-radius: 12px;
+    -fx-padding: 14px;
+}
+.pet-care-page .care-pet-name { -fx-font-weight: bold; }
+.pet-care-page .care-field-label,
+.care-dialog .care-field-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #77808c;
+}
+.pet-care-page .care-error,
+.care-dialog .care-error {
+    -fx-text-fill: #dc4545;
+    -fx-wrap-text: true;
+}
+/* Hàng tự tăng chiều cao khi ghi chú dài. */
+.pet-care-page .pet-table .table-row-cell,
+.care-dialog .pet-table .table-row-cell { -fx-cell-size: -1; }
+.pet-care-page .pet-table .column-header .label,
+.pet-care-page .pet-table .pet-cell-text,
+.care-dialog .pet-table .column-header .label,
+.care-dialog .pet-table .pet-cell-text { -fx-wrap-text: true; }
+/* Style riêng vì bảng chi tiết nằm trong hộp thoại, bên ngoài pet-page. */
+.care-dialog .pet-table {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-table-cell-border-color: transparent;
+}
+.care-dialog .pet-table .column-header-background { -fx-background-color: #f8f8f4; }
+.care-dialog .pet-table .column-header,
+.care-dialog .pet-table .filler {
+    -fx-background-color: transparent;
+    -fx-pref-height: 42px;
+    -fx-border-width: 0;
+}
+.care-dialog .pet-table .column-header .label {
+    -fx-alignment: CENTER_LEFT;
+    -fx-font-size: 11px;
+    -fx-text-fill: #68726b;
+}
+.care-dialog .pet-table .table-row-cell { -fx-background-color: white; }
+.care-dialog .pet-table .table-row-cell:filled {
+    -fx-border-color: transparent transparent #edf0ec transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.care-dialog .pet-table .table-cell {
+    -fx-padding: 12px 8px;
+    -fx-border-width: 0;
+    -fx-alignment: CENTER_LEFT;
+}
+.care-dialog .pet-cell-text { -fx-font-size: 12px; -fx-text-fill: #34463b; }
+.care-dialog .text-area {
+    -fx-background-color: white;
+    -fx-border-color: #e3e7e4;
+    -fx-border-radius: 7px;
+    -fx-background-radius: 7px;
+}
+.care-dialog .text-area .content { -fx-background-color: white; }
+.care-pet-suggestions {
+    -fx-background-color: white;
+    -fx-background-radius: 7px;
+    -fx-border-color: #e3e7e4;
+    -fx-border-radius: 7px;
+    -fx-padding: 5px;
+}
+.care-pet-suggestions .menu-item { -fx-padding: 12px 8px; }
+.care-pet-suggestions .menu-item .label { -fx-font-size: 11px; -fx-text-fill: #34463b; }
+.care-pet-suggestions .menu-item:focused { -fx-background-color: #e6f2e8; }
+
+/* Thẻ thú cưng gọn như Figma, dành chiều cao cho bảng lịch sử. */
+.pet-care-page .care-profile-card.care-profile-compact {
+    -fx-padding: 10px 14px;
+    -fx-font-size: 11px;
+}
+.pet-care-page .care-profile-compact .care-field-label {
+    -fx-font-size: 10px;
+}
+.pet-care-page .care-profile-compact .pet-muted {
+    -fx-font-size: 10px;
+}
+.pet-care-page .care-profile-compact .care-pet-name {
+    -fx-font-size: 12px;
+}
+.pet-care-page .care-profile-compact .button {
+    -fx-font-size: 11px;
+    -fx-padding: 7px 12px;
+}
+.pet-care-page .care-profile-compact .separator .line {
+    -fx-border-color: #edf0ec;
+    -fx-border-width: 1px 0 0 0;
+}
