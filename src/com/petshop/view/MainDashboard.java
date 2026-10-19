@@ -468,7 +468,7 @@ public class MainDashboard extends BorderPane {
             case "CARE_SERVICE" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
             // --- Nhóm 3: Nhà cung cấp & Đơn hàng nhập & Sản phẩm ---
-            case "SUPPLIER"     -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "SUPPLIER"     -> new SupplierView(action.getId());
             case "IMPORT_ORDER" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
             case "PRODUCT"      -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
