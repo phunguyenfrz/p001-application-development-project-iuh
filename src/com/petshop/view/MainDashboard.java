@@ -9,6 +9,8 @@ import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -118,12 +120,10 @@ public class MainDashboard extends BorderPane {
         pnlBrandBox.setAlignment(Pos.CENTER_LEFT);
         pnlBrandBox.getStyleClass().add("sidebar-brand-box");
 
-        StackPane pnlLogoCircle = new StackPane();
-        Circle circle = new Circle(17, Color.web("#d97736"));
-        Group paw = createMiniPawWhite();
-        pnlLogoCircle.getChildren().addAll(circle, paw);
-        pnlLogoCircle.setOnMouseClicked(e -> showOverview());
-        pnlLogoCircle.setStyle("-fx-cursor: hand;");
+        StackPane pnlLogoBadge = new StackPane();
+        pnlLogoBadge.getChildren().add(createBrandLogo(34));
+        pnlLogoBadge.setOnMouseClicked(e -> showOverview());
+        pnlLogoBadge.setStyle("-fx-cursor: hand;");
 
         VBox pnlBrandText = new VBox(1);
         Label lblTitle = new Label("Happy Tails");
@@ -146,7 +146,7 @@ public class MainDashboard extends BorderPane {
             renderSidebar();
         });
 
-        pnlBrandBox.getChildren().addAll(pnlLogoCircle, pnlBrandText, pnlBrandSpacer, btnCollapse);
+        pnlBrandBox.getChildren().addAll(pnlLogoBadge, pnlBrandText, pnlBrandSpacer, btnCollapse);
 
         // Danh sách Menu
         VBox pnlMenuList = new VBox(4);
@@ -296,12 +296,10 @@ public class MainDashboard extends BorderPane {
         pnlTopBox.setAlignment(Pos.CENTER);
         pnlTopBox.setPadding(new Insets(16, 0, 12, 0));
 
-        StackPane pnlLogoCircle = new StackPane();
-        Circle circle = new Circle(17, Color.web("#d97736"));
-        Group paw = createMiniPawWhite();
-        pnlLogoCircle.getChildren().addAll(circle, paw);
-        pnlLogoCircle.setOnMouseClicked(e -> showOverview());
-        pnlLogoCircle.setStyle("-fx-cursor: hand;");
+        StackPane pnlLogoBadge = new StackPane();
+        pnlLogoBadge.getChildren().add(createBrandLogo(34));
+        pnlLogoBadge.setOnMouseClicked(e -> showOverview());
+        pnlLogoBadge.setStyle("-fx-cursor: hand;");
 
         Button btnExpand = new Button("»");
         btnExpand.getStyleClass().add("btn-collapse");
@@ -311,7 +309,7 @@ public class MainDashboard extends BorderPane {
             renderSidebar();
         });
 
-        pnlTopBox.getChildren().addAll(pnlLogoCircle, btnExpand);
+        pnlTopBox.getChildren().addAll(pnlLogoBadge, btnExpand);
 
         VBox pnlMenuList = new VBox(6);
         pnlMenuList.setAlignment(Pos.TOP_CENTER);
@@ -619,17 +617,28 @@ public class MainDashboard extends BorderPane {
         stage.centerOnScreen();
     }
 
-    private Group createMiniPawWhite() {
-        Group group = new Group();
-        Color c = Color.WHITE;
-        Ellipse pad = new Ellipse(0, 3, 6, 4.5);
-        pad.setFill(c);
-        Circle t1 = new Circle(-5.5, -4, 1.8, c);
-        Circle t2 = new Circle(-2, -6.5, 2.0, c);
-        Circle t3 = new Circle(2, -6.5, 2.0, c);
-        Circle t4 = new Circle(5.5, -4, 1.8, c);
-        group.getChildren().addAll(pad, t1, t2, t3, t4);
-        return group;
+    /**
+     * Tạo icon logo Happy Tails từ file logo.png chuẩn nhận diện thương hiệu.
+     */
+    private Node createBrandLogo(double size) {
+        try {
+            var stream = getClass().getResourceAsStream("/com/petshop/view/logo.png");
+            if (stream != null) {
+                ImageView iv = new ImageView(new Image(stream));
+                iv.setFitWidth(size);
+                iv.setFitHeight(size);
+                iv.setPreserveRatio(true);
+                iv.setSmooth(true);
+                return iv;
+            }
+        } catch (Exception ignored) {}
+
+        StackPane badge = new StackPane();
+        badge.setStyle("-fx-background-color: #f97316; -fx-background-radius: 8px;");
+        badge.setMinSize(size, size);
+        badge.setPrefSize(size, size);
+        badge.setMaxSize(size, size);
+        return badge;
     }
 
     private String getInitials(String name) {

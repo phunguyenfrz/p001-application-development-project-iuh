@@ -8,56 +8,95 @@
 }
 
 /* --------------------------------------------------------------------------
-   LOGIN SCREEN
+   LOGIN SCREEN (THIẾT KẾ CHUẨN FIGMA 440x426 HUG)
    -------------------------------------------------------------------------- */
 .login-view {
-    -fx-background-color: linear-gradient(to bottom right, #f2f8f2, #e3efe3);
+    -fx-background-color: linear-gradient(to bottom right, #daf3dd 0%, #edf7ee 45%, #f4f5ed 100%);
     -fx-alignment: center;
 }
 
 .login-card {
     -fx-background-color: #ffffff;
-    -fx-background-radius: 20px;
+    -fx-background-radius: 16px;
+    -fx-border-radius: 16px;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 24, 0, 0, 8);
-    -fx-padding: 40px 42px 36px 42px;
+    -fx-padding: 38px 38px 34px 38px;
     -fx-alignment: center;
     -fx-pref-width: 440px;
     -fx-max-width: 440px;
+    -fx-min-width: 440px;
+}
+
+.brand-badge {
+    -fx-background-color: #f97316;
+    -fx-background-radius: 10px;
+    -fx-alignment: center;
 }
 
 .brand-title {
-    -fx-font-size: 26px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #1a221e;
+    -fx-font-size: 22px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #111827;
 }
 
 .brand-subtitle {
-    -fx-font-size: 13.5px;
-    -fx-text-fill: #738075;
+    -fx-font-size: 12.5px;
+    -fx-text-fill: #6b7280;
+}
+
+.error-banner {
+    -fx-background-color: #fef2f2;
+    -fx-background-radius: 8px;
+    -fx-border-color: #fee2e2;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-padding: 8px 12px;
+    -fx-alignment: center-left;
+}
+
+.error-banner-text {
+    -fx-text-fill: #ef4444;
+    -fx-font-size: 12.5px;
+    -fx-font-weight: 500;
 }
 
 .field-label {
-    -fx-font-size: 13.5px;
+    -fx-font-size: 13px;
     -fx-font-weight: 600;
-    -fx-text-fill: #344038;
+    -fx-text-fill: #1f2937;
 }
 
 .login-input {
-    -fx-pref-height: 44px;
+    -fx-pref-height: 42px;
     -fx-background-color: #ffffff;
-    -fx-background-radius: 10px;
-    -fx-border-radius: 10px;
-    -fx-border-color: #e2e8e2;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: #e5e7eb;
     -fx-border-width: 1.2px;
-    -fx-padding: 0 14px;
+    -fx-padding: 0 12px;
     -fx-font-size: 13.5px;
-    -fx-text-fill: #1a221e;
-    -fx-prompt-text-fill: #9ca89e;
+    -fx-text-fill: #111827;
+    -fx-prompt-text-fill: #9ca3af;
 }
 
 .login-input:focused {
-    -fx-border-color: #436850;
-    -fx-effect: dropshadow(gaussian, rgba(67, 104, 80, 0.2), 6, 0, 0, 0);
+    -fx-border-color: #2d6a4f;
+    -fx-effect: dropshadow(gaussian, rgba(45, 106, 79, 0.18), 6, 0, 0, 0);
+}
+
+.login-input-error {
+    -fx-border-color: #ef4444 !important;
+}
+
+.login-input-error:focused {
+    -fx-border-color: #ef4444 !important;
+    -fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.22), 6, 0, 0, 0) !important;
+}
+
+.field-error-text {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: #ef4444;
+    -fx-font-weight: 500;
 }
 
 .eye-button {
@@ -71,35 +110,41 @@
 }
 
 .btn-login {
-    -fx-pref-height: 46px;
-    -fx-background-color: #436850;
-    -fx-background-radius: 10px;
+    -fx-pref-height: 42px;
+    -fx-background-color: #2d6a4f;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
     -fx-text-fill: #ffffff;
-    -fx-font-size: 15px;
-    -fx-font-weight: bold;
+    -fx-font-size: 14.5px;
+    -fx-font-weight: 600;
     -fx-cursor: hand;
+    -fx-alignment: center;
 }
 
 .btn-login:hover {
-    -fx-background-color: #365340;
+    -fx-background-color: #24563f;
 }
 
 .btn-login:pressed {
-    -fx-background-color: #2b4233;
+    -fx-background-color: #1b4332;
 }
 
-.error-label {
-    -fx-text-fill: #dc2626;
-    -fx-font-size: 12.5px;
-    -fx-alignment: center;
-    -fx-text-alignment: center;
+.btn-login:disabled {
+    -fx-opacity: 0.95;
+    -fx-cursor: wait;
+}
+
+.security-text {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: #6b7280;
 }
 
 .footer-text {
     -fx-font-size: 11.5px;
-    -fx-text-fill: #94a397;
-    -fx-font-weight: 500;
+    -fx-text-fill: #78887e;
+    -fx-font-weight: 400;
 }
+
 
 /* --------------------------------------------------------------------------
    DASHBOARD - SIDEBAR
