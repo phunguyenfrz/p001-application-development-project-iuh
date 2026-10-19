@@ -3,6 +3,7 @@ package com.petshop.view;
 import com.petshop.model.User;
 import com.petshop.service.AuthService;
 import com.petshop.service.MenuRegistry;
+import com.petshop.view.careservice.CareServiceView;
 import com.petshop.view.customer.CustomerView;
 import com.petshop.view.employee.EmployeeView;
 import com.petshop.view.importorder.ImportOrderView;
@@ -490,7 +491,7 @@ public class MainDashboard extends BorderPane {
                 case "SHF_VIEW"   -> new ShiftCalendarView();
                 default -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
             };
-            case "CARE_SERVICE" -> new AssignedModuleView(action.getId(), action.getName(), user);
+            case "CARE_SERVICE" -> new CareServiceView(action.getId());
 
             // --- Nhóm 3: Nhà cung cấp & Đơn hàng nhập & Sản phẩm ---
             case "SUPPLIER" -> new SupplierView(action.getId());
