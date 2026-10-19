@@ -1,0 +1,198 @@
+/* === MODULE INVOICE - LAP HOA DON === */
+
+.invoice-create-page {
+    -fx-background-color: #f3f6f3;
+    -fx-font-family: "Segoe UI";
+}
+
+.invoice-page-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f2923;
+}
+
+.invoice-card {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 10px;
+    -fx-border-color: #e5ebe5;
+    -fx-border-radius: 10px;
+    -fx-padding: 16px;
+}
+
+.invoice-card-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #202822;
+}
+
+.invoice-muted {
+    -fx-font-size: 11px;
+    -fx-text-fill: #849087;
+}
+
+.invoice-field-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #68736b;
+}
+
+.invoice-input,
+.invoice-combo,
+.invoice-date-picker {
+    -fx-pref-height: 38px;
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 7px;
+    -fx-border-color: #e2e8e2;
+    -fx-border-radius: 7px;
+    -fx-padding: 0 10px;
+    -fx-font-size: 12px;
+}
+
+.invoice-input:focused,
+.invoice-combo:focused,
+.invoice-date-picker:focused {
+    -fx-border-color: #69a588;
+}
+
+.invoice-appointment-badge {
+    -fx-background-color: #fff3e8;
+    -fx-background-radius: 12px;
+    -fx-padding: 6px 10px;
+    -fx-text-fill: #c85b11;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.invoice-item-table {
+    -fx-background-color: #ffffff;
+    -fx-border-width: 0;
+    -fx-table-cell-border-color: transparent;
+    -fx-fixed-cell-size: 48px;
+}
+
+.invoice-item-table .column-header-background {
+    -fx-background-color: #f8f9f6;
+}
+
+.invoice-item-table .column-header,
+.invoice-item-table .filler {
+    -fx-background-color: transparent;
+    -fx-pref-height: 36px;
+}
+
+.invoice-item-table .column-header .label {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #79847b;
+}
+
+.invoice-item-table .table-row-cell {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent transparent #edf0ec transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.invoice-item-table .table-cell {
+    -fx-padding: 6px 8px;
+    -fx-font-size: 11px;
+    -fx-text-fill: #344038;
+}
+
+.invoice-stepper-button,
+.invoice-remove-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 5px;
+    -fx-padding: 2px 6px;
+    -fx-text-fill: #647168;
+    -fx-cursor: hand;
+}
+
+.invoice-stepper-button:hover {
+    -fx-background-color: #edf5ef;
+    -fx-text-fill: #2c6b50;
+}
+
+.invoice-remove-button:hover {
+    -fx-background-color: #fff1ef;
+    -fx-text-fill: #c83327;
+}
+
+.invoice-summary-caption {
+    -fx-font-size: 11px;
+    -fx-text-fill: #78847b;
+}
+
+.invoice-summary-divider {
+    -fx-pref-height: 1px;
+    -fx-background-color: #e9eee9;
+}
+
+.invoice-total-box {
+    -fx-background-color: #edf7f0;
+    -fx-background-radius: 8px;
+    -fx-padding: 12px;
+}
+
+.invoice-total-caption {
+    -fx-font-size: 11px;
+    -fx-text-fill: #518366;
+}
+
+.invoice-total-value {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2d6a4f;
+}
+
+.invoice-payment-option {
+    -fx-font-size: 11px;
+    -fx-text-fill: #3f4b42;
+}
+
+.invoice-change-value {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2d6a4f;
+}
+
+.invoice-print-option {
+    -fx-font-size: 11px;
+    -fx-text-fill: #59665d;
+}
+
+.invoice-permission-warning {
+    -fx-background-color: #fff3e8;
+    -fx-background-radius: 7px;
+    -fx-padding: 8px;
+    -fx-text-fill: #bd5a12;
+    -fx-font-size: 10px;
+}
+
+.invoice-primary-button {
+    -fx-pref-height: 36px;
+    -fx-background-color: #f97316;
+    -fx-background-radius: 7px;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 12px;
+    -fx-cursor: hand;
+}
+
+.invoice-primary-button:hover {
+    -fx-background-color: #e9630b;
+}
+
+.invoice-primary-button:disabled {
+    -fx-opacity: 0.5;
+}
+
+.invoice-secondary-button {
+    -fx-pref-height: 36px;
+    -fx-font-size: 10px;
+}
+
+.invoice-product-action {
+    -fx-pref-height: 36px;
+    -fx-font-size: 10px;
+}

@@ -76,3 +76,9 @@ giữ nguyên dữ liệu hiện có và đặt trạng thái mặc định bằ
 - Ngừng hoạt động đặt trạng thái bằng 0, không xóa khách hàng hoặc dữ liệu liên quan.
 - Trang Tìm kiếm và Lịch sử vẫn tra cứu được khách đã ngừng hoạt động.
 - Số điện thoại của khách ngừng hoạt động vẫn được giữ theo ràng buộc UNIQUE.
+
+## Cập nhật database cho hóa đơn
+
+Trước khi dùng màn Lập hóa đơn, chạy `db/05_invoice_workflow.sql` trong SSMS
+trên database `QLCH_HappyTails`. Script bổ sung các cột hóa đơn, snapshot dòng
+chi tiết và trạng thái lịch hẹn; có thể chạy lại an toàn, không xóa dữ liệu.

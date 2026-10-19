@@ -120,5 +120,6 @@ public final class DatabaseInitializer {
             System.err.println("[DatabaseInitializer] Không thể tạo Statement cập nhật schema: " + e.getMessage());
         }
     }
+
 }
 
