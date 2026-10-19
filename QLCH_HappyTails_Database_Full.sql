@@ -100,14 +100,15 @@ CREATE TABLE NhaCungCap (
 GO
 
 -- 6. Bảng KhuyenMai (2.17 OOAD)
--- Khóa chính: KM-YYYYMMDD-NNNNNN
+-- Khóa chính: KM-YYYYMMDD-NNNNNN hoặc KM-YYYY-NNN
 CREATE TABLE KhuyenMai (
-    maKhuyenMai VARCHAR(20) PRIMARY KEY CHECK (maKhuyenMai LIKE 'KM-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]'),
+    maKhuyenMai VARCHAR(20) PRIMARY KEY CHECK (maKhuyenMai LIKE 'KM-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]' OR maKhuyenMai LIKE 'KM-[0-9][0-9][0-9][0-9]-[0-9][0-9][0-9]%'),
     tenChuongTrinh NVARCHAR(150) NOT NULL CHECK (LEN(LTRIM(RTRIM(tenChuongTrinh))) > 0),
     phanTramGiam DECIMAL(5,2) NOT NULL CHECK (phanTramGiam > 0 AND phanTramGiam <= 100),
     ngayBatDau DATE NOT NULL,
     ngayKetThuc DATE NOT NULL,
     trangThai BIT NOT NULL DEFAULT 1, -- 1: Đang chạy, 0: Ngừng
+    ngayCapNhat DATE DEFAULT GETDATE(),
     CONSTRAINT CK_KhuyenMai_Ngay CHECK (ngayKetThuc >= ngayBatDau)
 );
 GO
