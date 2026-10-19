@@ -3,8 +3,10 @@ package com.petshop.view;
 import com.petshop.model.User;
 import com.petshop.service.AuthService;
 import com.petshop.service.MenuRegistry;
+import com.petshop.view.careservice.CareServiceView;
 import com.petshop.view.customer.CustomerView;
 import com.petshop.view.employee.EmployeeView;
+import com.petshop.view.importorder.ImportOrderView;
 import com.petshop.view.pet.PetView;
 import com.petshop.view.product.ProductView;
 import com.petshop.view.promotion.PromotionSearchView;
@@ -21,9 +23,9 @@ import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Ellipse;
@@ -95,7 +97,7 @@ public class MainDashboard extends BorderPane {
 
         setCenter(pnlMainContainer);
 
-        // Giữ phím tắt tìm nhanh của demo; ô tìm kiếm chỉ hiện khi người dùng gọi.
+        // Giữ Ctrl+K để mở tìm kiếm nhanh, Escape để đóng mà không chiếm chỗ topbar.
         sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (newScene != null) {
                 newScene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
@@ -114,7 +116,6 @@ public class MainDashboard extends BorderPane {
                 });
             }
         });
-
     }
 
     private void renderSidebar() {
@@ -218,7 +219,7 @@ public class MainDashboard extends BorderPane {
         mnuGroupHeader.setAlignment(Pos.CENTER_LEFT);
         mnuGroupHeader.getStyleClass().add("sidebar-nav-item");
 
-        Node menuIcon = createMenuIcon(menu.getIconType(), 18);
+        Node nodeMenuIcon = createMenuIcon(menu.getIconType(), 18);
 
         Label lblTitle = new Label(menu.getTitle());
         lblTitle.getStyleClass().add("sidebar-nav-text");
@@ -232,7 +233,7 @@ public class MainDashboard extends BorderPane {
         lblArrow.getStyleClass().add("sidebar-nav-arrow");
         allArrows.add(lblArrow);
 
-        mnuGroupHeader.getChildren().addAll(menuIcon, lblTitle, lblArrow);
+        mnuGroupHeader.getChildren().addAll(nodeMenuIcon, lblTitle, lblArrow);
 
         // Danh sách chức năng con
         VBox pnlSubMenuList = new VBox(2);
@@ -329,7 +330,7 @@ public class MainDashboard extends BorderPane {
         btnOverviewCollapsed.setGraphic(createMenuIcon("OVERVIEW", 20));
         overviewButton = btnOverviewCollapsed;
         btnOverviewCollapsed.getStyleClass().add(activeActionId == null
-            ? "sidebar-collapsed-btn-active" : "sidebar-collapsed-btn");
+                ? "sidebar-collapsed-btn-active" : "sidebar-collapsed-btn");
         if (activeActionId == null) {
             currentActiveItemNode = btnOverviewCollapsed;
         }
@@ -410,14 +411,13 @@ public class MainDashboard extends BorderPane {
 
         String fullName = (user != null) ? user.getFullName() : "Admin";
         String roleName = getCurrentRoleName();
-
         lblBreadcrumb = new Label(roleName + " / Tổng quan");
         lblBreadcrumb.getStyleClass().add("topbar-breadcrumb");
 
-    // Ô tìm nhanh giữ nguyên chức năng demo nhưng ẩn để khớp topbar mẫu.
-    pnlSearchBox = new HBox(8);
-    pnlSearchBox.setAlignment(Pos.CENTER_LEFT);
-    pnlSearchBox.getStyleClass().add("search-box");
+        // Ô tìm nhanh giữ chức năng Ctrl+K nhưng ẩn để topbar giống thiết kế hiện tại.
+        pnlSearchBox = new HBox(8);
+        pnlSearchBox.setAlignment(Pos.CENTER_LEFT);
+        pnlSearchBox.getStyleClass().add("search-box");
 
         SVGPath searchIcon = new SVGPath();
         searchIcon.setContent(
@@ -476,7 +476,7 @@ public class MainDashboard extends BorderPane {
             lblBreadcrumb,
                 pnlSearchBox,
                 pnlSpacer,
-                btnProfile);
+            btnProfile);
         return pnlTopbar;
     }
 
@@ -504,11 +504,11 @@ public class MainDashboard extends BorderPane {
                 case "SHF_VIEW"   -> new ShiftCalendarView();
                 default -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
             };
-            case "CARE_SERVICE" -> new AssignedModuleView(action.getId(), action.getName(), user);
+            case "CARE_SERVICE" -> new CareServiceView(action.getId());
 
             // --- Nhóm 3: Nhà cung cấp & Đơn hàng nhập & Sản phẩm ---
             case "SUPPLIER" -> new SupplierView(action.getId());
-            case "IMPORT_ORDER" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "IMPORT_ORDER" -> new ImportOrderView(action.getId(), user);
             case "PRODUCT" -> new ProductView(action.getId());
 
             // --- Nhóm 4: Khuyến mãi & Hóa đơn & Phiếu đổi trả ---
@@ -675,6 +675,28 @@ public class MainDashboard extends BorderPane {
         stage.centerOnScreen();
     }
 
+    private Node createBrandLogo(double size) {
+        try {
+            var logoStream = getClass().getResourceAsStream("/com/petshop/view/logo.png");
+            if (logoStream != null) {
+                ImageView imgLogo = new ImageView(new Image(logoStream));
+                imgLogo.setFitWidth(size);
+                imgLogo.setFitHeight(size);
+                imgLogo.setPreserveRatio(true);
+                imgLogo.setSmooth(true);
+                return imgLogo;
+            }
+        } catch (Exception ignored) {}
+
+        StackPane logoBadge = new StackPane();
+        logoBadge.setStyle("-fx-background-color: #f97316; -fx-background-radius: 8px;");
+        logoBadge.setMinSize(size, size);
+        logoBadge.setPrefSize(size, size);
+        logoBadge.setMaxSize(size, size);
+        logoBadge.getChildren().add(createMiniPawWhite());
+        return logoBadge;
+    }
+
     private Node createMenuIcon(String iconType, double size) {
         String path = switch (iconType) {
             case "OVERVIEW" -> "M3 3h7v7H3z M14 3h7v7h-7z M14 14h7v7h-7z M3 14h7v7H3z";
@@ -691,46 +713,35 @@ public class MainDashboard extends BorderPane {
             default -> "M4 4h16v16H4z M8 8h8v8H8z";
         };
 
-        SVGPath vector = new SVGPath();
-        vector.setContent(path);
-        vector.setFill(Color.TRANSPARENT);
-        vector.setStroke(Color.web("#98a2b3"));
-        vector.setStrokeWidth(1.8);
-        vector.setStrokeLineCap(StrokeLineCap.ROUND);
-        vector.setStrokeLineJoin(StrokeLineJoin.ROUND);
-        vector.setScaleX(size / 24.0);
-        vector.setScaleY(size / 24.0);
+        SVGPath iconPath = new SVGPath();
+        iconPath.setContent(path);
+        iconPath.setFill(Color.TRANSPARENT);
+        iconPath.setStroke(Color.web("#98a2b3"));
+        iconPath.setStrokeWidth(1.8);
+        iconPath.setStrokeLineCap(StrokeLineCap.ROUND);
+        iconPath.setStrokeLineJoin(StrokeLineJoin.ROUND);
+        iconPath.setScaleX(size / 24.0);
+        iconPath.setScaleY(size / 24.0);
 
-        StackPane icon = new StackPane(vector);
-        icon.setMinSize(size, size);
-        icon.setPrefSize(size, size);
-        icon.setMaxSize(size, size);
-        icon.getStyleClass().add("sidebar-nav-icon");
-        return icon;
+        StackPane iconBox = new StackPane(iconPath);
+        iconBox.setMinSize(size, size);
+        iconBox.setPrefSize(size, size);
+        iconBox.setMaxSize(size, size);
+        iconBox.getStyleClass().add("sidebar-nav-icon");
+        return iconBox;
     }
 
-    /**
-     * Tạo icon logo Happy Tails từ file logo.png chuẩn nhận diện thương hiệu.
-     */
-    private Node createBrandLogo(double size) {
-        try {
-            var stream = getClass().getResourceAsStream("/com/petshop/view/logo.png");
-            if (stream != null) {
-                ImageView iv = new ImageView(new Image(stream));
-                iv.setFitWidth(size);
-                iv.setFitHeight(size);
-                iv.setPreserveRatio(true);
-                iv.setSmooth(true);
-                return iv;
-            }
-        } catch (Exception ignored) {}
-
-        StackPane badge = new StackPane();
-        badge.setStyle("-fx-background-color: #f97316; -fx-background-radius: 8px;");
-        badge.setMinSize(size, size);
-        badge.setPrefSize(size, size);
-        badge.setMaxSize(size, size);
-        return badge;
+    private Group createMiniPawWhite() {
+        Group group = new Group();
+        Color c = Color.WHITE;
+        Ellipse pad = new Ellipse(0, 3, 6, 4.5);
+        pad.setFill(c);
+        Circle t1 = new Circle(-5.5, -4, 1.8, c);
+        Circle t2 = new Circle(-2, -6.5, 2.0, c);
+        Circle t3 = new Circle(2, -6.5, 2.0, c);
+        Circle t4 = new Circle(5.5, -4, 1.8, c);
+        group.getChildren().addAll(pad, t1, t2, t3, t4);
+        return group;
     }
 
     private String getInitials(String name) {

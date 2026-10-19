@@ -208,6 +208,9 @@ public class MenuRegistry {
      */
     public static boolean hasPermission(User.Role role, String actionId) {
         if (role == User.Role.ADMIN) return true;
+        if ("SRV_CRUD".equals(actionId)) actionId = "CAR_UPDATE";
+        else if ("SRV_SEARCH".equals(actionId)) actionId = "CAR_SEARCH";
+        else if ("SRV_PRICING".equals(actionId)) actionId = "CAR_PRICING";
         Set<User.Role> permitted = PERMISSION_MAP.get(actionId);
         return permitted != null && permitted.contains(role);
     }

@@ -10,6 +10,7 @@ public class Main extends Application {
     @Override
     public void start(Stage stage) {
         stage.setTitle("Happy Tails | Đăng nhập hệ thống");
+        // Dùng logo Happy Tails cho biểu tượng cửa sổ.
         try {
             var iconStream = getClass().getResourceAsStream("/com/petshop/view/logo.png");
             if (iconStream != null) {

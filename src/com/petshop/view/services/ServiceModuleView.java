@@ -4,6 +4,7 @@ import com.petshop.dao.AssignedOperationsDao;
 import com.petshop.dao.AssignedOperationsDao.LookupOption;
 import com.petshop.dao.AssignedOperationsDao.ServicePriceRow;
 import com.petshop.dao.AssignedOperationsDao.ServiceRow;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
@@ -28,7 +29,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.beans.property.ReadOnlyStringWrapper;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -181,7 +181,7 @@ public class ServiceModuleView extends VBox {
         txtDescription.setPrefRowCount(3);
         TextField txtDuration = new TextField(current == null ? "30" : Integer.toString(current.duration()));
         txtDuration.setTextFormatter(new TextFormatter<String>(change ->
-            change.getControlNewText().matches("\\d{0,3}") ? change : null));
+                change.getControlNewText().matches("\\d{0,3}") ? change : null));
         CheckBox chkActive = new CheckBox("Đang cung cấp");
         chkActive.setSelected(current == null || current.active());
 
@@ -203,7 +203,7 @@ public class ServiceModuleView extends VBox {
             }
         });
         dlgService.setResultConverter(btnType -> btnType == btnTypeSave
-            ? new ServiceForm(txtName.getText(), txtDescription.getText(), Integer.parseInt(txtDuration.getText()), chkActive.isSelected())
+                ? new ServiceForm(txtName.getText(), txtDescription.getText(), Integer.parseInt(txtDuration.getText()), chkActive.isSelected())
                 : null);
         Optional<ServiceForm> result = dlgService.showAndWait();
         result.ifPresent(form -> runSaveService(current, form));
@@ -250,7 +250,7 @@ public class ServiceModuleView extends VBox {
         TextField txtPrice = new TextField();
         txtPrice.setPromptText("Ví dụ: 80000");
         txtPrice.setTextFormatter(new TextFormatter<String>(change ->
-            change.getControlNewText().matches("\\d{0,16}(\\.\\d{0,2})?") ? change : null));
+                change.getControlNewText().matches("\\d{0,16}(\\.\\d{0,2})?") ? change : null));
         DatePicker dtpEffective = new DatePicker(LocalDate.now());
         DatePicker dtpExpiry = new DatePicker();
         try {
@@ -280,8 +280,8 @@ public class ServiceModuleView extends VBox {
             }
         });
         dlgPrice.setResultConverter(btnType -> btnType == btnTypeSave
-            ? new PriceForm(cboService.getValue(), cboSize.getValue(), Double.parseDouble(txtPrice.getText()),
-                dtpEffective.getValue(), dtpExpiry.getValue())
+                ? new PriceForm(cboService.getValue(), cboSize.getValue(), Double.parseDouble(txtPrice.getText()),
+                        dtpEffective.getValue(), dtpExpiry.getValue())
                 : null);
         dlgPrice.showAndWait().ifPresent(form -> {
             try {
@@ -335,4 +335,3 @@ public class ServiceModuleView extends VBox {
     private record PriceForm(LookupOption service, String size, double price,
                              LocalDate effectiveDate, LocalDate expiryDate) {}
 }
-
