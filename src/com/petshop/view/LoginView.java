@@ -96,6 +96,9 @@ public class LoginView extends StackPane {
         pnlCard.setPrefWidth(440);
         pnlCard.setMaxWidth(440);
         pnlCard.setMinWidth(440);
+        pnlCard.setPrefHeight(426);
+        pnlCard.setMinHeight(426);
+        pnlCard.setMaxHeight(426);
         pnlCard.setSpacing(16);
         pnlCard.setAlignment(Pos.CENTER);
         StackPane.setAlignment(pnlCard, Pos.CENTER);
