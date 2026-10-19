@@ -466,7 +466,7 @@ public class MainDashboard extends BorderPane {
             // --- Nhóm 1: Khách hàng & Thú cưng & Lịch hẹn ---
             case "CUSTOMER" -> new CustomerView(action.getId());
             case "PET" -> new PetView(action.getId());
-            case "APPOINTMENT" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "APPOINTMENT" -> new AssignedModuleView(action.getId(), action.getName(), user);
 
             // --- Nhóm 2: Nhân viên & Ca trực & Dịch vụ chăm sóc ---
             // Mở giao diện nhân viên theo chức năng được chọn.
@@ -477,7 +477,7 @@ public class MainDashboard extends BorderPane {
                 case "SHF_VIEW"   -> new ShiftCalendarView();
                 default -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
             };
-            case "CARE_SERVICE" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "CARE_SERVICE" -> new AssignedModuleView(action.getId(), action.getName(), user);
 
             // --- Nhóm 3: Nhà cung cấp & Đơn hàng nhập & Sản phẩm ---
             case "SUPPLIER" -> new SupplierView(action.getId());
@@ -488,7 +488,7 @@ public class MainDashboard extends BorderPane {
             case "PROMOTION" -> "PRM_SEARCH".equals(action.getId())
                     ? new PromotionSearchView()
                     : new PromotionUpdateView();
-            case "INVOICE" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "INVOICE" -> new AssignedModuleView(action.getId(), action.getName(), user);
             case "RETURN_NOTE" -> "RET_CREATE".equals(action.getId())
                     ? new ReturnNoteCreateView()
                     : new ReturnNoteProcessView();
