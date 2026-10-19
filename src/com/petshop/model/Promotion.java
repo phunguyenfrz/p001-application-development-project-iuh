@@ -1,6 +1,7 @@
 package com.petshop.model;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 /**
  * Lớp thực thể Promotion đại diện cho một chương trình khuyến mãi (bảng KhuyenMai).
@@ -159,6 +160,19 @@ public class Promotion {
 
     public void setNgayCapNhat(LocalDate ngayCapNhat) {
         this.ngayCapNhat = ngayCapNhat;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Promotion promotion = (Promotion) o;
+        return Objects.equals(maKhuyenMai, promotion.maKhuyenMai);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maKhuyenMai);
     }
 
     @Override

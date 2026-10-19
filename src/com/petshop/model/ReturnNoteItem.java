@@ -1,5 +1,7 @@
 package com.petshop.model;
 
+import java.util.Objects;
+
 /**
  * Lớp thực thể ReturnNoteItem đại diện cho một dòng sản phẩm trong chi tiết phiếu đổi trả (bảng ChiTietPhieuDoiTra).
  *
@@ -99,6 +101,20 @@ public class ReturnNoteItem {
 
     public void setDonGia(double donGia) {
         this.donGia = donGia;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ReturnNoteItem that = (ReturnNoteItem) o;
+        return Objects.equals(maPhieuDoiTra, that.maPhieuDoiTra) &&
+                Objects.equals(maSanPham, that.maSanPham);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maPhieuDoiTra, maSanPham);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.petshop.model;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
 /**
  * Một dòng sản phẩm hoặc dịch vụ trong chi tiết giao dịch.
@@ -67,5 +68,30 @@ public class CustomerTransactionItem {
      */
     public BigDecimal getThanhTien() {
         return donGia.multiply(BigDecimal.valueOf(soLuong));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CustomerTransactionItem that = (CustomerTransactionItem) o;
+        return soLuong == that.soLuong &&
+                Objects.equals(maDoiTuong, that.maDoiTuong) &&
+                Objects.equals(donGia, that.donGia);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maDoiTuong, soLuong, donGia);
+    }
+
+    @Override
+    public String toString() {
+        return "CustomerTransactionItem{" +
+                "maDoiTuong='" + maDoiTuong + '\'' +
+                ", tenDoiTuong='" + tenDoiTuong + '\'' +
+                ", soLuong=" + soLuong +
+                ", donGia=" + donGia +
+                '}';
     }
 }

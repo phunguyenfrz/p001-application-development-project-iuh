@@ -2,6 +2,7 @@ package com.petshop.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Objects;
 
 /**
  * Thông tin một hóa đơn trong lịch sử giao dịch khách hàng.
@@ -103,5 +104,29 @@ public class CustomerTransaction {
     /** @return Tổng thanh toán thực tế từ database. */
     public BigDecimal getTongTien() {
         return tongTien;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CustomerTransaction that = (CustomerTransaction) o;
+        return Objects.equals(maHoaDon, that.maHoaDon);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maHoaDon);
+    }
+
+    @Override
+    public String toString() {
+        return "CustomerTransaction{" +
+                "maHoaDon='" + maHoaDon + '\'' +
+                ", maKhachHang='" + maKhachHang + '\'' +
+                ", ngayLap=" + ngayLap +
+                ", trangThaiThanhToan='" + trangThaiThanhToan + '\'' +
+                ", tongTien=" + tongTien +
+                '}';
     }
 }

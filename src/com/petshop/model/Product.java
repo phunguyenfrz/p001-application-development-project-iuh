@@ -1,5 +1,7 @@
 package com.petshop.model;
 
+import java.util.Objects;
+
 /**
  * Model đại diện cho một sản phẩm trong cửa hàng (bảng SanPham).
  */
@@ -65,6 +67,19 @@ public class Product {
 
     public boolean isTrangThai()                { return trangThai; }
     public void setTrangThai(boolean trangThai) { this.trangThai = trangThai; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Product product = (Product) o;
+        return Objects.equals(maSanPham, product.maSanPham);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maSanPham);
+    }
 
     @Override
     public String toString() {

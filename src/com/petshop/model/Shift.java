@@ -3,6 +3,7 @@ package com.petshop.model;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 
 /**
  * Lớp thực thể Shift đại diện cho một ca làm việc của cửa hàng (bảng Ca trong CSDL).
@@ -164,6 +165,19 @@ public class Shift {
 
     public void setNgayCapNhat(LocalDate ngayCapNhat) {
         this.ngayCapNhat = ngayCapNhat;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Shift shift = (Shift) o;
+        return Objects.equals(maCa, shift.maCa);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maCa);
     }
 
     @Override

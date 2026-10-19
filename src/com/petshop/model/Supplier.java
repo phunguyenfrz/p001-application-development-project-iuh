@@ -14,6 +14,10 @@ public class Supplier {
     private String matHangCungCap;  // Mặt hàng cung cấp chính
     private final boolean trangThai; // true (1): Đang hợp tác, false (0): Ngừng hoạt động (xóa mềm)
 
+    public Supplier() {
+        this.trangThai = true;
+    }
+
     public Supplier(String maNhaCungCap, String tenNhaCungCap, String soDienThoai,
                     String email, String diaChi, String matHangCungCap, boolean trangThai) {
         this.maNhaCungCap = maNhaCungCap;
@@ -79,5 +83,23 @@ public class Supplier {
 
     public String getTenTrangThai() {
         return trangThai ? "Đang hợp tác" : "Ngừng hoạt động";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Supplier supplier = (Supplier) o;
+        return java.util.Objects.equals(maNhaCungCap, supplier.maNhaCungCap);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(maNhaCungCap);
+    }
+
+    @Override
+    public String toString() {
+        return "Supplier{ma='" + maNhaCungCap + "', ten='" + tenNhaCungCap + "', sdt='" + soDienThoai + "'}";
     }
 }

@@ -12,6 +12,7 @@ USE QLCH_HappyTails;
 GO
 
 -- Xóa các bảng cũ theo thứ tự phụ thuộc (nếu tồn tại)
+IF OBJECT_ID('NhatKyThaoTac', 'U') IS NOT NULL DROP TABLE NhatKyThaoTac;
 IF OBJECT_ID('ChiTietPhieuDoiTra', 'U') IS NOT NULL DROP TABLE ChiTietPhieuDoiTra;
 IF OBJECT_ID('PhieuDoiTra', 'U') IS NOT NULL DROP TABLE PhieuDoiTra;
 IF OBJECT_ID('ChiTietHoaDon_DichVu', 'U') IS NOT NULL DROP TABLE ChiTietHoaDon_DichVu;
@@ -49,7 +50,11 @@ CREATE TABLE NhanVien (
     chucVu NVARCHAR(50) NOT NULL CHECK (chucVu IN (N'Quản lý', N'Bán hàng', N'Chăm sóc')),
     ngaySinh DATE NOT NULL CHECK (DATEDIFF(year, ngaySinh, GETDATE()) >= 18),
     gioiTinh BIT NOT NULL, -- 1: Nam, 0: Nữ
-    trangThai NVARCHAR(30) NOT NULL DEFAULT N'Đang làm' CHECK (trangThai IN (N'Đang làm', N'Đã nghỉ việc'))
+    trangThai NVARCHAR(30) NOT NULL DEFAULT N'Đang làm' CHECK (trangThai IN (N'Đang làm', N'Đã nghỉ việc')),
+    email VARCHAR(100) NULL,
+    diaChi NVARCHAR(255) NULL,
+    ngayBatDau DATE NULL,
+    anh NVARCHAR(255) NULL
 );
 GO
 
@@ -62,7 +67,8 @@ CREATE TABLE KhachHang (
     email VARCHAR(100) CHECK (email IS NULL OR (email LIKE '%_@__%.__%')),
     diemTichLuy INT NOT NULL DEFAULT 0 CHECK (diemTichLuy >= 0),
     diaChi NVARCHAR(255),
-    ghiChu NVARCHAR(255)
+    ghiChu NVARCHAR(255),
+    trangThai BIT NOT NULL CONSTRAINT DF_KhachHang_TrangThai DEFAULT (1)
 );
 GO
 
@@ -96,7 +102,10 @@ CREATE TABLE NhaCungCap (
     maNhaCungCap VARCHAR(20) PRIMARY KEY CHECK (maNhaCungCap LIKE 'NCC-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]'),
     tenNhaCungCap NVARCHAR(150) NOT NULL CHECK (LEN(LTRIM(RTRIM(tenNhaCungCap))) > 0),
     soDienThoai VARCHAR(10) NOT NULL CHECK (soDienThoai LIKE '0[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'),
-    diaChi NVARCHAR(255)
+    email VARCHAR(100) NULL,
+    diaChi NVARCHAR(255),
+    matHangCungCap NVARCHAR(200) NULL,
+    trangThai BIT NOT NULL CONSTRAINT DF_NhaCungCap_TrangThai DEFAULT 1
 );
 GO
 
@@ -143,6 +152,7 @@ CREATE TABLE ThuCung (
     ngaySinh DATE CHECK (ngaySinh IS NULL OR ngaySinh <= CAST(GETDATE() AS DATE)),
     diUng NVARCHAR(255),
     gioiTinh NVARCHAR(10) CHECK (gioiTinh IN (N'Đực', N'Cái')),
+    trangThai BIT NOT NULL CONSTRAINT DF_ThuCung_TrangThai DEFAULT (1),
     CONSTRAINT FK_ThuCung_KhachHang FOREIGN KEY (maKhachHang) REFERENCES KhachHang(maKhachHang),
     CONSTRAINT UQ_ThuCung_Ma_KhachHang UNIQUE (maThuCung, maKhachHang)
 );
@@ -350,6 +360,19 @@ CREATE TABLE ChiTietPhieuDoiTra (
     PRIMARY KEY (maPhieuDoiTra, maSanPham),
     CONSTRAINT FK_CTPhieuDoiTra_PhieuDoiTra FOREIGN KEY (maPhieuDoiTra) REFERENCES PhieuDoiTra(maPhieuDoiTra),
     CONSTRAINT FK_CTPhieuDoiTra_ChiTietHDSanPham FOREIGN KEY (maHoaDon, maSanPham) REFERENCES ChiTietHoaDon_SanPham(maHoaDon, maSanPham)
+);
+GO
+
+-- 20. Bảng NhatKyThaoTac (Ghi nhận lịch sử thao tác khách hàng, thú cưng, nhân viên)
+CREATE TABLE NhatKyThaoTac (
+    maNhatKy BIGINT IDENTITY(1,1) PRIMARY KEY,
+    thoiGian DATETIME2 NOT NULL CONSTRAINT DF_NhatKyThaoTac_ThoiGian DEFAULT (SYSDATETIME()),
+    maNhanVienThucHien VARCHAR(20) NULL,
+    tenDangNhap VARCHAR(50) NULL,
+    loaiDoiTuong NVARCHAR(30) NOT NULL,
+    maDoiTuong VARCHAR(20) NOT NULL,
+    hanhDong NVARCHAR(50) NOT NULL,
+    moTa NVARCHAR(500) NULL
 );
 GO
 

@@ -1,0 +1,85 @@
+/* --- Styles cho phân hệ Phiếu đổi trả (Return Note) --- */
+.tab-pill-active {
+    -fx-background-color: #2f4f38;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-background-radius: 20px;
+    -fx-padding: 6px 16px;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+}
+
+.tab-pill-inactive {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #4b5563;
+    -fx-font-weight: 500;
+    -fx-background-radius: 20px;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1px;
+    -fx-border-radius: 20px;
+    -fx-padding: 5px 15px;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+}
+
+.tab-pill-inactive:hover {
+    -fx-background-color: #f3f4f6;
+}
+
+.highlight-card-green {
+    -fx-background-color: #eaf5ed;
+    -fx-background-radius: 10px;
+    -fx-border-color: #c4e1cb;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+    -fx-padding: 14px 18px;
+}
+
+.highlight-card-red {
+    -fx-background-color: #fef2f2;
+    -fx-background-radius: 10px;
+    -fx-border-color: #fecaca;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+    -fx-padding: 14px 18px;
+}
+
+.icon-circle-success {
+    -fx-background-color: #dcfce7;
+    -fx-background-radius: 20px;
+    -fx-pref-width: 40px;
+    -fx-pref-height: 40px;
+    -fx-alignment: center;
+}
+
+.btn-approve {
+    -fx-background-color: #2f4f38;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: 600;
+    -fx-background-radius: 6px;
+    -fx-padding: 5px 14px;
+    -fx-font-size: 12.5px;
+    -fx-cursor: hand;
+}
+
+.btn-approve:hover {
+    -fx-background-color: #243e2c;
+}
+
+.btn-reject {
+    -fx-background-color: #fff1f2;
+    -fx-text-fill: #e11d48;
+    -fx-border-color: #fecdd3;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+    -fx-font-weight: 600;
+    -fx-background-radius: 6px;
+    -fx-padding: 4px 12px;
+    -fx-font-size: 12.5px;
+    -fx-cursor: hand;
+}
+
+.btn-reject:hover {
+    -fx-background-color: #ffe4e6;
+}
+

@@ -51,6 +51,9 @@ public class SupplierService {
      */
     public void addSupplier(Supplier supplier) {
         authService.checkPermission("SUP_UPDATE");
+        if (supplier != null && (supplier.getMaNhaCungCap() == null || supplier.getMaNhaCungCap().isBlank())) {
+            supplier.setMaNhaCungCap(generateNextSupplierId());
+        }
         validateSupplierData(supplier);
 
         if (supplierDao.findById(supplier.getMaNhaCungCap()) != null) {

@@ -3,6 +3,7 @@ package com.petshop.model;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Lớp thực thể ReturnNote đại diện cho một phiếu đổi trả hàng hóa (bảng PhieuDoiTra).
@@ -198,6 +199,19 @@ public class ReturnNote {
     public void setDanhSachChiTiet(List<ReturnNoteItem> danhSachChiTiet) {
         this.danhSachChiTiet = (danhSachChiTiet != null) ? danhSachChiTiet : new ArrayList<>();
         capNhatTongTienVaSoLuong();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ReturnNote that = (ReturnNote) o;
+        return Objects.equals(maPhieuDoiTra, that.maPhieuDoiTra);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maPhieuDoiTra);
     }
 
     @Override

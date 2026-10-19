@@ -67,6 +67,19 @@ public class Customer {
         this.trangThai = trangThai;
     }
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Customer customer = (Customer) o;
+        return java.util.Objects.equals(maKhachHang, customer.maKhachHang);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(maKhachHang);
+    }
+
+    @Override
     public String toString() {
         return "Customer{ma='" + maKhachHang + "', hoTen='" + hoTen + "', sdt='" + soDienThoai + "'}";
     }

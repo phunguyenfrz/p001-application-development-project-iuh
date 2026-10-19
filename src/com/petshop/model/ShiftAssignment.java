@@ -4,6 +4,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 
 /**
  * Lớp thực thể ShiftAssignment đại diện cho một bản ghi phân công ca làm việc
@@ -217,6 +218,19 @@ public class ShiftAssignment {
 
     public void setTrangThai(String trangThai) {
         this.trangThai = trangThai;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ShiftAssignment that = (ShiftAssignment) o;
+        return Objects.equals(maPhanCa, that.maPhanCa);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maPhanCa);
     }
 
     @Override

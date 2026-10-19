@@ -1,6 +1,9 @@
 package com.petshop.view;
 
 import com.petshop.model.User;
+import com.petshop.view.services.AppointmentModuleView;
+import com.petshop.view.services.InvoiceModuleView;
+import com.petshop.view.services.ServiceModuleView;
 import javafx.scene.Node;
 import javafx.scene.layout.VBox;
 
