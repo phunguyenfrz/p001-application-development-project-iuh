@@ -10,6 +10,7 @@ public class Product {
     private String maVach;
     private double giaBan;
     private int soLuongTon;
+    private int nguongTonToiThieu = 10;
     private String donViTinh;
     private boolean trangThai;    // true: đang bán
 
@@ -17,12 +18,18 @@ public class Product {
 
     public Product(String maSanPham, String maNhaCungCap, String tenSanPham, String maVach,
                    double giaBan, int soLuongTon, String donViTinh, boolean trangThai) {
+        this(maSanPham, maNhaCungCap, tenSanPham, maVach, giaBan, soLuongTon, 10, donViTinh, trangThai);
+    }
+
+    public Product(String maSanPham, String maNhaCungCap, String tenSanPham, String maVach,
+                   double giaBan, int soLuongTon, int nguongTonToiThieu, String donViTinh, boolean trangThai) {
         this.maSanPham = maSanPham;
         this.maNhaCungCap = maNhaCungCap;
         this.tenSanPham = tenSanPham;
         this.maVach = maVach;
         this.giaBan = giaBan;
         this.soLuongTon = soLuongTon;
+        this.nguongTonToiThieu = nguongTonToiThieu;
         this.donViTinh = donViTinh;
         this.trangThai = trangThai;
     }
@@ -45,6 +52,14 @@ public class Product {
     public int getSoLuongTon()                  { return soLuongTon; }
     public void setSoLuongTon(int soLuongTon)   { this.soLuongTon = soLuongTon; }
 
+    public int getNguongTonToiThieu()                       { return nguongTonToiThieu; }
+    public void setNguongTonToiThieu(int nguongTonToiThieu) { this.nguongTonToiThieu = nguongTonToiThieu; }
+
+    /** Kiểm tra sản phẩm có đang ở mức sắp hết hàng hay không. */
+    public boolean isSapHetHang() {
+        return soLuongTon <= nguongTonToiThieu;
+    }
+
     public String getDonViTinh()                { return donViTinh; }
     public void setDonViTinh(String donViTinh)  { this.donViTinh = donViTinh; }
 
@@ -54,6 +69,6 @@ public class Product {
     @Override
     public String toString() {
         return "Product{ma='" + maSanPham + "', ten='" + tenSanPham + "', giaBan=" + giaBan
-                + ", ton=" + soLuongTon + "}";
+                + ", ton=" + soLuongTon + ", nguongToiThieu=" + nguongTonToiThieu + "}";
     }
 }

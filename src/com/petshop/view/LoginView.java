@@ -25,12 +25,12 @@ import javafx.stage.Stage;
  */
 public class LoginView extends StackPane {
 
-    private final TextField usernameField = new TextField();
-    private final PasswordField passwordField = new PasswordField();
-    private final TextField passwordTextField = new TextField(); // Khi bấm hiện mật khẩu
+    private final TextField txtUsername = new TextField();
+    private final PasswordField pwdPassword = new PasswordField();
+    private final TextField txtPasswordVisible = new TextField(); // Khi bấm hiện mật khẩu
     private final LoginController loginController = new LoginController();
     private final Stage stage;
-    private final Label errorLabel = new Label();
+    private final Label lblError = new Label();
     private boolean isPasswordVisible = false;
 
     public LoginView(Stage stage) {
@@ -38,90 +38,90 @@ public class LoginView extends StackPane {
         getStyleClass().add("login-view");
 
         // Khối Card trắng ở giữa
-        VBox card = new VBox();
-        card.getStyleClass().add("login-card");
-        card.setSpacing(14);
-        card.setAlignment(Pos.CENTER);
+        VBox pnlCard = new VBox();
+        pnlCard.getStyleClass().add("login-card");
+        pnlCard.setSpacing(14);
+        pnlCard.setAlignment(Pos.CENTER);
 
         // 1. Logo & Tiêu đề
         Group pawLogo = createPawIcon();
-        Label title = new Label("Happy Tails");
-        title.getStyleClass().add("brand-title");
+        Label lblTitle = new Label("Happy Tails");
+        lblTitle.getStyleClass().add("brand-title");
 
-        Label subtitle = new Label("Hệ thống quản lý cửa hàng thú cưng");
-        subtitle.getStyleClass().add("brand-subtitle");
+        Label lblSubtitle = new Label("Hệ thống quản lý cửa hàng thú cưng");
+        lblSubtitle.getStyleClass().add("brand-subtitle");
 
-        VBox brandBox = new VBox(6, pawLogo, title, subtitle);
-        brandBox.setAlignment(Pos.CENTER);
-        brandBox.setPadding(new Insets(0, 0, 10, 0));
+        VBox pnlBrandBox = new VBox(6, pawLogo, lblTitle, lblSubtitle);
+        pnlBrandBox.setAlignment(Pos.CENTER);
+        pnlBrandBox.setPadding(new Insets(0, 0, 10, 0));
 
         // 2. Ô nhập tên đăng nhập
-        Label userLabel = new Label("Tên đăng nhập");
-        userLabel.getStyleClass().add("field-label");
-        usernameField.setPromptText("Nhập thông tin...");
-        usernameField.getStyleClass().add("login-input");
-        usernameField.setMaxWidth(Double.MAX_VALUE);
+        Label lblUsername = new Label("Tên đăng nhập");
+        lblUsername.getStyleClass().add("field-label");
+        txtUsername.setPromptText("Nhập thông tin...");
+        txtUsername.getStyleClass().add("login-input");
+        txtUsername.setMaxWidth(Double.MAX_VALUE);
 
-        VBox userBox = new VBox(6, userLabel, usernameField);
-        userBox.setAlignment(Pos.CENTER_LEFT);
+        VBox pnlUsernameBox = new VBox(6, lblUsername, txtUsername);
+        pnlUsernameBox.setAlignment(Pos.CENTER_LEFT);
 
         // 3. Ô nhập mật khẩu (có nút ẩn/hiện con mắt)
-        Label passLabel = new Label("Mật khẩu");
-        passLabel.getStyleClass().add("field-label");
+        Label lblPassword = new Label("Mật khẩu");
+        lblPassword.getStyleClass().add("field-label");
 
-        passwordField.setPromptText("Nhập thông tin...");
-        passwordField.getStyleClass().add("login-input");
-        passwordField.setMaxWidth(Double.MAX_VALUE);
+        pwdPassword.setPromptText("Nhập thông tin...");
+        pwdPassword.getStyleClass().add("login-input");
+        pwdPassword.setMaxWidth(Double.MAX_VALUE);
 
-        passwordTextField.setPromptText("Nhập thông tin...");
-        passwordTextField.getStyleClass().add("login-input");
-        passwordTextField.setMaxWidth(Double.MAX_VALUE);
-        passwordTextField.setManaged(false);
-        passwordTextField.setVisible(false);
+        txtPasswordVisible.setPromptText("Nhập thông tin...");
+        txtPasswordVisible.getStyleClass().add("login-input");
+        txtPasswordVisible.setMaxWidth(Double.MAX_VALUE);
+        txtPasswordVisible.setManaged(false);
+        txtPasswordVisible.setVisible(false);
 
         // Nút con mắt
-        Button eyeButton = createEyeButton();
+        Button btnTogglePassword = createEyeButton();
 
-        StackPane passFieldContainer = new StackPane();
-        passFieldContainer.getChildren().addAll(passwordField, passwordTextField, eyeButton);
-        StackPane.setAlignment(eyeButton, Pos.CENTER_RIGHT);
-        StackPane.setMargin(eyeButton, new Insets(0, 4, 0, 0));
+        StackPane pnlPasswordFieldContainer = new StackPane();
+        pnlPasswordFieldContainer.getChildren().addAll(pwdPassword, txtPasswordVisible, btnTogglePassword);
+        StackPane.setAlignment(btnTogglePassword, Pos.CENTER_RIGHT);
+        StackPane.setMargin(btnTogglePassword, new Insets(0, 4, 0, 0));
 
-        VBox passBox = new VBox(6, passLabel, passFieldContainer);
-        passBox.setAlignment(Pos.CENTER_LEFT);
+        VBox pnlPasswordBox = new VBox(6, lblPassword, pnlPasswordFieldContainer);
+        pnlPasswordBox.setAlignment(Pos.CENTER_LEFT);
 
         // 4. Nút Đăng nhập
-        Button loginButton = new Button("Đăng nhập");
-        loginButton.getStyleClass().add("btn-login");
-        loginButton.setMaxWidth(Double.MAX_VALUE);
-        loginButton.setOnAction(event -> login());
+        Button btnLogin = new Button("Đăng nhập");
+        btnLogin.getStyleClass().add("btn-login");
+        btnLogin.setMaxWidth(Double.MAX_VALUE);
+        btnLogin.setOnAction(event -> login());
 
         // Hỗ trợ nhấn Enter để submit
-        usernameField.setOnAction(event -> login());
-        passwordField.setOnAction(event -> login());
-        passwordTextField.setOnAction(event -> login());
+        txtUsername.setOnAction(event -> login());
+        pwdPassword.setOnAction(event -> login());
+        txtPasswordVisible.setOnAction(event -> login());
 
         // 5. Thông báo lỗi
-        errorLabel.getStyleClass().add("error-label");
-        errorLabel.setWrapText(true);
-        errorLabel.setMinHeight(20);
+        lblError.getStyleClass().add("error-label");
+        lblError.setWrapText(true);
+        lblError.setMinHeight(20);
 
         // 6. Footer
-        Label footer = new Label("HAPPY TAILS • Chi nhánh Quận 1");
-        footer.getStyleClass().add("footer-text");
-        VBox.setMargin(footer, new Insets(12, 0, 0, 0));
+        Label lblFooter = new Label("HAPPY TAILS • Chi nhánh Quận 1");
+        lblFooter.getStyleClass().add("footer-text");
+        VBox.setMargin(lblFooter, new Insets(12, 0, 0, 0));
 
         // Ráp toàn bộ vào Card
-        card.getChildren().addAll(
-                brandBox,
-                userBox,
-                passBox,
-                loginButton,
-                errorLabel,
-                footer
+        pnlCard.getChildren().addAll(
+                pnlBrandBox,
+                pnlUsernameBox,
+                pnlPasswordBox,
+                btnLogin,
+                lblError,
+                lblFooter
         );
 
-        getChildren().add(card);
+        getChildren().add(pnlCard);
         setPadding(new Insets(24));
     }
 
@@ -169,8 +169,8 @@ public class LoginView extends StackPane {
      * Tạo nút con mắt để bật/tắt hiển thị mật khẩu.
      */
     private Button createEyeButton() {
-        Button btn = new Button();
-        btn.getStyleClass().add("eye-button");
+        Button btnTogglePassword = new Button();
+        btnTogglePassword.getStyleClass().add("eye-button");
 
         // SVG icon con mắt viền xám nhạt
         SVGPath eyeIcon = new SVGPath();
@@ -179,60 +179,60 @@ public class LoginView extends StackPane {
         eyeIcon.setScaleX(0.75);
         eyeIcon.setScaleY(0.75);
 
-        btn.setGraphic(eyeIcon);
+        btnTogglePassword.setGraphic(eyeIcon);
 
         // Đồng bộ dữ liệu 2 ô nhập
-        passwordField.textProperty().addListener((obs, oldText, newText) -> {
-            if (!isPasswordVisible) passwordTextField.setText(newText);
+        pwdPassword.textProperty().addListener((obs, oldText, newText) -> {
+            if (!isPasswordVisible) txtPasswordVisible.setText(newText);
         });
-        passwordTextField.textProperty().addListener((obs, oldText, newText) -> {
-            if (isPasswordVisible) passwordField.setText(newText);
+        txtPasswordVisible.textProperty().addListener((obs, oldText, newText) -> {
+            if (isPasswordVisible) pwdPassword.setText(newText);
         });
 
-        btn.setOnAction(e -> {
+        btnTogglePassword.setOnAction(e -> {
             isPasswordVisible = !isPasswordVisible;
             if (isPasswordVisible) {
-                passwordTextField.setText(passwordField.getText());
-                passwordTextField.setVisible(true);
-                passwordTextField.setManaged(true);
-                passwordField.setVisible(false);
-                passwordField.setManaged(false);
+                txtPasswordVisible.setText(pwdPassword.getText());
+                txtPasswordVisible.setVisible(true);
+                txtPasswordVisible.setManaged(true);
+                pwdPassword.setVisible(false);
+                pwdPassword.setManaged(false);
                 eyeIcon.setFill(Color.web("#436850")); // Màu đậm khi đang mở
-                passwordTextField.requestFocus();
-                passwordTextField.positionCaret(passwordTextField.getText().length());
+                txtPasswordVisible.requestFocus();
+                txtPasswordVisible.positionCaret(txtPasswordVisible.getText().length());
             } else {
-                passwordField.setText(passwordTextField.getText());
-                passwordField.setVisible(true);
-                passwordField.setManaged(true);
-                passwordTextField.setVisible(false);
-                passwordTextField.setManaged(false);
+                pwdPassword.setText(txtPasswordVisible.getText());
+                pwdPassword.setVisible(true);
+                pwdPassword.setManaged(true);
+                txtPasswordVisible.setVisible(false);
+                txtPasswordVisible.setManaged(false);
                 eyeIcon.setFill(Color.web("#9ca89e"));
-                passwordField.requestFocus();
-                passwordField.positionCaret(passwordField.getText().length());
+                pwdPassword.requestFocus();
+                pwdPassword.positionCaret(pwdPassword.getText().length());
             }
         });
 
-        return btn;
+        return btnTogglePassword;
     }
 
     private void login() {
-        String username = usernameField.getText();
-        String password = isPasswordVisible ? passwordTextField.getText() : passwordField.getText();
+        String username = txtUsername.getText();
+        String password = isPasswordVisible ? txtPasswordVisible.getText() : pwdPassword.getText();
 
-        errorLabel.setText("");
+        lblError.setText("");
 
         User user;
         try {
             user = loginController.authenticate(username, password);
         } catch (IllegalStateException e) {
-            errorLabel.setText("Không thể kết nối cơ sở dữ liệu SQL Server!");
+            lblError.setText("Không thể kết nối cơ sở dữ liệu SQL Server!");
             return;
         }
 
         if (user == null) {
-            errorLabel.setText("Tên đăng nhập hoặc mật khẩu không chính xác.");
-            passwordField.clear();
-            passwordTextField.clear();
+            lblError.setText("Tên đăng nhập hoặc mật khẩu không chính xác.");
+            pwdPassword.clear();
+            txtPasswordVisible.clear();
             return;
         }
 

@@ -17,33 +17,33 @@ public class ModuleListView extends VBox {
         setStyle("-fx-background-color: #f3f6f3;");
 
         // 1. Header
-        VBox headerBox = new VBox(4);
+        VBox pnlHeaderBox = new VBox(4);
         Label lblTitle = new Label(objectTitle + " › " + actionName);
         lblTitle.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #1f2923;");
 
-        Label lblSub = new Label("Phân hệ quản lý " + objectTitle + " (Sơ đồ hướng đối tượng chuẩn).");
-        lblSub.setStyle("-fx-font-size: 13px; -fx-text-fill: #6e7c70;");
-        headerBox.getChildren().addAll(lblTitle, lblSub);
+        Label lblSubtitle = new Label("Phân hệ quản lý " + objectTitle + " (Sơ đồ hướng đối tượng chuẩn).");
+        lblSubtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6e7c70;");
+        pnlHeaderBox.getChildren().addAll(lblTitle, lblSubtitle);
 
         // 2. Toolbar & Table Container
-        VBox card = new VBox(14);
-        card.setPadding(new Insets(16));
-        card.getStyleClass().add("chart-panel");
-        VBox.setVgrow(card, Priority.ALWAYS);
+        VBox pnlCard = new VBox(14);
+        pnlCard.setPadding(new Insets(16));
+        pnlCard.getStyleClass().add("chart-panel");
+        VBox.setVgrow(pnlCard, Priority.ALWAYS);
 
-        HBox toolbar = new HBox(10);
-        toolbar.setAlignment(Pos.CENTER_LEFT);
+        HBox pnlToolbar = new HBox(10);
+        pnlToolbar.setAlignment(Pos.CENTER_LEFT);
 
-        TextField searchField = new TextField();
-        searchField.setPromptText("Tìm kiếm trong danh sách " + objectTitle + "...");
-        searchField.getStyleClass().add("search-field");
-        searchField.setPrefWidth(280);
+        TextField txtSearch = new TextField();
+        txtSearch.setPromptText("Tìm kiếm trong danh sách " + objectTitle + "...");
+        txtSearch.getStyleClass().add("search-field");
+        txtSearch.setPrefWidth(280);
 
-        HBox searchBox = new HBox(6, searchField);
-        searchBox.getStyleClass().add("search-box");
+        HBox pnlSearchBox = new HBox(6, txtSearch);
+        pnlSearchBox.getStyleClass().add("search-box");
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+        Region pnlSpacer = new Region();
+        HBox.setHgrow(pnlSpacer, Priority.ALWAYS);
 
         Button btnAdd = new Button("➕ Thêm mới");
         btnAdd.getStyleClass().add("btn-action-primary");
@@ -60,34 +60,34 @@ public class ModuleListView extends VBox {
         Button btnRefresh = new Button("🔄 Làm mới (F5)");
         btnRefresh.getStyleClass().add("btn-action-secondary");
 
-        toolbar.getChildren().addAll(searchBox, spacer, btnAdd, btnEdit, btnDelete, btnRefresh);
+        pnlToolbar.getChildren().addAll(pnlSearchBox, pnlSpacer, btnAdd, btnEdit, btnDelete, btnRefresh);
 
         // Table Placeholder
-        TableView<String> table = new TableView<>();
-        table.setPlaceholder(new Label("Chức năng [" + actionName + "] đang được kết nối với cơ sở dữ liệu. (TODO)"));
-        VBox.setVgrow(table, Priority.ALWAYS);
+        TableView<String> tblRecords = new TableView<>();
+        Label lblTablePlaceholder = new Label("Chức năng [" + actionName + "] đang được kết nối với cơ sở dữ liệu. (TODO)");
+        tblRecords.setPlaceholder(lblTablePlaceholder);
+        VBox.setVgrow(tblRecords, Priority.ALWAYS);
 
-        TableColumn<String, String> c1 = new TableColumn<>("Mã định danh");
-        c1.setPrefWidth(140);
-        TableColumn<String, String> c2 = new TableColumn<>("Thông tin chính");
-        c2.setPrefWidth(300);
-        TableColumn<String, String> c3 = new TableColumn<>("Ngày cập nhật");
-        c3.setPrefWidth(160);
-        TableColumn<String, String> c4 = new TableColumn<>("Trạng thái");
-        c4.setPrefWidth(140);
+        TableColumn<String, String> colIdentifier = new TableColumn<>("Mã định danh");
+        colIdentifier.setPrefWidth(140);
+        TableColumn<String, String> colMainInfo = new TableColumn<>("Thông tin chính");
+        colMainInfo.setPrefWidth(300);
+        TableColumn<String, String> colUpdatedAt = new TableColumn<>("Ngày cập nhật");
+        colUpdatedAt.setPrefWidth(160);
+        TableColumn<String, String> colStatus = new TableColumn<>("Trạng thái");
+        colStatus.setPrefWidth(140);
 
-        table.getColumns().addAll(c1, c2, c3, c4);
+        tblRecords.getColumns().addAll(java.util.List.of(colIdentifier, colMainInfo, colUpdatedAt, colStatus));
 
-        card.getChildren().addAll(toolbar, table);
-        getChildren().addAll(headerBox, card);
+        pnlCard.getChildren().addAll(pnlToolbar, tblRecords);
+        getChildren().addAll(pnlHeaderBox, pnlCard);
     }
 
     private void showDetailDialog(String title) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText("Hộp thoại [" + title + "] đang được xây dựng theo chuẩn Dialog n-Tier.");
-        alert.showAndWait();
+        Alert dlgInformation = new Alert(Alert.AlertType.INFORMATION);
+        dlgInformation.setTitle(title);
+        dlgInformation.setHeaderText(null);
+        dlgInformation.setContentText("Hộp thoại [" + title + "] đang được xây dựng theo chuẩn Dialog n-Tier.");
+        dlgInformation.showAndWait();
     }
 }
-
