@@ -3,6 +3,7 @@ package com.petshop.model;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Model đại diện cho một hóa đơn bán hàng (bảng HoaDon).
@@ -80,6 +81,19 @@ public class Invoice {
     /** Tổng tiền phải thanh toán = tổng hàng - tiền giảm (khớp cột tongTien trong DB). */
     public double getTongTien() {
         return Math.max(0, getTongTienHang() - tienGiam);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Invoice invoice = (Invoice) o;
+        return Objects.equals(maHoaDon, invoice.maHoaDon);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maHoaDon);
     }
 
     @Override
