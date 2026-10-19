@@ -6,6 +6,7 @@ import com.petshop.service.MenuRegistry;
 import com.petshop.view.customer.CustomerView;
 import com.petshop.view.employee.EmployeeView;
 import com.petshop.view.pet.PetView;
+import com.petshop.view.product.ProductView;
 import com.petshop.view.promotion.PromotionSearchView;
 import com.petshop.view.promotion.PromotionUpdateView;
 import com.petshop.view.returnnote.ReturnNoteCreateView;
@@ -493,7 +494,7 @@ public class MainDashboard extends BorderPane {
             // --- Nhóm 3: Nhà cung cấp & Đơn hàng nhập & Sản phẩm ---
             case "SUPPLIER" -> new SupplierView(action.getId());
             case "IMPORT_ORDER" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "PRODUCT" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "PRODUCT" -> new ProductView(action.getId());
 
             // --- Nhóm 4: Khuyến mãi & Hóa đơn & Phiếu đổi trả ---
             case "PROMOTION" -> "PRM_SEARCH".equals(action.getId())
