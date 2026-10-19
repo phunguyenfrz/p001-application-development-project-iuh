@@ -1,8 +1,10 @@
 package com.petshop.view.shift;
 
 import com.petshop.controller.ShiftAssignmentController;
+import com.petshop.model.Employee;
 import com.petshop.model.Shift;
 import com.petshop.model.ShiftAssignment;
+import com.petshop.view.employee.EmployeePickerDialog;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -15,6 +17,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -175,7 +178,23 @@ public class ShiftAssignmentEditorDialog extends StackPane {
             }
         });
 
-        VBox pnlNhanVienBox = new VBox(6, lblNhanVien, cboNhanVien);
+        Button btnChonNhanVien = new Button("Tìm...");
+        btnChonNhanVien.setStyle("-fx-background-color: #ffffff; -fx-border-color: #d1d5db; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-cursor: hand;");
+        btnChonNhanVien.setMinWidth(Region.USE_PREF_SIZE);
+        btnChonNhanVien.setOnAction(e -> {
+            Optional<Employee> picked = EmployeePickerDialog.showAndPick(getScene() != null ? getScene().getWindow() : null);
+            picked.ifPresent(emp -> {
+                for (Map<String, String> item : cboNhanVien.getItems()) {
+                    if (emp.maNhanVien().equals(item.get("maNhanVien"))) {
+                        cboNhanVien.setValue(item);
+                        break;
+                    }
+                }
+            });
+        });
+        HBox pnlNhanVienRow = new HBox(6, cboNhanVien, btnChonNhanVien);
+        HBox.setHgrow(cboNhanVien, Priority.ALWAYS);
+        VBox pnlNhanVienBox = new VBox(6, lblNhanVien, pnlNhanVienRow);
 
         pnlGrid.add(pnlMaBox, 0, 0);
         pnlGrid.add(pnlNhanVienBox, 1, 0);

@@ -304,3 +304,62 @@
     -fx-padding: 12px 0 0 0;
 }
 
+/* =========================================================
+   BADGES CHO VAI TRÒ VÀ TRẠNG THÁI NHÂN VIÊN
+   ========================================================= */
+.badge-admin {
+    -fx-background-color: #f3e8ff;
+    -fx-text-fill: #7e22ce;
+    -fx-font-weight: bold;
+    -fx-background-radius: 12px;
+    -fx-padding: 3px 10px;
+}
+
+.badge-manager {
+    -fx-background-color: #dbeafe;
+    -fx-text-fill: #1d4ed8;
+    -fx-font-weight: bold;
+    -fx-background-radius: 12px;
+    -fx-padding: 3px 10px;
+}
+
+.badge-sale {
+    -fx-background-color: #e0f2fe;
+    -fx-text-fill: #0284c7;
+    -fx-font-weight: bold;
+    -fx-background-radius: 12px;
+    -fx-padding: 3px 10px;
+}
+
+.badge-care {
+    -fx-background-color: #fef3c7;
+    -fx-text-fill: #b45309;
+    -fx-font-weight: bold;
+    -fx-background-radius: 12px;
+    -fx-padding: 3px 10px;
+}
+
+.badge-active {
+    -fx-background-color: #dcfce7;
+    -fx-text-fill: #15803d;
+    -fx-font-weight: bold;
+    -fx-background-radius: 12px;
+    -fx-padding: 3px 10px;
+}
+
+.badge-locked {
+    -fx-background-color: #fee2e2;
+    -fx-text-fill: #b91c1c;
+    -fx-font-weight: bold;
+    -fx-background-radius: 12px;
+    -fx-padding: 3px 10px;
+}
+
+.badge-none {
+    -fx-background-color: #f3f4f6;
+    -fx-text-fill: #6b7280;
+    -fx-font-weight: bold;
+    -fx-background-radius: 12px;
+    -fx-padding: 3px 10px;
+}
+

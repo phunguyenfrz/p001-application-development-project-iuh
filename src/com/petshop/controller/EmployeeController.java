@@ -77,4 +77,39 @@ public class EmployeeController {
     public boolean canEdit(Employee employee) {
         return employee_service.canEdit(employee);
     }
+
+    /**
+     * Lấy danh sách nhân viên đang làm việc.
+     */
+    public List<Employee> loadActiveEmployees() {
+        return employee_service.findActiveEmployees();
+    }
+
+    /**
+     * Cấp tài khoản mới cho nhân viên.
+     */
+    public String createAccount(String maNhanVien, String tenDangNhap, String matKhau, String phanQuyen) {
+        return employee_service.createAccount(maNhanVien, tenDangNhap, matKhau, phanQuyen);
+    }
+
+    /**
+     * Cập nhật phân quyền truy cập.
+     */
+    public void updateRole(String maNhanVien, String phanQuyen) {
+        employee_service.updateRole(maNhanVien, phanQuyen);
+    }
+
+    /**
+     * Khóa hoặc mở khóa tài khoản.
+     */
+    public void toggleAccountStatus(String maNhanVien, boolean active) {
+        employee_service.toggleAccountStatus(maNhanVien, active);
+    }
+
+    /**
+     * Đặt lại mật khẩu tài khoản.
+     */
+    public void resetPassword(String maNhanVien, String newPassword) {
+        employee_service.resetPassword(maNhanVien, newPassword);
+    }
 }

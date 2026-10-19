@@ -7,6 +7,7 @@ import com.petshop.view.careservice.CareServiceView;
 import com.petshop.view.customer.CustomerView;
 import com.petshop.view.employee.EmployeeView;
 import com.petshop.view.importorder.ImportOrderView;
+import com.petshop.view.invoice.InvoiceView;
 import com.petshop.view.pet.PetView;
 import com.petshop.view.product.ProductView;
 import com.petshop.view.promotion.PromotionSearchView;
@@ -502,7 +503,7 @@ public class MainDashboard extends BorderPane {
             case "PROMOTION" -> "PRM_SEARCH".equals(action.getId())
                     ? new PromotionSearchView()
                     : new PromotionUpdateView();
-            case "INVOICE" -> new AssignedModuleView(action.getId(), action.getName(), user);
+            case "INVOICE" -> new InvoiceView(action.getId(), user);
             case "RETURN_NOTE" -> "RET_CREATE".equals(action.getId())
                     ? new ReturnNoteCreateView()
                     : new ReturnNoteProcessView();

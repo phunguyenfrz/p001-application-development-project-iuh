@@ -90,29 +90,32 @@ public class EmployeeView extends VBox {
      * @param action_id Mã chức năng trong MenuRegistry.
      */
     public EmployeeView(String action_id) {
-        // Các chức năng khác tạm giữ màn mẫu.
-        if (!"EMP_UPDATE".equals(action_id)) {
-            String action_name = switch (action_id) {
-                case "EMP_SEARCH" -> "Tìm kiếm nhân viên";
-                case "EMP_ROLES" -> "Phân quyền";
-                case "EMP_ACCOUNT" -> "Tài khoản đăng nhập";
-                default -> "Nhân viên";
-            };
-
-            ModuleListView placeholder = new ModuleListView(
-                    "Nhân viên",
-                    action_name,
-                    null
-            );
-
-            getChildren().add(placeholder);
-            VBox.setVgrow(placeholder, Priority.ALWAYS);
+        if ("EMP_SEARCH".equalsIgnoreCase(action_id)) {
+            EmployeeSearchView searchView = new EmployeeSearchView();
+            getChildren().setAll(searchView);
+            VBox.setVgrow(searchView, Priority.ALWAYS);
             return;
         }
 
+        if ("EMP_ROLES".equalsIgnoreCase(action_id)) {
+            EmployeeRolesView rolesView = new EmployeeRolesView();
+            getChildren().setAll(rolesView);
+            VBox.setVgrow(rolesView, Priority.ALWAYS);
+            return;
+        }
+
+        if ("EMP_ACCOUNT".equalsIgnoreCase(action_id)) {
+            EmployeeAccountView accountView = new EmployeeAccountView();
+            getChildren().setAll(accountView);
+            VBox.setVgrow(accountView, Priority.ALWAYS);
+            return;
+        }
+
+        // --- EMP_UPDATE / EMP_CRUD ---
         getStyleClass().add("employee-page");
         setPadding(new Insets(24));
         setSpacing(20);
+        VBox.setVgrow(this, Priority.ALWAYS);
 
         Label lblTitle = new Label("Cập nhật nhân viên");
         lblTitle.getStyleClass().add("employee-title");
@@ -1228,6 +1231,7 @@ public class EmployeeView extends VBox {
     ) {
         Button button = new Button(title);
         button.getStyleClass().add(style);
+        button.setMinWidth(Region.USE_PREF_SIZE);
         return button;
     }
 

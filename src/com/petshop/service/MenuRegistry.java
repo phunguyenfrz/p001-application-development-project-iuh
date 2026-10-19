@@ -130,7 +130,7 @@ public class MenuRegistry {
         ALL_MENUS.add(new MenuGroup("INVOICE", "Hóa đơn", "INVOICE", List.of(
                 new MenuAction("INV_CREATE", "Lập hóa đơn", null),
                 new MenuAction("INV_SEARCH", "Tìm kiếm hóa đơn", "Ctrl+F"),
-                new MenuAction("INV_UPDATE", "Cập nhật hóa đơn", null),
+                new MenuAction("INV_CANCEL", "Hủy hóa đơn", null),
                 new MenuAction("INV_REVENUE", "Báo cáo doanh thu", null)
         )));
 

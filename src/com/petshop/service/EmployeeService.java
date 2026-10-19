@@ -547,4 +547,112 @@ public class EmployeeService {
                 error
         );
     }
+
+    /**
+     * Lấy danh sách nhân viên đang làm việc (phục vụ chọn nhân viên hoặc phân ca).
+     */
+    public List<Employee> findActiveEmployees() {
+        try {
+            return employee_dao.findActiveEmployees();
+        } catch (SQLException error) {
+            throw translateError(error);
+        }
+    }
+
+    /**
+     * Cấp tài khoản đăng nhập mới cho nhân viên.
+     */
+    public String createAccount(String maNhanVien, String tenDangNhap, String matKhau, String phanQuyen) {
+        User actor = getActorOrSystem();
+        validateId(maNhanVien);
+
+        if (tenDangNhap == null || tenDangNhap.trim().isEmpty()) {
+            throw new IllegalArgumentException("Tên đăng nhập không được để trống.");
+        }
+        String cleanUsername = tenDangNhap.trim();
+        if (!cleanUsername.matches("^[a-zA-Z0-9_.]{3,50}$")) {
+            throw new IllegalArgumentException("Tên đăng nhập từ 3 đến 50 ký tự, chỉ gồm chữ, số, dấu chấm hoặc gạch dưới.");
+        }
+
+        if (matKhau == null || matKhau.length() < 6) {
+            throw new IllegalArgumentException("Mật khẩu phải có độ dài từ 6 ký tự trở lên.");
+        }
+
+        if (phanQuyen == null || (!phanQuyen.equals("Admin") && !phanQuyen.equals("Quản lý")
+                && !phanQuyen.equals("Bán hàng") && !phanQuyen.equals("Chăm sóc"))) {
+            throw new IllegalArgumentException("Vai trò phân quyền không hợp lệ.");
+        }
+
+        try {
+            return employee_dao.insertAccount(
+                    maNhanVien,
+                    cleanUsername,
+                    matKhau,
+                    phanQuyen,
+                    actor.getMaNhanVien(),
+                    today()
+            );
+        } catch (SQLException error) {
+            throw translateError(error);
+        }
+    }
+
+    /**
+     * Cập nhật phân quyền cho tài khoản nhân viên.
+     */
+    public void updateRole(String maNhanVien, String phanQuyen) {
+        User actor = getActorOrSystem();
+        validateId(maNhanVien);
+
+        if (phanQuyen == null || (!phanQuyen.equals("Admin") && !phanQuyen.equals("Quản lý")
+                && !phanQuyen.equals("Bán hàng") && !phanQuyen.equals("Chăm sóc"))) {
+            throw new IllegalArgumentException("Vai trò phân quyền không hợp lệ.");
+        }
+
+        try {
+            employee_dao.updateRole(maNhanVien, phanQuyen, actor.getMaNhanVien());
+        } catch (SQLException error) {
+            throw translateError(error);
+        }
+    }
+
+    /**
+     * Khóa hoặc mở khóa tài khoản nhân viên.
+     */
+    public void toggleAccountStatus(String maNhanVien, boolean active) {
+        User actor = getActorOrSystem();
+        validateId(maNhanVien);
+
+        try {
+            employee_dao.toggleAccountStatus(maNhanVien, active, actor.getMaNhanVien());
+        } catch (SQLException error) {
+            throw translateError(error);
+        }
+    }
+
+    /**
+     * Đặt lại mật khẩu tài khoản cho nhân viên.
+     */
+    public void resetPassword(String maNhanVien, String newPassword) {
+        User actor = getActorOrSystem();
+        validateId(maNhanVien);
+
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new IllegalArgumentException("Mật khẩu mới phải có từ 6 ký tự trở lên.");
+        }
+
+        try {
+            employee_dao.resetPassword(maNhanVien, newPassword, actor.getMaNhanVien());
+        } catch (SQLException error) {
+            throw translateError(error);
+        }
+    }
+
+    private User getActorOrSystem() {
+        User actor = auth_service.getCurrentUser();
+        if (actor == null) {
+            return new User("NV-SYSTEM", "system", "Hệ thống", User.Role.ADMIN);
+        }
+        return actor;
+    }
 }

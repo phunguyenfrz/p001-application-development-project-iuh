@@ -25,6 +25,14 @@ public class InvoiceItem {
         this.donGia = donGia;
     }
 
+    public static InvoiceItem createProductItem(String maSanPham, String tenHang, int soLuong, double donGia) {
+        return new InvoiceItem(maSanPham, null, tenHang, soLuong, donGia);
+    }
+
+    public static InvoiceItem createServiceItem(String maDichVu, String tenHang, double donGia) {
+        return new InvoiceItem(null, maDichVu, tenHang, 1, donGia);
+    }
+
     public String getMaChiTietHD()                      { return maChiTietHD; }
     public void setMaChiTietHD(String maChiTietHD)      { this.maChiTietHD = maChiTietHD; }
 

@@ -493,4 +493,210 @@ public class EmployeeDao {
             }
         }
     }
+
+    /**
+     * Lấy danh sách nhân viên đang làm việc (phục vụ chọn nhân viên phân ca hoặc bàn giao).
+     */
+    public List<Employee> findActiveEmployees() throws SQLException {
+        List<Employee> employees = new ArrayList<>();
+        String sql_query = selectSql(true)
+                + " WHERE nv.trangThai = N'Đang làm' ORDER BY nv.hoTen ASC";
+
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql_query);
+             ResultSet result = statement.executeQuery()) {
+            while (result.next()) {
+                employees.add(mapEmployee(result));
+            }
+        }
+        return employees;
+    }
+
+    /**
+     * Cấp tài khoản đăng nhập mới cho nhân viên.
+     */
+    public String insertAccount(
+            String maNhanVien,
+            String tenDangNhap,
+            String matKhau,
+            String phanQuyen,
+            String actorId,
+            LocalDate today
+    ) throws SQLException {
+        try (Connection connection = DatabaseManager.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                checkActor(connection, actorId);
+
+                // Kiểm tra tên đăng nhập đã tồn tại chưa
+                String sqlCheckUsername = "SELECT COUNT(*) FROM dbo.TaiKhoan WHERE LOWER(tenDangNhap) = LOWER(?)";
+                try (PreparedStatement ps = connection.prepareStatement(sqlCheckUsername)) {
+                    ps.setString(1, tenDangNhap.trim());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next() && rs.getInt(1) > 0) {
+                            throw new SQLException("Tên đăng nhập [" + tenDangNhap.trim() + "] đã được sử dụng. Vui lòng chọn tên khác.");
+                        }
+                    }
+                }
+
+                // Kiểm tra nhân viên đã có tài khoản chưa
+                String sqlCheckEmployee = "SELECT COUNT(*) FROM dbo.TaiKhoan WHERE maNhanVien = ?";
+                try (PreparedStatement ps = connection.prepareStatement(sqlCheckEmployee)) {
+                    ps.setString(1, maNhanVien);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next() && rs.getInt(1) > 0) {
+                            throw new SQLException("Nhân viên này đã được cấp tài khoản.");
+                        }
+                    }
+                }
+
+                // Sinh mã tài khoản tự động TK-YYYYMMDD-NNNNNN
+                String prefix = "TK-" + today.format(DateTimeFormatter.BASIC_ISO_DATE) + "-";
+                int nextNumber;
+                String sqlNext = """
+                        SELECT ISNULL(MAX(TRY_CONVERT(INT, RIGHT(maTaiKhoan, 6))), 0) + 1
+                        FROM dbo.TaiKhoan WITH (UPDLOCK, HOLDLOCK)
+                        WHERE maTaiKhoan LIKE ?
+                        """;
+                try (PreparedStatement ps = connection.prepareStatement(sqlNext)) {
+                    ps.setString(1, prefix + "%");
+                    try (ResultSet rs = ps.executeQuery()) {
+                        rs.next();
+                        nextNumber = rs.getInt(1);
+                    }
+                }
+
+                String newAccountId = prefix + String.format(Locale.ROOT, "%06d", nextNumber);
+
+                String sqlInsert = """
+                        INSERT INTO dbo.TaiKhoan (maTaiKhoan, maNhanVien, tenDangNhap, matKhau, phanQuyen, trangThai)
+                        VALUES (?, ?, ?, ?, ?, 1)
+                        """;
+                try (PreparedStatement ps = connection.prepareStatement(sqlInsert)) {
+                    ps.setString(1, newAccountId);
+                    ps.setString(2, maNhanVien);
+                    ps.setString(3, tenDangNhap.trim());
+                    ps.setString(4, matKhau);
+                    ps.setString(5, phanQuyen);
+                    ps.executeUpdate();
+                }
+
+                connection.commit();
+                return newAccountId;
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Cập nhật quyền hạn cho tài khoản nhân viên.
+     */
+    public void updateRole(
+            String maNhanVien,
+            String phanQuyen,
+            String actorId
+    ) throws SQLException {
+        try (Connection connection = DatabaseManager.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                checkActor(connection, actorId);
+
+                if (maNhanVien.equals(actorId) && !"Admin".equalsIgnoreCase(phanQuyen)) {
+                    throw new SQLException("Không thể tự hạ quyền quản trị của chính mình.");
+                }
+
+                String sqlUpdate = """
+                        UPDATE dbo.TaiKhoan
+                        SET phanQuyen = ?
+                        WHERE maNhanVien = ?
+                        """;
+                try (PreparedStatement ps = connection.prepareStatement(sqlUpdate)) {
+                    ps.setString(1, phanQuyen);
+                    ps.setString(2, maNhanVien);
+                    if (ps.executeUpdate() < 1) {
+                        throw new SQLException("Nhân viên này chưa có tài khoản để cập nhật phân quyền.");
+                    }
+                }
+
+                connection.commit();
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Bật/tắt trạng thái hoạt động của tài khoản (Khóa / Mở khóa).
+     */
+    public void toggleAccountStatus(
+            String maNhanVien,
+            boolean active,
+            String actorId
+    ) throws SQLException {
+        try (Connection connection = DatabaseManager.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                checkActor(connection, actorId);
+
+                if (maNhanVien.equals(actorId) && !active) {
+                    throw new SQLException("Không thể tự khóa tài khoản của chính mình.");
+                }
+
+                String sqlUpdate = """
+                        UPDATE dbo.TaiKhoan
+                        SET trangThai = ?
+                        WHERE maNhanVien = ?
+                        """;
+                try (PreparedStatement ps = connection.prepareStatement(sqlUpdate)) {
+                    ps.setInt(1, active ? 1 : 0);
+                    ps.setString(2, maNhanVien);
+                    if (ps.executeUpdate() < 1) {
+                        throw new SQLException("Không tìm thấy tài khoản tương ứng với nhân viên này.");
+                    }
+                }
+
+                connection.commit();
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Đặt lại mật khẩu tài khoản cho nhân viên.
+     */
+    public void resetPassword(
+            String maNhanVien,
+            String newPassword,
+            String actorId
+    ) throws SQLException {
+        try (Connection connection = DatabaseManager.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                checkActor(connection, actorId);
+
+                String sqlUpdate = """
+                        UPDATE dbo.TaiKhoan
+                        SET matKhau = ?
+                        WHERE maNhanVien = ?
+                        """;
+                try (PreparedStatement ps = connection.prepareStatement(sqlUpdate)) {
+                    ps.setString(1, newPassword);
+                    ps.setString(2, maNhanVien);
+                    if (ps.executeUpdate() < 1) {
+                        throw new SQLException("Nhân viên này chưa có tài khoản để đặt lại mật khẩu.");
+                    }
+                }
+
+                connection.commit();
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
 }

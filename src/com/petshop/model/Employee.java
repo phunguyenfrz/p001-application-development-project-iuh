@@ -39,4 +39,18 @@ public record Employee(
         String phanQuyen,
         Boolean taiKhoanHoatDong
 ) {
+    public String getMaNhanVien() { return maNhanVien; }
+    public String getHoTen() { return hoTen; }
+    public String getSoDienThoai() { return soDienThoai; }
+    public String getEmail() { return email; }
+    public String getDiaChi() { return diaChi; }
+    public String getChucVu() { return chucVu; }
+    public LocalDate getNgaySinh() { return ngaySinh; }
+    public boolean isNam() { return nam; }
+    public LocalDate getNgayBatDau() { return ngayBatDau; }
+    public String getTrangThai() { return trangThai; }
+    public byte[] getAnh() { return anh; }
+    public String getTenDangNhap() { return tenDangNhap; }
+    public String getPhanQuyen() { return phanQuyen; }
+    public Boolean getTaiKhoanHoatDong() { return taiKhoanHoatDong; }
 }
