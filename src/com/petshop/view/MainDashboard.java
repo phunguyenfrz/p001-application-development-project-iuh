@@ -471,7 +471,12 @@ public class MainDashboard extends BorderPane {
             // --- Nhóm 2: Nhân viên & Ca trực & Dịch vụ chăm sóc ---
             // Mở giao diện nhân viên theo chức năng được chọn.
             case "EMPLOYEE" -> new EmployeeView(action.getId());
-            case "SHIFT" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "SHIFT" -> switch (action.getId()) {
+                case "SHF_UPDATE" -> new ShiftUpdateView();
+                case "SHF_ASSIGN" -> new ShiftAssignmentView();
+                case "SHF_VIEW"   -> new ShiftCalendarView();
+                default -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            };
             case "CARE_SERVICE" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
             // --- Nhóm 3: Nhà cung cấp & Đơn hàng nhập & Sản phẩm ---
@@ -480,7 +485,9 @@ public class MainDashboard extends BorderPane {
             case "PRODUCT" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
             // --- Nhóm 4: Khuyến mãi & Hóa đơn & Phiếu đổi trả ---
-            case "PROMOTION" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "PROMOTION" -> "PRM_SEARCH".equals(action.getId())
+                    ? new PromotionSearchView()
+                    : new PromotionUpdateView();
             case "INVOICE" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
             case "RETURN_NOTE" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
