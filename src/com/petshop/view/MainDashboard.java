@@ -3,6 +3,18 @@ package com.petshop.view;
 import com.petshop.model.User;
 import com.petshop.service.AuthService;
 import com.petshop.service.MenuRegistry;
+import com.petshop.view.customer.CustomerView;
+import com.petshop.view.employee.EmployeeView;
+import com.petshop.view.pet.PetView;
+import com.petshop.view.product.ProductView;
+import com.petshop.view.promotion.PromotionSearchView;
+import com.petshop.view.promotion.PromotionUpdateView;
+import com.petshop.view.returnnote.ReturnNoteCreateView;
+import com.petshop.view.returnnote.ReturnNoteProcessView;
+import com.petshop.view.shift.ShiftAssignmentView;
+import com.petshop.view.shift.ShiftCalendarView;
+import com.petshop.view.shift.ShiftUpdateView;
+import com.petshop.view.supplier.SupplierView;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
@@ -52,6 +64,8 @@ public class MainDashboard extends BorderPane {
     private String activeMenuId;
     private String activeActionId;
     private Label lblBreadcrumb;
+    private HBox pnlSearchBox;
+    private TextField txtSearch;
 
     public MainDashboard(Stage stage) {
         this.stage = stage;
@@ -77,10 +91,29 @@ public class MainDashboard extends BorderPane {
 
         pnlMainContainer.getChildren().addAll(
                 createTopbar(),
-                pnlContentArea
-        );
+                pnlContentArea);
 
         setCenter(pnlMainContainer);
+
+        // Giữ phím tắt tìm nhanh của demo; ô tìm kiếm chỉ hiện khi người dùng gọi.
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                newScene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+                    if (event.isControlDown() && event.getCode() == javafx.scene.input.KeyCode.K) {
+                        pnlSearchBox.setVisible(true);
+                        pnlSearchBox.setManaged(true);
+                        txtSearch.requestFocus();
+                        txtSearch.selectAll();
+                        event.consume();
+                    } else if (event.getCode() == javafx.scene.input.KeyCode.ESCAPE
+                            && pnlSearchBox.isVisible()) {
+                        pnlSearchBox.setVisible(false);
+                        pnlSearchBox.setManaged(false);
+                        event.consume();
+                    }
+                });
+            }
+        });
 
     }
 
@@ -142,21 +175,21 @@ public class MainDashboard extends BorderPane {
         pnlMenuList.setPadding(new Insets(10, 12, 10, 12));
 
         // Nút "Tổng quan" (Trang chủ)
-        Button mnuOverview = new Button("Tổng quan");
-        mnuOverview.setGraphic(createMenuIcon("OVERVIEW", 18));
-        mnuOverview.setGraphicTextGap(10);
-        overviewButton = mnuOverview;
-        mnuOverview.setMaxWidth(Double.MAX_VALUE);
-        mnuOverview.getStyleClass().add(activeActionId == null ? "sidebar-btn-active" : "sidebar-btn");
-        mnuOverview.setTooltip(new Tooltip("Trang chủ bảng điều khiển"));
+        Button btnOverview = new Button("Tổng quan");
+        btnOverview.setGraphic(createMenuIcon("OVERVIEW", 18));
+        btnOverview.setGraphicTextGap(10);
+        overviewButton = btnOverview;
+        btnOverview.setMaxWidth(Double.MAX_VALUE);
+        btnOverview.getStyleClass().add(activeActionId == null ? "sidebar-btn-active" : "sidebar-btn");
+        btnOverview.setTooltip(new Tooltip("Trang chủ bảng điều khiển"));
         if (activeActionId == null) {
-            currentActiveItemNode = mnuOverview;
+            currentActiveItemNode = btnOverview;
         }
-        mnuOverview.setOnAction(e -> {
+        btnOverview.setOnAction(e -> {
             collapseAllAccordions();
             showOverview();
         });
-        pnlMenuList.getChildren().add(mnuOverview);
+        pnlMenuList.getChildren().add(btnOverview);
 
         // Dựng 11 Menu Đối Tượng từ MenuRegistry
         User.Role role = (user != null) ? user.getRole() : User.Role.ADMIN;
@@ -169,7 +202,8 @@ public class MainDashboard extends BorderPane {
 
         ScrollPane scrMenu = new ScrollPane(pnlMenuList);
         scrMenu.setFitToWidth(true);
-        scrMenu.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
+        scrMenu.setStyle(
+                "-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
         VBox.setVgrow(scrMenu, Priority.ALWAYS);
 
         pnlExpandedSidebar.getChildren().addAll(pnlBrandBox, scrMenu);
@@ -204,28 +238,28 @@ public class MainDashboard extends BorderPane {
         VBox pnlSubMenuList = new VBox(2);
         boolean hasActiveAction = false;
         for (MenuRegistry.MenuAction action : menu.getActions()) {
-            Button mnuAction = new Button(action.getName());
-            mnuAction.setMaxWidth(Double.MAX_VALUE);
-            mnuAction.getStyleClass().add("sidebar-sub-btn");
+            Button btnAction = new Button(action.getName());
+            btnAction.setMaxWidth(Double.MAX_VALUE);
+            btnAction.getStyleClass().add("sidebar-sub-btn");
             if (action.getId().equals(activeActionId)) {
-                mnuAction.getStyleClass().remove("sidebar-sub-btn");
-                mnuAction.getStyleClass().add("sidebar-sub-btn-active");
-                currentActiveItemNode = mnuAction;
+                btnAction.getStyleClass().remove("sidebar-sub-btn");
+                btnAction.getStyleClass().add("sidebar-sub-btn-active");
+                currentActiveItemNode = btnAction;
                 hasActiveAction = true;
             }
             if (action.getShortcut() != null) {
-                mnuAction.setTooltip(new Tooltip(action.getName() + " (" + action.getShortcut() + ")"));
+                btnAction.setTooltip(new Tooltip(action.getName() + " (" + action.getShortcut() + ")"));
             } else {
-                mnuAction.setTooltip(new Tooltip(action.getName()));
+                btnAction.setTooltip(new Tooltip(action.getName()));
             }
 
-            mnuAction.setOnAction(e -> {
+            btnAction.setOnAction(e -> {
                 activeMenuId = menu.getId();
                 activeActionId = action.getId();
-                setActiveNode(mnuAction);
+                setActiveNode(btnAction);
                 openModuleScreen(menu, action);
             });
-            pnlSubMenuList.getChildren().add(mnuAction);
+            pnlSubMenuList.getChildren().add(btnAction);
         }
 
         pnlSubMenuList.setVisible(hasActiveAction);
@@ -291,44 +325,46 @@ public class MainDashboard extends BorderPane {
         pnlMenuList.setPadding(new Insets(8, 0, 8, 0));
 
         // Nút tổng quan thu gọn
-        Button mnuOverviewCollapsed = new Button();
-        mnuOverviewCollapsed.setGraphic(createMenuIcon("OVERVIEW", 20));
-        overviewButton = mnuOverviewCollapsed;
-        mnuOverviewCollapsed.getStyleClass().add(activeActionId == null
+        Button btnOverviewCollapsed = new Button();
+        btnOverviewCollapsed.setGraphic(createMenuIcon("OVERVIEW", 20));
+        overviewButton = btnOverviewCollapsed;
+        btnOverviewCollapsed.getStyleClass().add(activeActionId == null
             ? "sidebar-collapsed-btn-active" : "sidebar-collapsed-btn");
         if (activeActionId == null) {
-            currentActiveItemNode = mnuOverviewCollapsed;
+            currentActiveItemNode = btnOverviewCollapsed;
         }
-        mnuOverviewCollapsed.setTooltip(new Tooltip("Tổng quan"));
-        mnuOverviewCollapsed.setOnAction(e -> {
+        btnOverviewCollapsed.setTooltip(new Tooltip("Tổng quan"));
+        btnOverviewCollapsed.setOnAction(e -> {
             showOverview();
         });
-        pnlMenuList.getChildren().add(mnuOverviewCollapsed);
+        pnlMenuList.getChildren().add(btnOverviewCollapsed);
 
         User.Role role = (user != null) ? user.getRole() : User.Role.ADMIN;
         List<MenuRegistry.MenuGroup> objectMenus = MenuRegistry.getMenusForRole(role);
 
         for (MenuRegistry.MenuGroup menu : objectMenus) {
-            Button mnuGroup = new Button();
-            mnuGroup.setGraphic(createMenuIcon(menu.getIconType(), 20));
+            Button btnGroup = new Button();
+            btnGroup.setGraphic(createMenuIcon(menu.getIconType(), 20));
             boolean isActiveGroup = menu.getId().equals(activeMenuId);
-            mnuGroup.getStyleClass().add(isActiveGroup
+            btnGroup.getStyleClass().add(isActiveGroup
                     ? "sidebar-collapsed-btn-active" : "sidebar-collapsed-btn");
             if (isActiveGroup) {
-                currentActiveItemNode = mnuGroup;
+                currentActiveItemNode = btnGroup;
             }
-            mnuGroup.setTooltip(new Tooltip("Đối tượng: " + menu.getTitle()));
-            mnuGroup.setOnAction(e -> {
-                // Click vào đối tượng ở chế độ thu gọn -> tự bung mở sidebar để chọn chức năng con
+            btnGroup.setTooltip(new Tooltip("Đối tượng: " + menu.getTitle()));
+            btnGroup.setOnAction(e -> {
+                // Click vào đối tượng ở chế độ thu gọn -> tự bung mở sidebar để chọn chức năng
+                // con
                 isSidebarCollapsed = false;
                 renderSidebar();
             });
-            pnlMenuList.getChildren().add(mnuGroup);
+            pnlMenuList.getChildren().add(btnGroup);
         }
 
         ScrollPane scrMenu = new ScrollPane(pnlMenuList);
         scrMenu.setFitToWidth(true);
-        scrMenu.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
+        scrMenu.setStyle(
+                "-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
         VBox.setVgrow(scrMenu, Priority.ALWAYS);
 
         pnlCollapsedSidebar.getChildren().addAll(pnlTopBox, scrMenu);
@@ -378,6 +414,29 @@ public class MainDashboard extends BorderPane {
         lblBreadcrumb = new Label(roleName + " / Tổng quan");
         lblBreadcrumb.getStyleClass().add("topbar-breadcrumb");
 
+    // Ô tìm nhanh giữ nguyên chức năng demo nhưng ẩn để khớp topbar mẫu.
+    pnlSearchBox = new HBox(8);
+    pnlSearchBox.setAlignment(Pos.CENTER_LEFT);
+    pnlSearchBox.getStyleClass().add("search-box");
+
+        SVGPath searchIcon = new SVGPath();
+        searchIcon.setContent(
+                "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z");
+        searchIcon.setFill(Color.web("#9ca89e"));
+        searchIcon.setScaleX(0.7);
+        searchIcon.setScaleY(0.7);
+
+        txtSearch = new TextField();
+        txtSearch.setPromptText("Tìm kiếm nhanh (Ctrl + K)...");
+        txtSearch.getStyleClass().add("search-field");
+
+        Label lblShortcut = new Label("Ctrl K");
+        lblShortcut.getStyleClass().add("shortcut-badge");
+
+        pnlSearchBox.getChildren().addAll(searchIcon, txtSearch, lblShortcut);
+        pnlSearchBox.setVisible(false);
+        pnlSearchBox.setManaged(false);
+
         Region pnlSpacer = new Region();
         HBox.setHgrow(pnlSpacer, Priority.ALWAYS);
 
@@ -398,11 +457,11 @@ public class MainDashboard extends BorderPane {
         pnlUserDetails.getChildren().addAll(lblUserName, lblUserRole);
 
         // Menu tài khoản: Đổi mật khẩu & Đăng xuất
-        MenuButton mnuProfile = new MenuButton();
-        mnuProfile.getStyleClass().add("topbar-profile");
+        MenuButton btnProfile = new MenuButton();
+        btnProfile.getStyleClass().add("topbar-profile");
         HBox pnlProfileGraphic = new HBox(8, pnlAvatarCircle, pnlUserDetails);
-        mnuProfile.setGraphic(pnlProfileGraphic);
-        mnuProfile.setTooltip(new Tooltip("Tài khoản và đăng xuất"));
+        btnProfile.setGraphic(pnlProfileGraphic);
+        btnProfile.setTooltip(new Tooltip("Tài khoản và đăng xuất"));
 
         MenuItem mnuChangePassword = new MenuItem("🔑 Đổi mật khẩu");
         mnuChangePassword.setOnAction(e -> showChangePasswordDialog());
@@ -411,13 +470,13 @@ public class MainDashboard extends BorderPane {
         mnuLogout.setOnAction(e -> logout());
 
         SeparatorMenuItem mnuSeparator = new SeparatorMenuItem();
-        mnuProfile.getItems().addAll(mnuChangePassword, mnuSeparator, mnuLogout);
+        btnProfile.getItems().addAll(mnuChangePassword, mnuSeparator, mnuLogout);
 
         pnlTopbar.getChildren().addAll(
             lblBreadcrumb,
+                pnlSearchBox,
                 pnlSpacer,
-                mnuProfile
-        );
+                btnProfile);
         return pnlTopbar;
     }
 
@@ -428,27 +487,38 @@ public class MainDashboard extends BorderPane {
         // Kiểm tra phân quyền ở tầng Service trước khi mở màn hình
         authService.checkPermission(action.getId());
 
-        // Mỗi thành viên khi hoàn thành View riêng chỉ sửa vào đúng nhánh case của đối tượng mình phụ trách:
+        // Mỗi thành viên khi hoàn thành View riêng chỉ sửa vào đúng nhánh case của đối
+        // tượng mình phụ trách:
         Node targetView = switch (menu.getId()) {
             // --- Nhóm 1: Khách hàng & Thú cưng & Lịch hẹn ---
-            case "CUSTOMER"     -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "PET"          -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "APPOINTMENT"  -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "CUSTOMER" -> new CustomerView(action.getId());
+            case "PET" -> new PetView(action.getId());
+            case "APPOINTMENT" -> new AssignedModuleView(action.getId(), action.getName(), user);
 
             // --- Nhóm 2: Nhân viên & Ca trực & Dịch vụ chăm sóc ---
-            case "EMPLOYEE"     -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "SHIFT"        -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "CARE_SERVICE" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            // Mở giao diện nhân viên theo chức năng được chọn.
+            case "EMPLOYEE" -> new EmployeeView(action.getId());
+            case "SHIFT" -> switch (action.getId()) {
+                case "SHF_UPDATE" -> new ShiftUpdateView();
+                case "SHF_ASSIGN" -> new ShiftAssignmentView();
+                case "SHF_VIEW"   -> new ShiftCalendarView();
+                default -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            };
+            case "CARE_SERVICE" -> new AssignedModuleView(action.getId(), action.getName(), user);
 
             // --- Nhóm 3: Nhà cung cấp & Đơn hàng nhập & Sản phẩm ---
-            case "SUPPLIER"     -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "SUPPLIER" -> new SupplierView(action.getId());
             case "IMPORT_ORDER" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "PRODUCT"      -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "PRODUCT" -> new ProductView(action.getId());
 
             // --- Nhóm 4: Khuyến mãi & Hóa đơn & Phiếu đổi trả ---
-            case "PROMOTION"    -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "INVOICE"      -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "RETURN_NOTE"  -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "PROMOTION" -> "PRM_SEARCH".equals(action.getId())
+                    ? new PromotionSearchView()
+                    : new PromotionUpdateView();
+            case "INVOICE" -> new AssignedModuleView(action.getId(), action.getName(), user);
+            case "RETURN_NOTE" -> "RET_CREATE".equals(action.getId())
+                    ? new ReturnNoteCreateView()
+                    : new ReturnNoteProcessView();
 
             default -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
         };
@@ -484,7 +554,8 @@ public class MainDashboard extends BorderPane {
         VBox pnlWelcomeTextBox = new VBox(4);
         Label lblWelcomeTitle = new Label("Xin chào, " + empName);
         lblWelcomeTitle.getStyleClass().add("welcome-title");
-        Label lblWelcomeSubtitle = new Label("Hệ thống quản lý cửa hàng thú cưng Happy Tails theo mô hình Hướng Đối Tượng.");
+        Label lblWelcomeSubtitle = new Label(
+                "Hệ thống quản lý cửa hàng thú cưng Happy Tails theo mô hình Hướng Đối Tượng.");
         lblWelcomeSubtitle.getStyleClass().add("welcome-sub");
         pnlWelcomeTextBox.getChildren().addAll(lblWelcomeTitle, lblWelcomeSubtitle);
 
@@ -587,8 +658,7 @@ public class MainDashboard extends BorderPane {
         pnlPasswordForm.getChildren().addAll(
                 lblCurrentPassword, pwdCurrent,
                 lblNewPassword, pwdNew,
-                lblConfirmPassword, pwdConfirm
-        );
+                lblConfirmPassword, pwdConfirm);
 
         dlgChangePassword.getDialogPane().setContent(pnlPasswordForm);
         dlgChangePassword.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
@@ -664,9 +734,11 @@ public class MainDashboard extends BorderPane {
     }
 
     private String getInitials(String name) {
-        if (name == null || name.isBlank()) return "HT";
+        if (name == null || name.isBlank())
+            return "HT";
         String[] parts = name.trim().split("\\s+");
-        if (parts.length == 1) return parts[0].substring(0, Math.min(2, parts[0].length())).toUpperCase();
+        if (parts.length == 1)
+            return parts[0].substring(0, Math.min(2, parts[0].length())).toUpperCase();
         return ("" + parts[parts.length - 2].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
     }
 }
