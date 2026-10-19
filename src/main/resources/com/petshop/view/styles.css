@@ -1,17 +1,6 @@
 /* ==========================================================================
-   HAPPY TAILS - MASTER STYLESHEET
-   Modular CSS architecture partitioned by feature modules
+   HAPPY TAILS - MAIN STYLESHEET (PIXEL-PERFECT THEME)
    ========================================================================== */
-
-/* Nạp style riêng của các màn nghiệp vụ trước theme chung để theme Happy Tails giữ ưu tiên. */
-@import url("css/base.css");
-@import url("css/dashboard.css");
-@import url("css/customer.css");
-@import url("css/pet.css");
-@import url("css/employee.css");
-@import url("css/promotion.css");
-@import url("css/returnnote.css");
-@import url("css/product.css");
 
 .root {
     -fx-font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
@@ -418,40 +407,6 @@
 .topbar-breadcrumb {
     -fx-font-size: 13px;
     -fx-text-fill: #6b7280;
-}
-
-.search-box {
-    -fx-background-color: #f7faf7;
-    -fx-background-radius: 10px;
-    -fx-border-radius: 10px;
-    -fx-border-color: #e5ebe5;
-    -fx-pref-height: 38px;
-    -fx-padding: 0 12px;
-    -fx-alignment: center-left;
-}
-
-.search-field {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-font-size: 13px;
-    -fx-prompt-text-fill: #9ca89e;
-    -fx-pref-width: 220px;
-}
-
-.search-field:focused {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-}
-
-.shortcut-badge {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #e2e8e2;
-    -fx-border-radius: 6px;
-    -fx-background-radius: 6px;
-    -fx-padding: 2px 7px;
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #829485;
 }
 
 .topbar-profile {

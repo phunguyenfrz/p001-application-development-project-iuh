@@ -44,11 +44,6 @@
                 <version>3.5.0</version>
                 <configuration>
                     <mainClass>com.petshop.main.Main</mainClass>
-                    <arguments>
-                        <argument>-Xms64m</argument>
-                        <argument>-Xmx256m</argument>
-                        <argument>-XX:+UseSerialGC</argument>
-                    </arguments>
                 </configuration>
             </plugin>
             <plugin>
@@ -57,11 +52,6 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>com.petshop.main.Main</mainClass>
-                    <options>
-                        <option>-Xms64m</option>
-                        <option>-Xmx256m</option>
-                        <option>-XX:+UseSerialGC</option>
-                    </options>
                 </configuration>
             </plugin>
         </plugins>
