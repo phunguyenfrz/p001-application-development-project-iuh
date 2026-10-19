@@ -464,7 +464,12 @@ public class MainDashboard extends BorderPane {
 
             // --- Nhóm 2: Nhân viên & Ca trực & Dịch vụ chăm sóc ---
             case "EMPLOYEE"     -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "SHIFT"        -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "SHIFT"        -> switch (action.getId()) {
+                                        case "SHF_UPDATE" -> new ShiftUpdateView();
+                                        case "SHF_ASSIGN" -> new ShiftAssignmentView();
+                                        case "SHF_VIEW"   -> new ShiftCalendarView();
+                                        default -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+                                   };
             case "CARE_SERVICE" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
             // --- Nhóm 3: Nhà cung cấp & Đơn hàng nhập & Sản phẩm ---

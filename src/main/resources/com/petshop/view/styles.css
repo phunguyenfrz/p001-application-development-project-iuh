@@ -822,6 +822,22 @@
     -fx-border-color: #e07538;
 }
 
+.modal-text-input-with-icon {
+    -fx-pref-height: 38px;
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 8px;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-padding: 0 12px 0 38px;
+    -fx-font-size: 13px;
+    -fx-text-fill: #111827;
+}
+
+.modal-text-input-with-icon:focused {
+    -fx-border-color: #e07538;
+}
+
 .modal-text-input-readonly {
     -fx-pref-height: 38px;
     -fx-background-color: #f9fafb;

@@ -73,7 +73,8 @@ CREATE TABLE Ca (
     tenCa NVARCHAR(50) NOT NULL CHECK (LEN(LTRIM(RTRIM(tenCa))) > 0),
     gioBatDau TIME NOT NULL,
     gioKetThuc TIME NOT NULL,
-    trangThai NVARCHAR(30) NOT NULL DEFAULT N'Áp dụng' CHECK (trangThai IN (N'Áp dụng', N'Ngừng áp dụng')),
+    trangThai NVARCHAR(30) NOT NULL DEFAULT N'Đang hoạt động',
+    ngayCapNhat DATE DEFAULT GETDATE(),
     CONSTRAINT CK_Ca_Gio CHECK (gioKetThuc > gioBatDau)
 );
 GO
@@ -361,7 +362,10 @@ VALUES
 ('NV-20261005-000000', N'Quản trị hệ thống', '0909000000', N'Quản lý', '1990-01-01', 1, N'Đang làm'),
 ('NV-20261005-000001', N'Nguyễn Thị Lan',    '0901234567', N'Quản lý', '1985-05-15', 0, N'Đang làm'),
 ('NV-20261005-000002', N'Trần Văn Minh',    '0902345678', N'Bán hàng', '1998-08-20', 1, N'Đang làm'),
-('NV-20261005-000003', N'Phạm Thị Hoa',     '0903456789', N'Chăm sóc', '1995-12-10', 0, N'Đang làm');
+('NV-20261005-000003', N'Phạm Thị Hoa',     '0903456789', N'Chăm sóc', '1995-12-10', 0, N'Đang làm'),
+('NV-20261016-000001', N'Lê Thị Hoa',       '0901112233', N'Bán hàng', '1998-05-12', 0, N'Đang làm'),
+('NV-20261016-000002', N'Trần Minh Khang',   '0902223344', N'Chăm sóc', '1996-09-20', 1, N'Đang làm'),
+('NV-20261016-000003', N'Phạm Ngọc Linh',    '0903334455', N'Bán hàng', '2000-01-15', 0, N'Đang làm');
 
 -- 2. TaiKhoan (Admin + 3 tài khoản mẫu)
 INSERT INTO TaiKhoan (maTaiKhoan, maNhanVien, tenDangNhap, matKhau, phanQuyen, trangThai)
@@ -386,17 +390,31 @@ VALUES
 ('TC-20261005-000003', 'KH-20261005-000002', N'Lu',    N'Chó', N'Poodle Standard', 8.50, '2021-08-15', N'Nhát nước, cần tắm nhẹ nhàng', N'Đực');
 
 -- 5. Ca
-INSERT INTO Ca (maCa, tenCa, gioBatDau, gioKetThuc, trangThai)
+INSERT INTO Ca (maCa, tenCa, gioBatDau, gioKetThuc, trangThai, ngayCapNhat)
 VALUES 
-('CA-20261005-000001', N'Ca Sáng',  '08:00:00', '12:00:00', N'Áp dụng'),
-('CA-20261005-000002', N'Ca Chiều', '13:00:00', '17:00:00', N'Áp dụng'),
-('CA-20261005-000003', N'Ca Tối',   '18:00:00', '21:00:00', N'Áp dụng');
+('CA-20261005-000001', N'Ca Sáng',  '08:00:00', '12:00:00', N'Đang hoạt động', '2026-10-05'),
+('CA-20261005-000002', N'Ca Chiều', '13:00:00', '17:00:00', N'Đang hoạt động', '2026-10-05'),
+('CA-20261005-000003', N'Ca Tối',   '18:00:00', '21:00:00', N'Đang hoạt động', '2026-10-05'),
+('CA-20261016-000001', N'Ca sáng',  '08:00:00', '16:00:00', N'Đang hoạt động', '2026-10-16'),
+('CA-20261016-000002', N'Ca chiều', '16:00:00', '22:00:00', N'Đang hoạt động', '2026-10-16'),
+('CA-20261016-000003', N'Ca sớm',   '06:00:00', '08:00:00', N'Đang hoạt động', '2026-10-16');
 
 -- 6. PhanCa
 INSERT INTO PhanCa (maPhanCa, maNhanVien, maCa, ngayLam, trangThai)
 VALUES 
 ('PC-20261005-000001', 'NV-20261005-000002', 'CA-20261005-000001', '2026-10-06', N'Đã phân công'),
-('PC-20261005-000002', 'NV-20261005-000003', 'CA-20261005-000001', '2026-10-06', N'Đã phân công');
+('PC-20261005-000002', 'NV-20261005-000003', 'CA-20261005-000001', '2026-10-06', N'Đã phân công'),
+('PC-20261016-000001', 'NV-20261016-000001', 'CA-20261016-000001', '2026-10-19', N'Đã phân công'),
+('PC-20261016-000002', 'NV-20261016-000002', 'CA-20261016-000002', '2026-10-19', N'Đã phân công'),
+('PC-20261016-000003', 'NV-20261016-000003', 'CA-20261016-000001', '2026-10-20', N'Đã phân công'),
+('PC-20261016-000004', 'NV-20261016-000001', 'CA-20261016-000002', '2026-10-20', N'Đã phân công'),
+('PC-20261016-000005', 'NV-20261016-000002', 'CA-20261016-000001', '2026-10-21', N'Đã phân công'),
+('PC-20261016-000006', 'NV-20261016-000001', 'CA-20261016-000001', '2026-10-22', N'Đã phân công'),
+('PC-20261016-000007', 'NV-20261016-000003', 'CA-20261016-000001', '2026-10-23', N'Đã phân công'),
+('PC-20261016-000008', 'NV-20261016-000003', 'CA-20261016-000002', '2026-10-23', N'Đã phân công'),
+('PC-20261016-000009', 'NV-20261016-000002', 'CA-20261016-000002', '2026-10-24', N'Đã phân công'),
+('PC-20261016-000010', 'NV-20261016-000002', 'CA-20261016-000001', '2026-10-25', N'Đã phân công'),
+('PC-20261016-000011', 'NV-20261016-000001', 'CA-20261016-000002', '2026-10-25', N'Đã phân công');
 
 -- 7. DichVuChamSoc (5 dịch vụ chính của Happy Tails theo Q&A mục 1.4.5)
 INSERT INTO DichVuChamSoc (maDichVu, tenDichVu, moTa, thoiLuong, trangThai)
