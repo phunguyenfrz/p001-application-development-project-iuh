@@ -1,0 +1,103 @@
+/* ==========================================================================
+   HAPPY TAILS - BASE STYLESHEET (THEME & LOGIN)
+   ========================================================================== */
+
+.root {
+    -fx-font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    -fx-background-color: #f3f6f3;
+}
+
+/* --------------------------------------------------------------------------
+   LOGIN SCREEN
+   -------------------------------------------------------------------------- */
+.login-view {
+    -fx-background-color: linear-gradient(to bottom right, #f2f8f2, #e3efe3);
+    -fx-alignment: center;
+}
+
+.login-card {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 20px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 24, 0, 0, 8);
+    -fx-padding: 40px 42px 36px 42px;
+    -fx-alignment: center;
+    -fx-pref-width: 440px;
+    -fx-max-width: 440px;
+}
+
+.brand-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1a221e;
+}
+
+.brand-subtitle {
+    -fx-font-size: 13.5px;
+    -fx-text-fill: #738075;
+}
+
+.field-label {
+    -fx-font-size: 13.5px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #344038;
+}
+
+.login-input {
+    -fx-pref-height: 44px;
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-border-color: #e2e8e2;
+    -fx-border-width: 1.2px;
+    -fx-padding: 0 14px;
+    -fx-font-size: 13.5px;
+    -fx-text-fill: #1a221e;
+    -fx-prompt-text-fill: #9ca89e;
+}
+
+.login-input:focused {
+    -fx-border-color: #436850;
+    -fx-effect: dropshadow(gaussian, rgba(67, 104, 80, 0.2), 6, 0, 0, 0);
+}
+
+.eye-button {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+    -fx-padding: 0 10px;
+}
+
+.eye-button:hover {
+    -fx-opacity: 0.7;
+}
+
+.btn-login {
+    -fx-pref-height: 46px;
+    -fx-background-color: #436850;
+    -fx-background-radius: 10px;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.btn-login:hover {
+    -fx-background-color: #365340;
+}
+
+.btn-login:pressed {
+    -fx-background-color: #2b4233;
+}
+
+.error-label {
+    -fx-text-fill: #dc2626;
+    -fx-font-size: 12.5px;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+}
+
+.footer-text {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: #94a397;
+    -fx-font-weight: 500;
+}
+

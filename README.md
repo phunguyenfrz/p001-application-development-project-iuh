@@ -63,3 +63,16 @@ Ung dung ket noi SQL Server (database `QLCH_HappyTails`) qua TCP/IP cong 1433.
 | `chamsoc` | `123456` | Cham soc |
 
 Cac nut nghiep vu hien la placeholder (`ModuleListView`) de cac thanh vien bo sung tung module.
+
+
+## Cập nhật database cho xóa mềm khách hàng
+
+Sau khi pull code, mở `db/01_customer_status.sql` trong SSMS và chạy trên
+database `QLCH_HappyTails` trước khi mở ứng dụng. Không cần chạy lại script
+tạo toàn bộ database. Script này bổ sung cột `KhachHang.trangThai` nếu chưa có,
+giữ nguyên dữ liệu hiện có và đặt trạng thái mặc định bằng 1.
+
+- Trang Cập nhật chỉ hiển thị khách hàng đang hoạt động.
+- Ngừng hoạt động đặt trạng thái bằng 0, không xóa khách hàng hoặc dữ liệu liên quan.
+- Trang Tìm kiếm và Lịch sử vẫn tra cứu được khách đã ngừng hoạt động.
+- Số điện thoại của khách ngừng hoạt động vẫn được giữ theo ràng buộc UNIQUE.

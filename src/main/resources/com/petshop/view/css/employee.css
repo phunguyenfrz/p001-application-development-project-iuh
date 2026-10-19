@@ -1,0 +1,306 @@
+/* =========================================================
+   MODULE EMPLOYEE - TRANG CẬP NHẬT NHÂN VIÊN
+   ========================================================= */
+
+/* Nền và kiểu chữ của trang. */
+.employee-page {
+    -fx-background-color: #f3f6f3;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+}
+
+.employee-page .employee-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #242b26;
+}
+
+.employee-page .employee-section-title {
+    -fx-font-weight: bold;
+}
+
+/* Thẻ trắng chứa bảng. */
+.employee-page .employee-card {
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-border-color: #e7e9e5;
+    -fx-border-radius: 12px;
+}
+
+/* Chữ phụ và hướng dẫn cuối bảng. */
+.employee-page .employee-muted {
+    -fx-font-size: 10px;
+    -fx-text-fill: #818b91;
+}
+
+/* Kiểu chung của các nút. */
+.employee-page .button,
+.employee-dialog .button {
+    -fx-background-insets: 0;
+    -fx-background-radius: 7px;
+    -fx-border-radius: 7px;
+    -fx-padding: 9px 13px;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-cursor: hand;
+}
+
+/* Nút thêm nhân viên màu cam. */
+.employee-page .employee-add {
+    -fx-background-color: #ff7912;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.employee-page .employee-add:hover {
+    -fx-background-color: #ed6b08;
+}
+
+/* Nút lưu trong form màu xanh. */
+.employee-dialog .employee-primary {
+    -fx-background-color: #2c6b52;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.employee-dialog .employee-primary:hover {
+    -fx-background-color: #245940;
+}
+
+/* Nút ngừng làm việc màu đỏ. */
+.employee-page .employee-danger,
+.employee-dialog .employee-danger {
+    -fx-background-color: #ef4444;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.employee-page .employee-danger:hover,
+.employee-dialog .employee-danger:hover {
+    -fx-background-color: #dc3535;
+}
+
+/* Các nút sửa, làm mới và hủy. */
+.employee-page .employee-secondary,
+.employee-dialog .employee-secondary {
+    -fx-background-color: white;
+    -fx-border-color: #e3e7e4;
+    -fx-text-fill: #34463b;
+}
+
+.employee-page .employee-secondary:hover,
+.employee-dialog .employee-secondary:hover {
+    -fx-background-color: #f2f6f3;
+}
+
+/* Làm mờ nút khi không được thao tác. */
+.employee-page .button:disabled,
+.employee-dialog .button:disabled {
+    -fx-opacity: 0.45;
+}
+
+
+/* =========================================================
+   MODULE EMPLOYEE - BẢNG NHÂN VIÊN
+   ========================================================= */
+
+/* Bỏ nền và viền mặc định của bảng. */
+.employee-page .table-view {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-table-cell-border-color: transparent;
+}
+
+/* Nền hàng tiêu đề. */
+.employee-page .table-view .column-header-background {
+    -fx-background-color: #f8f8f4;
+    -fx-background-radius: 7px;
+}
+
+.employee-page .table-view .column-header,
+.employee-page .table-view .filler {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-pref-height: 40px;
+}
+
+/* Tiêu đề cột căn trái, được xuống dòng khi dài. */
+.employee-page .table-view .column-header .label {
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 0 8px;
+    -fx-font-size: 11px;
+    -fx-text-fill: #68726b;
+    -fx-wrap-text: true;
+}
+
+/* Hàng tự tính chiều cao theo nội dung. */
+.employee-page .table-view .table-row-cell {
+    -fx-background-color: white;
+    -fx-cell-size: -1;
+}
+
+/* Chỉ hiện đường phân cách ngang ở dòng có dữ liệu. */
+.employee-page .table-view .table-row-cell:filled {
+    -fx-border-color: transparent transparent #edf0ec transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+/* Dòng được chọn có nền xanh nhạt. */
+.employee-page .table-view .table-row-cell:filled:selected {
+    -fx-background-color: #d8f1dc;
+}
+
+/* Bỏ đường kẻ dọc giữa các ô. */
+.employee-page .table-view .table-cell {
+    -fx-padding: 13px 8px;
+    -fx-border-width: 0;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.employee-page .table-view .table-cell .label {
+    -fx-text-fill: #34463b;
+    -fx-font-size: 11px;
+}
+
+/* Avatar chữ cái cạnh họ tên. */
+.employee-page .employee-avatar {
+    -fx-background-color: #e6f2e9;
+    -fx-background-radius: 20px;
+    -fx-min-width: 30px;
+    -fx-min-height: 30px;
+    -fx-alignment: CENTER;
+    -fx-font-weight: bold;
+}
+
+/* Nhãn chức vụ và trạng thái. */
+.employee-page .employee-badge {
+    -fx-background-color: #e8f5ed;
+    -fx-background-radius: 10px;
+    -fx-padding: 3px 6px;
+}
+
+/* Nhân viên đã nghỉ dùng màu xám. */
+.employee-page .employee-badge.employee-inactive {
+    -fx-background-color: #eef0f3;
+    -fx-text-fill: #7b8494;
+}
+
+
+/* =========================================================
+   MODULE EMPLOYEE - FORM VÀ HỘP XÁC NHẬN
+   ========================================================= */
+
+/* Khung hộp thoại trắng, viền mảnh. */
+.employee-dialog {
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-border-color: #e5e8ec;
+    -fx-border-radius: 12px;
+    -fx-padding: 18px;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+}
+
+.employee-dialog .employee-dialog-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #242b26;
+}
+
+.employee-dialog .employee-section-title {
+    -fx-font-weight: bold;
+}
+
+/* Nhãn phía trên ô nhập. */
+.employee-dialog .employee-field-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #77808c;
+}
+
+/* Thông báo lỗi trên form. */
+.employee-dialog .employee-error {
+    -fx-text-fill: #dc4545;
+    -fx-wrap-text: true;
+}
+
+/* Bỏ nền xám và viền mặc định của vùng cuộn. */
+.employee-dialog .employee-scroll,
+.employee-dialog .employee-scroll > .viewport {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
+/* Kiểu chung của ô nhập, hộp chọn và lịch. */
+.employee-dialog .text-field,
+.employee-dialog .combo-box,
+.employee-dialog .date-picker {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-background-radius: 7px;
+    -fx-border-color: #e3e7e4;
+    -fx-border-radius: 7px;
+    -fx-pref-height: 36px;
+}
+
+.employee-dialog .text-field {
+    -fx-padding: 8px 10px;
+    -fx-prompt-text-fill: #9aa69e;
+    -fx-text-fill: #34463b;
+}
+
+/* Viền xanh khi điều khiển được chọn. */
+.employee-dialog .text-field:focused,
+.employee-dialog .combo-box:focused,
+.employee-dialog .date-picker:focused {
+    -fx-border-color: #2c6b52;
+}
+
+/* Ô nhập ngày dùng viền của DatePicker bao ngoài. */
+.employee-dialog .date-picker > .text-field {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+}
+
+.employee-dialog .date-picker > .arrow-button,
+.employee-dialog .combo-box > .arrow-button {
+    -fx-background-color: transparent;
+}
+
+/* Khu vực kéo thả hoặc chọn ảnh. */
+.employee-dialog .employee-upload {
+    -fx-background-color: #f8f9f5;
+    -fx-background-radius: 7px;
+    -fx-border-color: #e3e7e4;
+    -fx-border-radius: 7px;
+    -fx-border-style: segments(4, 3);
+    -fx-padding: 18px;
+    -fx-min-height: 70px;
+    -fx-cursor: hand;
+}
+
+.employee-dialog .employee-upload .label {
+    -fx-text-fill: #818b91;
+    -fx-font-size: 11px;
+}
+
+/* Thẻ nhân viên trong hộp xác nhận ngừng làm việc. */
+.employee-dialog .employee-summary {
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-border-color: #e7e9e5;
+    -fx-border-radius: 12px;
+    -fx-padding: 14px;
+}
+
+/* Đặt Hủy trước nút Lưu hoặc Xác nhận. */
+.employee-dialog > .button-bar {
+    -fx-button-order: "C+O";
+}
+
+.employee-dialog > .button-bar > .container {
+    -fx-padding: 12px 0 0 0;
+}
+
