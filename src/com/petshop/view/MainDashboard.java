@@ -489,7 +489,9 @@ public class MainDashboard extends BorderPane {
                     ? new PromotionSearchView()
                     : new PromotionUpdateView();
             case "INVOICE" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "RETURN_NOTE" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "RETURN_NOTE" -> "RET_CREATE".equals(action.getId())
+                    ? new ReturnNoteCreateView()
+                    : new ReturnNoteProcessView();
 
             default -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
         };
