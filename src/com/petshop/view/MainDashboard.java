@@ -72,8 +72,7 @@ public class MainDashboard extends BorderPane {
 
         pnlMainContainer.getChildren().addAll(
                 createTopbar(),
-                pnlContentArea
-        );
+                pnlContentArea);
 
         setCenter(pnlMainContainer);
 
@@ -176,7 +175,8 @@ public class MainDashboard extends BorderPane {
 
         ScrollPane scrMenu = new ScrollPane(pnlMenuList);
         scrMenu.setFitToWidth(true);
-        scrMenu.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
+        scrMenu.setStyle(
+                "-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
         VBox.setVgrow(scrMenu, Priority.ALWAYS);
 
         // Footer Branch Card
@@ -190,7 +190,8 @@ public class MainDashboard extends BorderPane {
         StackPane pnlPinIcon = new StackPane();
         Circle pinBg = new Circle(14, Color.web("#e1efe1"));
         SVGPath pinSvg = new SVGPath();
-        pinSvg.setContent("M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z");
+        pinSvg.setContent(
+                "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z");
         pinSvg.setFill(Color.web("#3e634c"));
         pinSvg.setScaleX(0.55);
         pinSvg.setScaleY(0.55);
@@ -279,8 +280,10 @@ public class MainDashboard extends BorderPane {
         for (int i = 0; i < allSubMenus.size(); i++) {
             allSubMenus.get(i).setVisible(false);
             allSubMenus.get(i).setManaged(false);
-            if (i < allArrows.size()) allArrows.get(i).setText("▸");
-            if (i < allBullets.size()) allBullets.get(i).setText("○");
+            if (i < allArrows.size())
+                allArrows.get(i).setText("▸");
+            if (i < allBullets.size())
+                allBullets.get(i).setText("○");
         }
     }
 
@@ -335,7 +338,8 @@ public class MainDashboard extends BorderPane {
             mnuGroup.getStyleClass().add("sidebar-collapsed-btn");
             mnuGroup.setTooltip(new Tooltip("Đối tượng: " + menu.getTitle()));
             mnuGroup.setOnAction(e -> {
-                // Click vào đối tượng ở chế độ thu gọn -> tự bung mở sidebar để chọn chức năng con
+                // Click vào đối tượng ở chế độ thu gọn -> tự bung mở sidebar để chọn chức năng
+                // con
                 isSidebarCollapsed = false;
                 renderSidebar();
             });
@@ -344,7 +348,8 @@ public class MainDashboard extends BorderPane {
 
         ScrollPane scrMenu = new ScrollPane(pnlMenuList);
         scrMenu.setFitToWidth(true);
-        scrMenu.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
+        scrMenu.setStyle(
+                "-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
         VBox.setVgrow(scrMenu, Priority.ALWAYS);
 
         pnlCollapsedSidebar.getChildren().addAll(pnlTopBox, scrMenu);
@@ -390,7 +395,8 @@ public class MainDashboard extends BorderPane {
         pnlSearchBox.getStyleClass().add("search-box");
 
         SVGPath searchIcon = new SVGPath();
-        searchIcon.setContent("M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z");
+        searchIcon.setContent(
+                "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z");
         searchIcon.setFill(Color.web("#9ca89e"));
         searchIcon.setScaleX(0.7);
         searchIcon.setScaleY(0.7);
@@ -443,8 +449,7 @@ public class MainDashboard extends BorderPane {
         pnlTopbar.getChildren().addAll(
                 pnlSearchBox,
                 pnlSpacer,
-                mnuProfile
-        );
+                mnuProfile);
         return pnlTopbar;
     }
 
@@ -455,31 +460,38 @@ public class MainDashboard extends BorderPane {
         // Kiểm tra phân quyền ở tầng Service trước khi mở màn hình
         authService.checkPermission(action.getId());
 
-        // Mỗi thành viên khi hoàn thành View riêng chỉ sửa vào đúng nhánh case của đối tượng mình phụ trách:
+        // Mỗi thành viên khi hoàn thành View riêng chỉ sửa vào đúng nhánh case của đối
+        // tượng mình phụ trách:
         Node targetView = switch (menu.getId()) {
             // --- Nhóm 1: Khách hàng & Thú cưng & Lịch hẹn ---
-            case "CUSTOMER"     -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "PET"          -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "APPOINTMENT"  -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "CUSTOMER" -> new CustomerView(action.getId());
+            case "PET" -> new PetView(action.getId());
+            case "APPOINTMENT" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
             // --- Nhóm 2: Nhân viên & Ca trực & Dịch vụ chăm sóc ---
-            case "EMPLOYEE"     -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "SHIFT"        -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            // Mở giao diện nhân viên theo chức năng được chọn.
+            case "EMPLOYEE" -> new EmployeeView(action.getId());
+            case "SHIFT" -> switch (action.getId()) {
+                case "SHF_UPDATE" -> new ShiftUpdateView();
+                case "SHF_ASSIGN" -> new ShiftAssignmentView();
+                case "SHF_VIEW"   -> new ShiftCalendarView();
+                default -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            };
             case "CARE_SERVICE" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
             // --- Nhóm 3: Nhà cung cấp & Đơn hàng nhập & Sản phẩm ---
-            case "SUPPLIER"     -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "SUPPLIER" -> new SupplierView(action.getId());
             case "IMPORT_ORDER" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "PRODUCT"      -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "PRODUCT" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
 
             // --- Nhóm 4: Khuyến mãi & Hóa đơn & Phiếu đổi trả ---
-            case "PROMOTION"    -> "PRM_SEARCH".equals(action.getId())
-                                        ? new PromotionSearchView()
-                                        : new PromotionUpdateView();
-            case "INVOICE"      -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
-            case "RETURN_NOTE"  -> "RET_CREATE".equals(action.getId())
-                                        ? new ReturnNoteCreateView()
-                                        : new ReturnNoteProcessView();
+            case "PROMOTION" -> "PRM_SEARCH".equals(action.getId())
+                    ? new PromotionSearchView()
+                    : new PromotionUpdateView();
+            case "INVOICE" -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
+            case "RETURN_NOTE" -> "RET_CREATE".equals(action.getId())
+                    ? new ReturnNoteCreateView()
+                    : new ReturnNoteProcessView();
 
             default -> new ModuleListView(menu.getTitle(), action.getName(), action.getShortcut());
         };
@@ -502,7 +514,8 @@ public class MainDashboard extends BorderPane {
         VBox pnlWelcomeTextBox = new VBox(4);
         Label lblWelcomeTitle = new Label("Xin chào, " + empName);
         lblWelcomeTitle.getStyleClass().add("welcome-title");
-        Label lblWelcomeSubtitle = new Label("Hệ thống quản lý cửa hàng thú cưng Happy Tails theo mô hình Hướng Đối Tượng.");
+        Label lblWelcomeSubtitle = new Label(
+                "Hệ thống quản lý cửa hàng thú cưng Happy Tails theo mô hình Hướng Đối Tượng.");
         lblWelcomeSubtitle.getStyleClass().add("welcome-sub");
         pnlWelcomeTextBox.getChildren().addAll(lblWelcomeTitle, lblWelcomeSubtitle);
 
@@ -605,8 +618,7 @@ public class MainDashboard extends BorderPane {
         pnlPasswordForm.getChildren().addAll(
                 lblCurrentPassword, pwdCurrent,
                 lblNewPassword, pwdNew,
-                lblConfirmPassword, pwdConfirm
-        );
+                lblConfirmPassword, pwdConfirm);
 
         dlgChangePassword.getDialogPane().setContent(pnlPasswordForm);
         dlgChangePassword.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
@@ -637,9 +649,11 @@ public class MainDashboard extends BorderPane {
     }
 
     private String getInitials(String name) {
-        if (name == null || name.isBlank()) return "HT";
+        if (name == null || name.isBlank())
+            return "HT";
         String[] parts = name.trim().split("\\s+");
-        if (parts.length == 1) return parts[0].substring(0, Math.min(2, parts[0].length())).toUpperCase();
+        if (parts.length == 1)
+            return parts[0].substring(0, Math.min(2, parts[0].length())).toUpperCase();
         return ("" + parts[parts.length - 2].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
     }
 }
