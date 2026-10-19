@@ -215,16 +215,11 @@
     -fx-border-color: #b8deb8;
 }
 
-.sidebar-nav-bullet {
-    -fx-font-size: 14px;
-    -fx-text-fill: #9ca89e;
-    -fx-min-width: 16px;
-    -fx-pref-width: 16px;
+.sidebar-nav-icon {
+    -fx-min-width: 18px;
+    -fx-pref-width: 18px;
+    -fx-max-width: 18px;
     -fx-alignment: center;
-}
-
-.sidebar-nav-item:hover .sidebar-nav-bullet {
-    -fx-text-fill: #436850;
 }
 
 .sidebar-nav-text {
@@ -397,76 +392,36 @@
     -fx-text-fill: #1f3326;
 }
 
-/* Thẻ chi nhánh ở đáy sidebar */
-.branch-card {
-    -fx-background-color: #f4f8f4;
-    -fx-background-radius: 12px;
-    -fx-padding: 10px 14px;
-    -fx-border-color: #e3ece3;
-    -fx-border-radius: 12px;
-}
-
-.branch-title {
-    -fx-font-size: 12.5px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #243328;
-}
-
-.branch-sub {
-    -fx-font-size: 11px;
-    -fx-text-fill: #829485;
-}
-
 /* --------------------------------------------------------------------------
    DASHBOARD - TOPBAR
    -------------------------------------------------------------------------- */
 .topbar {
     -fx-background-color: #ffffff;
-    -fx-pref-height: 64px;
-    -fx-min-height: 64px;
-    -fx-padding: 0 28px;
-    -fx-border-color: transparent transparent #e5ebe5 transparent;
-    -fx-border-width: 1px;
+    -fx-background-radius: 14px;
+    -fx-pref-height: 72px;
+    -fx-min-height: 72px;
+    -fx-padding: 0 24px;
     -fx-alignment: center-left;
 }
 
-.search-box {
-    -fx-background-color: #f7faf7;
-    -fx-background-radius: 10px;
-    -fx-border-radius: 10px;
-    -fx-border-color: #e5ebe5;
-    -fx-pref-height: 38px;
-    -fx-padding: 0 12px;
-    -fx-alignment: center-left;
-}
-
-.search-box:focused-within {
-    -fx-border-color: #436850;
-    -fx-background-color: #ffffff;
-}
-
-.search-field {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
+.topbar-breadcrumb {
     -fx-font-size: 13px;
-    -fx-prompt-text-fill: #9ca89e;
-    -fx-pref-width: 220px;
+    -fx-text-fill: #6b7280;
 }
 
-.search-field:focused {
+.topbar-profile {
     -fx-background-color: transparent;
-    -fx-border-color: transparent;
+    -fx-padding: 0;
+    -fx-cursor: hand;
 }
 
-.shortcut-badge {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #e2e8e2;
-    -fx-border-radius: 6px;
-    -fx-background-radius: 6px;
-    -fx-padding: 2px 7px;
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #829485;
+.topbar-profile .arrow-button {
+    -fx-padding: 0;
+}
+
+.topbar-profile .arrow {
+    -fx-padding: 0;
+    -fx-shape: "";
 }
 
 .icon-btn {
@@ -485,7 +440,7 @@
 .user-badge-avatar {
     -fx-font-size: 12px;
     -fx-font-weight: bold;
-    -fx-text-fill: #2d5a37;
+    -fx-text-fill: #ffffff;
 }
 
 .topbar-user-name {
