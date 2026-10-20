@@ -130,7 +130,7 @@ public class MenuRegistry {
         ALL_MENUS.add(new MenuGroup("INVOICE", "Hóa đơn", "INVOICE", List.of(
                 new MenuAction("INV_CREATE", "Lập hóa đơn", null),
                 new MenuAction("INV_SEARCH", "Tìm kiếm hóa đơn", "Ctrl+F"),
-                new MenuAction("INV_UPDATE", "Cập nhật hóa đơn", null),
+                new MenuAction("INV_CANCEL", "Hủy hóa đơn", null),
                 new MenuAction("INV_REVENUE", "Báo cáo doanh thu", null)
         )));
 
@@ -208,6 +208,9 @@ public class MenuRegistry {
      */
     public static boolean hasPermission(User.Role role, String actionId) {
         if (role == User.Role.ADMIN) return true;
+        if ("SRV_CRUD".equals(actionId)) actionId = "CAR_UPDATE";
+        else if ("SRV_SEARCH".equals(actionId)) actionId = "CAR_SEARCH";
+        else if ("SRV_PRICING".equals(actionId)) actionId = "CAR_PRICING";
         Set<User.Role> permitted = PERMISSION_MAP.get(actionId);
         return permitted != null && permitted.contains(role);
     }

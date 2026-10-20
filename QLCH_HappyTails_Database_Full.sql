@@ -12,6 +12,7 @@ USE QLCH_HappyTails;
 GO
 
 -- Xóa các bảng cũ theo thứ tự phụ thuộc (nếu tồn tại)
+IF OBJECT_ID('NhatKyThaoTac', 'U') IS NOT NULL DROP TABLE NhatKyThaoTac;
 IF OBJECT_ID('ChiTietPhieuDoiTra', 'U') IS NOT NULL DROP TABLE ChiTietPhieuDoiTra;
 IF OBJECT_ID('PhieuDoiTra', 'U') IS NOT NULL DROP TABLE PhieuDoiTra;
 IF OBJECT_ID('ChiTietHoaDon_DichVu', 'U') IS NOT NULL DROP TABLE ChiTietHoaDon_DichVu;
@@ -49,7 +50,11 @@ CREATE TABLE NhanVien (
     chucVu NVARCHAR(50) NOT NULL CHECK (chucVu IN (N'Quản lý', N'Bán hàng', N'Chăm sóc')),
     ngaySinh DATE NOT NULL CHECK (DATEDIFF(year, ngaySinh, GETDATE()) >= 18),
     gioiTinh BIT NOT NULL, -- 1: Nam, 0: Nữ
-    trangThai NVARCHAR(30) NOT NULL DEFAULT N'Đang làm' CHECK (trangThai IN (N'Đang làm', N'Đã nghỉ việc'))
+    trangThai NVARCHAR(30) NOT NULL DEFAULT N'Đang làm' CHECK (trangThai IN (N'Đang làm', N'Đã nghỉ việc')),
+    email VARCHAR(100) NULL,
+    diaChi NVARCHAR(255) NULL,
+    ngayBatDau DATE NULL,
+    anh NVARCHAR(255) NULL
 );
 GO
 
@@ -62,7 +67,8 @@ CREATE TABLE KhachHang (
     email VARCHAR(100) CHECK (email IS NULL OR (email LIKE '%_@__%.__%')),
     diemTichLuy INT NOT NULL DEFAULT 0 CHECK (diemTichLuy >= 0),
     diaChi NVARCHAR(255),
-    ghiChu NVARCHAR(255)
+    ghiChu NVARCHAR(255),
+    trangThai BIT NOT NULL CONSTRAINT DF_KhachHang_TrangThai DEFAULT (1)
 );
 GO
 
@@ -73,7 +79,8 @@ CREATE TABLE Ca (
     tenCa NVARCHAR(50) NOT NULL CHECK (LEN(LTRIM(RTRIM(tenCa))) > 0),
     gioBatDau TIME NOT NULL,
     gioKetThuc TIME NOT NULL,
-    trangThai NVARCHAR(30) NOT NULL DEFAULT N'Áp dụng' CHECK (trangThai IN (N'Áp dụng', N'Ngừng áp dụng')),
+    trangThai NVARCHAR(30) NOT NULL DEFAULT N'Đang hoạt động',
+    ngayCapNhat DATE DEFAULT GETDATE(),
     CONSTRAINT CK_Ca_Gio CHECK (gioKetThuc > gioBatDau)
 );
 GO
@@ -95,19 +102,23 @@ CREATE TABLE NhaCungCap (
     maNhaCungCap VARCHAR(20) PRIMARY KEY CHECK (maNhaCungCap LIKE 'NCC-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]'),
     tenNhaCungCap NVARCHAR(150) NOT NULL CHECK (LEN(LTRIM(RTRIM(tenNhaCungCap))) > 0),
     soDienThoai VARCHAR(10) NOT NULL CHECK (soDienThoai LIKE '0[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'),
-    diaChi NVARCHAR(255)
+    email VARCHAR(100) NULL,
+    diaChi NVARCHAR(255),
+    matHangCungCap NVARCHAR(200) NULL,
+    trangThai BIT NOT NULL CONSTRAINT DF_NhaCungCap_TrangThai DEFAULT 1
 );
 GO
 
 -- 6. Bảng KhuyenMai (2.17 OOAD)
--- Khóa chính: KM-YYYYMMDD-NNNNNN
+-- Khóa chính: KM-YYYYMMDD-NNNNNN hoặc KM-YYYY-NNN
 CREATE TABLE KhuyenMai (
-    maKhuyenMai VARCHAR(20) PRIMARY KEY CHECK (maKhuyenMai LIKE 'KM-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]'),
+    maKhuyenMai VARCHAR(20) PRIMARY KEY CHECK (maKhuyenMai LIKE 'KM-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]' OR maKhuyenMai LIKE 'KM-[0-9][0-9][0-9][0-9]-[0-9][0-9][0-9]%'),
     tenChuongTrinh NVARCHAR(150) NOT NULL CHECK (LEN(LTRIM(RTRIM(tenChuongTrinh))) > 0),
     phanTramGiam DECIMAL(5,2) NOT NULL CHECK (phanTramGiam > 0 AND phanTramGiam <= 100),
     ngayBatDau DATE NOT NULL,
     ngayKetThuc DATE NOT NULL,
     trangThai BIT NOT NULL DEFAULT 1, -- 1: Đang chạy, 0: Ngừng
+    ngayCapNhat DATE DEFAULT GETDATE(),
     CONSTRAINT CK_KhuyenMai_Ngay CHECK (ngayKetThuc >= ngayBatDau)
 );
 GO
@@ -141,6 +152,7 @@ CREATE TABLE ThuCung (
     ngaySinh DATE CHECK (ngaySinh IS NULL OR ngaySinh <= CAST(GETDATE() AS DATE)),
     diUng NVARCHAR(255),
     gioiTinh NVARCHAR(10) CHECK (gioiTinh IN (N'Đực', N'Cái')),
+    trangThai BIT NOT NULL CONSTRAINT DF_ThuCung_TrangThai DEFAULT (1),
     CONSTRAINT FK_ThuCung_KhachHang FOREIGN KEY (maKhachHang) REFERENCES KhachHang(maKhachHang),
     CONSTRAINT UQ_ThuCung_Ma_KhachHang UNIQUE (maThuCung, maKhachHang)
 );
@@ -265,10 +277,10 @@ GO
 -- =========================================================================
 
 -- 16. Bảng HoaDon (2.18 OOAD)
--- Khóa chính: HD-YYYYMMDD-NNNNNN
+-- Khóa chính: HD-YYYYMMDD-NNNNNN hoặc HD-YYYYMMDD-NNN
 -- Hình thức thanh toán bắt buộc NOT NULL khi đã thanh toán
 CREATE TABLE HoaDon (
-    maHoaDon VARCHAR(20) PRIMARY KEY CHECK (maHoaDon LIKE 'HD-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]'),
+    maHoaDon VARCHAR(20) PRIMARY KEY CHECK (maHoaDon LIKE 'HD-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]' OR maHoaDon LIKE 'HD-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9]%'),
     maLichHen VARCHAR(20), -- Nullable nếu chỉ mua sản phẩm lẻ tại quầy
     maNhanVien VARCHAR(20) NOT NULL,
     maKhachHang VARCHAR(20), -- Nullable nếu khách vãng lai không đăng ký
@@ -317,10 +329,10 @@ CREATE TABLE ChiTietHoaDon_DichVu (
 GO
 
 -- 18. Bảng PhieuDoiTra (2.20 OOAD)
--- Khóa chính: PDT-YYYYMMDD-NNNNNN
+-- Khóa chính: PDT-YYYYMMDD-NNNNNN hoặc PDT-YYYYMMDD-NNN
 -- soLuong > 0 (tổng số lượng sản phẩm hoàn trả theo mục 2.2.1 dòng 60)
 CREATE TABLE PhieuDoiTra (
-    maPhieuDoiTra VARCHAR(20) PRIMARY KEY CHECK (maPhieuDoiTra LIKE 'PDT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]'),
+    maPhieuDoiTra VARCHAR(20) PRIMARY KEY CHECK (maPhieuDoiTra LIKE 'PDT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]' OR maPhieuDoiTra LIKE 'PDT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9]%'),
     maHoaDon VARCHAR(20) NOT NULL,
     maNhanVien VARCHAR(20) NOT NULL,
     maKhachHang VARCHAR(20) NOT NULL,
@@ -328,7 +340,8 @@ CREATE TABLE PhieuDoiTra (
     lyDo NVARCHAR(255) NOT NULL CHECK (LEN(LTRIM(RTRIM(lyDo))) > 0),
     soLuong INT NOT NULL CHECK (soLuong > 0),
     trangThai NVARCHAR(30) NOT NULL DEFAULT N'Chờ xử lý' 
-        CHECK (trangThai IN (N'Chờ xử lý', N'Đã hoàn tiền', N'Từ chối')),
+        CHECK (trangThai IN (N'Chờ xử lý', N'Đã duyệt', N'Đã từ chối', N'Đã hoàn tiền', N'Từ chối')),
+    tongTienHoan DECIMAL(18,2) DEFAULT 0,
     CONSTRAINT FK_PhieuDoiTra_HoaDon FOREIGN KEY (maHoaDon) REFERENCES HoaDon(maHoaDon),
     CONSTRAINT FK_PhieuDoiTra_NhanVien FOREIGN KEY (maNhanVien) REFERENCES NhanVien(maNhanVien),
     CONSTRAINT FK_PhieuDoiTra_KhachHang FOREIGN KEY (maKhachHang) REFERENCES KhachHang(maKhachHang)
@@ -350,6 +363,19 @@ CREATE TABLE ChiTietPhieuDoiTra (
 );
 GO
 
+-- 20. Bảng NhatKyThaoTac (Ghi nhận lịch sử thao tác khách hàng, thú cưng, nhân viên)
+CREATE TABLE NhatKyThaoTac (
+    maNhatKy BIGINT IDENTITY(1,1) PRIMARY KEY,
+    thoiGian DATETIME2 NOT NULL CONSTRAINT DF_NhatKyThaoTac_ThoiGian DEFAULT (SYSDATETIME()),
+    maNhanVienThucHien VARCHAR(20) NULL,
+    tenDangNhap VARCHAR(50) NULL,
+    loaiDoiTuong NVARCHAR(30) NOT NULL,
+    maDoiTuong VARCHAR(20) NOT NULL,
+    hanhDong NVARCHAR(50) NOT NULL,
+    moTa NVARCHAR(500) NULL
+);
+GO
+
 -- =========================================================================
 -- NẠP DỮ LIỆU MẪU BAN ĐẦU CHUẨN ĐỒ ÁN HAPPY TAILS
 -- =========================================================================
@@ -360,7 +386,10 @@ VALUES
 ('NV-20261005-000000', N'Quản trị hệ thống', '0909000000', N'Quản lý', '1990-01-01', 1, N'Đang làm'),
 ('NV-20261005-000001', N'Nguyễn Thị Lan',    '0901234567', N'Quản lý', '1985-05-15', 0, N'Đang làm'),
 ('NV-20261005-000002', N'Trần Văn Minh',    '0902345678', N'Bán hàng', '1998-08-20', 1, N'Đang làm'),
-('NV-20261005-000003', N'Phạm Thị Hoa',     '0903456789', N'Chăm sóc', '1995-12-10', 0, N'Đang làm');
+('NV-20261005-000003', N'Phạm Thị Hoa',     '0903456789', N'Chăm sóc', '1995-12-10', 0, N'Đang làm'),
+('NV-20261016-000001', N'Lê Thị Hoa',       '0901112233', N'Bán hàng', '1998-05-12', 0, N'Đang làm'),
+('NV-20261016-000002', N'Trần Minh Khang',   '0902223344', N'Chăm sóc', '1996-09-20', 1, N'Đang làm'),
+('NV-20261016-000003', N'Phạm Ngọc Linh',    '0903334455', N'Bán hàng', '2000-01-15', 0, N'Đang làm');
 
 -- 2. TaiKhoan (Admin + 3 tài khoản mẫu)
 INSERT INTO TaiKhoan (maTaiKhoan, maNhanVien, tenDangNhap, matKhau, phanQuyen, trangThai)
@@ -385,17 +414,31 @@ VALUES
 ('TC-20261005-000003', 'KH-20261005-000002', N'Lu',    N'Chó', N'Poodle Standard', 8.50, '2021-08-15', N'Nhát nước, cần tắm nhẹ nhàng', N'Đực');
 
 -- 5. Ca
-INSERT INTO Ca (maCa, tenCa, gioBatDau, gioKetThuc, trangThai)
+INSERT INTO Ca (maCa, tenCa, gioBatDau, gioKetThuc, trangThai, ngayCapNhat)
 VALUES 
-('CA-20261005-000001', N'Ca Sáng',  '08:00:00', '12:00:00', N'Áp dụng'),
-('CA-20261005-000002', N'Ca Chiều', '13:00:00', '17:00:00', N'Áp dụng'),
-('CA-20261005-000003', N'Ca Tối',   '18:00:00', '21:00:00', N'Áp dụng');
+('CA-20261005-000001', N'Ca Sáng',  '08:00:00', '12:00:00', N'Đang hoạt động', '2026-10-05'),
+('CA-20261005-000002', N'Ca Chiều', '13:00:00', '17:00:00', N'Đang hoạt động', '2026-10-05'),
+('CA-20261005-000003', N'Ca Tối',   '18:00:00', '21:00:00', N'Đang hoạt động', '2026-10-05'),
+('CA-20261016-000001', N'Ca sáng',  '08:00:00', '16:00:00', N'Đang hoạt động', '2026-10-16'),
+('CA-20261016-000002', N'Ca chiều', '16:00:00', '22:00:00', N'Đang hoạt động', '2026-10-16'),
+('CA-20261016-000003', N'Ca sớm',   '06:00:00', '08:00:00', N'Đang hoạt động', '2026-10-16');
 
 -- 6. PhanCa
 INSERT INTO PhanCa (maPhanCa, maNhanVien, maCa, ngayLam, trangThai)
 VALUES 
 ('PC-20261005-000001', 'NV-20261005-000002', 'CA-20261005-000001', '2026-10-06', N'Đã phân công'),
-('PC-20261005-000002', 'NV-20261005-000003', 'CA-20261005-000001', '2026-10-06', N'Đã phân công');
+('PC-20261005-000002', 'NV-20261005-000003', 'CA-20261005-000001', '2026-10-06', N'Đã phân công'),
+('PC-20261016-000001', 'NV-20261016-000001', 'CA-20261016-000001', '2026-10-19', N'Đã phân công'),
+('PC-20261016-000002', 'NV-20261016-000002', 'CA-20261016-000002', '2026-10-19', N'Đã phân công'),
+('PC-20261016-000003', 'NV-20261016-000003', 'CA-20261016-000001', '2026-10-20', N'Đã phân công'),
+('PC-20261016-000004', 'NV-20261016-000001', 'CA-20261016-000002', '2026-10-20', N'Đã phân công'),
+('PC-20261016-000005', 'NV-20261016-000002', 'CA-20261016-000001', '2026-10-21', N'Đã phân công'),
+('PC-20261016-000006', 'NV-20261016-000001', 'CA-20261016-000001', '2026-10-22', N'Đã phân công'),
+('PC-20261016-000007', 'NV-20261016-000003', 'CA-20261016-000001', '2026-10-23', N'Đã phân công'),
+('PC-20261016-000008', 'NV-20261016-000003', 'CA-20261016-000002', '2026-10-23', N'Đã phân công'),
+('PC-20261016-000009', 'NV-20261016-000002', 'CA-20261016-000002', '2026-10-24', N'Đã phân công'),
+('PC-20261016-000010', 'NV-20261016-000002', 'CA-20261016-000001', '2026-10-25', N'Đã phân công'),
+('PC-20261016-000011', 'NV-20261016-000001', 'CA-20261016-000002', '2026-10-25', N'Đã phân công');
 
 -- 7. DichVuChamSoc (5 dịch vụ chính của Happy Tails theo Q&A mục 1.4.5)
 INSERT INTO DichVuChamSoc (maDichVu, tenDichVu, moTa, thoiLuong, trangThai)
@@ -460,4 +503,43 @@ VALUES
 INSERT INTO ChiTietHoaDon_SanPham (maHoaDon, maSanPham, soLuong, donGia)
 VALUES 
 ('HD-20261005-000001', 'SP-20261005-000001', 1, 350000);
+
+-- 14. KhachHang và SanPham bổ sung cho nghiệp vụ Đổi trả (Khớp mẫu UI 3.1 & 3.2)
+INSERT INTO KhachHang (maKhachHang, hoTen, soDienThoai, email, diemTichLuy, diaChi, ghiChu)
+VALUES
+('KH-20261015-000001', N'Nguyễn Minh Anh', '0901234888', 'minhanh.nguyen@gmail.com', 85, N'15 Quang Trung, Gò Vấp', N'Khách mua thức ăn hạt'),
+('KH-20261014-000002', N'Trần Quốc Bảo',   '0902345999', 'bao.tran@gmail.com',     40, N'28 Phan Văn Trị, Gò Vấp', N'Khách mua phụ kiện'),
+('KH-20261015-000003', N'Lê Thu Hà',       '0903456111', 'ha.le@gmail.com',        60, N'92 Nguyễn Oanh, Gò Vấp',   N'Khách nuôi mèo');
+
+INSERT INTO SanPham (maSanPham, maNhaCungCap, tenSanPham, maVach, giaBan, soLuongTon, nguongTonToiThieu, donViTinh, trangThai)
+VALUES
+('SP-20261015-000001', 'NCC-20261005-000001', N'Thức ăn Royal Canin Mini Adult 2kg', '893123456711', 420000.00, 50, 10, N'Túi', 1),
+('SP-20261014-000001', 'NCC-20261005-000002', N'Áo nỉ thú cưng hình gấu Size L',     '893123456712', 185000.00, 30, 5,  N'Cái', 1),
+('SP-20261015-000002', 'NCC-20261005-000002', N'Túi vận chuyển phi hành gia cho mèo', '893123456713', 260000.00, 25, 5,  N'Cái', 1);
+
+-- 15. HoaDon và ChiTietHoaDon cho Đổi trả
+INSERT INTO HoaDon (maHoaDon, maLichHen, maNhanVien, maKhachHang, ngayLap, hinhThucThanhToan, trangThaiThanhToan, maKhuyenMai, tongTien)
+VALUES
+('HD-20261015-032', NULL, 'NV-20261005-000002', 'KH-20261015-000001', '2026-10-15', N'Tiền mặt',     N'Đã thanh toán', NULL, 420000.00),
+('HD-20261014-018', NULL, 'NV-20261005-000002', 'KH-20261014-000002', '2026-10-14', N'Chuyển khoản', N'Đã thanh toán', NULL, 185000.00),
+('HD-20261015-041', NULL, 'NV-20261005-000002', 'KH-20261015-000003', '2026-10-15', N'POS',          N'Đã thanh toán', NULL, 260000.00);
+
+INSERT INTO ChiTietHoaDon_SanPham (maHoaDon, maSanPham, soLuong, donGia)
+VALUES
+('HD-20261015-032', 'SP-20261015-000001', 1, 420000.00),
+('HD-20261014-018', 'SP-20261014-000001', 1, 185000.00),
+('HD-20261015-041', 'SP-20261015-000002', 1, 260000.00);
+
+-- 16. PhieuDoiTra và ChiTietPhieuDoiTra mẫu
+INSERT INTO PhieuDoiTra (maPhieuDoiTra, maHoaDon, maNhanVien, maKhachHang, ngayLap, lyDo, soLuong, trangThai, tongTienHoan)
+VALUES
+('PDT-20261016-001', 'HD-20261015-032', 'NV-20261005-000002', 'KH-20261015-000001', '2026-10-16', N'Sản phẩm bị lỗi bao bì',         1, N'Chờ xử lý', 420000.00),
+('PDT-20261016-002', 'HD-20261014-018', 'NV-20261005-000002', 'KH-20261014-000002', '2026-10-16', N'Sản phẩm không đúng kích cỡ',    1, N'Chờ xử lý', 185000.00),
+('PDT-20261016-003', 'HD-20261015-041', 'NV-20261005-000002', 'KH-20261015-000003', '2026-10-16', N'Sản phẩm bị lỗi khóa kéo',      1, N'Chờ xử lý', 260000.00);
+
+INSERT INTO ChiTietPhieuDoiTra (maPhieuDoiTra, maHoaDon, maSanPham, soLuong, donGia)
+VALUES
+('PDT-20261016-001', 'HD-20261015-032', 'SP-20261015-000001', 1, 420000.00),
+('PDT-20261016-002', 'HD-20261014-018', 'SP-20261014-000001', 1, 185000.00),
+('PDT-20261016-003', 'HD-20261015-041', 'SP-20261015-000002', 1, 260000.00);
 GO

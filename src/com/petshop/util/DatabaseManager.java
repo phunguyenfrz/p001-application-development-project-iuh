@@ -26,14 +26,25 @@ public final class DatabaseManager {
         return (value == null || value.isBlank()) ? fallback : value;
     }
 
+    private static volatile boolean schemaMigrated = false;
+
     /**
      * Lấy một Connection mới từ database.
      * Gọi trong try-with-resources để tự động đóng.
      */
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(
+        Connection conn = DriverManager.getConnection(
                 env("DB_URL", DEFAULT_URL),
                 env("DB_USER", DEFAULT_USER),
                 env("DB_PASSWORD", DEFAULT_PASSWORD));
+        if (!schemaMigrated) {
+            synchronized (DatabaseManager.class) {
+                if (!schemaMigrated) {
+                    schemaMigrated = true;
+                    DatabaseInitializer.ensureMigrations(conn);
+                }
+            }
+        }
+        return conn;
     }
 }

@@ -1,5 +1,7 @@
 package com.petshop.model;
 
+import java.util.Objects;
+
 /**
  * Model đại diện cho một dòng trong hóa đơn (bảng ChiTietHoaDon).
  * Mỗi dòng là sản phẩm HOẶC dịch vụ (đúng một trong hai).
@@ -21,6 +23,14 @@ public class InvoiceItem {
         this.tenHang = tenHang;
         this.soLuong = soLuong;
         this.donGia = donGia;
+    }
+
+    public static InvoiceItem createProductItem(String maSanPham, String tenHang, int soLuong, double donGia) {
+        return new InvoiceItem(maSanPham, null, tenHang, soLuong, donGia);
+    }
+
+    public static InvoiceItem createServiceItem(String maDichVu, String tenHang, double donGia) {
+        return new InvoiceItem(null, maDichVu, tenHang, 1, donGia);
     }
 
     public String getMaChiTietHD()                      { return maChiTietHD; }
@@ -47,4 +57,36 @@ public class InvoiceItem {
     public boolean isService() { return maDichVu != null; }
 
     public double getThanhTien() { return donGia * soLuong; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        InvoiceItem that = (InvoiceItem) o;
+        if (maChiTietHD != null && that.maChiTietHD != null) {
+            return Objects.equals(maChiTietHD, that.maChiTietHD);
+        }
+        return Objects.equals(maHoaDon, that.maHoaDon) &&
+                Objects.equals(maSanPham, that.maSanPham) &&
+                Objects.equals(maDichVu, that.maDichVu);
+    }
+
+    @Override
+    public int hashCode() {
+        if (maChiTietHD != null) {
+            return Objects.hash(maChiTietHD);
+        }
+        return Objects.hash(maHoaDon, maSanPham, maDichVu);
+    }
+
+    @Override
+    public String toString() {
+        return "InvoiceItem{" +
+                "maChiTietHD='" + maChiTietHD + '\'' +
+                ", tenHang='" + tenHang + '\'' +
+                ", soLuong=" + soLuong +
+                ", donGia=" + donGia +
+                ", thanhTien=" + getThanhTien() +
+                '}';
+    }
 }
