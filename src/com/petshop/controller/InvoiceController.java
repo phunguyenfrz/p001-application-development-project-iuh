@@ -50,5 +50,9 @@ public class InvoiceController {
     public List<Invoice> getPaidInvoices(String keyword) {
         return invoiceService.getPaidInvoices(keyword);
     }
+
+    public List<com.petshop.dao.InvoiceDao.AppointmentBillingItem> getUnbilledAppointments(String keyword) {
+        return invoiceService.getUnbilledAppointments(keyword);
+    }
 }
 

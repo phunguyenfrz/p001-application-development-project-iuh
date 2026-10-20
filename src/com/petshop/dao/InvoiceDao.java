@@ -6,6 +6,7 @@ import com.petshop.util.DatabaseManager;
 
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -457,6 +458,124 @@ public class InvoiceDao {
      */
     public List<Invoice> getPaidInvoices(String keyword) {
         return searchInvoices(keyword, "Đã thanh toán", null, null);
+    }
+
+    /**
+     * DTO đại diện cho một lịch hẹn dịch vụ sẵn sàng thanh toán lập hóa đơn.
+     */
+    public static class AppointmentBillingItem {
+        private String maLichHen;
+        private String maKhachHang;
+        private String tenKhachHang;
+        private String soDienThoaiKhachHang;
+        private String maThuCung;
+        private String tenThuCung;
+        private double canNang;
+        private String maDichVu;
+        private String tenDichVu;
+        private double donGia;
+        private LocalDate ngayHen;
+        private LocalTime gioHen;
+        private String trangThai;
+
+        public String getMaLichHen() { return maLichHen; }
+        public void setMaLichHen(String maLichHen) { this.maLichHen = maLichHen; }
+
+        public String getMaKhachHang() { return maKhachHang; }
+        public void setMaKhachHang(String maKhachHang) { this.maKhachHang = maKhachHang; }
+
+        public String getTenKhachHang() { return tenKhachHang; }
+        public void setTenKhachHang(String tenKhachHang) { this.tenKhachHang = tenKhachHang; }
+
+        public String getSoDienThoaiKhachHang() { return soDienThoaiKhachHang; }
+        public void setSoDienThoaiKhachHang(String soDienThoaiKhachHang) { this.soDienThoaiKhachHang = soDienThoaiKhachHang; }
+
+        public String getMaThuCung() { return maThuCung; }
+        public void setMaThuCung(String maThuCung) { this.maThuCung = maThuCung; }
+
+        public String getTenThuCung() { return tenThuCung; }
+        public void setTenThuCung(String tenThuCung) { this.tenThuCung = tenThuCung; }
+
+        public double getCanNang() { return canNang; }
+        public void setCanNang(double canNang) { this.canNang = canNang; }
+
+        public String getMaDichVu() { return maDichVu; }
+        public void setMaDichVu(String maDichVu) { this.maDichVu = maDichVu; }
+
+        public String getTenDichVu() { return tenDichVu; }
+        public void setTenDichVu(String tenDichVu) { this.tenDichVu = tenDichVu; }
+
+        public double getDonGia() { return donGia; }
+        public void setDonGia(double donGia) { this.donGia = donGia; }
+
+        public LocalDate getNgayHen() { return ngayHen; }
+        public void setNgayHen(LocalDate ngayHen) { this.ngayHen = ngayHen; }
+
+        public LocalTime getGioHen() { return gioHen; }
+        public void setGioHen(LocalTime gioHen) { this.gioHen = gioHen; }
+
+        public String getTrangThai() { return trangThai; }
+        public void setTrangThai(String trangThai) { this.trangThai = trangThai; }
+    }
+
+    /**
+     * Lấy danh sách các lịch hẹn dịch vụ chưa lập hóa đơn thanh toán để đưa vào màn hình lập hóa đơn.
+     */
+    public List<AppointmentBillingItem> getUnbilledAppointments(String keyword) {
+        List<AppointmentBillingItem> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("""
+            SELECT lh.maLichHen, lh.maKhachHang, kh.hoTen AS tenKhachHang, kh.soDienThoai AS soDienThoaiKhachHang,
+                   lh.maThuCung, ISNULL(tc.tenThuCung, N'Thú cưng') AS tenThuCung, ctl.canNangThuCung,
+                   ctl.maDichVu, dv.tenDichVu, ctl.donGia,
+                   lh.ngayHen, lh.gioHen, lh.trangThai
+            FROM LichHen lh
+            JOIN KhachHang kh ON kh.maKhachHang = lh.maKhachHang
+            LEFT JOIN ThuCung tc ON tc.maThuCung = lh.maThuCung AND tc.maKhachHang = lh.maKhachHang
+            JOIN ChiTietLichHen ctl ON ctl.maLichHen = lh.maLichHen
+            JOIN DichVuChamSoc dv ON dv.maDichVu = ctl.maDichVu
+            WHERE lh.trangThai <> N'Đã hủy'
+              AND (lh.maLichHen NOT IN (SELECT maLichHen FROM HoaDon WHERE maLichHen IS NOT NULL AND trangThaiThanhToan = N'Đã thanh toán'))
+        """);
+
+        List<Object> params = new ArrayList<>();
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            sql.append(" AND (lh.maLichHen LIKE ? OR kh.hoTen LIKE ? OR kh.soDienThoai LIKE ? OR tc.tenThuCung LIKE ? OR dv.tenDichVu LIKE ?)");
+            String k = "%" + keyword.trim() + "%";
+            for (int i = 0; i < 5; i++) params.add(k);
+        }
+
+        sql.append(" ORDER BY lh.ngayHen DESC, lh.gioHen DESC");
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    AppointmentBillingItem item = new AppointmentBillingItem();
+                    item.setMaLichHen(rs.getString("maLichHen"));
+                    item.setMaKhachHang(rs.getString("maKhachHang"));
+                    item.setTenKhachHang(rs.getString("tenKhachHang"));
+                    item.setSoDienThoaiKhachHang(rs.getString("soDienThoaiKhachHang"));
+                    item.setMaThuCung(rs.getString("maThuCung"));
+                    item.setTenThuCung(rs.getString("tenThuCung"));
+                    item.setCanNang(rs.getDouble("canNangThuCung"));
+                    item.setMaDichVu(rs.getString("maDichVu"));
+                    item.setTenDichVu(rs.getString("tenDichVu"));
+                    item.setDonGia(rs.getDouble("donGia"));
+                    Date d = rs.getDate("ngayHen");
+                    item.setNgayHen(d != null ? d.toLocalDate() : null);
+                    Time t = rs.getTime("gioHen");
+                    item.setGioHen(t != null ? t.toLocalTime() : null);
+                    item.setTrangThai(rs.getString("trangThai"));
+                    list.add(item);
+                }
+            }
+        } catch (SQLException ex) {
+            System.err.println("Lỗi khi tải danh sách lịch hẹn chưa lập hóa đơn: " + ex.getMessage());
+        }
+        return list;
     }
 }
 

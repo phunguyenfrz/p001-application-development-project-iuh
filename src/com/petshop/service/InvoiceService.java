@@ -171,5 +171,9 @@ public class InvoiceService {
             }
         }
     }
+
+    public List<com.petshop.dao.InvoiceDao.AppointmentBillingItem> getUnbilledAppointments(String keyword) {
+        return invoiceDao.getUnbilledAppointments(keyword);
+    }
 }
 

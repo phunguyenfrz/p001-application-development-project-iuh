@@ -35,6 +35,16 @@ public class PetController {
     }
 
     /**
+     * Lấy danh sách thú cưng của một khách hàng.
+     *
+     * @param customer_id Mã khách hàng.
+     * @return Danh sách thú cưng của khách.
+     */
+    public List<Pet> loadPetsByCustomerId(String customer_id) {
+        return pet_service.findPetsByCustomerId(customer_id);
+    }
+
+    /**
      * Yêu cầu thêm hồ sơ thú cưng mới.
      * Service kiểm tra dữ liệu và tạo mã hồ sơ.
      *

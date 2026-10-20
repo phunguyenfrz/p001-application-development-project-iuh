@@ -369,5 +369,48 @@ public class CareServiceDao {
 
         return list;
     }
+
+    /**
+     * Tra cứu đơn giá dịch vụ theo cân nặng thú cưng và ngày áp dụng.
+     * Quy tắc phân loại:
+     * - Cân nặng < 5 kg -> Bậc Nhỏ
+     * - 5 kg <= Cân nặng <= 10 kg -> Bậc Vừa
+     * - Cân nặng > 10 kg -> Bậc Lớn
+     */
+    public double getPriceForWeight(String maDichVu, double canNang, LocalDate date) {
+        String size = canNang < 5.0 ? ServicePricing.BAC_NHO : (canNang <= 10.0 ? ServicePricing.BAC_VUA : ServicePricing.BAC_LON);
+        return getPriceForSize(maDichVu, size, date);
+    }
+
+    /**
+     * Tra cứu đơn giá dịch vụ theo phân loại kích thước ('Nhỏ', 'Vừa', 'Lớn') và ngày áp dụng.
+     */
+    public double getPriceForSize(String maDichVu, String size, LocalDate date) {
+        if (maDichVu == null || maDichVu.trim().isEmpty() || size == null) {
+            return 0;
+        }
+        LocalDate searchDate = date != null ? date : LocalDate.now();
+        String sql = """
+            SELECT TOP 1 gia FROM BangGiaDichVu
+            WHERE maDichVu = ? AND phanLoaiKichThuoc = ? AND ngayApDung <= ?
+              AND (ngayHetHieuLuc IS NULL OR ngayHetHieuLuc >= ?)
+            ORDER BY ngayApDung DESC
+        """;
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maDichVu.trim());
+            ps.setString(2, size.trim());
+            ps.setDate(3, Date.valueOf(searchDate));
+            ps.setDate(4, Date.valueOf(searchDate));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble("gia");
+                }
+            }
+        } catch (SQLException ex) {
+            System.err.println("Lỗi khi tra cứu giá dịch vụ theo kích thước: " + ex.getMessage());
+        }
+        return 0;
+    }
 }
 

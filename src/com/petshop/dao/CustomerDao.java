@@ -211,4 +211,27 @@ public class CustomerDao {
         customer.setTrangThai(result_set.getBoolean("trangThai"));
         return customer;
     }
+
+    /**
+     * Tra cứu khách hàng theo mã định danh.
+     */
+    public Customer findById(String customerId) throws SQLException {
+        if (customerId == null || customerId.isBlank()) return null;
+        String sql = """
+            SELECT maKhachHang, hoTen, soDienThoai, email,
+                   diemTichLuy, diaChi, ghiChu, trangThai
+            FROM dbo.KhachHang
+            WHERE maKhachHang = ?
+        """;
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, customerId.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapCustomer(rs);
+                }
+            }
+        }
+        return null;
+    }
 }

@@ -223,5 +223,19 @@ public class CareServiceService {
             throw new IllegalArgumentException("Ngày hết hiệu lực phải sau hoặc bằng ngày áp dụng.");
         }
     }
+
+    /**
+     * Tra cứu giá dịch vụ theo cân nặng thú cưng.
+     */
+    public double getPriceForWeight(String maDichVu, double canNang, java.time.LocalDate date) {
+        return careServiceDao.getPriceForWeight(maDichVu, canNang, date);
+    }
+
+    /**
+     * Tra cứu giá dịch vụ theo phân loại kích thước ('Nhỏ', 'Vừa', 'Lớn').
+     */
+    public double getPriceForSize(String maDichVu, String size, java.time.LocalDate date) {
+        return careServiceDao.getPriceForSize(maDichVu, size, date);
+    }
 }
 

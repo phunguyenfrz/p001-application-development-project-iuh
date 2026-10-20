@@ -25,6 +25,7 @@ import javafx.util.Duration;
 
 import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -87,9 +88,12 @@ public class InvoiceView extends VBox {
     private TextField txtBarcode;
     private Button btnPickProduct;
     private Button btnPickService;
+    private Button btnPickAppointment;
     private Button btnDeleteItem;
     private Button btnClearItems;
     private TableView<InvoiceItem> tblCartItems;
+    private String selectedAppointmentId = null;
+    private Label lblLinkedAppointment;
 
     private Label lblSubTotal;
     private Label lblDiscountAmount;
@@ -110,6 +114,13 @@ public class InvoiceView extends VBox {
     private Button btnRefresh;
     private Button btnViewDetail;
     private Button btnCancelInvoice;
+
+    // Các điều khiển dành riêng cho BÁO CÁO & THỐNG KÊ DOANH THU (INV_REVENUE)
+    private Label lblKpiTotalRevenue;
+    private Label lblKpiPaidCount;
+    private Label lblKpiCancelCount;
+    private Label lblKpiAvgOrderValue;
+    private ComboBox<String> cboQuickTimeFilter;
 
     public InvoiceView(String actionId) {
         this(actionId, null);
@@ -188,10 +199,15 @@ public class InvoiceView extends VBox {
         btnPickProduct.setMinWidth(Region.USE_PREF_SIZE);
         btnPickProduct.setOnAction(e -> xuLyChonSanPham());
 
-        btnPickService = new Button("＋ Chọn dịch vụ");
+        btnPickService = new Button("＋ Chọn dịch vụ (Cân nặng)");
         btnPickService.getStyleClass().add("customer-secondary");
         btnPickService.setMinWidth(Region.USE_PREF_SIZE);
         btnPickService.setOnAction(e -> xuLyChonDichVu());
+
+        btnPickAppointment = new Button("📅 Chọn từ lịch hẹn");
+        btnPickAppointment.getStyleClass().add("customer-secondary");
+        btnPickAppointment.setMinWidth(Region.USE_PREF_SIZE);
+        btnPickAppointment.setOnAction(e -> xuLyChonLichHen());
 
         Label lblBarcodeIcon = new Label("Quét mã / Mã SP:");
         lblBarcodeIcon.setStyle("-fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: #4b5563;");
@@ -220,7 +236,7 @@ public class InvoiceView extends VBox {
         btnClearItems.setMinWidth(Region.USE_PREF_SIZE);
         btnClearItems.setOnAction(e -> xuLyXoaTatCa());
 
-        pnlAddBar.getChildren().addAll(btnPickProduct, btnPickService, new Separator(javafx.geometry.Orientation.VERTICAL),
+        pnlAddBar.getChildren().addAll(btnPickProduct, btnPickService, btnPickAppointment, new Separator(javafx.geometry.Orientation.VERTICAL),
                 lblBarcodeIcon, txtBarcode, barSpacer, btnDeleteItem, btnClearItems);
 
         // Bảng danh sách mặt hàng đã chọn
@@ -305,12 +321,18 @@ public class InvoiceView extends VBox {
         dtpNgayLap.setMaxWidth(Double.MAX_VALUE);
         dtpNgayLap.setStyle("-fx-pref-height: 32px;");
 
+        lblLinkedAppointment = new Label();
+        lblLinkedAppointment.setStyle("-fx-background-color: #dbeafe; -fx-text-fill: #1d4ed8; -fx-padding: 3px 8px; -fx-background-radius: 4px; -fx-font-size: 11.5px; -fx-font-weight: bold;");
+        lblLinkedAppointment.setVisible(false);
+
         pnlMeta.add(lblId, 0, 0);
         pnlMeta.add(txtInvoiceId, 1, 0);
         pnlMeta.add(lblCashierTitle, 0, 1);
         pnlMeta.add(txtCashier, 1, 1);
         pnlMeta.add(lblDateTitle, 0, 2);
         pnlMeta.add(dtpNgayLap, 1, 2);
+        pnlMeta.add(new Label("Gắn lịch hẹn:"), 0, 3);
+        pnlMeta.add(lblLinkedAppointment, 1, 3);
 
         ColumnConstraints c1 = new ColumnConstraints();
         c1.setPrefWidth(90);
@@ -570,19 +592,27 @@ public class InvoiceView extends VBox {
         Region headerSpacer = new Region();
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);
 
-        btnRefresh = new Button("Cập nhật số liệu");
+        Button btnExport = new Button("📥 Xuất báo cáo");
+        btnExport.getStyleClass().add("customer-secondary");
+        btnExport.setMinWidth(Region.USE_PREF_SIZE);
+        btnExport.setOnAction(e -> xuLyXuatBaoCao());
+
+        btnRefresh = new Button("🔄 Cập nhật số liệu");
         btnRefresh.getStyleClass().add("customer-secondary");
         btnRefresh.setMinWidth(Region.USE_PREF_SIZE);
         btnRefresh.setOnAction(e -> taiDuLieuTuDatabase());
 
-        HBox pnlHeader = new HBox(16, lblTitle, headerSpacer, btnRefresh);
+        HBox pnlHeaderActions = new HBox(10, btnExport, btnRefresh);
+        pnlHeaderActions.setAlignment(Pos.CENTER_RIGHT);
+
+        HBox pnlHeader = new HBox(16, lblTitle, headerSpacer, pnlHeaderActions);
         pnlHeader.setAlignment(Pos.CENTER_LEFT);
 
         // Thẻ KPI tổng kết doanh thu
         HBox pnlStats = buildRevenueKpiCards();
 
-        // Thanh công cụ lọc
-        HBox pnlToolbar = buildSearchToolbar();
+        // Thanh công cụ lọc: Tuân thủ "1 màn hình 1 chức năng" - chỉ lọc theo ngày/thời gian, KHÔNG có tìm kiếm theo tên
+        HBox pnlToolbar = buildRevenueFilterToolbar();
 
         // Bảng hóa đơn
         tblInvoices = buildInvoiceTable();
@@ -648,6 +678,167 @@ public class InvoiceView extends VBox {
         pnlToolbar.getChildren().addAll(lblSearchIcon, txtSearch, new Separator(javafx.geometry.Orientation.VERTICAL),
                 cboStatusFilter, lblFrom, dtpFromDate, lblTo, dtpToDate, btnSearch);
         return pnlToolbar;
+    }
+
+    private HBox buildRevenueFilterToolbar() {
+        HBox pnlToolbar = new HBox(12);
+        pnlToolbar.setAlignment(Pos.CENTER_LEFT);
+        pnlToolbar.setPadding(new Insets(12, 16, 12, 16));
+        pnlToolbar.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e5e7eb; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+
+        Label lblQuickTime = new Label("📅 Kỳ thống kê:");
+        lblQuickTime.setStyle("-fx-font-size: 12px; -fx-text-fill: #374151; -fx-font-weight: bold;");
+
+        cboQuickTimeFilter = new ComboBox<>(FXCollections.observableArrayList(
+                "Tất cả",
+                "Hôm nay",
+                "7 ngày gần đây",
+                "Tháng này",
+                "Tháng trước",
+                "Năm nay"
+        ));
+        cboQuickTimeFilter.setValue("Tất cả");
+        cboQuickTimeFilter.setPrefWidth(140);
+        cboQuickTimeFilter.setStyle("-fx-background-color: #f9fafb; -fx-border-color: #d1d5db; -fx-border-radius: 6px;");
+        cboQuickTimeFilter.valueProperty().addListener((obs, o, n) -> xuLyChonMocThoiGianNhanh(n));
+
+        Label lblFrom = new Label("Từ ngày:");
+        lblFrom.setStyle("-fx-font-size: 12px; -fx-text-fill: #4b5563; -fx-font-weight: 600;");
+        dtpFromDate = new DatePicker();
+        dtpFromDate.setPrefWidth(130);
+        dtpFromDate.valueProperty().addListener((obs, o, n) -> apDungBoLocHoaDon());
+
+        Label lblTo = new Label("Đến:");
+        lblTo.setStyle("-fx-font-size: 12px; -fx-text-fill: #4b5563; -fx-font-weight: 600;");
+        dtpToDate = new DatePicker();
+        dtpToDate.setPrefWidth(130);
+        dtpToDate.valueProperty().addListener((obs, o, n) -> apDungBoLocHoaDon());
+
+        Label lblStatus = new Label("Trạng thái:");
+        lblStatus.setStyle("-fx-font-size: 12px; -fx-text-fill: #4b5563; -fx-font-weight: 600;");
+        cboStatusFilter = new ComboBox<>(FXCollections.observableArrayList(
+                "Tất cả trạng thái",
+                "Đã thanh toán",
+                "Chưa thanh toán",
+                "Đã hủy"
+        ));
+        cboStatusFilter.setValue("Tất cả trạng thái");
+        cboStatusFilter.setPrefWidth(150);
+        cboStatusFilter.setStyle("-fx-background-color: #f9fafb; -fx-border-color: #d1d5db; -fx-border-radius: 6px;");
+        cboStatusFilter.valueProperty().addListener((obs, o, n) -> apDungBoLocHoaDon());
+
+        Button btnFilter = new Button("📊 Lọc thống kê");
+        btnFilter.getStyleClass().add("customer-primary");
+        btnFilter.setMinWidth(Region.USE_PREF_SIZE);
+        btnFilter.setOnAction(e -> apDungBoLocHoaDon());
+
+        Button btnReset = new Button("Đặt lại");
+        btnReset.getStyleClass().add("customer-secondary");
+        btnReset.setMinWidth(Region.USE_PREF_SIZE);
+        btnReset.setOnAction(e -> {
+            cboQuickTimeFilter.setValue("Tất cả");
+            dtpFromDate.setValue(null);
+            dtpToDate.setValue(null);
+            cboStatusFilter.setValue("Tất cả trạng thái");
+            apDungBoLocHoaDon();
+        });
+
+        pnlToolbar.getChildren().addAll(lblQuickTime, cboQuickTimeFilter,
+                new Separator(javafx.geometry.Orientation.VERTICAL),
+                lblFrom, dtpFromDate, lblTo, dtpToDate,
+                new Separator(javafx.geometry.Orientation.VERTICAL),
+                lblStatus, cboStatusFilter, btnFilter, btnReset);
+
+        return pnlToolbar;
+    }
+
+    private void xuLyChonMocThoiGianNhanh(String choice) {
+        if (choice == null || dtpFromDate == null || dtpToDate == null) return;
+        LocalDate today = LocalDate.now();
+        switch (choice) {
+            case "Hôm nay" -> {
+                dtpFromDate.setValue(today);
+                dtpToDate.setValue(today);
+            }
+            case "7 ngày gần đây" -> {
+                dtpFromDate.setValue(today.minusDays(6));
+                dtpToDate.setValue(today);
+            }
+            case "Tháng này" -> {
+                dtpFromDate.setValue(today.withDayOfMonth(1));
+                dtpToDate.setValue(today.withDayOfMonth(today.lengthOfMonth()));
+            }
+            case "Tháng trước" -> {
+                LocalDate lastMonth = today.minusMonths(1);
+                dtpFromDate.setValue(lastMonth.withDayOfMonth(1));
+                dtpToDate.setValue(lastMonth.withDayOfMonth(lastMonth.lengthOfMonth()));
+            }
+            case "Năm nay" -> {
+                dtpFromDate.setValue(today.withDayOfYear(1));
+                dtpToDate.setValue(today.withDayOfYear(today.lengthOfYear()));
+            }
+            default -> { // "Tất cả"
+                dtpFromDate.setValue(null);
+                dtpToDate.setValue(null);
+            }
+        }
+    }
+
+    private void xuLyXuatBaoCao() {
+        if (filteredInvoiceList.isEmpty()) {
+            hienThiCanhBao("Xuất báo cáo", "Không có dữ liệu hóa đơn trong kỳ báo cáo để xuất!");
+            return;
+        }
+
+        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+        fileChooser.setTitle("Lưu báo cáo doanh thu");
+        fileChooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("CSV (*.csv)", "*.csv"));
+        fileChooser.setInitialFileName("BaoCaoDoanhThu_" + LocalDate.now().toString() + ".csv");
+        java.io.File file = fileChooser.showSaveDialog(getScene().getWindow());
+
+        if (file != null) {
+            try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(file), java.nio.charset.StandardCharsets.UTF_8))) {
+                pw.write('\ufeff'); // UTF-8 BOM
+                pw.println("BÁO CÁO THỐNG KÊ DOANH THU BÁN HÀNG");
+                pw.println("Ngày xuất: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
+                String fromStr = dtpFromDate != null && dtpFromDate.getValue() != null ? dtpFromDate.getValue().format(dateFormatter) : "Từ trước";
+                String toStr = dtpToDate != null && dtpToDate.getValue() != null ? dtpToDate.getValue().format(dateFormatter) : "Đến nay";
+                pw.println("Khoảng thời gian: " + fromStr + " - " + toStr);
+                pw.println();
+
+                double totalRev = filteredInvoiceList.stream()
+                        .filter(i -> i.getStatus() == Invoice.Status.PAID)
+                        .mapToDouble(Invoice::getTongTien).sum();
+                long paidCount = filteredInvoiceList.stream().filter(i -> i.getStatus() == Invoice.Status.PAID).count();
+                long cancelCount = filteredInvoiceList.stream().filter(i -> i.getStatus() == Invoice.Status.CANCELLED).count();
+                double avg = paidCount > 0 ? totalRev / paidCount : 0;
+
+                pw.println("Tổng doanh thu thực tế (VNĐ):," + (long) totalRev);
+                pw.println("Số lượng hóa đơn đã thanh toán:," + paidCount);
+                pw.println("Số lượng hóa đơn đã hủy:," + cancelCount);
+                pw.println("Giá trị trung bình/HĐ (VNĐ):," + (long) avg);
+                pw.println();
+
+                pw.println("STT,Mã hóa đơn,Ngày lập,Khách hàng,Số điện thoại,Thu ngân,Thanh toán,Tổng tiền (VNĐ),Trạng thái");
+                int index = 1;
+                for (Invoice inv : filteredInvoiceList) {
+                    pw.printf("%d,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",%.0f,\"%s\"%n",
+                            index++,
+                            inv.getMaHoaDon(),
+                            inv.getNgayLap() != null ? inv.getNgayLap().format(dateFormatter) : "",
+                            inv.getTenKhachHang() != null ? inv.getTenKhachHang() : "",
+                            inv.getSoDienThoaiKhachHang() != null ? inv.getSoDienThoaiKhachHang() : "",
+                            inv.getTenNhanVien() != null ? inv.getTenNhanVien() : "",
+                            inv.getHinhThucThanhToan() != null ? inv.getHinhThucThanhToan() : "",
+                            inv.getTongTien(),
+                            inv.getStatus().getDisplayName()
+                    );
+                }
+                hienThiThongBaoThanhCong("Xuất báo cáo thành công", "Đã lưu báo cáo doanh thu ra tệp tin:\n" + file.getAbsolutePath());
+            } catch (Exception ex) {
+                hienThiThongBaoLoi("Lỗi xuất file", "Không thể ghi tệp báo cáo: " + ex.getMessage());
+            }
+        }
     }
 
     private TableView<Invoice> buildInvoiceTable() {
@@ -748,19 +939,26 @@ public class InvoiceView extends VBox {
         HBox pnlStats = new HBox(16);
         pnlStats.setAlignment(Pos.CENTER_LEFT);
 
-        VBox cardTotalRev = createKpiCard("Tổng doanh thu thực tế", "0 đ", "#f0fdf4", "#15803d");
-        VBox cardPaidCount = createKpiCard("Hóa đơn đã thanh toán", "0", "#eff6ff", "#1d4ed8");
-        VBox cardCancelCount = createKpiCard("Hóa đơn đã hủy", "0", "#fee2e2", "#b91c1c");
+        lblKpiTotalRevenue = new Label("0 đ");
+        lblKpiPaidCount = new Label("0");
+        lblKpiCancelCount = new Label("0");
+        lblKpiAvgOrderValue = new Label("0 đ");
+
+        VBox cardTotalRev = createKpiCardNode("Tổng doanh thu thực tế", lblKpiTotalRevenue, "#f0fdf4", "#15803d");
+        VBox cardPaidCount = createKpiCardNode("Hóa đơn đã thanh toán", lblKpiPaidCount, "#eff6ff", "#1d4ed8");
+        VBox cardCancelCount = createKpiCardNode("Hóa đơn đã hủy", lblKpiCancelCount, "#fee2e2", "#b91c1c");
+        VBox cardAvgOrder = createKpiCardNode("Giá trị trung bình / HĐ", lblKpiAvgOrderValue, "#fefce8", "#a16207");
 
         HBox.setHgrow(cardTotalRev, Priority.ALWAYS);
         HBox.setHgrow(cardPaidCount, Priority.ALWAYS);
         HBox.setHgrow(cardCancelCount, Priority.ALWAYS);
+        HBox.setHgrow(cardAvgOrder, Priority.ALWAYS);
 
-        pnlStats.getChildren().addAll(cardTotalRev, cardPaidCount, cardCancelCount);
+        pnlStats.getChildren().addAll(cardTotalRev, cardPaidCount, cardCancelCount, cardAvgOrder);
         return pnlStats;
     }
 
-    private VBox createKpiCard(String title, String initialValue, String bg, String text) {
+    private VBox createKpiCardNode(String title, Label lblValue, String bg, String text) {
         VBox card = new VBox(6);
         card.setPadding(new Insets(16));
         card.setStyle(String.format("-fx-background-color: %s; -fx-border-radius: 8px; -fx-background-radius: 8px;", bg));
@@ -768,11 +966,9 @@ public class InvoiceView extends VBox {
         Label lblCardTitle = new Label(title);
         lblCardTitle.setStyle(String.format("-fx-font-size: 12.5px; -fx-font-weight: 600; -fx-text-fill: %s;", text));
 
-        Label lblCardVal = new Label(initialValue);
-        lblCardVal.setId("kpi_" + title);
-        lblCardVal.setStyle(String.format("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: %s;", text));
+        lblValue.setStyle(String.format("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: %s;", text));
 
-        card.getChildren().addAll(lblCardTitle, lblCardVal);
+        card.getChildren().addAll(lblCardTitle, lblValue);
         return card;
     }
 
@@ -792,7 +988,7 @@ public class InvoiceView extends VBox {
                 List<Invoice> list = invoiceController.getAllInvoices();
                 Platform.runLater(() -> {
                     masterInvoiceList.setAll(list);
-                    capNhatTrangThaiVaKpi();
+                    apDungBoLocHoaDon();
                     isBusy.set(false);
                 });
             } catch (Exception ex) {
@@ -846,22 +1042,25 @@ public class InvoiceView extends VBox {
                     filteredInvoiceList.size(), masterInvoiceList.size()));
         }
 
-        // Cập nhật thẻ KPI
-        double totalRevenue = masterInvoiceList.stream()
+        // Cập nhật các thẻ KPI dựa trên dữ liệu đang hiển thị theo kỳ thống kê
+        double totalRevenue = filteredInvoiceList.stream()
                 .filter(i -> i.getStatus() == Invoice.Status.PAID)
                 .mapToDouble(Invoice::getTongTien).sum();
-        long paidCount = masterInvoiceList.stream().filter(i -> i.getStatus() == Invoice.Status.PAID).count();
-        long cancelCount = masterInvoiceList.stream().filter(i -> i.getStatus() == Invoice.Status.CANCELLED).count();
+        long paidCount = filteredInvoiceList.stream().filter(i -> i.getStatus() == Invoice.Status.PAID).count();
+        long cancelCount = filteredInvoiceList.stream().filter(i -> i.getStatus() == Invoice.Status.CANCELLED).count();
+        double avgOrder = paidCount > 0 ? (totalRevenue / paidCount) : 0;
 
-        lookupAndSetKpi("kpi_Tổng doanh thu thực tế", currencyFormat.format(totalRevenue));
-        lookupAndSetKpi("kpi_Hóa đơn đã thanh toán", String.valueOf(paidCount));
-        lookupAndSetKpi("kpi_Hóa đơn đã hủy", String.valueOf(cancelCount));
-    }
-
-    private void lookupAndSetKpi(String id, String text) {
-        javafx.scene.Node node = lookup("#" + id);
-        if (node instanceof Label label) {
-            label.setText(text);
+        if (lblKpiTotalRevenue != null) {
+            lblKpiTotalRevenue.setText(currencyFormat.format(totalRevenue));
+        }
+        if (lblKpiPaidCount != null) {
+            lblKpiPaidCount.setText(String.valueOf(paidCount));
+        }
+        if (lblKpiCancelCount != null) {
+            lblKpiCancelCount.setText(String.valueOf(cancelCount));
+        }
+        if (lblKpiAvgOrderValue != null) {
+            lblKpiAvgOrderValue.setText(currencyFormat.format(avgOrder));
         }
     }
 
@@ -929,21 +1128,92 @@ public class InvoiceView extends VBox {
             return;
         }
 
-        ChoiceDialog<CareService> dlg = new ChoiceDialog<>(activeServices.get(0), activeServices);
-        dlg.setTitle("Chọn Dịch Vụ Chăm Sóc - Happy Tails");
-        dlg.setHeaderText("Chọn dịch vụ chăm sóc thú cưng đưa vào hóa đơn");
-        dlg.setContentText("Dịch vụ:");
+        // Mở hộp thoại chọn dịch vụ với cơ chế tính giá tự động theo cân nặng và phân loại 3 bậc
+        InvoiceItem srvItem = ServicePickerDialog.showDialog(getScene().getWindow(), selectedCustomer, activeServices);
+        if (srvItem != null) {
+            // Kiểm tra ràng buộc duy nhất của dịch vụ trong bảng ChiTietHoaDon_DichVu (maHoaDon, maDichVu)
+            InvoiceItem existingService = null;
+            for (InvoiceItem item : currentCartItems) {
+                if (item.isService() && item.getMaDichVu().equals(srvItem.getMaDichVu())) {
+                    existingService = item;
+                    break;
+                }
+            }
 
-        Optional<CareService> chosen = dlg.showAndWait();
-        chosen.ifPresent(service -> {
-            // Giá dịch vụ mặc định lấy theo giá bậc Nhỏ nếu có, hoặc giá lớn hơn 0 đầu tiên
-            double price = service.getGiaNho() > 0 ? service.getGiaNho() :
-                    (service.getGiaVua() > 0 ? service.getGiaVua() : service.getGiaLon());
+            if (existingService != null) {
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                confirm.setTitle("Dịch vụ đã có trong hóa đơn - Happy Tails");
+                confirm.setHeaderText("Dịch vụ [" + srvItem.getTenHang() + "] đã tồn tại trong giỏ hàng.");
+                confirm.setContentText("Bạn có muốn cập nhật lại cân nặng và mức giá mới này cho dịch vụ không?");
+                confirm.initOwner(getScene().getWindow());
 
-            InvoiceItem srvItem = InvoiceItem.createServiceItem(service.getMaDichVu(), service.getTenDichVu(), price);
+                Optional<ButtonType> choice = confirm.showAndWait();
+                if (choice.isPresent() && choice.get() == ButtonType.OK) {
+                    existingService.setTenHang(srvItem.getTenHang());
+                    existingService.setDonGia(srvItem.getDonGia());
+                    tblCartItems.refresh();
+                    tinhToanTongTien();
+                }
+                return;
+            }
+
             currentCartItems.add(srvItem);
+            tblCartItems.refresh();
             tinhToanTongTien();
-        });
+        }
+    }
+
+    private void xuLyChonLichHen() {
+        com.petshop.dao.InvoiceDao.AppointmentBillingItem apt = AppointmentPickerDialog.showDialog(getScene().getWindow());
+        if (apt == null) return;
+
+        // 1. Tự động liên kết khách hàng nếu có
+        if (apt.getMaKhachHang() != null && !apt.getMaKhachHang().isBlank()) {
+            try {
+                com.petshop.dao.CustomerDao custDao = new com.petshop.dao.CustomerDao();
+                Customer c = custDao.findById(apt.getMaKhachHang());
+                if (c != null) {
+                    this.selectedCustomer = c;
+                    txtCustomerName.setText(c.getHoTen() + " (" + c.getSoDienThoai() + ")");
+                } else {
+                    txtCustomerName.setText(apt.getTenKhachHang() + " (" + apt.getSoDienThoaiKhachHang() + ")");
+                }
+            } catch (Exception ex) {
+                txtCustomerName.setText(apt.getTenKhachHang() + " (" + apt.getSoDienThoaiKhachHang() + ")");
+            }
+        }
+
+        // 2. Ghi nhận mã lịch hẹn liên kết
+        this.selectedAppointmentId = apt.getMaLichHen();
+        if (lblLinkedAppointment != null) {
+            lblLinkedAppointment.setText(apt.getMaLichHen() + " (" + apt.getTenKhachHang() + ")");
+            lblLinkedAppointment.setVisible(true);
+        }
+
+        // 3. Đưa dịch vụ của lịch hẹn vào giỏ hàng với giá và cân nặng đã chốt
+        String sizeBracket = apt.getCanNang() < 5 ? "Nhỏ" : (apt.getCanNang() <= 10 ? "Vừa" : "Lớn");
+        String tenHang = apt.getTenDichVu() + " (" + apt.getTenThuCung() + " · " + apt.getCanNang() + "kg - Bậc " + sizeBracket + ")";
+        InvoiceItem aptItem = InvoiceItem.createServiceItem(apt.getMaDichVu(), tenHang, apt.getDonGia());
+
+        InvoiceItem existing = null;
+        for (InvoiceItem item : currentCartItems) {
+            if (item.isService() && item.getMaDichVu().equals(aptItem.getMaDichVu())) {
+                existing = item;
+                break;
+            }
+        }
+
+        if (existing != null) {
+            existing.setTenHang(aptItem.getTenHang());
+            existing.setDonGia(aptItem.getDonGia());
+        } else {
+            currentCartItems.add(aptItem);
+        }
+
+        tblCartItems.refresh();
+        tinhToanTongTien();
+        hienThiThongBaoThanhCong("Đã nạp lịch hẹn",
+                "Đã đưa dịch vụ của lịch hẹn [" + apt.getMaLichHen() + "] vào hóa đơn thành công!");
     }
 
     private void xuLyXoaDong() {
@@ -1064,6 +1334,7 @@ public class InvoiceView extends VBox {
         try {
             Invoice inv = new Invoice();
             inv.setMaHoaDon(txtInvoiceId.getText().trim());
+            inv.setMaLichHen(selectedAppointmentId);
             inv.setMaNhanVien(currentUser != null ? currentUser.getMaNhanVien() : "NV-20261019-000001");
             inv.setTenNhanVien(txtCashier.getText().trim());
             inv.setMaKhachHang(selectedCustomer != null ? selectedCustomer.getMaKhachHang() : null);
@@ -1090,6 +1361,7 @@ public class InvoiceView extends VBox {
 
                 lamMoiDonHang();
                 taiDuLieuTuDatabase();
+                com.petshop.view.MainDashboard.requestOverviewRefresh();
             }
         } catch (Exception ex) {
             hienThiThongBaoLoi("Lỗi lưu hóa đơn", ex.getMessage());
@@ -1099,6 +1371,11 @@ public class InvoiceView extends VBox {
     private void lamMoiDonHang() {
         txtInvoiceId.setText(invoiceController.generateNextInvoiceId());
         currentCartItems.clear();
+        selectedAppointmentId = null;
+        if (lblLinkedAppointment != null) {
+            lblLinkedAppointment.setVisible(false);
+            lblLinkedAppointment.setText("");
+        }
         selectedCustomer = null;
         txtCustomerName.setText("Khách vãng lai");
         selectedPromotion = null;
@@ -1166,6 +1443,7 @@ public class InvoiceView extends VBox {
                     hienThiThongBaoThanhCong("Hủy hóa đơn thành công",
                             "Hóa đơn [" + selected.getMaHoaDon() + "] đã được hủy và tồn kho đã được hoàn lại thành công.");
                     taiDuLieuTuDatabase();
+                    com.petshop.view.MainDashboard.requestOverviewRefresh();
                 }
             } catch (Exception ex) {
                 hienThiThongBaoLoi("Lỗi hủy hóa đơn", ex.getMessage());

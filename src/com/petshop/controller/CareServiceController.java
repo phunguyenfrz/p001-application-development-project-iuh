@@ -66,5 +66,13 @@ public class CareServiceController {
     public String generateNextPricingId() {
         return careServiceService.generateNextPricingId();
     }
+
+    public double getPriceForWeight(String maDichVu, double canNang, java.time.LocalDate date) {
+        return careServiceService.getPriceForWeight(maDichVu, canNang, date);
+    }
+
+    public double getPriceForSize(String maDichVu, String size, java.time.LocalDate date) {
+        return careServiceService.getPriceForSize(maDichVu, size, date);
+    }
 }
 

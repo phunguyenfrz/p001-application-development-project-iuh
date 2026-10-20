@@ -50,6 +50,20 @@ public class PetService {
     }
 
     /**
+     * Lấy danh sách thú cưng của một khách hàng.
+     *
+     * @param customer_id Mã khách hàng.
+     * @return Danh sách thú cưng.
+     */
+    public List<Pet> findPetsByCustomerId(String customer_id) {
+        try {
+            return pet_dao.findPetsByCustomerId(customer_id);
+        } catch (SQLException exception) {
+            throw translateSqlError(exception);
+        }
+    }
+
+    /**
      * Thêm hồ sơ thú cưng mới.
      *
      * @param pet Thông tin thú cưng nhập trên form.

@@ -210,6 +210,7 @@ public class AppointmentModuleView extends VBox {
                 dao.createAppointment(form.customer().id(), form.pet().id(), form.employee().id(), form.service().id(),
                         form.weight(), form.date(), form.time(), form.note());
                 loadAppointments();
+                com.petshop.view.MainDashboard.requestOverviewRefresh();
             } catch (RuntimeException exception) {
                 showAlert(Alert.AlertType.ERROR, "Không đặt được lịch", exception.getMessage());
             }
@@ -237,6 +238,7 @@ public class AppointmentModuleView extends VBox {
         try {
             dao.updateAppointmentStatus(selected.id(), status);
             loadAppointments();
+            com.petshop.view.MainDashboard.requestOverviewRefresh();
         } catch (RuntimeException exception) {
             showAlert(Alert.AlertType.ERROR, "Không cập nhật được", exception.getMessage());
         }
@@ -277,6 +279,7 @@ public class AppointmentModuleView extends VBox {
             try {
                 dao.rescheduleAppointment(selected.id(), form.date(), form.time());
                 loadAppointments();
+                com.petshop.view.MainDashboard.requestOverviewRefresh();
             } catch (RuntimeException exception) {
                 showAlert(Alert.AlertType.ERROR, "Không dời được lịch", exception.getMessage());
             }

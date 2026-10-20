@@ -17,7 +17,12 @@ import com.petshop.view.returnnote.ReturnNoteProcessView;
 import com.petshop.view.shift.ShiftAssignmentView;
 import com.petshop.view.shift.ShiftCalendarView;
 import com.petshop.view.shift.ShiftUpdateView;
+import com.petshop.dao.DashboardDao;
 import com.petshop.view.supplier.SupplierView;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
@@ -30,8 +35,11 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Ellipse;
 import javafx.scene.shape.SVGPath;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
+import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +49,17 @@ import java.util.List;
  * Sidebar được dựng tự động 100% từ MenuRegistry theo đúng 11 mục đối tượng.
  */
 public class MainDashboard extends BorderPane {
+
+    private static MainDashboard instance;
+    private final DashboardDao dashboardDao = new DashboardDao();
+    private final DecimalFormat currencyFormat = new DecimalFormat("#,##0 đ");
+    private Timeline overviewTimeline;
+
+    private Label lblRevenueValue;
+    private Label lblAppointmentValue;
+    private Label lblStockValue;
+    private Label lblLastUpdated;
+    private VBox pnlRecentActivityContainer;
 
     private final Stage stage;
     private final User user;
@@ -64,6 +83,7 @@ public class MainDashboard extends BorderPane {
     private TextField txtSearch;
 
     public MainDashboard(Stage stage) {
+        instance = this;
         this.stage = stage;
         this.authService = new AuthService();
         this.user = authService.getCurrentUser();
@@ -472,6 +492,11 @@ public class MainDashboard extends BorderPane {
     // 4. ĐIỀU HƯỚNG MÀN HÌNH MODULE & MÀN HÌNH TỔNG QUAN
     // =========================================================================
     private void openModuleScreen(MenuRegistry.MenuGroup menu, MenuRegistry.MenuAction action) {
+        // Tắt timeline auto-refresh khi rời khỏi màn Tổng quan
+        if (overviewTimeline != null) {
+            overviewTimeline.stop();
+        }
+
         // Kiểm tra phân quyền ở tầng Service trước khi mở màn hình
         authService.checkPermission(action.getId());
 
@@ -514,8 +539,28 @@ public class MainDashboard extends BorderPane {
         pnlContentArea.getChildren().setAll(targetView);
     }
 
+    /**
+     * Phương thức tĩnh phát tín hiệu khi có dữ liệu mới (Hóa đơn, Lịch hẹn...) để Tổng quan cập nhật ngay.
+     */
+    public static void requestOverviewRefresh() {
+        if (instance != null) {
+            Platform.runLater(instance::refreshOverviewData);
+        }
+    }
+
     private void showOverview() {
         pnlContentArea.getChildren().setAll(createScrollableOverview());
+
+        // Kích hoạt Timeline tự động cập nhật số liệu theo thời gian thực mỗi 5 giây
+        if (overviewTimeline != null) {
+            overviewTimeline.stop();
+        }
+        overviewTimeline = new Timeline(new KeyFrame(Duration.seconds(5), e -> refreshOverviewData()));
+        overviewTimeline.setCycleCount(Animation.INDEFINITE);
+        overviewTimeline.play();
+
+        // Tải dữ liệu ngay lập tức
+        refreshOverviewData();
     }
 
     private ScrollPane createScrollableOverview() {
@@ -537,11 +582,21 @@ public class MainDashboard extends BorderPane {
         Region pnlHeaderSpacer = new Region();
         HBox.setHgrow(pnlHeaderSpacer, Priority.ALWAYS);
 
+        lblLastUpdated = new Label("Đang kết nối CSDL...");
+        lblLastUpdated.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #6e7c70;");
+
+        Button btnRefreshNow = new Button("🔄 Làm mới");
+        btnRefreshNow.setStyle("-fx-background-color: #ffffff; -fx-border-color: #d1d5db; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-cursor: hand; -fx-padding: 4px 10px; -fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: #374151;");
+        btnRefreshNow.setOnAction(e -> refreshOverviewData());
+
         String todayStr = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
         Label lblDate = new Label(todayStr + "  📅");
         lblDate.getStyleClass().add("date-badge");
 
-        pnlWelcomeHeader.getChildren().addAll(pnlWelcomeTextBox, pnlHeaderSpacer, lblDate);
+        HBox pnlHeaderActions = new HBox(10, lblLastUpdated, btnRefreshNow, lblDate);
+        pnlHeaderActions.setAlignment(Pos.CENTER_RIGHT);
+
+        pnlWelcomeHeader.getChildren().addAll(pnlWelcomeTextBox, pnlHeaderSpacer, pnlHeaderActions);
 
         // Thẻ KPI
         HBox pnlStatsRow = createStatsRow();
@@ -549,11 +604,15 @@ public class MainDashboard extends BorderPane {
         // Hoạt động gần đây
         VBox pnlSummaryPanel = new VBox(14);
         pnlSummaryPanel.getStyleClass().add("chart-panel");
-        Label lblRecentActivityTitle = new Label("Hoạt động gần đây");
+        Label lblRecentActivityTitle = new Label("Hoạt động giao dịch gần đây");
         lblRecentActivityTitle.getStyleClass().add("panel-title");
-        Label lblRecentActivitySubtitle = new Label("Chưa có hoạt động hôm nay.");
+
+        pnlRecentActivityContainer = new VBox(10);
+        Label lblRecentActivitySubtitle = new Label("Đang tải dữ liệu hoạt động gần đây...");
         lblRecentActivitySubtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #7d8f82;");
-        pnlSummaryPanel.getChildren().addAll(lblRecentActivityTitle, lblRecentActivitySubtitle);
+        pnlRecentActivityContainer.getChildren().add(lblRecentActivitySubtitle);
+
+        pnlSummaryPanel.getChildren().addAll(lblRecentActivityTitle, pnlRecentActivityContainer);
 
         pnlOverviewContent.getChildren().addAll(pnlWelcomeHeader, pnlStatsRow, pnlSummaryPanel);
 
@@ -573,7 +632,7 @@ public class MainDashboard extends BorderPane {
         HBox.setHgrow(pnlRevenueCard, Priority.ALWAYS);
         Label lblRevenueTitle = new Label("📈  Doanh thu hôm nay");
         lblRevenueTitle.getStyleClass().add("stat-title-white");
-        Label lblRevenueValue = new Label("0 đ");
+        lblRevenueValue = new Label("0 đ");
         lblRevenueValue.getStyleClass().add("stat-value-white");
         Label lblRevenueDescription = new Label("Tổng thanh toán trong ngày");
         lblRevenueDescription.getStyleClass().add("stat-sub-white");
@@ -585,19 +644,19 @@ public class MainDashboard extends BorderPane {
         HBox.setHgrow(pnlAppointmentCard, Priority.ALWAYS);
         Label lblAppointmentTitle = new Label("📅  Lịch hẹn hôm nay");
         lblAppointmentTitle.getStyleClass().add("stat-title");
-        Label lblAppointmentValue = new Label("0");
+        lblAppointmentValue = new Label("0");
         lblAppointmentValue.getStyleClass().add("stat-value");
         Label lblAppointmentDescription = new Label("Lịch hẹn cần phục vụ");
         lblAppointmentDescription.getStyleClass().add("stat-sub");
         pnlAppointmentCard.getChildren().addAll(lblAppointmentTitle, lblAppointmentValue, lblAppointmentDescription);
 
-        // Thẻ 3: Hết hàng (hiển thị '0' thay vì '00')
+        // Thẻ 3: Hết hàng
         VBox pnlStockCard = new VBox(6);
         pnlStockCard.getStyleClass().add("stat-card");
         HBox.setHgrow(pnlStockCard, Priority.ALWAYS);
         Label lblStockTitle = new Label("⚠  Sản phẩm sắp hết hàng");
         lblStockTitle.getStyleClass().add("stat-title");
-        Label lblStockValue = new Label("0");
+        lblStockValue = new Label("0");
         lblStockValue.getStyleClass().add("stat-value");
         Label lblStockDescription = new Label("Tồn kho dưới ngưỡng an toàn");
         lblStockDescription.getStyleClass().add("stat-sub");
@@ -605,6 +664,107 @@ public class MainDashboard extends BorderPane {
 
         pnlStatsCards.getChildren().addAll(pnlRevenueCard, pnlAppointmentCard, pnlStockCard);
         return pnlStatsCards;
+    }
+
+    /**
+     * Tải dữ liệu thống kê từ CSDL và cập nhật giao diện theo thời gian thực.
+     */
+    public void refreshOverviewData() {
+        if (lblRevenueValue == null || lblAppointmentValue == null || lblStockValue == null) {
+            return;
+        }
+
+        new Thread(() -> {
+            try {
+                DashboardDao.DashboardStats stats = dashboardDao.getTodayStats();
+                List<DashboardDao.RecentActivity> activities = dashboardDao.getRecentActivities(6);
+
+                Platform.runLater(() -> {
+                    lblRevenueValue.setText(currencyFormat.format(stats.todayRevenue()));
+                    lblAppointmentValue.setText(String.valueOf(stats.todayAppointments()));
+                    lblStockValue.setText(String.valueOf(stats.lowStockProducts()));
+                    if (lblLastUpdated != null) {
+                        lblLastUpdated.setText("Cập nhật: " + LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+                    }
+                    updateRecentActivitiesUI(activities);
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    if (lblLastUpdated != null) {
+                        lblLastUpdated.setText("Lỗi cập nhật: " + ex.getMessage());
+                    }
+                });
+            }
+        }).start();
+    }
+
+    /**
+     * Dựng danh sách thẻ hoạt động giao dịch gần đây.
+     */
+    private void updateRecentActivitiesUI(List<DashboardDao.RecentActivity> activities) {
+        if (pnlRecentActivityContainer == null) return;
+        pnlRecentActivityContainer.getChildren().clear();
+
+        if (activities == null || activities.isEmpty()) {
+            Label lblEmpty = new Label("Chưa có hoạt động giao dịch nào trong hệ thống.");
+            lblEmpty.setStyle("-fx-font-size: 13px; -fx-text-fill: #7d8f82;");
+            pnlRecentActivityContainer.getChildren().add(lblEmpty);
+            return;
+        }
+
+        DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm");
+        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+        for (DashboardDao.RecentActivity act : activities) {
+            HBox itemRow = new HBox(12);
+            itemRow.setAlignment(Pos.CENTER_LEFT);
+            itemRow.setPadding(new Insets(10, 14, 10, 14));
+            itemRow.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e5e7eb; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+
+            // Biểu tượng loại giao dịch
+            StackPane iconCircle = new StackPane();
+            iconCircle.setPrefSize(36, 36);
+            boolean isInvoice = "INVOICE".equalsIgnoreCase(act.type());
+            Circle bg = new Circle(18, Color.web(isInvoice ? "#dcfce7" : "#dbeafe"));
+            Label iconLbl = new Label(isInvoice ? "🧾" : "📅");
+            iconLbl.setStyle("-fx-font-size: 15px;");
+            iconCircle.getChildren().addAll(bg, iconLbl);
+
+            // Tiêu đề và thông tin chi tiết
+            VBox textCol = new VBox(2);
+            HBox.setHgrow(textCol, Priority.ALWAYS);
+            Label titleLbl = new Label((isInvoice ? "Hóa đơn #" : "Lịch hẹn #") + act.code() + " · " + act.customerName());
+            titleLbl.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1f2937;");
+
+            String timeStr = (act.time() != null && !act.time().equals(LocalTime.MIN)) ? " lúc " + act.time().format(timeFmt) : "";
+            Label subLbl = new Label("Nhân viên: " + act.employeeName() + " · " + act.date().format(dateFmt) + timeStr);
+            subLbl.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #6b7280;");
+            textCol.getChildren().addAll(titleLbl, subLbl);
+
+            // Cột bên phải: Số tiền và Badge trạng thái
+            VBox rightCol = new VBox(3);
+            rightCol.setAlignment(Pos.CENTER_RIGHT);
+
+            if (isInvoice) {
+                Label amountLbl = new Label(currencyFormat.format(act.amount()));
+                amountLbl.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #166534;");
+                rightCol.getChildren().add(amountLbl);
+            }
+
+            Label statusBadge = new Label(act.status());
+            statusBadge.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 2px 8px; -fx-background-radius: 10px;");
+            if ("Đã thanh toán".equalsIgnoreCase(act.status()) || "Hoàn thành".equalsIgnoreCase(act.status())) {
+                statusBadge.setStyle(statusBadge.getStyle() + "-fx-background-color: #dcfce7; -fx-text-fill: #15803d;");
+            } else if ("Đã hủy".equalsIgnoreCase(act.status())) {
+                statusBadge.setStyle(statusBadge.getStyle() + "-fx-background-color: #fee2e2; -fx-text-fill: #b91c1c;");
+            } else {
+                statusBadge.setStyle(statusBadge.getStyle() + "-fx-background-color: #fef9c3; -fx-text-fill: #a16207;");
+            }
+            rightCol.getChildren().add(statusBadge);
+
+            itemRow.getChildren().addAll(iconCircle, textCol, rightCol);
+            pnlRecentActivityContainer.getChildren().add(itemRow);
+        }
     }
 
     // =========================================================================

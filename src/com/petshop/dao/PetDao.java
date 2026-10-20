@@ -122,6 +122,54 @@ public class PetDao {
     }
 
     /**
+     * Lấy danh sách thú cưng đang hoạt động thuộc sở hữu của một khách hàng.
+     *
+     * @param customer_id Mã khách hàng.
+     * @return Danh sách thú cưng của khách hàng đó.
+     * @throws SQLException Khi truy vấn CSDL thất bại.
+     */
+    public List<Pet> findPetsByCustomerId(String customer_id) throws SQLException {
+        List<Pet> pet_list = new ArrayList<>();
+        if (customer_id == null || customer_id.isBlank()) {
+            return pet_list;
+        }
+
+        String sql_query = """
+                SELECT tc.maThuCung,
+                       tc.maKhachHang,
+                       tc.tenThuCung,
+                       tc.loaiThuCung,
+                       tc.giongLoai,
+                       tc.canNang,
+                       tc.ngaySinh,
+                       tc.diUng,
+                       tc.gioiTinh,
+                       tc.trangThai,
+                       kh.hoTen AS tenChuNuoi,
+                       kh.soDienThoai AS soDienThoaiChuNuoi
+                FROM dbo.ThuCung tc
+                JOIN dbo.KhachHang kh
+                    ON kh.maKhachHang = tc.maKhachHang
+                WHERE tc.maKhachHang = ? AND tc.trangThai = 1
+                ORDER BY tc.tenThuCung ASC
+                """;
+
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql_query)) {
+
+            statement.setString(1, customer_id);
+
+            try (ResultSet result_set = statement.executeQuery()) {
+                while (result_set.next()) {
+                    pet_list.add(mapPet(result_set));
+                }
+            }
+        }
+
+        return pet_list;
+    }
+
+    /**
      * Thêm hồ sơ thú cưng mới.
      * Mã thú cưng do tầng Service cung cấp.
      *
