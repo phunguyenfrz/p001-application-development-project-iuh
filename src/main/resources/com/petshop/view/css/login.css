@@ -1,0 +1,51 @@
+/* ==========================================================================
+   HAPPY TAILS - LOGIN STYLESHEET (MÀN HÌNH ĐĂNG NHẬP DESKTOP CHUẨN MỰC)
+   ========================================================================== */
+
+.login-root {
+    -fx-background-color: #e2e8f0;
+    -fx-alignment: center;
+}
+
+/* Hộp đăng nhập trung tâm */
+.login-box {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cbd5e1;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-padding: 24px 30px;
+    -fx-pref-width: 440px;
+    -fx-max-width: 440px;
+}
+
+.login-system-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f172a;
+    -fx-alignment: center;
+}
+
+.login-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: #64748b;
+    -fx-alignment: center;
+}
+
+.login-form-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #334155;
+}
+
+.login-error-text {
+    -fx-font-size: 12px;
+    -fx-text-fill: #dc2626;
+    -fx-font-weight: bold;
+}
+
+.login-footer-text {
+    -fx-font-size: 11px;
+    -fx-text-fill: #94a3b8;
+}
+

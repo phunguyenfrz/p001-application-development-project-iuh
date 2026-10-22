@@ -1,0 +1,143 @@
+/* ==========================================================================
+   HAPPY TAILS - BASE STYLESHEET (CHUẨN MÀN HÌNH DESKTOP DOANH NGHIỆP)
+   Quy chuẩn môn học Phát triển ứng dụng - IUH
+   ========================================================================== */
+
+.root {
+    -fx-font-family: "Segoe UI", Arial, sans-serif;
+    -fx-font-size: 13px;
+    -fx-background-color: #f4f6f8;
+}
+
+/* Nhãn thông tin (Label) */
+.label {
+    -fx-text-fill: #1f2937;
+}
+
+/* Các ô nhập liệu chuẩn (TextField, PasswordField) */
+.text-field, .password-field {
+    -fx-pref-height: 32px;
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 4px 8px;
+    -fx-font-size: 13px;
+    -fx-text-fill: #1e293b;
+    -fx-prompt-text-fill: #94a3b8;
+}
+
+.text-field:focused, .password-field:focused {
+    -fx-border-color: #0284c7;
+    -fx-background-color: #ffffff;
+}
+
+/* Ô ComboBox và DatePicker */
+.combo-box, .date-picker {
+    -fx-pref-height: 32px;
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-font-size: 13px;
+}
+
+.combo-box:focused, .date-picker:focused {
+    -fx-border-color: #0284c7;
+}
+
+/* Nút bấm chuẩn Desktop (Góc phẳng nhẹ 4px, không dùng icon emoji) */
+.button {
+    -fx-pref-height: 32px;
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 5px 16px;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #334155;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #f1f5f9;
+    -fx-border-color: #94a3b8;
+}
+
+.button:pressed {
+    -fx-background-color: #e2e8f0;
+}
+
+/* Nút chính (Primary: Thêm mới, Lưu, Đăng nhập, Xác nhận) */
+.btn-primary {
+    -fx-background-color: #0284c7;
+    -fx-border-color: #0369a1;
+    -fx-text-fill: #ffffff;
+}
+
+.btn-primary:hover {
+    -fx-background-color: #0369a1;
+}
+
+.btn-primary:pressed {
+    -fx-background-color: #075985;
+}
+
+/* Nút phụ / Nút thoát / Hủy (Secondary) */
+.btn-secondary {
+    -fx-background-color: #f8fafc;
+    -fx-border-color: #cbd5e1;
+    -fx-text-fill: #475569;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: #f1f5f9;
+    -fx-border-color: #94a3b8;
+}
+
+/* Nút Xóa / Ngừng hoạt động (Danger) */
+.btn-danger {
+    -fx-background-color: #dc2626;
+    -fx-border-color: #b91c1c;
+    -fx-text-fill: #ffffff;
+}
+
+.btn-danger:hover {
+    -fx-background-color: #b91c1c;
+}
+
+/* Bảng dữ liệu chuẩn (TableView) */
+.table-view {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+.table-view .column-header {
+    -fx-background-color: #f1f5f9;
+    -fx-border-color: transparent transparent #cbd5e1 transparent;
+    -fx-padding: 8px 6px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1e293b;
+    -fx-font-size: 12.5px;
+}
+
+.table-view .table-row-cell:odd {
+    -fx-background-color: #f8fafc;
+}
+
+.table-view .table-row-cell:even {
+    -fx-background-color: #ffffff;
+}
+
+.table-view .table-row-cell:filled:selected {
+    -fx-background-color: #e0f2fe;
+}
+
+.table-view .table-row-cell:filled:selected .table-cell {
+    -fx-text-fill: #0369a1;
+    -fx-font-weight: 600;
+}
+

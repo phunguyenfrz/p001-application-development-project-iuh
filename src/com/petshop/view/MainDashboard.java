@@ -599,9 +599,10 @@ public class MainDashboard extends BorderPane {
     private void logout() {
         authService.logout();
         stage.setTitle("Happy Tails | Đăng nhập hệ thống");
-        Scene scene = new Scene(new LoginView(stage), 600, 680);
+        Scene scene = new Scene(new LoginView(stage), 520, 400);
         scene.getStylesheets().add(getClass().getResource("/com/petshop/view/styles.css").toExternalForm());
         stage.setScene(scene);
+        stage.setResizable(false);
         stage.centerOnScreen();
     }
 
