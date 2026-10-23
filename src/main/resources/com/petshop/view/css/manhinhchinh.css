@@ -1,0 +1,297 @@
+/* ==========================================================================
+   HAPPY TAILS - CSS MÀN HÌNH CHÍNH (ManHinhChinhView)
+   ========================================================================== */
+
+.man-hinh-chinh {
+    -fx-background-color: #f4f6f8;
+}
+
+/* ==========================================================================
+   1. THANH ĐIỀU HƯỚNG BÊN TRÁI (SIDEBAR)
+   ========================================================================== */
+.thanh-dieu-huong {
+    -fx-background-color: #1e293b;
+    -fx-pref-width: 230px;
+    -fx-min-width: 230px;
+    -fx-max-width: 230px;
+}
+
+.thanh-dieu-huong-thu-gon {
+    -fx-background-color: #1e293b;
+    -fx-pref-width: 64px;
+    -fx-min-width: 64px;
+    -fx-max-width: 64px;
+}
+
+.hop-thuong-hieu {
+    -fx-padding: 16px;
+    -fx-border-color: transparent transparent #334155 transparent;
+    -fx-border-width: 1px;
+}
+
+.tieu-de-thuong-hieu {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+}
+
+.phu-de-thuong-hieu {
+    -fx-font-size: 11px;
+    -fx-text-fill: #94a3b8;
+}
+
+.nut-thu-gon {
+    -fx-background-color: transparent;
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 4px 8px;
+    -fx-cursor: hand;
+}
+
+.nut-thu-gon:hover {
+    -fx-background-color: #334155;
+    -fx-text-fill: #ffffff;
+}
+
+/* Nút điều hướng cấp 1 (Tổng quan) */
+.nut-dieu-huong {
+    -fx-pref-height: 38px;
+    -fx-background-color: transparent;
+    -fx-alignment: center-left;
+    -fx-padding: 0 16px;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #e2e8f0;
+    -fx-cursor: hand;
+}
+
+.nut-dieu-huong:hover {
+    -fx-background-color: #334155;
+    -fx-text-fill: #ffffff;
+}
+
+.nut-dieu-huong-dang-chon {
+    -fx-pref-height: 38px;
+    -fx-background-color: #0284c7;
+    -fx-alignment: center-left;
+    -fx-padding: 0 16px;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #ffffff;
+    -fx-cursor: hand;
+}
+
+/* Nút icon khi thanh điều hướng thu gọn */
+.nut-thu-gon-item {
+    -fx-pref-width: 44px;
+    -fx-pref-height: 40px;
+    -fx-background-color: transparent;
+    -fx-alignment: center;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.nut-thu-gon-item:hover {
+    -fx-background-color: #334155;
+}
+
+.nut-thu-gon-item-dang-chon {
+    -fx-pref-width: 44px;
+    -fx-pref-height: 40px;
+    -fx-background-color: #0284c7;
+    -fx-alignment: center;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+/* Mục nhóm menu cấp 1 */
+.muc-dieu-huong {
+    -fx-pref-height: 38px;
+    -fx-background-color: transparent;
+    -fx-padding: 0 16px;
+    -fx-cursor: hand;
+}
+
+.muc-dieu-huong:hover {
+    -fx-background-color: #334155;
+}
+
+.muc-dieu-huong-dang-chon {
+    -fx-background-color: #0284c7;
+}
+
+.chu-dieu-huong {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #e2e8f0;
+}
+
+.mui-ten-dieu-huong {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #94a3b8;
+}
+
+.icon-dieu-huong {
+    -fx-alignment: center;
+}
+
+/* Mục chức năng con cấp 2 */
+.nut-chuc-nang-con {
+    -fx-pref-height: 32px;
+    -fx-background-color: transparent;
+    -fx-alignment: center-left;
+    -fx-padding: 0 16px 0 32px;
+    -fx-font-size: 12.5px;
+    -fx-text-fill: #cbd5e1;
+    -fx-cursor: hand;
+}
+
+.nut-chuc-nang-con:hover {
+    -fx-background-color: #334155;
+    -fx-text-fill: #ffffff;
+}
+
+.nut-chuc-nang-con-dang-chon {
+    -fx-pref-height: 32px;
+    -fx-background-color: #0284c7;
+    -fx-alignment: center-left;
+    -fx-padding: 0 16px 0 32px;
+    -fx-font-size: 12.5px;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+/* ==========================================================================
+   2. THANH TIÊU ĐỀ TRÊN (TOPBAR)
+   ========================================================================== */
+.thanh-tieu-de-tren {
+    -fx-background-color: #ffffff;
+    -fx-pref-height: 50px;
+    -fx-border-color: transparent transparent #e2e8f0 transparent;
+    -fx-border-width: 1px;
+    -fx-padding: 0 20px;
+}
+
+.duong-dan-trang {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1e293b;
+}
+
+.ten-tai-khoan {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #1e293b;
+}
+
+.vai-tro-tai-khoan {
+    -fx-font-size: 11px;
+    -fx-text-fill: #64748b;
+}
+
+.chu-anh-dai-dien {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+}
+
+.menu-tai-khoan {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.menu-tai-khoan .arrow-button {
+    -fx-padding: 0 4px 0 0;
+}
+
+/* ==========================================================================
+   3. NỘI DUNG TỔNG QUAN & THẺ THỐNG KÊ
+   ========================================================================== */
+.noi-dung-tong-quan {
+    -fx-padding: 24px;
+}
+
+.tieu-de-chao-mung {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f172a;
+}
+
+.phu-de-chao-mung {
+    -fx-font-size: 12.5px;
+    -fx-text-fill: #64748b;
+}
+
+.the-ngay-thang {
+    -fx-background-color: #e2e8f0;
+    -fx-padding: 4px 10px;
+    -fx-background-radius: 4px;
+    -fx-font-size: 12px;
+    -fx-text-fill: #475569;
+}
+
+/* Thẻ thống kê nổi bật (Doanh thu) */
+.the-thong-ke-noi-bat {
+    -fx-background-color: #0284c7;
+    -fx-padding: 16px;
+    -fx-background-radius: 6px;
+}
+
+.tieu-de-thong-ke-trang {
+    -fx-font-size: 12.5px;
+    -fx-text-fill: #e0f2fe;
+}
+
+.gia-tri-thong-ke-trang {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+}
+
+.mo-ta-thong-ke-trang {
+    -fx-font-size: 11px;
+    -fx-text-fill: #bae6fd;
+}
+
+/* Thẻ thống kê thường (Lịch hẹn, Tồn kho) */
+.the-thong-ke {
+    -fx-background-color: #ffffff;
+    -fx-padding: 16px;
+    -fx-background-radius: 6px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 6px;
+}
+
+.tieu-de-thong-ke {
+    -fx-font-size: 12.5px;
+    -fx-text-fill: #64748b;
+}
+
+.gia-tri-thong-ke {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f172a;
+}
+
+.mo-ta-thong-ke {
+    -fx-font-size: 11px;
+    -fx-text-fill: #94a3b8;
+}
+
+.khung-hoat-dong {
+    -fx-background-color: #ffffff;
+    -fx-padding: 16px 20px;
+    -fx-background-radius: 6px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 6px;
+}
+
+.tieu-de-khung {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f172a;
+}

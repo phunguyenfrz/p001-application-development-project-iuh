@@ -1,0 +1,194 @@
+/* ==========================================================================
+   HAPPY TAILS - CSS DÙNG CHUNG (CÁC ĐIỀU KHIỂN & BẢNG BIỂU DESKTOP)
+   ========================================================================== */
+
+/* Thiết lập font chữ và màu nền mặc định toàn ứng dụng */
+.root {
+    -fx-font-family: "Segoe UI", Arial, sans-serif;
+    -fx-font-size: 13px;
+    -fx-background-color: #f4f6f8;
+}
+
+/* Nhãn thông tin mặc định (Label) */
+.label {
+    -fx-text-fill: #1f2937;
+}
+
+/* Các ô nhập liệu chuẩn (TextField, PasswordField) */
+.text-field, .password-field {
+    -fx-pref-height: 32px;
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 4px 8px;
+    -fx-font-size: 13px;
+    -fx-text-fill: #1e293b;
+    -fx-prompt-text-fill: #94a3b8;
+}
+
+.text-field:focused, .password-field:focused {
+    -fx-border-color: #0284c7;
+    -fx-background-color: #ffffff;
+}
+
+/* Ô ComboBox và DatePicker */
+.combo-box, .date-picker {
+    -fx-pref-height: 32px;
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-font-size: 13px;
+}
+
+.combo-box:focused, .date-picker:focused {
+    -fx-border-color: #0284c7;
+}
+
+/* Nút bấm chuẩn Desktop (Góc phẳng nhẹ 4px) */
+.button {
+    -fx-pref-height: 32px;
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 5px 16px;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #334155;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #f1f5f9;
+    -fx-border-color: #94a3b8;
+}
+
+.button:pressed {
+    -fx-background-color: #e2e8f0;
+}
+
+/* Nút chính (Thêm mới, Lưu, Đăng nhập, Xác nhận) */
+.nut-chinh {
+    -fx-background-color: #0284c7;
+    -fx-border-color: #0369a1;
+    -fx-text-fill: #ffffff;
+}
+
+.nut-chinh:hover {
+    -fx-background-color: #0369a1;
+}
+
+.nut-chinh:pressed {
+    -fx-background-color: #075985;
+}
+
+/* Nút phụ / Nút thoát / Hủy / Làm mới */
+.nut-phu {
+    -fx-background-color: #f8fafc;
+    -fx-border-color: #cbd5e1;
+    -fx-text-fill: #475569;
+}
+
+.nut-phu:hover {
+    -fx-background-color: #f1f5f9;
+    -fx-border-color: #94a3b8;
+}
+
+/* Nút Xóa / Thao tác cảnh báo */
+.nut-xoa {
+    -fx-background-color: #dc2626;
+    -fx-border-color: #b91c1c;
+    -fx-text-fill: #ffffff;
+}
+
+.nut-xoa:hover {
+    -fx-background-color: #b91c1c;
+}
+
+/* Bảng dữ liệu chuẩn Desktop (TableView) */
+.bang-du-lieu {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+.bang-du-lieu .column-header {
+    -fx-background-color: #f1f5f9;
+    -fx-border-color: transparent transparent #cbd5e1 transparent;
+    -fx-padding: 8px 6px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1e293b;
+    -fx-font-size: 12.5px;
+}
+
+.bang-du-lieu .table-row-cell:odd {
+    -fx-background-color: #f8fafc;
+}
+
+.bang-du-lieu .table-row-cell:even {
+    -fx-background-color: #ffffff;
+}
+
+.bang-du-lieu .table-row-cell:filled:selected {
+    -fx-background-color: #e0f2fe;
+}
+
+.bang-du-lieu .table-row-cell:filled:selected .table-cell {
+    -fx-text-fill: #0369a1;
+    -fx-font-weight: 600;
+}
+
+/* ==========================================================================
+   BỐ CỤC CHUNG CHO CÁC MÀN HÌNH PHÂN HỆ NGHIỆP VỤ (CRUD)
+   ========================================================================== */
+.khung-phan-he {
+    -fx-background-color: #f4f6f8;
+    -fx-padding: 20px 24px;
+}
+
+.tieu-de-phan-he {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f172a;
+}
+
+.mo-ta-phan-he {
+    -fx-font-size: 13px;
+    -fx-text-fill: #64748b;
+}
+
+.hop-noi-dung {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 14px;
+}
+
+.thanh-tac-vu {
+    -fx-alignment: center-left;
+    -fx-spacing: 10px;
+}
+
+/* Nhãn trạng thái (Badge) */
+.nhan-trang-thai-hoat-dong {
+    -fx-background-color: #dcfce7;
+    -fx-text-fill: #15803d;
+    -fx-padding: 3px 8px;
+    -fx-background-radius: 4px;
+    -fx-font-size: 11.5px;
+    -fx-font-weight: 600;
+}
+
+.nhan-trang-thai-khoa {
+    -fx-background-color: #fee2e2;
+    -fx-text-fill: #b91c1c;
+    -fx-padding: 3px 8px;
+    -fx-background-radius: 4px;
+    -fx-font-size: 11.5px;
+    -fx-font-weight: 600;
+}
+

@@ -1,26 +1,29 @@
 package com.petshop.util;
 
-import com.petshop.model.User;
+import com.petshop.model.TaiKhoan;
 
+/**
+ * Quản lý phiên làm việc của người dùng sau khi đăng nhập thành công.
+ */
 public final class SessionManager {
-    private static User currentUser;
+    private static TaiKhoan taiKhoanHienTai;
 
     private SessionManager() {
     }
 
-    public static void login(User user) {
-        currentUser = user;
+    public static void dangNhap(TaiKhoan taiKhoan) {
+        taiKhoanHienTai = taiKhoan;
     }
 
-    public static User getCurrentUser() {
-        return currentUser;
+    public static TaiKhoan getTaiKhoanHienTai() {
+        return taiKhoanHienTai;
     }
 
-    public static boolean isLoggedIn() {
-        return currentUser != null;
+    public static boolean daDangNhap() {
+        return taiKhoanHienTai != null;
     }
 
-    public static void logout() {
-        currentUser = null;
+    public static void dangXuat() {
+        taiKhoanHienTai = null;
     }
 }
