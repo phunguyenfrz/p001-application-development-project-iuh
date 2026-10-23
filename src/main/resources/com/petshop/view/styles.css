@@ -1,11 +1,11 @@
 /* ==========================================================================
-   HAPPY TAILS - MAIN STYLESHEET
-   Nạp các tệp CSS theo từng phân hệ màn hình chức năng:
-   - css/base.css: Thiết lập chung, controls, buttons, tableview
-   - css/login.css: Giao diện màn hình đăng nhập
-   - css/dashboard.css: Giao diện khung Bảng điều khiển (Sidebar, Topbar)
+   HAPPY TAILS - STYLESHEET TỔNG HỢP
+   Nạp CSS theo từng màn hình chức năng:
+   - css/chung.css: Cấu hình chung cho controls, buttons, tableview
+   - css/dangnhap.css: Màn hình đăng nhập (DangNhapView)
+   - css/manhinhchinh.css: Màn hình chính (ManHinhChinhView)
    ========================================================================== */
 
-@import "css/base.css";
-@import "css/login.css";
-@import "css/dashboard.css";
+@import "css/chung.css";
+@import "css/dangnhap.css";
+@import "css/manhinhchinh.css";

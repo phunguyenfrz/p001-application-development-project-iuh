@@ -1,14 +1,14 @@
 /* ==========================================================================
-   HAPPY TAILS - LOGIN STYLESHEET (MÀN HÌNH ĐĂNG NHẬP DESKTOP CHUẨN MỰC)
+   HAPPY TAILS - CSS MÀN HÌNH ĐĂNG NHẬP (DangNhapView)
    ========================================================================== */
 
-.login-root {
+.man-hinh-dang-nhap {
     -fx-background-color: #e2e8f0;
     -fx-alignment: center;
 }
 
 /* Hộp đăng nhập trung tâm */
-.login-box {
+.hop-dang-nhap {
     -fx-background-color: #ffffff;
     -fx-border-color: #cbd5e1;
     -fx-border-width: 1px;
@@ -19,33 +19,32 @@
     -fx-max-width: 440px;
 }
 
-.login-system-title {
+.tieu-de-chinh {
     -fx-font-size: 15px;
     -fx-font-weight: bold;
     -fx-text-fill: #0f172a;
     -fx-alignment: center;
 }
 
-.login-subtitle {
+.tieu-de-phu {
     -fx-font-size: 12px;
     -fx-text-fill: #64748b;
     -fx-alignment: center;
 }
 
-.login-form-label {
+.nhan-nhap-lieu {
     -fx-font-size: 13px;
     -fx-font-weight: 600;
     -fx-text-fill: #334155;
 }
 
-.login-error-text {
+.thong-bao-loi {
     -fx-font-size: 12px;
     -fx-text-fill: #dc2626;
     -fx-font-weight: bold;
 }
 
-.login-footer-text {
+.dong-chan-trang {
     -fx-font-size: 11px;
     -fx-text-fill: #94a3b8;
 }
-
