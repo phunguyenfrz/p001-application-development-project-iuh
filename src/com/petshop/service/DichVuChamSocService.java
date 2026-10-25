@@ -4,6 +4,7 @@ import com.petshop.dao.DichVuChamSocDAO;
 import com.petshop.model.BangGiaDichVu;
 import com.petshop.model.DichVuChamSoc;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -69,6 +70,12 @@ public class DichVuChamSocService {
         return dichVuChamSocDAO.layDanhSachDichVu();
     }
 
+    // Hàm cung cấp cho #68 (Lịch hẹn), #69 (Phiếu dịch vụ), #71 (Hóa đơn): lấy dịch vụ đang kinh doanh
+    public List<DichVuChamSoc> layDanhSachDichVuDangKinhDoanh() {
+        xacThucService.kiemTraQuyen("DVCS_TIM_KIEM");
+        return dichVuChamSocDAO.layDanhSachDichVuDangKinhDoanh();
+    }
+
     // Lấy thông tin một dịch vụ theo mã
     public DichVuChamSoc layDichVuTheoMa(String maDichVu) {
         xacThucService.kiemTraQuyen("DVCS_TIM_KIEM");
@@ -85,19 +92,10 @@ public class DichVuChamSocService {
         return dichVuChamSocDAO.timKiemDichVu(tuKhoaChuan);
     }
 
-    // Sinh mã dịch vụ tự động
-    public String taoMaDichVu() {
-        xacThucService.kiemTraQuyen("DVCS_CAP_NHAT");
-        return dichVuChamSocDAO.taoMaDichVu();
-    }
-
-    // Lấy lịch sử bảng giá của một dịch vụ
-    public List<BangGiaDichVu> layBangGiaTheoDichVu(String maDichVu) {
-        xacThucService.kiemTraQuyen("DVCS_TIM_KIEM");
-        if (maDichVu == null || maDichVu.trim().isEmpty()) {
-            throw new IllegalArgumentException("Mã dịch vụ không được để trống!");
-        }
-        return dichVuChamSocDAO.layBangGiaTheoDichVu(maDichVu.trim());
+    // Lấy toàn bộ danh sách bảng giá của các dịch vụ (yêu cầu quyền DVCS_BANG_GIA)
+    public List<BangGiaDichVu> layTatCaBangGia() {
+        xacThucService.kiemTraQuyen("DVCS_BANG_GIA");
+        return dichVuChamSocDAO.layTatCaBangGia();
     }
 
     // Hàm cung cấp cho #68 (Lịch hẹn), #69 (Phiếu dịch vụ), #71 (Hóa đơn): tra đơn giá theo cân nặng
@@ -110,6 +108,18 @@ public class DichVuChamSocService {
             throw new IllegalArgumentException("Cân nặng thú cưng phải lớn hơn 0!");
         }
         return dichVuChamSocDAO.traGiaTheoCanNang(maDichVu.trim(), canNang);
+    }
+
+    // Thống kê báo cáo dịch vụ chăm sóc theo khoảng ngày (yêu cầu quyền DVCS_BAO_CAO)
+    public List<String[]> thongKeDichVu(LocalDate tuNgay, LocalDate denNgay) {
+        xacThucService.kiemTraQuyen("DVCS_BAO_CAO");
+        if (tuNgay == null || denNgay == null) {
+            throw new IllegalArgumentException("Vui lòng chọn đầy đủ từ ngày và đến ngày!");
+        }
+        if (denNgay.isBefore(tuNgay)) {
+            throw new IllegalArgumentException("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!");
+        }
+        return dichVuChamSocDAO.thongKeDichVu(tuNgay, denNgay);
     }
 
     // Kiểm tra các quy tắc nghiệp vụ của dịch vụ chăm sóc
@@ -144,4 +154,3 @@ public class DichVuChamSocService {
         }
     }
 }
-

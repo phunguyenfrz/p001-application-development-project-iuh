@@ -1,6 +1,7 @@
-package com.petshop.view;
+package com.petshop.view.dichvu;
 
 import com.petshop.controller.DichVuChamSocController;
+import com.petshop.model.BangGiaDichVu;
 import com.petshop.model.DichVuChamSoc;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -10,10 +11,9 @@ import javafx.scene.layout.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Màn hình tìm kiếm dịch vụ chăm sóc theo mã/tên và thực hiện xóa mềm (ngừng kinh doanh).
+ * Màn hình tra cứu, tìm kiếm dịch vụ chăm sóc theo mã/tên và lọc theo trạng thái kinh doanh (SRV_SEARCH).
  */
 public class TimKiemDichVuView extends VBox {
 
@@ -23,7 +23,6 @@ public class TimKiemDichVuView extends VBox {
     private final ComboBox<String> cboLocTrangThai = new ComboBox<>();
     private final Button btnTimKiem = new Button("Tìm kiếm");
     private final Button btnLamMoi = new Button("Làm mới");
-    private final Button btnXoa = new Button("Ngừng kinh doanh (Xóa)");
     private final Label lblKetQua = new Label("Tổng số: 0 dịch vụ");
 
     private final TableView<DichVuChamSoc> tblDanhSach = new TableView<>();
@@ -33,9 +32,9 @@ public class TimKiemDichVuView extends VBox {
         getStyleClass().add("khung-phan-he");
 
         VBox pnlTieuDeMan = new VBox(4);
-        Label lblTieuDe = new Label("DỊCH VỤ CHĂM SÓC - TÌM KIẾM & NGỪNG KINH DOANH");
+        Label lblTieuDe = new Label("DỊCH VỤ CHĂM SÓC - TÌM KIẾM DỊCH VỤ");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-        Label lblMoTa = new Label("Tra cứu dịch vụ theo mã hoặc tên dịch vụ; chọn dịch vụ và bấm Ngừng kinh doanh để xóa mềm.");
+        Label lblMoTa = new Label("Tra cứu danh mục dịch vụ theo mã hoặc tên dịch vụ và lọc theo trạng thái kinh doanh.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
         pnlTieuDeMan.getChildren().addAll(lblTieuDe, lblMoTa);
 
@@ -60,7 +59,7 @@ public class TimKiemDichVuView extends VBox {
 
         Label lblTim = new Label("Từ khóa:");
         txtTuKhoa.setPromptText("Nhập mã hoặc tên dịch vụ...");
-        txtTuKhoa.setPrefWidth(250);
+        txtTuKhoa.setPrefWidth(260);
         txtTuKhoa.setOnAction(e -> xuLyTimKiem());
 
         Label lblTrangThai = new Label("Trạng thái:");
@@ -76,17 +75,10 @@ public class TimKiemDichVuView extends VBox {
         btnLamMoi.getStyleClass().add("nut-phu");
         btnLamMoi.setOnAction(e -> taiLaiBang());
 
-        Region pnlKhoangTrong = new Region();
-        HBox.setHgrow(pnlKhoangTrong, Priority.ALWAYS);
-
-        btnXoa.getStyleClass().add("nut-xoa");
-        btnXoa.setOnAction(e -> xuLyXoaMem());
-
         pnlCongCu.getChildren().addAll(
                 lblTim, txtTuKhoa,
                 lblTrangThai, cboLocTrangThai,
-                btnTimKiem, btnLamMoi,
-                pnlKhoangTrong, btnXoa
+                btnTimKiem, btnLamMoi
         );
         return pnlCongCu;
     }
@@ -107,23 +99,30 @@ public class TimKiemDichVuView extends VBox {
         colTen.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTenDichVu()));
 
         TableColumn<DichVuChamSoc, String> colThoiLuong = new TableColumn<>("Thời lượng");
-        colThoiLuong.setPrefWidth(95);
+        colThoiLuong.setPrefWidth(100);
+        colThoiLuong.setStyle("-fx-alignment: CENTER-RIGHT;");
         colThoiLuong.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getThoiLuong() + " phút"));
 
-        TableColumn<DichVuChamSoc, String> colGiaNho = new TableColumn<>("Giá Nhỏ (<5kg)");
-        colGiaNho.setPrefWidth(120);
-        colGiaNho.setCellValueFactory(d -> new SimpleStringProperty(dinhDangTien(d.getValue().getGiaNho())));
+        TableColumn<DichVuChamSoc, String> colGiaNho = new TableColumn<>("Giá Nhỏ (" + BangGiaDichVu.KHOANG_CAN_NANG_NHO + ")");
+        colGiaNho.setPrefWidth(135);
+        colGiaNho.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colGiaNho.setCellValueFactory(d -> new SimpleStringProperty(ThemDichVuView.dinhDangTien(d.getValue().getGiaNho())));
 
-        TableColumn<DichVuChamSoc, String> colGiaVua = new TableColumn<>("Giá Vừa (5-10kg)");
-        colGiaVua.setPrefWidth(125);
-        colGiaVua.setCellValueFactory(d -> new SimpleStringProperty(dinhDangTien(d.getValue().getGiaVua())));
+        TableColumn<DichVuChamSoc, String> colGiaVua = new TableColumn<>("Giá Vừa (" + BangGiaDichVu.KHOANG_CAN_NANG_VUA + ")");
+        colGiaVua.setPrefWidth(135);
+        colGiaVua.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colGiaVua.setCellValueFactory(d -> new SimpleStringProperty(ThemDichVuView.dinhDangTien(d.getValue().getGiaVua())));
 
-        TableColumn<DichVuChamSoc, String> colGiaLon = new TableColumn<>("Giá Lớn (>10kg)");
-        colGiaLon.setPrefWidth(120);
-        colGiaLon.setCellValueFactory(d -> new SimpleStringProperty(dinhDangTien(d.getValue().getGiaLon())));
+        TableColumn<DichVuChamSoc, String> colGiaLon = new TableColumn<>("Giá Lớn (" + BangGiaDichVu.KHOANG_CAN_NANG_LON + ")");
+        colGiaLon.setPrefWidth(135);
+        colGiaLon.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colGiaLon.setCellValueFactory(d -> new SimpleStringProperty(ThemDichVuView.dinhDangTien(d.getValue().getGiaLon())));
 
         TableColumn<DichVuChamSoc, String> colMoTa = new TableColumn<>("Mô tả");
-        colMoTa.setPrefWidth(220);
+        colMoTa.setMinWidth(180);
+        colMoTa.prefWidthProperty().bind(
+                tblDanhSach.widthProperty().subtract(150 + 190 + 100 + 135 + 135 + 135 + 130 + 22)
+        );
         colMoTa.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getMoTa()));
 
         TableColumn<DichVuChamSoc, String> colTrangThai = new TableColumn<>("Trạng thái");
@@ -136,12 +135,23 @@ public class TimKiemDichVuView extends VBox {
                 colMa, colTen, colThoiLuong, colGiaNho, colGiaVua, colGiaLon, colMoTa, colTrangThai
         ));
 
+        tblDanhSach.setRowFactory(tv -> new TableRow<>() {
+            @Override
+            protected void updateItem(DichVuChamSoc item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setOpacity(1.0);
+                } else {
+                    setOpacity(item.isTrangThai() ? 1.0 : 0.5);
+                }
+            }
+        });
+
         lblKetQua.getStyleClass().add("mo-ta-phan-he");
         pnlBang.getChildren().addAll(tblDanhSach, lblKetQua);
         return pnlBang;
     }
 
-    // Tìm kiếm dịch vụ theo từ khóa và lọc theo trạng thái kinh doanh
     private void xuLyTimKiem() {
         try {
             String tuKhoa = txtTuKhoa.getText() == null ? "" : txtTuKhoa.getText().trim();
@@ -170,43 +180,6 @@ public class TimKiemDichVuView extends VBox {
         return ketQua;
     }
 
-    // Xóa mềm dịch vụ đang chọn sau khi người dùng xác nhận trên hộp thoại
-    private void xuLyXoaMem() {
-        DichVuChamSoc dichVuChon = tblDanhSach.getSelectionModel().getSelectedItem();
-        if (dichVuChon == null) {
-            hienThiLoi("Vui lòng chọn một dịch vụ trong bảng để ngừng kinh doanh!");
-            return;
-        }
-
-        if (!dichVuChon.isTrangThai()) {
-            hienThiThongBao("Thông báo", "Dịch vụ [" + dichVuChon.getTenDichVu() + "] đã ở trạng thái ngừng kinh doanh.");
-            return;
-        }
-
-        Alert dlgXacNhan = new Alert(Alert.AlertType.CONFIRMATION);
-        dlgXacNhan.setTitle("Xác nhận ngừng kinh doanh");
-        dlgXacNhan.setHeaderText(null);
-        dlgXacNhan.setContentText("Bạn có chắc chắn muốn ngừng kinh doanh dịch vụ \""
-                + dichVuChon.getTenDichVu() + "\" (" + dichVuChon.getMaDichVu() + ") không?");
-
-        Optional<ButtonType> ketQuaChon = dlgXacNhan.showAndWait();
-        if (ketQuaChon.isEmpty() || ketQuaChon.get() != ButtonType.OK) {
-            return;
-        }
-
-        try {
-            boolean thanhCong = dichVuController.xoaDichVu(dichVuChon.getMaDichVu());
-            if (thanhCong) {
-                xuLyTimKiem();
-                hienThiThongBao("Thành công", "Đã chuyển dịch vụ \"" + dichVuChon.getTenDichVu() + "\" sang trạng thái Ngừng kinh doanh.");
-            } else {
-                hienThiLoi("Không thể cập nhật trạng thái dịch vụ!");
-            }
-        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
-            hienThiLoi(ex.getMessage());
-        }
-    }
-
     private void taiLaiBang() {
         txtTuKhoa.clear();
         cboLocTrangThai.setValue("Tất cả");
@@ -219,18 +192,6 @@ public class TimKiemDichVuView extends VBox {
         }
     }
 
-    private String dinhDangTien(double soTien) {
-        return String.format("%,.0f đ", soTien);
-    }
-
-    private void hienThiThongBao(String tieuDe, String noiDung) {
-        Alert dlg = new Alert(Alert.AlertType.INFORMATION);
-        dlg.setTitle(tieuDe);
-        dlg.setHeaderText(null);
-        dlg.setContentText(noiDung);
-        dlg.showAndWait();
-    }
-
     private void hienThiLoi(String noiDung) {
         Alert dlg = new Alert(Alert.AlertType.ERROR);
         dlg.setTitle("Thông báo lỗi");
@@ -239,4 +200,3 @@ public class TimKiemDichVuView extends VBox {
         dlg.showAndWait();
     }
 }
-

@@ -4,6 +4,7 @@ import com.petshop.model.BangGiaDichVu;
 import com.petshop.model.DichVuChamSoc;
 import com.petshop.service.DichVuChamSocService;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -37,6 +38,11 @@ public class DichVuChamSocController {
         return dichVuChamSocService.layDanhSachDichVu();
     }
 
+    // Hàm cung cấp cho #68 (Lịch hẹn), #69 (Phiếu dịch vụ), #71 (Hóa đơn)
+    public List<DichVuChamSoc> layDanhSachDichVuDangKinhDoanh() {
+        return dichVuChamSocService.layDanhSachDichVuDangKinhDoanh();
+    }
+
     public DichVuChamSoc layDichVuTheoMa(String maDichVu) {
         return dichVuChamSocService.layDichVuTheoMa(maDichVu);
     }
@@ -45,17 +51,16 @@ public class DichVuChamSocController {
         return dichVuChamSocService.timKiemDichVu(tuKhoa);
     }
 
-    public String taoMaDichVu() {
-        return dichVuChamSocService.taoMaDichVu();
-    }
-
-    public List<BangGiaDichVu> layBangGiaTheoDichVu(String maDichVu) {
-        return dichVuChamSocService.layBangGiaTheoDichVu(maDichVu);
+    public List<BangGiaDichVu> layTatCaBangGia() {
+        return dichVuChamSocService.layTatCaBangGia();
     }
 
     // Hàm cung cấp cho #68 (Lịch hẹn), #69 (Phiếu dịch vụ), #71 (Hóa đơn)
     public double traGiaTheoCanNang(String maDichVu, double canNang) {
         return dichVuChamSocService.traGiaTheoCanNang(maDichVu, canNang);
     }
-}
 
+    public List<String[]> thongKeDichVu(LocalDate tuNgay, LocalDate denNgay) {
+        return dichVuChamSocService.thongKeDichVu(tuNgay, denNgay);
+    }
+}

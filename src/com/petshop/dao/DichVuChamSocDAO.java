@@ -130,6 +130,25 @@ public class DichVuChamSocDAO {
         }
     }
 
+    // Lấy danh sách dịch vụ đang kinh doanh (dùng cho Lịch hẹn, Phiếu dịch vụ, Hóa đơn)
+    public List<DichVuChamSoc> layDanhSachDichVuDangKinhDoanh() {
+        List<DichVuChamSoc> danhSach = new ArrayList<>();
+        String sql = "SELECT maDichVu, tenDichVu, moTa, thoiLuong, trangThai FROM DichVuChamSoc WHERE trangThai = 1 ORDER BY maDichVu";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                DichVuChamSoc dichVu = docDichVuTuResultSet(rs);
+                napGiaBaBac(conn, dichVu);
+                danhSach.add(dichVu);
+            }
+            return danhSach;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi lấy danh sách dịch vụ đang kinh doanh: " + e.getMessage(), e);
+        }
+    }
+
     // Lấy một dịch vụ theo mã
     public DichVuChamSoc layDichVuTheoMa(String maDichVu) {
         String sql = "SELECT maDichVu, tenDichVu, moTa, thoiLuong, trangThai FROM DichVuChamSoc WHERE maDichVu = ?";
@@ -188,46 +207,32 @@ public class DichVuChamSocDAO {
         }
     }
 
-    // Sinh mã bảng giá mới theo định dạng BG-yyyyMMdd-xxxxxx
-    public String taoMaBangGia() {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            int soTiepTheo = laySoThuTuCuoi(conn, "BangGiaDichVu", "maBangGia") + 1;
-            String ngayChuoi = LocalDate.now().format(DINH_DANG_NGAY_MA);
-            return "BG-" + ngayChuoi + "-" + String.format("%06d", soTiepTheo);
-        } catch (SQLException e) {
-            throw new IllegalStateException("Lỗi tạo mã bảng giá: " + e.getMessage(), e);
-        }
-    }
-
-    // Lấy danh sách các dòng bảng giá của một dịch vụ
-    public List<BangGiaDichVu> layBangGiaTheoDichVu(String maDichVu) {
+    // Lấy toàn bộ danh sách bảng giá của tất cả dịch vụ
+    public List<BangGiaDichVu> layTatCaBangGia() {
         List<BangGiaDichVu> danhSach = new ArrayList<>();
         String sql = """
                 SELECT maBangGia, maDichVu, gia, phanLoaiKichThuoc, ngayApDung, ngayHetHieuLuc
                 FROM BangGiaDichVu
-                WHERE maDichVu = ?
-                ORDER BY ngayApDung DESC, maBangGia ASC
+                ORDER BY maDichVu ASC, ngayApDung DESC, maBangGia ASC
                 """;
         try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, maDichVu);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Date ngayHet = rs.getDate("ngayHetHieuLuc");
-                    BangGiaDichVu bg = new BangGiaDichVu(
-                            rs.getString("maBangGia"),
-                            rs.getString("maDichVu"),
-                            rs.getDouble("gia"),
-                            rs.getString("phanLoaiKichThuoc"),
-                            rs.getDate("ngayApDung").toLocalDate(),
-                            ngayHet != null ? ngayHet.toLocalDate() : null
-                    );
-                    danhSach.add(bg);
-                }
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Date ngayHet = rs.getDate("ngayHetHieuLuc");
+                BangGiaDichVu bg = new BangGiaDichVu(
+                        rs.getString("maBangGia"),
+                        rs.getString("maDichVu"),
+                        rs.getDouble("gia"),
+                        rs.getString("phanLoaiKichThuoc"),
+                        rs.getDate("ngayApDung").toLocalDate(),
+                        ngayHet != null ? ngayHet.toLocalDate() : null
+                );
+                danhSach.add(bg);
             }
             return danhSach;
         } catch (SQLException e) {
-            throw new IllegalStateException("Lỗi lấy bảng giá dịch vụ: " + e.getMessage(), e);
+            throw new IllegalStateException("Lỗi lấy tất cả bảng giá: " + e.getMessage(), e);
         }
     }
 
@@ -253,6 +258,47 @@ public class DichVuChamSocDAO {
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Lỗi tra giá dịch vụ theo cân nặng: " + e.getMessage(), e);
+        }
+    }
+
+    // Thống kê số lượt thực hiện và tổng doanh thu theo từng dịch vụ trong khoảng ngày
+    public List<String[]> thongKeDichVu(LocalDate tuNgay, LocalDate denNgay) {
+        List<String[]> danhSach = new ArrayList<>();
+        String sql = """
+                SELECT dv.maDichVu,
+                       dv.tenDichVu,
+                       dv.thoiLuong,
+                       dv.trangThai,
+                       COUNT(ct.maPhieuDichVu) AS soLuotLam,
+                       ISNULL(SUM(ct.donGia), 0) AS tongDoanhThu
+                FROM DichVuChamSoc dv
+                LEFT JOIN ChiTietPhieuDichVu ct ON ct.maDichVu = dv.maDichVu
+                LEFT JOIN PhieuDichVu pdv ON pdv.maPhieuDichVu = ct.maPhieuDichVu
+                     AND pdv.ngayTiepNhan >= ? AND pdv.ngayTiepNhan <= ?
+                     AND pdv.trangThai <> N'Đã hủy'
+                GROUP BY dv.maDichVu, dv.tenDichVu, dv.thoiLuong, dv.trangThai
+                ORDER BY tongDoanhThu DESC, dv.maDichVu ASC
+                """;
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(tuNgay));
+            ps.setDate(2, Date.valueOf(denNgay));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String[] dong = new String[]{
+                            rs.getString("maDichVu"),
+                            rs.getString("tenDichVu"),
+                            String.valueOf(rs.getInt("thoiLuong")),
+                            rs.getBoolean("trangThai") ? "Đang kinh doanh" : "Ngừng kinh doanh",
+                            String.valueOf(rs.getInt("soLuotLam")),
+                            String.valueOf(rs.getDouble("tongDoanhThu"))
+                    };
+                    danhSach.add(dong);
+                }
+            }
+            return danhSach;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi thống kê báo cáo dịch vụ: " + e.getMessage(), e);
         }
     }
 
@@ -352,4 +398,3 @@ public class DichVuChamSocDAO {
         }
     }
 }
-

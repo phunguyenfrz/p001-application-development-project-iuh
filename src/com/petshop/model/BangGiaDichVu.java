@@ -7,6 +7,18 @@ import java.time.LocalDate;
  */
 public class BangGiaDichVu {
 
+    // Hằng số dùng chung cho ngưỡng cân nặng và nhãn hiển thị của 3 bậc giá
+    public static final double NGUONG_CAN_NANG_NHO = 5.0;
+    public static final double NGUONG_CAN_NANG_VUA = 10.0;
+
+    public static final String KHOANG_CAN_NANG_NHO = "dưới 5 kg";
+    public static final String KHOANG_CAN_NANG_VUA = "5 - 10 kg";
+    public static final String KHOANG_CAN_NANG_LON = "trên 10 kg";
+
+    public static final String NHAN_GIA_NHO = "Giá bậc Nhỏ (" + KHOANG_CAN_NANG_NHO + ")";
+    public static final String NHAN_GIA_VUA = "Giá bậc Vừa (" + KHOANG_CAN_NANG_VUA + ")";
+    public static final String NHAN_GIA_LON = "Giá bậc Lớn (" + KHOANG_CAN_NANG_LON + ")";
+
     private String maBangGia;
     private String maDichVu;
     private double gia;
@@ -27,12 +39,12 @@ public class BangGiaDichVu {
         this.ngayHetHieuLuc = ngayHetHieuLuc;
     }
 
-    // Quy đổi cân nặng (kg) sang bậc kích thước: < 5kg là Nhỏ, 5-10kg là Vừa, > 10kg là Lớn
+    // Quy đổi cân nặng (kg) sang bậc kích thước dựa trên hằng số ngưỡng dùng chung
     public static String xacDinhKichThuoc(double canNang) {
-        if (canNang < 5.0) {
+        if (canNang < NGUONG_CAN_NANG_NHO) {
             return "Nhỏ";
         }
-        if (canNang <= 10.0) {
+        if (canNang <= NGUONG_CAN_NANG_VUA) {
             return "Vừa";
         }
         return "Lớn";
@@ -86,4 +98,3 @@ public class BangGiaDichVu {
         this.ngayHetHieuLuc = ngayHetHieuLuc;
     }
 }
-
