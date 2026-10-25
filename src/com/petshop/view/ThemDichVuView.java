@@ -27,12 +27,16 @@ public class ThemDichVuView extends VBox {
 
     private final Button btnThem = new Button("Thêm dịch vụ");
     private final Button btnLamMoi = new Button("Làm mới");
+    private final Button btnMoManCapNhat = new Button("Mở màn Cập nhật");
 
     private final TableView<DichVuChamSoc> tblDanhSach = new TableView<>();
 
     public ThemDichVuView() {
         setSpacing(14);
         getStyleClass().add("khung-phan-he");
+
+        HBox pnlDauTrang = new HBox(12);
+        pnlDauTrang.setAlignment(Pos.CENTER_LEFT);
 
         VBox pnlTieuDeMan = new VBox(4);
         Label lblTieuDe = new Label("DỊCH VỤ CHĂM SÓC - THÊM DỊCH VỤ MỚI");
@@ -41,11 +45,19 @@ public class ThemDichVuView extends VBox {
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
         pnlTieuDeMan.getChildren().addAll(lblTieuDe, lblMoTa);
 
+        Region pnlKhoangTrong = new Region();
+        HBox.setHgrow(pnlKhoangTrong, Priority.ALWAYS);
+
+        btnMoManCapNhat.getStyleClass().add("nut-phu");
+        btnMoManCapNhat.setOnAction(e -> chuyenSangManCapNhat());
+
+        pnlDauTrang.getChildren().addAll(pnlTieuDeMan, pnlKhoangTrong, btnMoManCapNhat);
+
         VBox pnlForm = taoKhungNhapLieu();
         VBox pnlBang = taoKhungBangDanhSach();
         VBox.setVgrow(pnlBang, Priority.ALWAYS);
 
-        getChildren().addAll(pnlTieuDeMan, pnlForm, pnlBang);
+        getChildren().addAll(pnlDauTrang, pnlForm, pnlBang);
 
         xoaTrangForm();
         taiLaiBang();
@@ -284,6 +296,12 @@ public class ThemDichVuView extends VBox {
             tblDanhSach.setItems(FXCollections.observableArrayList(danhSach));
         } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             hienThiLoi(ex.getMessage());
+        }
+    }
+
+    private void chuyenSangManCapNhat() {
+        if (getParent() instanceof Pane pnlCha) {
+            pnlCha.getChildren().setAll(new CapNhatDichVuView());
         }
     }
 
