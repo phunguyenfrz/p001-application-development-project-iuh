@@ -3,6 +3,10 @@ package com.petshop.view;
 import com.petshop.model.TaiKhoan;
 import com.petshop.service.DanhMucMenu;
 import com.petshop.service.XacThucService;
+import com.petshop.view.dichvu.BangGiaDichVuView;
+import com.petshop.view.dichvu.BaoCaoDichVuView;
+import com.petshop.view.dichvu.CapNhatDichVuView;
+import com.petshop.view.dichvu.TimKiemDichVuView;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -429,7 +433,16 @@ public class ManHinhChinhView extends BorderPane {
             case "PHIEU_DICH_VU" -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "NHAN_VIEN"          -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "CA_TRUC"             -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
-            case "DICH_VU_CHAM_SOC"      -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
+            case "DICH_VU_CHAM_SOC"      -> {
+                if ("DVCS_TIM_KIEM".equals(chucNang.getMaChucNang())) {
+                    yield new TimKiemDichVuView();
+                } else if ("DVCS_BANG_GIA".equals(chucNang.getMaChucNang())) {
+                    yield new BangGiaDichVuView();
+                } else if ("DVCS_BAO_CAO".equals(chucNang.getMaChucNang())) {
+                    yield new BaoCaoDichVuView();
+                }
+                yield new CapNhatDichVuView();
+            }
             case "NHA_CUNG_CAP"          -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "DON_NHAP"      -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "SAN_PHAM"           -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
