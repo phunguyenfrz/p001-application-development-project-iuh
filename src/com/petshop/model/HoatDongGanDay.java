@@ -4,24 +4,16 @@ package com.petshop.model;
  * Mục hoạt động gần đây hiển thị trên màn hình Tổng quan.
  */
 public class HoatDongGanDay {
-    private String tieuDe;
     private String thoiGian;
-    private String moTa;
+    private String loaiHoatDong;
+    private String chiTiet;
 
     public HoatDongGanDay() {}
 
-    public HoatDongGanDay(String tieuDe, String thoiGian, String moTa) {
-        this.tieuDe = tieuDe;
+    public HoatDongGanDay(String thoiGian, String loaiHoatDong, String chiTiet) {
         this.thoiGian = thoiGian;
-        this.moTa = moTa;
-    }
-
-    public String getTieuDe() {
-        return tieuDe;
-    }
-
-    public void setTieuDe(String tieuDe) {
-        this.tieuDe = tieuDe;
+        this.loaiHoatDong = loaiHoatDong;
+        this.chiTiet = chiTiet;
     }
 
     public String getThoiGian() {
@@ -32,12 +24,19 @@ public class HoatDongGanDay {
         this.thoiGian = thoiGian;
     }
 
-    public String getMoTa() {
-        return moTa;
+    public String getLoaiHoatDong() {
+        return loaiHoatDong;
     }
 
-    public void setMoTa(String moTa) {
-        this.moTa = moTa;
+    public void setLoaiHoatDong(String loaiHoatDong) {
+        this.loaiHoatDong = loaiHoatDong;
+    }
+
+    public String getChiTiet() {
+        return chiTiet;
+    }
+
+    public void setChiTiet(String chiTiet) {
+        this.chiTiet = chiTiet;
     }
 }
-

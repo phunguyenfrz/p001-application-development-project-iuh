@@ -2,7 +2,9 @@ package com.petshop.service;
 
 import com.petshop.dao.ThongKeDAO;
 import com.petshop.model.HoatDongGanDay;
+import com.petshop.model.TaiKhoan;
 import com.petshop.model.ThongKeTongQuan;
+import com.petshop.util.SessionManager;
 
 import java.util.List;
 
@@ -26,6 +28,7 @@ public class TongQuanService {
      * Mọi người dùng đã đăng nhập đều có thể xem màn Tổng quan.
      */
     public ThongKeTongQuan layThongKeTongQuan() {
+        // TODO: nối HoaDonService, LichHenService, SanPhamService
         return thongKeDAO.layThongKeTongQuan();
     }
 
@@ -33,7 +36,14 @@ public class TongQuanService {
      * Lấy danh sách lịch hẹn và hoạt động gần đây trong ngày.
      */
     public List<HoatDongGanDay> layHoatDongGanDay() {
+        // TODO: nối HoaDonService, LichHenService, SanPhamService
         return thongKeDAO.layHoatDongGanDay();
     }
-}
 
+    /**
+     * Lấy thông tin tài khoản đang đăng nhập hiện tại từ SessionManager.
+     */
+    public TaiKhoan layTaiKhoanHienTai() {
+        return SessionManager.getTaiKhoanHienTai();
+    }
+}

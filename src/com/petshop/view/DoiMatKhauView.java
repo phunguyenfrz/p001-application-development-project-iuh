@@ -38,6 +38,13 @@ public class DoiMatKhauView extends Dialog<Boolean> {
 
         // Nút trong DialogPane
         DialogPane dialogPane = getDialogPane();
+        try {
+            var cssStream = getClass().getResource("/com/petshop/view/css/chung.css");
+            if (cssStream != null) {
+                dialogPane.getStylesheets().add(cssStream.toExternalForm());
+            }
+        } catch (Exception ignored) {}
+
         dialogPane.getButtonTypes().addAll(ButtonType.CLOSE);
         // Ẩn thanh button mặc định để dùng nút tùy chỉnh
         Node nutDongMacDinh = dialogPane.lookupButton(ButtonType.CLOSE);
@@ -66,7 +73,7 @@ public class DoiMatKhauView extends Dialog<Boolean> {
         pwdMatKhauCu.setPromptText("Nhập mật khẩu hiện tại...");
         pwdMatKhauCu.setPrefHeight(36);
 
-        pwdMatKhauMoi.setPromptText("Nhập mật khẩu mới (tối thiểu 3 ký tự)...");
+        pwdMatKhauMoi.setPromptText("Nhập mật khẩu mới (tối thiểu 6 ký tự)...");
         pwdMatKhauMoi.setPrefHeight(36);
 
         pwdXacNhanMatKhau.setPromptText("Nhập lại mật khẩu mới...");
@@ -91,14 +98,14 @@ public class DoiMatKhauView extends Dialog<Boolean> {
         pnlNut.setAlignment(Pos.CENTER_RIGHT);
         pnlNut.setPadding(new Insets(8, 0, 0, 0));
 
-        btnHuy.getStyleClass().add("btn-action-secondary");
+        btnHuy.getStyleClass().add("nut-phu");
         btnHuy.setPrefHeight(36);
         btnHuy.setOnAction(e -> {
             setResult(false);
             close();
         });
 
-        btnLuu.getStyleClass().add("btn-action-primary");
+        btnLuu.getStyleClass().add("nut-chinh");
         btnLuu.setPrefHeight(36);
         btnLuu.setOnAction(e -> xuLyDoiMatKhau());
 
@@ -145,4 +152,3 @@ public class DoiMatKhauView extends Dialog<Boolean> {
         lblThongBaoLoi.setVisible(true);
     }
 }
-

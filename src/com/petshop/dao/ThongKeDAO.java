@@ -116,9 +116,9 @@ public class ThongKeDAO {
                     String trangThai = rs.getString("trangThai");
 
                     HoatDongGanDay hd = new HoatDongGanDay(
-                            "Lịch hẹn: " + thuCung + " (" + khach + ")",
                             gio,
-                            "Trạng thái: " + trangThai
+                            "Lịch hẹn chăm sóc",
+                            thuCung + " (" + khach + ") - Trạng thái: " + trangThai
                     );
                     danhSach.add(hd);
                 }
@@ -130,4 +130,3 @@ public class ThongKeDAO {
         return danhSach;
     }
 }
-

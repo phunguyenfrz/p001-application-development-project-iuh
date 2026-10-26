@@ -1,6 +1,7 @@
 package com.petshop.controller;
 
 import com.petshop.model.HoatDongGanDay;
+import com.petshop.model.TaiKhoan;
 import com.petshop.model.ThongKeTongQuan;
 import com.petshop.service.TongQuanService;
 
@@ -34,5 +35,11 @@ public class TongQuanController {
     public List<HoatDongGanDay> layHoatDongGanDay() {
         return tongQuanService.layHoatDongGanDay();
     }
-}
 
+    /**
+     * Lấy thông tin tài khoản đang đăng nhập hiện tại.
+     */
+    public TaiKhoan layTaiKhoanHienTai() {
+        return tongQuanService.layTaiKhoanHienTai();
+    }
+}

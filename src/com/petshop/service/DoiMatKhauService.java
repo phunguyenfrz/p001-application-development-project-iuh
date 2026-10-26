@@ -37,8 +37,8 @@ public class DoiMatKhauService {
             throw new IllegalArgumentException("Vui lòng nhập mật khẩu mới!");
         }
 
-        if (matKhauMoi.length() < 3) {
-            throw new IllegalArgumentException("Mật khẩu mới phải có ít nhất 3 ký tự!");
+        if (matKhauMoi.length() < 6) {
+            throw new IllegalArgumentException("Mật khẩu mới phải có ít nhất 6 ký tự!");
         }
 
         if (xacNhanMatKhau == null || xacNhanMatKhau.trim().isEmpty()) {
@@ -67,4 +67,3 @@ public class DoiMatKhauService {
         return true;
     }
 }
-
