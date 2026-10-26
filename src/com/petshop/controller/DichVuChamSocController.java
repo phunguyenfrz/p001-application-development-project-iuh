@@ -63,4 +63,8 @@ public class DichVuChamSocController {
     public List<String[]> thongKeDichVu(LocalDate tuNgay, LocalDate denNgay) {
         return dichVuChamSocService.thongKeDichVu(tuNgay, denNgay);
     }
+
+    public List<String[]> layChiTietThongKeTheoDichVu(String maDichVu, LocalDate tuNgay, LocalDate denNgay) {
+        return dichVuChamSocService.layChiTietThongKeTheoDichVu(maDichVu, tuNgay, denNgay);
+    }
 }

@@ -88,6 +88,8 @@ public class DichVuChamSocDAO {
                 capNhatGiaTheoBac(conn, dichVu.getMaDichVu(), "Vừa", dichVu.getGiaVua());
                 capNhatGiaTheoBac(conn, dichVu.getMaDichVu(), "Lớn", dichVu.getGiaLon());
 
+                capNhatHieuLucBangGiaTheoTrangThai(conn, dichVu.getMaDichVu(), dichVu.isTrangThai());
+
                 conn.commit();
                 return true;
             } catch (SQLException e) {
@@ -99,13 +101,25 @@ public class DichVuChamSocDAO {
         }
     }
 
-    // Xóa mềm dịch vụ: chuyển trạng thái sang ngừng kinh doanh (trangThai = 0)
+    // Xóa mềm dịch vụ: chuyển trạng thái sang ngừng kinh doanh (trangThai = 0) và đóng hiệu lực bảng giá
     public boolean xoaDichVu(String maDichVu) {
-        String sql = "UPDATE DichVuChamSoc SET trangThai = 0 WHERE maDichVu = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, maDichVu);
-            return ps.executeUpdate() > 0;
+        String sqlDichVu = "UPDATE DichVuChamSoc SET trangThai = 0 WHERE maDichVu = ?";
+        try (Connection conn = DatabaseManager.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sqlDichVu)) {
+                ps.setString(1, maDichVu);
+                int soDong = ps.executeUpdate();
+                if (soDong == 0) {
+                    conn.rollback();
+                    return false;
+                }
+                capNhatHieuLucBangGiaTheoTrangThai(conn, maDichVu, false);
+                conn.commit();
+                return true;
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
         } catch (SQLException e) {
             throw new IllegalStateException("Lỗi ngừng kinh doanh dịch vụ: " + e.getMessage(), e);
         }
@@ -269,8 +283,8 @@ public class DichVuChamSocDAO {
                        dv.tenDichVu,
                        dv.thoiLuong,
                        dv.trangThai,
-                       COUNT(ct.maPhieuDichVu) AS soLuotLam,
-                       ISNULL(SUM(ct.donGia), 0) AS tongDoanhThu
+                       COUNT(pdv.maPhieuDichVu) AS soLuotLam,
+                       ISNULL(SUM(CASE WHEN pdv.maPhieuDichVu IS NOT NULL THEN ct.donGia ELSE 0 END), 0) AS tongDoanhThu
                 FROM DichVuChamSoc dv
                 LEFT JOIN ChiTietPhieuDichVu ct ON ct.maDichVu = dv.maDichVu
                 LEFT JOIN PhieuDichVu pdv ON pdv.maPhieuDichVu = ct.maPhieuDichVu
@@ -302,6 +316,54 @@ public class DichVuChamSocDAO {
         }
     }
 
+    // Lấy danh sách các lượt thực hiện chi tiết theo ngày của một dịch vụ trong khoảng thời gian
+    public List<String[]> layChiTietThongKeTheoDichVu(String maDichVu, LocalDate tuNgay, LocalDate denNgay) {
+        List<String[]> danhSach = new ArrayList<>();
+        String sql = """
+                SELECT pdv.ngayTiepNhan,
+                       pdv.maPhieuDichVu,
+                       tc.tenThuCung,
+                       tc.canNang,
+                       kh.hoTen AS tenKhachHang,
+                       ct.donGia,
+                       pdv.trangThai
+                FROM ChiTietPhieuDichVu ct
+                INNER JOIN PhieuDichVu pdv ON pdv.maPhieuDichVu = ct.maPhieuDichVu
+                LEFT JOIN ThuCung tc ON tc.maThuCung = ct.maThuCung
+                LEFT JOIN KhachHang kh ON kh.maKhachHang = pdv.maKhachHang
+                WHERE ct.maDichVu = ?
+                  AND pdv.ngayTiepNhan >= ? AND pdv.ngayTiepNhan <= ?
+                  AND pdv.trangThai <> N'Đã hủy'
+                ORDER BY pdv.ngayTiepNhan DESC, pdv.maPhieuDichVu DESC
+                """;
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maDichVu);
+            ps.setDate(2, Date.valueOf(tuNgay));
+            ps.setDate(3, Date.valueOf(denNgay));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String tenThuCung = rs.getString("tenThuCung");
+                    double canNang = rs.getDouble("canNang");
+                    String hienThiThuCung = (tenThuCung == null ? "" : tenThuCung)
+                            + (canNang > 0 ? " (" + canNang + " kg)" : "");
+                    String[] dong = new String[]{
+                            rs.getDate("ngayTiepNhan").toLocalDate().toString(),
+                            rs.getString("maPhieuDichVu"),
+                            hienThiThuCung,
+                            rs.getString("tenKhachHang") == null ? "" : rs.getString("tenKhachHang"),
+                            String.valueOf(rs.getDouble("donGia")),
+                            rs.getString("trangThai")
+                    };
+                    danhSach.add(dong);
+                }
+            }
+            return danhSach;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi lấy chi tiết thống kê dịch vụ: " + e.getMessage(), e);
+        }
+    }
+
     private DichVuChamSoc docDichVuTuResultSet(ResultSet rs) throws SQLException {
         return new DichVuChamSoc(
                 rs.getString("maDichVu"),
@@ -317,7 +379,6 @@ public class DichVuChamSocDAO {
                 SELECT phanLoaiKichThuoc, gia
                 FROM BangGiaDichVu
                 WHERE maDichVu = ?
-                  AND (ngayHetHieuLuc IS NULL OR ngayHetHieuLuc >= CAST(GETDATE() AS DATE))
                 ORDER BY ngayApDung ASC
                 """;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -335,6 +396,20 @@ public class DichVuChamSocDAO {
                     }
                 }
             }
+        }
+    }
+
+    // Đồng bộ ngày hết hiệu lực của bảng giá khi dịch vụ ngừng kinh doanh hoặc khôi phục kinh doanh
+    private void capNhatHieuLucBangGiaTheoTrangThai(Connection conn, String maDichVu, boolean dangKinhDoanh) throws SQLException {
+        String sql;
+        if (dangKinhDoanh) {
+            sql = "UPDATE BangGiaDichVu SET ngayHetHieuLuc = NULL WHERE maDichVu = ?";
+        } else {
+            sql = "UPDATE BangGiaDichVu SET ngayHetHieuLuc = CAST(GETDATE() AS DATE) WHERE maDichVu = ? AND ngayHetHieuLuc IS NULL";
+        }
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maDichVu);
+            ps.executeUpdate();
         }
     }
 

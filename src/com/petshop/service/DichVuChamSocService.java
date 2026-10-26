@@ -122,6 +122,21 @@ public class DichVuChamSocService {
         return dichVuChamSocDAO.thongKeDichVu(tuNgay, denNgay);
     }
 
+    // Lấy chi tiết các lượt thực hiện theo ngày của một dịch vụ trong khoảng thời gian
+    public List<String[]> layChiTietThongKeTheoDichVu(String maDichVu, LocalDate tuNgay, LocalDate denNgay) {
+        xacThucService.kiemTraQuyen("DVCS_BAO_CAO");
+        if (maDichVu == null || maDichVu.trim().isEmpty()) {
+            throw new IllegalArgumentException("Mã dịch vụ không được để trống!");
+        }
+        if (tuNgay == null || denNgay == null) {
+            throw new IllegalArgumentException("Vui lòng chọn đầy đủ từ ngày và đến ngày!");
+        }
+        if (denNgay.isBefore(tuNgay)) {
+            throw new IllegalArgumentException("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!");
+        }
+        return dichVuChamSocDAO.layChiTietThongKeTheoDichVu(maDichVu.trim(), tuNgay, denNgay);
+    }
+
     // Kiểm tra các quy tắc nghiệp vụ của dịch vụ chăm sóc
     private void kiemTraDuLieuDichVu(DichVuChamSoc dichVu) {
         if (dichVu == null) {
