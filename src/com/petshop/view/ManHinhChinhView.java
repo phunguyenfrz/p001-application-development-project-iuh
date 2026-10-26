@@ -9,6 +9,7 @@ import com.petshop.view.dichvu.CapNhatDichVuView;
 import com.petshop.view.dichvu.TimKiemDichVuView;
 import com.petshop.view.donnhap.CapNhatDonNhapView;
 import com.petshop.view.donnhap.LapDonNhapView;
+import com.petshop.view.donnhap.TimKiemDonNhapView;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -451,6 +452,8 @@ public class ManHinhChinhView extends BorderPane {
                     yield new LapDonNhapView();
                 } else if ("DN_NHAN_HANG".equals(chucNang.getMaChucNang())) {
                     yield new CapNhatDonNhapView();
+                } else if ("DN_TIM_KIEM".equals(chucNang.getMaChucNang())) {
+                    yield new TimKiemDonNhapView();
                 }
                 yield new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             }

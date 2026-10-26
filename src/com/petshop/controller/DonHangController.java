@@ -3,6 +3,7 @@ package com.petshop.controller;
 import com.petshop.model.DonNhap;
 import com.petshop.service.DonHangService;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class DonHangController {
@@ -19,6 +20,11 @@ public class DonHangController {
 
     public List<DonNhap> layDonChoNhanHang() {
         return donHangService.layDonChoNhanHang();
+    }
+
+    public List<DonNhap> timKiemDonNhap(String maDonHang, String tenNhaCungCap,
+                                       LocalDate tuNgay, LocalDate denNgay) {
+        return donHangService.timKiemDonNhap(maDonHang, tenNhaCungCap, tuNgay, denNgay);
     }
 
     public List<DonNhap.ChiTiet> layChiTietDonHang(String maDonHang) {

@@ -7,6 +7,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +36,54 @@ public class DonHangDAO {
             return danhSach;
         } catch (SQLException e) {
             throw new IllegalStateException("Lỗi tải danh sách đơn nhập chờ nhận: " + e.getMessage(), e);
+        }
+    }
+
+    public List<DonNhap> timKiemDonNhap(String maDonHang, String tenNhaCungCap,
+                                        LocalDate tuNgay, LocalDate denNgay) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT dh.maDonHang, ncc.tenNhaCungCap, dh.ngayLap, dh.tongTien
+                FROM DonHang dh
+                JOIN NhaCungCap ncc ON ncc.maNhaCungCap = dh.maNhaCungCap
+                WHERE 1 = 1
+                """);
+        List<Object> thamSo = new ArrayList<>();
+        if (maDonHang != null && !maDonHang.isBlank()) {
+            sql.append(" AND dh.maDonHang LIKE ?");
+            thamSo.add("%" + maDonHang.trim() + "%");
+        }
+        if (tenNhaCungCap != null && !tenNhaCungCap.isBlank()) {
+            sql.append(" AND ncc.tenNhaCungCap LIKE ?");
+            thamSo.add("%" + tenNhaCungCap.trim() + "%");
+        }
+        if (tuNgay != null) {
+            sql.append(" AND dh.ngayLap >= ?");
+            thamSo.add(Date.valueOf(tuNgay));
+        }
+        if (denNgay != null) {
+            sql.append(" AND dh.ngayLap <= ?");
+            thamSo.add(Date.valueOf(denNgay));
+        }
+        sql.append(" ORDER BY dh.ngayLap DESC, dh.maDonHang DESC");
+
+        List<DonNhap> danhSach = new ArrayList<>();
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < thamSo.size(); i++) {
+                statement.setObject(i + 1, thamSo.get(i));
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    danhSach.add(new DonNhap(
+                            resultSet.getString("maDonHang"),
+                            resultSet.getString("tenNhaCungCap"),
+                            resultSet.getDate("ngayLap").toLocalDate(),
+                            resultSet.getBigDecimal("tongTien")));
+                }
+            }
+            return danhSach;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi tìm kiếm đơn nhập: " + e.getMessage(), e);
         }
     }
 

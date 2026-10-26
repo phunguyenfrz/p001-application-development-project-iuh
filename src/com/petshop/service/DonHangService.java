@@ -3,6 +3,7 @@ package com.petshop.service;
 import com.petshop.dao.DonHangDAO;
 import com.petshop.model.DonNhap;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class DonHangService {
@@ -22,6 +23,15 @@ public class DonHangService {
     public List<DonNhap> layDonChoNhanHang() {
         xacThucService.kiemTraQuyen("DN_NHAN_HANG");
         return donHangDAO.layDonChoNhanHang();
+    }
+
+    public List<DonNhap> timKiemDonNhap(String maDonHang, String tenNhaCungCap,
+                                       LocalDate tuNgay, LocalDate denNgay) {
+        xacThucService.kiemTraQuyen("DN_TIM_KIEM");
+        if (tuNgay != null && denNgay != null && tuNgay.isAfter(denNgay)) {
+            throw new IllegalArgumentException("Ngày bắt đầu không được sau ngày kết thúc.");
+        }
+        return donHangDAO.timKiemDonNhap(maDonHang, tenNhaCungCap, tuNgay, denNgay);
     }
 
     public List<DonNhap.ChiTiet> layChiTietDonHang(String maDonHang) {
