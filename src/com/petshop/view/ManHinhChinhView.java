@@ -465,7 +465,7 @@ public class ManHinhChinhView extends BorderPane {
         if (btnTongQuan != null) {
             chonNut(btnTongQuan);
         }
-        pnlNoiDung.getChildren().setAll(taoNoiDungTongQuan());
+        pnlNoiDung.getChildren().setAll(new TongQuanView());
     }
 
     private String layTenVaiTroHienTai() {
@@ -563,7 +563,7 @@ public class ManHinhChinhView extends BorderPane {
     // =========================================================================
     // 5. TIỆN ÍCH TÀI KHOẢN
     // =========================================================================
-    public void hienThiHopThoaiDoiMatKhau() {
+    public void hienThiHopThoaiDoiMatKhau() { new DoiMatKhauView().showAndWait(); } private void hienThiHopThoaiDoiMatKhauCu() {
         Dialog<ButtonType> dlgDoiMatKhau = new Dialog<>();
         dlgDoiMatKhau.setTitle("Đổi mật khẩu");
         dlgDoiMatKhau.setHeaderText("Cập nhật mật khẩu tài khoản");
