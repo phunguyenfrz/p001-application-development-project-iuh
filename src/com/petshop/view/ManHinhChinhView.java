@@ -7,6 +7,8 @@ import com.petshop.view.dichvu.BangGiaDichVuView;
 import com.petshop.view.dichvu.BaoCaoDichVuView;
 import com.petshop.view.dichvu.CapNhatDichVuView;
 import com.petshop.view.dichvu.TimKiemDichVuView;
+import com.petshop.view.donnhap.CapNhatDonNhapView;
+import com.petshop.view.donnhap.LapDonNhapView;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -444,7 +446,14 @@ public class ManHinhChinhView extends BorderPane {
                 yield new CapNhatDichVuView();
             }
             case "NHA_CUNG_CAP"          -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
-            case "DON_NHAP"      -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
+            case "DON_NHAP"      -> {
+                if ("DN_TAO".equals(chucNang.getMaChucNang())) {
+                    yield new LapDonNhapView();
+                } else if ("DN_NHAN_HANG".equals(chucNang.getMaChucNang())) {
+                    yield new CapNhatDonNhapView();
+                }
+                yield new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
+            }
             case "SAN_PHAM"           -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "KHUYEN_MAI"         -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "HOA_DON"           -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
