@@ -48,3 +48,11 @@
     -fx-font-size: 11px;
     -fx-text-fill: #94a3b8;
 }
+.thong-bao-loi-inline { 
+    -fx-text-fill: #dc2626; 
+}
+.o-nhap-loi { 
+    -fx-border-color: #e74c3c !important; 
+    -fx-border-width: 1.5px; 
+    -fx-border-radius: 4px; 
+}
