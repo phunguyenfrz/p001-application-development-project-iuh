@@ -8,11 +8,122 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Date;
+import java.math.BigDecimal;
+import java.time.format.DateTimeFormatter;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class DonHangDAO {
+
+    public List<DonNhap.NhaCungCap> layDanhSachNhaCungCap() {
+        String sql = "SELECT maNhaCungCap, tenNhaCungCap FROM NhaCungCap ORDER BY tenNhaCungCap";
+        List<DonNhap.NhaCungCap> danhSach = new ArrayList<>();
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                danhSach.add(new DonNhap.NhaCungCap(
+                        resultSet.getString("maNhaCungCap"), resultSet.getString("tenNhaCungCap")));
+            }
+            return danhSach;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi tải danh sách nhà cung cấp: " + e.getMessage(), e);
+        }
+    }
+
+    public List<DonNhap.SanPham> layDanhSachSanPham(String maNhaCungCap) {
+        String sql = """
+                SELECT maSanPham, tenSanPham, maNhaCungCap
+                FROM SanPham
+                WHERE maNhaCungCap = ? AND trangThai = 1
+                ORDER BY tenSanPham
+                """;
+        List<DonNhap.SanPham> danhSach = new ArrayList<>();
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, maNhaCungCap);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    danhSach.add(new DonNhap.SanPham(
+                            resultSet.getString("maSanPham"), resultSet.getString("tenSanPham"),
+                            resultSet.getString("maNhaCungCap")));
+                }
+            }
+            return danhSach;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi tải danh sách sản phẩm: " + e.getMessage(), e);
+        }
+    }
+
+    public String taoDonNhap(String maNhaCungCap, String maNhanVien,
+                             List<DonNhap.ChiTiet> chiTiet, BigDecimal tongTien) {
+        LocalDate ngayLap = LocalDate.now();
+        String sqlTaoDon = """
+                INSERT INTO DonHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai)
+                VALUES (?, ?, ?, ?, ?, N'Chờ nhận hàng')
+                """;
+        String sqlTaoChiTiet = """
+                INSERT INTO ChiTietDonHang (maDonHang, maSanPham, soLuong, donGia)
+                VALUES (?, ?, ?, ?)
+                """;
+
+        try (Connection connection = DatabaseManager.getConnection()) {
+            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            connection.setAutoCommit(false);
+            try {
+                String maDonHang = taoMaDonHang(connection, ngayLap);
+                try (PreparedStatement taoDon = connection.prepareStatement(sqlTaoDon)) {
+                    taoDon.setString(1, maDonHang);
+                    taoDon.setString(2, maNhaCungCap);
+                    taoDon.setString(3, maNhanVien);
+                    taoDon.setDate(4, Date.valueOf(ngayLap));
+                    taoDon.setBigDecimal(5, tongTien);
+                    taoDon.executeUpdate();
+                }
+
+                try (PreparedStatement taoDong = connection.prepareStatement(sqlTaoChiTiet)) {
+                    for (DonNhap.ChiTiet dong : chiTiet) {
+                        taoDong.setString(1, maDonHang);
+                        taoDong.setString(2, dong.maSanPham());
+                        taoDong.setInt(3, dong.soLuong());
+                        taoDong.setBigDecimal(4, dong.donGia());
+                        taoDong.addBatch();
+                    }
+                    taoDong.executeBatch();
+                }
+
+                connection.commit();
+                return maDonHang;
+            } catch (SQLException | RuntimeException e) {
+                rollback(connection, e);
+                if (e instanceof SQLException sqlException) {
+                    throw new IllegalStateException("Lỗi lưu đơn nhập: " + sqlException.getMessage(), sqlException);
+                }
+                throw (RuntimeException) e;
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi kết nối khi lưu đơn nhập: " + e.getMessage(), e);
+        }
+    }
+
+    private String taoMaDonHang(Connection connection, LocalDate ngayLap) throws SQLException {
+        String ngay = ngayLap.format(DateTimeFormatter.BASIC_ISO_DATE);
+        String tienTo = "DH-" + ngay + "-";
+        String sql = "SELECT MAX(maDonHang) FROM DonHang WITH (UPDLOCK, HOLDLOCK) WHERE maDonHang LIKE ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, tienTo + "%");
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                String maLonNhat = resultSet.getString(1);
+                int soThuTu = maLonNhat == null ? 1 : Integer.parseInt(maLonNhat.substring(maLonNhat.length() - 6)) + 1;
+                if (soThuTu > 999999) {
+                    throw new IllegalStateException("Đã vượt số lượng mã đơn nhập trong ngày.");
+                }
+                return tienTo + String.format("%06d", soThuTu);
+            }
+        }
+    }
 
     public List<DonNhap> layDonChoNhanHang() {
         String sql = """

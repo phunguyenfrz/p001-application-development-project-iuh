@@ -18,6 +18,18 @@ public class DonHangController {
         this.donHangService = donHangService;
     }
 
+    public List<DonNhap.NhaCungCap> layDanhSachNhaCungCap() {
+        return donHangService.layDanhSachNhaCungCap();
+    }
+
+    public List<DonNhap.SanPham> layDanhSachSanPham(String maNhaCungCap) {
+        return donHangService.layDanhSachSanPham(maNhaCungCap);
+    }
+
+    public String taoDonNhap(String maNhaCungCap, List<DonNhap.ChiTiet> chiTiet) {
+        return donHangService.taoDonNhap(maNhaCungCap, chiTiet);
+    }
+
     public List<DonNhap> layDonChoNhanHang() {
         return donHangService.layDonChoNhanHang();
     }

@@ -1,5 +1,7 @@
 package com.petshop.view.donnhap;
 
+import com.petshop.controller.DonHangController;
+import com.petshop.model.DonNhap;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -13,7 +15,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.text.NumberFormat;
-import java.util.ArrayList;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -26,6 +28,7 @@ public class LapDonNhapView extends VBox {
 
     private static final Locale LOCALE_VI_VN = new Locale("vi", "VN");
 
+    private final DonHangController controller = new DonHangController();
     private final Button btnChonNhaCungCap = new Button("Chọn nhà cung cấp");
     private final Button btnThemSanPham = new Button("Thêm sản phẩm");
     private final Button btnXoaDong = new Button("Xóa dòng đã chọn");
@@ -35,9 +38,7 @@ public class LapDonNhapView extends VBox {
     private final TableView<DongDonNhapMau> tblChiTiet = new TableView<>();
     private final ObservableList<DongDonNhapMau> dsChiTiet = FXCollections.observableArrayList();
 
-    private final List<NhaCungCapMau> dsNhaCungCap = taoDanhSachNhaCungCapMau();
-    private final List<SanPhamMau> dsSanPham = taoDanhSachSanPhamMau();
-    private NhaCungCapMau nhaCungCapDangChon;
+    private DonNhap.NhaCungCap nhaCungCapDangChon;
 
     public LapDonNhapView() {
         setSpacing(14);
@@ -114,11 +115,11 @@ public class LapDonNhapView extends VBox {
     private void taoCotChiTiet() {
         TableColumn<DongDonNhapMau, String> colMa = new TableColumn<>("Mã sản phẩm");
         colMa.setPrefWidth(175);
-        colMa.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getMaSanPham()));
+        colMa.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().sanPham.maSanPham()));
 
         TableColumn<DongDonNhapMau, String> colTen = new TableColumn<>("Tên sản phẩm");
         colTen.setPrefWidth(250);
-        colTen.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTenSanPham()));
+        colTen.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().sanPham.tenSanPham()));
 
         TableColumn<DongDonNhapMau, String> colSoLuong = new TableColumn<>("Số lượng");
         colSoLuong.setPrefWidth(110);
@@ -128,7 +129,7 @@ public class LapDonNhapView extends VBox {
         TableColumn<DongDonNhapMau, String> colDonGia = new TableColumn<>("Đơn giá nhập");
         colDonGia.setPrefWidth(150);
         colDonGia.setStyle("-fx-alignment: CENTER-RIGHT;");
-        colDonGia.setCellValueFactory(d -> new SimpleStringProperty(dinhDangTien(d.getValue().getDonGia())));
+        colDonGia.setCellValueFactory(d -> new SimpleStringProperty(dinhDangTien(d.getValue().donGia)));
 
         TableColumn<DongDonNhapMau, String> colThanhTien = new TableColumn<>("Thành tiền");
         colThanhTien.setPrefWidth(160);
@@ -150,22 +151,34 @@ public class LapDonNhapView extends VBox {
         return pnlTongTien;
     }
 
-    // Mở danh sách nhà cung cấp mẫu và xử lý khi đổi lựa chọn.
+    // Mở danh sách nhà cung cấp và xử lý khi đổi lựa chọn.
     private void xuLyChonNhaCungCap() {
-        ChoiceDialog<NhaCungCapMau> dlg = new ChoiceDialog<>(null, dsNhaCungCap);
+        List<DonNhap.NhaCungCap> danhSach;
+        try {
+            danhSach = controller.layDanhSachNhaCungCap();
+        } catch (RuntimeException ex) {
+            hienThiLoi(ex.getMessage());
+            return;
+        }
+        if (danhSach.isEmpty()) {
+            hienThiLoi("Chưa có nhà cung cấp trong hệ thống.");
+            return;
+        }
+
+        ChoiceDialog<DonNhap.NhaCungCap> dlg = new ChoiceDialog<>(null, danhSach);
         dlg.setTitle("Chọn nhà cung cấp");
         dlg.setHeaderText("Chọn nhà cung cấp cho đơn nhập");
         dlg.setContentText("Nhà cung cấp:");
         ganChuDialog(dlg);
 
-        Optional<NhaCungCapMau> ketQua = dlg.showAndWait();
+        Optional<DonNhap.NhaCungCap> ketQua = dlg.showAndWait();
         if (ketQua.isEmpty()) {
             return;
         }
 
-        NhaCungCapMau luaChon = ketQua.get();
+        DonNhap.NhaCungCap luaChon = ketQua.get();
         if (nhaCungCapDangChon != null
-                && !nhaCungCapDangChon.getMaNhaCungCap().equals(luaChon.getMaNhaCungCap())
+            && !nhaCungCapDangChon.maNhaCungCap().equals(luaChon.maNhaCungCap())
                 && !dsChiTiet.isEmpty()) {
             Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION);
             xacNhan.setTitle("Đổi nhà cung cấp");
@@ -190,14 +203,21 @@ public class LapDonNhapView extends VBox {
             return;
         }
 
-        DongDonNhapMau dongMoi = moDialogThemSanPham();
+        DongDonNhapMau dongMoi;
+        try {
+            dongMoi = moDialogThemSanPham();
+        } catch (RuntimeException ex) {
+            hienThiLoi(ex.getMessage());
+            return;
+        }
         if (dongMoi == null) {
             return;
         }
 
         for (DongDonNhapMau dongCu : dsChiTiet) {
-            if (dongCu.getMaSanPham().equals(dongMoi.getMaSanPham())) {
-                dongCu.setSoLuong(dongCu.getSoLuong() + dongMoi.getSoLuong());
+            if (dongCu.sanPham.maSanPham().equals(dongMoi.sanPham.maSanPham())) {
+                dongCu.soLuong += dongMoi.soLuong;
+                dongCu.donGia = dongMoi.donGia;
                 tblChiTiet.refresh();
                 capNhatTongTien();
                 return;
@@ -209,9 +229,10 @@ public class LapDonNhapView extends VBox {
     }
 
     private DongDonNhapMau moDialogThemSanPham() {
-        List<SanPhamMau> sanPhamTheoNhaCungCap = laySanPhamTheoNhaCungCap();
+        List<DonNhap.SanPham> sanPhamTheoNhaCungCap =
+                controller.layDanhSachSanPham(nhaCungCapDangChon.maNhaCungCap());
         if (sanPhamTheoNhaCungCap.isEmpty()) {
-            hienThiLoi("Nhà cung cấp này chưa có sản phẩm mẫu.");
+            hienThiLoi("Nhà cung cấp này chưa có sản phẩm hoạt động.");
             return null;
         }
 
@@ -222,7 +243,7 @@ public class LapDonNhapView extends VBox {
 
         ButtonType nutThem = new ButtonType("Thêm", ButtonBar.ButtonData.OK_DONE);
         dlg.getDialogPane().getButtonTypes().addAll(nutThem, ButtonType.CANCEL);
-        ComboBox<SanPhamMau> cboSanPham = new ComboBox<>(FXCollections.observableArrayList(sanPhamTheoNhaCungCap));
+        ComboBox<DonNhap.SanPham> cboSanPham = new ComboBox<>(FXCollections.observableArrayList(sanPhamTheoNhaCungCap));
         cboSanPham.setMaxWidth(Double.MAX_VALUE);
         cboSanPham.setPromptText("Chọn sản phẩm");
         TextField txtSoLuong = new TextField("1");
@@ -232,11 +253,20 @@ public class LapDonNhapView extends VBox {
                 txtSoLuong.setText(cu);
             }
         });
+        TextField txtDonGia = new TextField();
+        txtDonGia.setPromptText("Giá nhập, VND");
+        txtDonGia.textProperty().addListener((obs, cu, moi) -> {
+            if (moi != null && !moi.matches("\\d*(\\.\\d{0,2})?")) {
+                txtDonGia.setText(cu);
+            }
+        });
         Label lblThanhTien = new Label("0 đ");
         cboSanPham.valueProperty().addListener((obs, cu, moi) ->
-            capNhatThanhTienDuKien(moi, txtSoLuong.getText(), lblThanhTien));
+            capNhatThanhTienDuKien(txtSoLuong.getText(), txtDonGia.getText(), lblThanhTien));
         txtSoLuong.textProperty().addListener((obs, cu, moi) ->
-            capNhatThanhTienDuKien(cboSanPham.getValue(), moi, lblThanhTien));
+            capNhatThanhTienDuKien(moi, txtDonGia.getText(), lblThanhTien));
+        txtDonGia.textProperty().addListener((obs, cu, moi) ->
+            capNhatThanhTienDuKien(txtSoLuong.getText(), moi, lblThanhTien));
 
         GridPane pnlNhap = new GridPane();
         pnlNhap.setHgap(10);
@@ -246,8 +276,10 @@ public class LapDonNhapView extends VBox {
         pnlNhap.add(cboSanPham, 1, 0);
         pnlNhap.add(new Label("Số lượng:"), 0, 1);
         pnlNhap.add(txtSoLuong, 1, 1);
-        pnlNhap.add(new Label("Thành tiền:"), 0, 2);
-        pnlNhap.add(lblThanhTien, 1, 2);
+        pnlNhap.add(new Label("Đơn giá nhập:"), 0, 2);
+        pnlNhap.add(txtDonGia, 1, 2);
+        pnlNhap.add(new Label("Thành tiền:"), 0, 3);
+        pnlNhap.add(lblThanhTien, 1, 3);
         dlg.getDialogPane().setContent(pnlNhap);
         dlg.setResultConverter(button -> null);
 
@@ -270,8 +302,19 @@ public class LapDonNhapView extends VBox {
                 return;
             }
 
-            SanPhamMau sanPham = cboSanPham.getValue();
-            dlg.setResult(new DongDonNhapMau(sanPham, soLuong));
+            BigDecimal donGia;
+            try {
+                donGia = new BigDecimal(txtDonGia.getText().trim());
+                if (donGia.signum() < 0) {
+                    throw new NumberFormatException();
+                }
+            } catch (NumberFormatException ex) {
+                e.consume();
+                hienThiLoi("Đơn giá nhập phải là số không âm, tối đa 2 chữ số thập phân.");
+                return;
+            }
+
+            dlg.setResult(new DongDonNhapMau(cboSanPham.getValue(), soLuong, donGia));
             e.consume();
             dlg.close();
         });
@@ -279,27 +322,18 @@ public class LapDonNhapView extends VBox {
         return dlg.showAndWait().orElse(null);
     }
 
-    private void capNhatThanhTienDuKien(SanPhamMau sanPham, String chuoiSoLuong, Label lblThanhTien) {
-        if (sanPham == null || chuoiSoLuong == null || chuoiSoLuong.isEmpty()) {
+    private void capNhatThanhTienDuKien(String chuoiSoLuong, String chuoiDonGia, Label lblThanhTien) {
+        if (chuoiSoLuong == null || chuoiSoLuong.isEmpty() || chuoiDonGia == null || chuoiDonGia.isEmpty()) {
             lblThanhTien.setText("0 đ");
             return;
         }
         try {
             int soLuong = Integer.parseInt(chuoiSoLuong);
-            lblThanhTien.setText(dinhDangTien(sanPham.getDonGiaNhap() * soLuong));
+            BigDecimal donGia = new BigDecimal(chuoiDonGia);
+            lblThanhTien.setText(dinhDangTien(donGia.multiply(BigDecimal.valueOf(soLuong))));
         } catch (NumberFormatException ex) {
             lblThanhTien.setText("Không hợp lệ");
         }
-    }
-
-    private List<SanPhamMau> laySanPhamTheoNhaCungCap() {
-        List<SanPhamMau> ketQua = new ArrayList<>();
-        for (SanPhamMau sanPham : dsSanPham) {
-            if (sanPham.getMaNhaCungCap().equals(nhaCungCapDangChon.getMaNhaCungCap())) {
-                ketQua.add(sanPham);
-            }
-        }
-        return ketQua;
     }
 
     private void xuLyXoaDong() {
@@ -313,9 +347,9 @@ public class LapDonNhapView extends VBox {
     }
 
     private void capNhatTongTien() {
-        double tongTien = 0;
+        BigDecimal tongTien = BigDecimal.ZERO;
         for (DongDonNhapMau dong : dsChiTiet) {
-            tongTien += dong.tinhThanhTien();
+            tongTien = tongTien.add(dong.tinhThanhTien());
         }
         lblTongTien.setText(dinhDangTien(tongTien));
     }
@@ -330,23 +364,20 @@ public class LapDonNhapView extends VBox {
             return;
         }
 
-        // TODO: Gọi DonHangService để lưu đơn nhập và các dòng chi tiết.
-        hienThiThongBao("Chưa kết nối lưu đơn", "Thông tin hiện là dữ liệu mẫu. TODO: nối DonHangService để lưu đơn nhập.");
-    }
-
-    private List<NhaCungCapMau> taoDanhSachNhaCungCapMau() {
-        List<NhaCungCapMau> danhSach = new ArrayList<>();
-        danhSach.add(new NhaCungCapMau("NCC-20261026-000001", "Nhà cung cấp Thú cưng An Phát"));
-        danhSach.add(new NhaCungCapMau("NCC-20261026-000002", "Công ty Thức ăn Happy Pet"));
-        return danhSach;
-    }
-
-    private List<SanPhamMau> taoDanhSachSanPhamMau() {
-        List<SanPhamMau> danhSach = new ArrayList<>();
-        danhSach.add(new SanPhamMau("SP-20261026-000001", "Thức ăn hạt cho chó 2kg", "NCC-20261026-000001", 125000));
-        danhSach.add(new SanPhamMau("SP-20261026-000002", "Vòng cổ thú cưng", "NCC-20261026-000001", 45000));
-        danhSach.add(new SanPhamMau("SP-20261026-000003", "Thức ăn mèo vị cá 1kg", "NCC-20261026-000002", 89000));
-        danhSach.add(new SanPhamMau("SP-20261026-000004", "Sữa tắm thú cưng 500ml", "NCC-20261026-000002", 72000));
+        try {
+            List<DonNhap.ChiTiet> chiTiet = dsChiTiet.stream()
+                    .map(dong -> new DonNhap.ChiTiet(dong.sanPham.maSanPham(), dong.sanPham.tenSanPham(),
+                            dong.soLuong, dong.donGia))
+                    .toList();
+            String maDonHang = controller.taoDonNhap(nhaCungCapDangChon.maNhaCungCap(), chiTiet);
+            hienThiThongBao("Tạo đơn thành công", "Đơn nhập " + maDonHang + " đã được lưu và đang chờ nhận hàng.");
+            dsChiTiet.clear();
+            nhaCungCapDangChon = null;
+            lblNhaCungCap.setText("Chưa chọn nhà cung cấp");
+            capNhatTongTien();
+        } catch (RuntimeException ex) {
+            hienThiLoi(ex.getMessage());
+        }
         return danhSach;
     }
 
@@ -362,10 +393,10 @@ public class LapDonNhapView extends VBox {
         }
     }
 
-    private String dinhDangTien(double soTien) {
+    private String dinhDangTien(BigDecimal soTien) {
         NumberFormat nf = NumberFormat.getNumberInstance(LOCALE_VI_VN);
-        nf.setMaximumFractionDigits(0);
-        return nf.format(Math.round(soTien)) + " đ";
+        nf.setMaximumFractionDigits(2);
+        return nf.format(soTien) + " đ";
     }
 
     private void hienThiThongBao(String tieuDe, String noiDung) {
@@ -386,101 +417,19 @@ public class LapDonNhapView extends VBox {
         dlg.showAndWait();
     }
 
-    private static class NhaCungCapMau {
-        private final String maNhaCungCap;
-        private final String tenNhaCungCap;
-
-        private NhaCungCapMau(String maNhaCungCap, String tenNhaCungCap) {
-            this.maNhaCungCap = maNhaCungCap;
-            this.tenNhaCungCap = tenNhaCungCap;
-        }
-
-        private String getMaNhaCungCap() {
-            return maNhaCungCap;
-        }
-
-        @Override
-        public String toString() {
-            return tenNhaCungCap + " (" + maNhaCungCap + ")";
-        }
-    }
-
-    private static class SanPhamMau {
-        private final String maSanPham;
-        private final String tenSanPham;
-        private final String maNhaCungCap;
-        private final double donGiaNhap;
-
-        private SanPhamMau(String maSanPham, String tenSanPham, String maNhaCungCap, double donGiaNhap) {
-            this.maSanPham = maSanPham;
-            this.tenSanPham = tenSanPham;
-            this.maNhaCungCap = maNhaCungCap;
-            this.donGiaNhap = donGiaNhap;
-        }
-
-        private String getMaSanPham() {
-            return maSanPham;
-        }
-
-        private String getTenSanPham() {
-            return tenSanPham;
-        }
-
-        private String getMaNhaCungCap() {
-            return maNhaCungCap;
-        }
-
-        private double getDonGiaNhap() {
-            return donGiaNhap;
-        }
-
-        @Override
-        public String toString() {
-            return tenSanPham + " - " + dinhDangTien(donGiaNhap);
-        }
-
-        private String dinhDangTien(double soTien) {
-            NumberFormat nf = NumberFormat.getNumberInstance(LOCALE_VI_VN);
-            nf.setMaximumFractionDigits(0);
-            return nf.format(Math.round(soTien)) + " đ";
-        }
-    }
-
     private static class DongDonNhapMau {
-        private final String maSanPham;
-        private final String tenSanPham;
-        private final double donGia;
+        private final DonNhap.SanPham sanPham;
+        private BigDecimal donGia;
         private int soLuong;
 
-        private DongDonNhapMau(SanPhamMau sanPham, int soLuong) {
-            this.maSanPham = sanPham.getMaSanPham();
-            this.tenSanPham = sanPham.getTenSanPham();
-            this.donGia = sanPham.getDonGiaNhap();
+        private DongDonNhapMau(DonNhap.SanPham sanPham, int soLuong, BigDecimal donGia) {
+            this.sanPham = sanPham;
             this.soLuong = soLuong;
+            this.donGia = donGia;
         }
 
-        private String getMaSanPham() {
-            return maSanPham;
-        }
-
-        private String getTenSanPham() {
-            return tenSanPham;
-        }
-
-        private double getDonGia() {
-            return donGia;
-        }
-
-        private int getSoLuong() {
-            return soLuong;
-        }
-
-        private void setSoLuong(int soLuong) {
-            this.soLuong = soLuong;
-        }
-
-        private double tinhThanhTien() {
-            return donGia * soLuong;
+        private BigDecimal tinhThanhTien() {
+            return donGia.multiply(BigDecimal.valueOf(soLuong));
         }
     }
 }
