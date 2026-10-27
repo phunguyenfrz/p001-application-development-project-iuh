@@ -465,134 +465,18 @@ public class ManHinhChinhView extends BorderPane {
         if (btnTongQuan != null) {
             chonNut(btnTongQuan);
         }
-        pnlNoiDung.getChildren().setAll(taoNoiDungTongQuan());
+        pnlNoiDung.getChildren().setAll(new TongQuanView());
     }
 
     private String layTenVaiTroHienTai() {
         return (taiKhoan != null && taiKhoan.getPhanQuyen() != null) ? taiKhoan.getPhanQuyen().getTenHienThi() : "Admin";
     }
 
-    private ScrollPane taoNoiDungTongQuan() {
-        VBox pnlNoiDungTongQuan = new VBox(22);
-        pnlNoiDungTongQuan.getStyleClass().add("noi-dung-tong-quan");
-
-        HBox pnlChaoMung = new HBox();
-        pnlChaoMung.setAlignment(Pos.CENTER_LEFT);
-
-        String hoTen = (taiKhoan != null && taiKhoan.getHoTenNhanVien() != null) ? taiKhoan.getHoTenNhanVien() : "Quản trị viên";
-        VBox pnlNoiDungChaoMung = new VBox(4);
-        Label lblChaoMung = new Label("Xin chào, " + hoTen);
-        lblChaoMung.getStyleClass().add("tieu-de-chao-mung");
-        Label lblPhuDeChaoMung = new Label("Bảng điều khiển tổng quan");
-        lblPhuDeChaoMung.getStyleClass().add("phu-de-chao-mung");
-        pnlNoiDungChaoMung.getChildren().addAll(lblChaoMung, lblPhuDeChaoMung);
-
-        Region pnlKhoangTrongTieuDe = new Region();
-        HBox.setHgrow(pnlKhoangTrongTieuDe, Priority.ALWAYS);
-
-        String ngayHomNay = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-        Label lblNgay = new Label(ngayHomNay);
-        lblNgay.getStyleClass().add("the-ngay-thang");
-
-        pnlChaoMung.getChildren().addAll(pnlNoiDungChaoMung, pnlKhoangTrongTieuDe, lblNgay);
-
-        // Thẻ thống kê
-        HBox pnlHangThongKe = taoHangThongKe();
-
-        // Hoạt động gần đây
-        VBox pnlHoatDongGanDay = new VBox(14);
-        pnlHoatDongGanDay.getStyleClass().add("khung-hoat-dong");
-        Label lblHoatDongGanDayTieuDe = new Label("Hoạt động gần đây");
-        lblHoatDongGanDayTieuDe.getStyleClass().add("tieu-de-khung");
-        Label lblHoatDongGanDayMoTa = new Label("Chưa có dữ liệu.");
-        lblHoatDongGanDayMoTa.setStyle("-fx-font-size: 13px; -fx-text-fill: #7d8f82;");
-        pnlHoatDongGanDay.getChildren().addAll(lblHoatDongGanDayTieuDe, lblHoatDongGanDayMoTa);
-
-        pnlNoiDungTongQuan.getChildren().addAll(pnlChaoMung, pnlHangThongKe, pnlHoatDongGanDay);
-
-        ScrollPane scrTongQuan = new ScrollPane(pnlNoiDungTongQuan);
-        scrTongQuan.setFitToWidth(true);
-        scrTongQuan.setStyle("-fx-background-color: #f3f6f3; -fx-background: #f3f6f3; -fx-border-color: transparent;");
-        VBox.setVgrow(scrTongQuan, Priority.ALWAYS);
-        return scrTongQuan;
-    }
-
-    private HBox taoHangThongKe() {
-        HBox pnlCacTheThongKe = new HBox(16);
-
-        // Thẻ 1: Doanh thu
-        VBox pnlTheDoanhThu = new VBox(6);
-        pnlTheDoanhThu.getStyleClass().add("the-thong-ke-noi-bat");
-        HBox.setHgrow(pnlTheDoanhThu, Priority.ALWAYS);
-        Label lblDoanhThuTieuDe = new Label("Doanh thu hôm nay");
-        lblDoanhThuTieuDe.getStyleClass().add("tieu-de-thong-ke-trang");
-        Label lblDoanhThuGiaTri = new Label("0 đ");
-        lblDoanhThuGiaTri.getStyleClass().add("gia-tri-thong-ke-trang");
-        Label lblDoanhThuMoTa = new Label("Tổng thanh toán trong ngày");
-        lblDoanhThuMoTa.getStyleClass().add("mo-ta-thong-ke-trang");
-        pnlTheDoanhThu.getChildren().addAll(lblDoanhThuTieuDe, lblDoanhThuGiaTri, lblDoanhThuMoTa);
-
-        // Thẻ 2: Lịch hẹn
-        VBox pnlTheLichHen = new VBox(6);
-        pnlTheLichHen.getStyleClass().add("the-thong-ke");
-        HBox.setHgrow(pnlTheLichHen, Priority.ALWAYS);
-        Label lblLichHenTieuDe = new Label("Lịch hẹn hôm nay");
-        lblLichHenTieuDe.getStyleClass().add("tieu-de-thong-ke");
-        Label lblLichHenGiaTri = new Label("0");
-        lblLichHenGiaTri.getStyleClass().add("gia-tri-thong-ke");
-        Label lblLichHenMoTa = new Label("Cuộc hẹn cần thực hiện");
-        lblLichHenMoTa.getStyleClass().add("mo-ta-thong-ke");
-        pnlTheLichHen.getChildren().addAll(lblLichHenTieuDe, lblLichHenGiaTri, lblLichHenMoTa);
-
-        // Thẻ 3: Tồn kho
-        VBox pnlTheTonKho = new VBox(6);
-        pnlTheTonKho.getStyleClass().add("the-thong-ke");
-        HBox.setHgrow(pnlTheTonKho, Priority.ALWAYS);
-        Label lblTonKhoTieuDe = new Label("Sản phẩm sắp hết hàng");
-        lblTonKhoTieuDe.getStyleClass().add("tieu-de-thong-ke");
-        Label lblTonKhoGiaTri = new Label("0");
-        lblTonKhoGiaTri.getStyleClass().add("gia-tri-thong-ke");
-        Label lblTonKhoMoTa = new Label("Tồn kho dưới ngưỡng an toàn");
-        lblTonKhoMoTa.getStyleClass().add("mo-ta-thong-ke");
-        pnlTheTonKho.getChildren().addAll(lblTonKhoTieuDe, lblTonKhoGiaTri, lblTonKhoMoTa);
-
-        pnlCacTheThongKe.getChildren().addAll(pnlTheDoanhThu, pnlTheLichHen, pnlTheTonKho);
-        return pnlCacTheThongKe;
-    }
-
     // =========================================================================
-    // 5. TIỆN ÍCH TÀI KHOẢN
+    // 5. TIá»†N ÃCH TÃ€I KHOáº¢N
     // =========================================================================
     public void hienThiHopThoaiDoiMatKhau() {
-        Dialog<ButtonType> dlgDoiMatKhau = new Dialog<>();
-        dlgDoiMatKhau.setTitle("Đổi mật khẩu");
-        dlgDoiMatKhau.setHeaderText("Cập nhật mật khẩu tài khoản");
-
-        VBox pnlFormDoiMatKhau = new VBox(10);
-        pnlFormDoiMatKhau.setPadding(new Insets(20));
-
-        PasswordField pwdHienTai = new PasswordField();
-        pwdHienTai.setPromptText("Mật khẩu hiện tại");
-
-        PasswordField pwdMoi = new PasswordField();
-        pwdMoi.setPromptText("Mật khẩu mới");
-
-        PasswordField pwdXacNhan = new PasswordField();
-        pwdXacNhan.setPromptText("Xác nhận mật khẩu mới");
-
-        Label lblMatKhauHienTai = new Label("Mật khẩu hiện tại:");
-        Label lblMatKhauMoi = new Label("Mật khẩu mới:");
-        Label lblXacNhanMatKhau = new Label("Xác nhận mật khẩu:");
-        pnlFormDoiMatKhau.getChildren().addAll(
-                lblMatKhauHienTai, pwdHienTai,
-                lblMatKhauMoi, pwdMoi,
-                lblXacNhanMatKhau, pwdXacNhan
-        );
-
-        dlgDoiMatKhau.getDialogPane().setContent(pnlFormDoiMatKhau);
-        dlgDoiMatKhau.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-
-        dlgDoiMatKhau.showAndWait();
+        new DoiMatKhauView().showAndWait();
     }
 
     public void dangXuat() {
