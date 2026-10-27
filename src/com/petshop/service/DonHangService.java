@@ -97,6 +97,7 @@ public class DonHangService {
     }
 
     public boolean huyDonNhap(String maDonHang) {
+        xacThucService.kiemTraQuyen("IMP_CANCEL");
         if (maDonHang == null || maDonHang.isBlank()) {
             throw new IllegalArgumentException("Vui lòng chọn đơn nhập cần hủy.");
         }
