@@ -95,26 +95,8 @@ public class CapNhatDonNhapView extends VBox {
             return;
         }
         try {
-            TableView<DonNhap.ChiTiet> tblChiTiet = new TableView<>();
-            TableColumn<DonNhap.ChiTiet, String> colMa = new TableColumn<>("Mã sản phẩm");
-            colMa.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().maSanPham()));
-            TableColumn<DonNhap.ChiTiet, String> colTen = new TableColumn<>("Tên sản phẩm");
-            colTen.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().tenSanPham()));
-            TableColumn<DonNhap.ChiTiet, String> colSoLuong = new TableColumn<>("Số lượng");
-            colSoLuong.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().soLuong())));
-            TableColumn<DonNhap.ChiTiet, String> colDonGia = new TableColumn<>("Đơn giá");
-            colDonGia.setCellValueFactory(cell -> new SimpleStringProperty(dinhDangTien(cell.getValue().donGia())));
-            tblChiTiet.getColumns().addAll(java.util.List.of(colMa, colTen, colSoLuong, colDonGia));
-            tblChiTiet.setItems(FXCollections.observableArrayList(
-                    donHangController.layChiTietDonHang(donNhap.maDonHang())));
-            tblChiTiet.setPrefHeight(320);
-            tblChiTiet.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-
-            Dialog<Void> dialog = new Dialog<>();
-            dialog.setTitle("Chi tiết đơn nhập " + donNhap.maDonHang());
-            dialog.setHeaderText("Nhà cung cấp: " + donNhap.tenNhaCungCap());
-            dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
-            dialog.getDialogPane().setContent(tblChiTiet);
+            XemChiTietDonNhapView dialog = new XemChiTietDonNhapView(donNhap,
+                    donHangController.layChiTietDonHang(donNhap.maDonHang()));
             ganChuDialog(dialog);
             dialog.showAndWait();
         } catch (RuntimeException e) {

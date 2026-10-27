@@ -35,7 +35,7 @@ public class DonHangService {
     }
 
     public List<DonNhap.ChiTiet> layChiTietDonHang(String maDonHang) {
-        xacThucService.kiemTraQuyen("DN_NHAN_HANG");
+        xacThucService.kiemTraQuyen("DN_TIM_KIEM");
         if (maDonHang == null || maDonHang.isBlank()) {
             throw new IllegalArgumentException("Vui lòng chọn đơn nhập.");
         }

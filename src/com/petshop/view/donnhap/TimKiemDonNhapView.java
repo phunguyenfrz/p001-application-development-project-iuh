@@ -27,6 +27,7 @@ public class TimKiemDonNhapView extends VBox {
     private final DatePicker dpTuNgay = new DatePicker();
     private final DatePicker dpDenNgay = new DatePicker();
     private final TableView<DonNhap> tblKetQua = new TableView<>();
+    private final Button btnXemChiTiet = new Button("Xem chi tiết");
 
     public TimKiemDonNhapView() {
         this(new DonHangController());
@@ -47,10 +48,15 @@ public class TimKiemDonNhapView extends VBox {
         tblKetQua.getStyleClass().add("bang-du-lieu");
         tblKetQua.setPlaceholder(new Label("Không tìm thấy đơn nhập phù hợp"));
         tblKetQua.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        btnXemChiTiet.getStyleClass().add("nut-phu");
+        btnXemChiTiet.disableProperty().bind(tblKetQua.getSelectionModel().selectedItemProperty().isNull());
+        btnXemChiTiet.setOnAction(event -> moChiTiet());
         VBox.setVgrow(tblKetQua, Priority.ALWAYS);
         taoCotKetQua();
 
-        VBox pnlNoiDung = new VBox(12, pnlBoLoc, tblKetQua);
+        HBox pnlThaoTacKetQua = new HBox(btnXemChiTiet);
+        pnlThaoTacKetQua.setAlignment(Pos.CENTER_RIGHT);
+        VBox pnlNoiDung = new VBox(12, pnlBoLoc, pnlThaoTacKetQua, tblKetQua);
         pnlNoiDung.getStyleClass().add("hop-noi-dung");
         VBox.setVgrow(pnlNoiDung, Priority.ALWAYS);
         getChildren().addAll(lblTieuDe, lblMoTa, pnlNoiDung);
@@ -129,6 +135,23 @@ public class TimKiemDonNhapView extends VBox {
                     txtMaDonHang.getText(), txtNhaCungCap.getText(), dpTuNgay.getValue(), dpDenNgay.getValue())));
         } catch (RuntimeException e) {
             hienThiLoi("Không tìm kiếm được đơn nhập: " + e.getMessage());
+        }
+    }
+
+    private void moChiTiet() {
+        DonNhap donNhap = tblKetQua.getSelectionModel().getSelectedItem();
+        if (donNhap == null) {
+            return;
+        }
+        try {
+            XemChiTietDonNhapView dialog = new XemChiTietDonNhapView(donNhap,
+                    donHangController.layChiTietDonHang(donNhap.maDonHang()));
+            if (getScene() != null) {
+                dialog.initOwner(getScene().getWindow());
+            }
+            dialog.showAndWait();
+        } catch (RuntimeException e) {
+            hienThiLoi("Không tải được chi tiết đơn nhập: " + e.getMessage());
         }
     }
 
