@@ -124,7 +124,7 @@ public class LapDonNhapView extends VBox {
         TableColumn<DongDonNhapMau, String> colSoLuong = new TableColumn<>("Số lượng");
         colSoLuong.setPrefWidth(110);
         colSoLuong.setStyle("-fx-alignment: CENTER-RIGHT;");
-        colSoLuong.setCellValueFactory(d -> new SimpleStringProperty(String.valueOf(d.getValue().getSoLuong())));
+        colSoLuong.setCellValueFactory(d -> new SimpleStringProperty(String.valueOf(d.getValue().soLuong)));
 
         TableColumn<DongDonNhapMau, String> colDonGia = new TableColumn<>("Đơn giá nhập");
         colDonGia.setPrefWidth(150);
@@ -378,7 +378,6 @@ public class LapDonNhapView extends VBox {
         } catch (RuntimeException ex) {
             hienThiLoi(ex.getMessage());
         }
-        return danhSach;
     }
 
     private void ganChuDialog(Dialog<?> dlg) {
