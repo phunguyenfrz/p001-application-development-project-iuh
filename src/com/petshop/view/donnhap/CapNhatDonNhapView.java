@@ -24,6 +24,7 @@ public class CapNhatDonNhapView extends VBox {
     private final DonHangController donHangController;
     private final TableView<DonNhap> tblDonNhap = new TableView<>();
     private final Button btnXemChiTiet = new Button("Xem chi tiết");
+    private final Button btnHuyDon = new Button("Hủy đơn");
     private final Button btnXacNhan = new Button("Xác nhận nhận hàng");
 
     public CapNhatDonNhapView() {
@@ -46,13 +47,16 @@ public class CapNhatDonNhapView extends VBox {
         Button btnLamMoi = new Button("Làm mới");
         btnLamMoi.getStyleClass().add("nut-phu");
         btnXemChiTiet.getStyleClass().add("nut-phu");
+        btnHuyDon.getStyleClass().add("nut-phu");
         btnXacNhan.getStyleClass().add("nut-chinh");
         btnXemChiTiet.disableProperty().bind(tblDonNhap.getSelectionModel().selectedItemProperty().isNull());
+        btnHuyDon.disableProperty().bind(tblDonNhap.getSelectionModel().selectedItemProperty().isNull());
         btnXacNhan.disableProperty().bind(tblDonNhap.getSelectionModel().selectedItemProperty().isNull());
         btnLamMoi.setOnAction(event -> taiDanhSach());
         btnXemChiTiet.setOnAction(event -> moChiTiet());
+        btnHuyDon.setOnAction(event -> huyDonNhap());
         btnXacNhan.setOnAction(event -> xacNhanNhanHang());
-        pnlCongCu.getChildren().addAll(btnLamMoi, btnXemChiTiet, btnXacNhan);
+        pnlCongCu.getChildren().addAll(btnLamMoi, btnXemChiTiet, btnHuyDon, btnXacNhan);
 
         tblDonNhap.getStyleClass().add("bang-du-lieu");
         tblDonNhap.setPlaceholder(new Label("Không có đơn nhập đang chờ nhận hàng"));
@@ -101,6 +105,33 @@ public class CapNhatDonNhapView extends VBox {
             dialog.showAndWait();
         } catch (RuntimeException e) {
             hienThiLoi("Không tải được chi tiết đơn nhập: " + e.getMessage());
+        }
+    }
+
+    private void huyDonNhap() {
+        DonNhap donNhap = tblDonNhap.getSelectionModel().getSelectedItem();
+        if (donNhap == null) {
+            return;
+        }
+        Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION);
+        xacNhan.setTitle("Xác nhận hủy đơn");
+        xacNhan.setHeaderText("Hủy đơn nhập " + donNhap.maDonHang() + "?");
+        xacNhan.setContentText("Đơn nhập sẽ được chuyển sang trạng thái 'Đã hủy' và không thể khôi phục.");
+        ganChuDialog(xacNhan);
+        if (xacNhan.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+            return;
+        }
+
+        try {
+            if (!donHangController.huyDonNhap(donNhap.maDonHang())) {
+                hienThiLoi("Đơn này không còn ở trạng thái chờ nhận hàng. Hãy làm mới danh sách.");
+                taiDanhSach();
+                return;
+            }
+            new Alert(Alert.AlertType.INFORMATION, "Đã hủy đơn nhập thành công.").showAndWait();
+            taiDanhSach();
+        } catch (RuntimeException e) {
+            hienThiLoi("Không thể hủy đơn nhập: " + e.getMessage());
         }
     }
 

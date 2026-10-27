@@ -95,4 +95,11 @@ public class DonHangService {
         }
         return donHangDAO.xacNhanNhanHang(maDonHang.trim());
     }
+
+    public boolean huyDonNhap(String maDonHang) {
+        if (maDonHang == null || maDonHang.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng chọn đơn nhập cần hủy.");
+        }
+        return donHangDAO.huyDonNhap(maDonHang.trim());
+    }
 }

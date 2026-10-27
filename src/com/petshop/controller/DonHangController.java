@@ -46,4 +46,8 @@ public class DonHangController {
     public boolean xacNhanNhanHang(String maDonHang) {
         return donHangService.xacNhanNhanHang(maDonHang);
     }
+
+    public boolean huyDonNhap(String maDonHang) {
+        return donHangService.huyDonNhap(maDonHang);
+    }
 }

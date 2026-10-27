@@ -279,6 +279,21 @@ public class DonHangDAO {
         return statement.executeQuery();
     }
 
+    public boolean huyDonNhap(String maDonHang) {
+        String sql = """
+                UPDATE DonHang
+                SET trangThai = N'Đã hủy'
+                WHERE maDonHang = ? AND trangThai = N'Chờ nhận hàng'
+                """;
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, maDonHang);
+            return statement.executeUpdate() == 1;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi hủy đơn nhập: " + e.getMessage(), e);
+        }
+    }
+
     private void rollback(Connection connection, Exception cause) {
         try {
             connection.rollback();
