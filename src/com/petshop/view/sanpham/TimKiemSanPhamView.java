@@ -98,6 +98,7 @@ public class TimKiemSanPhamView extends VBox {
                 btnTimKiem, btnLamMoi, btnXoaMem,
                 pnlKhoangCach, lblKetQua
         );
+
         return pnlThanh;
     }
 
@@ -109,7 +110,7 @@ public class TimKiemSanPhamView extends VBox {
         colMa.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getMaSanPham()));
 
         TableColumn<SanPham, String> colTen = new TableColumn<>("Tên sản phẩm");
-        colTen.setPrefWidth(230);
+        colTen.setPrefWidth(220);
         colTen.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getTenSanPham()));
 
         TableColumn<SanPham, String> colMaVach = new TableColumn<>("Mã vạch");
@@ -117,7 +118,7 @@ public class TimKiemSanPhamView extends VBox {
         colMaVach.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getMaVach()));
 
         TableColumn<SanPham, String> colGiaBan = new TableColumn<>("Giá bán");
-        colGiaBan.setPrefWidth(120);
+        colGiaBan.setPrefWidth(110);
         colGiaBan.setStyle("-fx-alignment: CENTER-RIGHT;");
         colGiaBan.setCellValueFactory(cell -> new SimpleStringProperty(dinhDangTien.format(cell.getValue().getGiaBan())));
 
@@ -172,7 +173,7 @@ public class TimKiemSanPhamView extends VBox {
             List<SanPham> ds = sanPhamController.timKiemSanPham(tuKhoa, trangThai);
             tblDanhSach.setItems(FXCollections.observableArrayList(ds));
             lblKetQua.setText("Tổng số: " + ds.size() + " sản phẩm");
-        } catch (Exception ex) {
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             hienThiCanhBao("Lỗi tìm kiếm", ex.getMessage());
         }
     }
@@ -194,7 +195,7 @@ public class TimKiemSanPhamView extends VBox {
                     hienThiThongBao("Thông báo", "Đã ngừng kinh doanh sản phẩm!");
                     xuLyTimKiem();
                 }
-            } catch (Exception ex) {
+            } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
                 hienThiCanhBao("Lỗi", ex.getMessage());
             }
         }
@@ -216,4 +217,3 @@ public class TimKiemSanPhamView extends VBox {
         alert.showAndWait();
     }
 }
-

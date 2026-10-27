@@ -14,8 +14,8 @@ import java.text.DecimalFormat;
 import java.util.List;
 
 /**
- * Màn hình Báo cáo tổng hợp Sản phẩm & Tồn kho (PRD_REPORT).
- * Tiền tố điều khiển: lbl, btn, tbl.
+ * Màn hình báo cáo thống kê danh mục sản phẩm và giá trị tồn kho (PRD_REPORT).
+ * Tiền tố điều khiển: lbl, btn, tbl, pnl.
  */
 public class BaoCaoSanPhamView extends VBox {
 
@@ -26,91 +26,82 @@ public class BaoCaoSanPhamView extends VBox {
     private final Label lblTongGiaTriKho = new Label("0 đ");
     private final Label lblTongSapHet = new Label("0");
 
+    private final Button btnLamMoi = new Button("Làm mới báo cáo");
     private final TableView<SanPham> tblDanhSach = new TableView<>();
-    private final Button btnLamMoi = new Button("🔄 Cập nhật báo cáo");
 
     public BaoCaoSanPhamView() {
         setSpacing(14);
         getStyleClass().add("khung-phan-he");
 
         VBox pnlTieuDeMan = new VBox(4);
-        Label lblTieuDe = new Label("SẢN PHẨM - BÁO CÁO THỐNG KÊ");
+        Label lblTieuDe = new Label("SẢN PHẨM - BÁO CÁO TỒN KHO & DANH MỤC");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-        Label lblMoTa = new Label("Thống kê tổng giá trị tồn kho, số lượng sản phẩm đang kinh doanh và cảnh báo tồn an toàn.");
+        Label lblMoTa = new Label("Tổng hợp số lượng sản phẩm, giá trị tồn kho và cảnh báo thiếu hụt hàng hóa.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
         pnlTieuDeMan.getChildren().addAll(lblTieuDe, lblMoTa);
 
-        VBox pnlKhungChinh = new VBox(14);
-        pnlKhungChinh.getStyleClass().add("hop-noi-dung");
-        pnlKhungChinh.setPadding(new Insets(16));
-        VBox.setVgrow(pnlKhungChinh, Priority.ALWAYS);
-
-        HBox pnlTheThongKe = taoCacTheThongKe();
-        VBox pnlBang = taoKhungBang();
+        HBox pnlTheThongKe = taoKhungTheThongKe();
+        VBox pnlBang = taoKhungBangChiTiet();
         VBox.setVgrow(pnlBang, Priority.ALWAYS);
 
-        pnlKhungChinh.getChildren().addAll(pnlTheThongKe, pnlBang);
-        getChildren().addAll(pnlTieuDeMan, pnlKhungChinh);
+        getChildren().addAll(pnlTieuDeMan, pnlTheThongKe, pnlBang);
 
         taiBaoCao();
     }
 
-    private HBox taoCacTheThongKe() {
-        HBox pnlCacThe = new HBox(14);
+    private HBox taoKhungTheThongKe() {
+        HBox pnlThe = new HBox(14);
 
-        VBox the1 = taoTheThongKe("📦 Tổng mặt hàng", lblTongSanPham, "Số sản phẩm đang quản lý", false);
-        VBox the2 = taoTheThongKe("💰 Tổng giá trị tồn kho", lblTongGiaTriKho, "Tính theo giá niêm yết bán lẻ", true);
-        VBox the3 = taoTheThongKe("⚠️ Sản phẩm sắp hết hàng", lblTongSapHet, "Tồn kho dưới ngưỡng an toàn", false);
-
-        btnLamMoi.getStyleClass().add("nut-phu");
-        btnLamMoi.setOnAction(e -> taiBaoCao());
+        VBox the1 = taoTheKpi("TỔNG SỐ SẢN PHẨM", lblTongSanPham, "Sản phẩm trong danh mục", "the-thong-ke");
+        VBox the2 = taoTheKpi("TỔNG GIÁ TRỊ TỒN KHO", lblTongGiaTriKho, "Tính theo giá niêm yết hiện tại", "the-thong-ke-noi-bat");
+        VBox the3 = taoTheKpi("SẢN PHẨM CẦN NHẬP THÊM", lblTongSapHet, "Tồn kho dưới ngưỡng an toàn", "the-thong-ke");
 
         HBox.setHgrow(the1, Priority.ALWAYS);
         HBox.setHgrow(the2, Priority.ALWAYS);
         HBox.setHgrow(the3, Priority.ALWAYS);
 
-        pnlCacThe.getChildren().addAll(the1, the2, the3);
-        return pnlCacThe;
+        pnlThe.getChildren().addAll(the1, the2, the3);
+        return pnlThe;
     }
 
-    private VBox taoTheThongKe(String tieuDe, Label lblGiaTri, String moTa, boolean noiBat) {
-        VBox card = new VBox(6);
-        card.setPadding(new Insets(14, 16, 14, 16));
-        if (noiBat) {
-            card.getStyleClass().add("the-thong-ke-noi-bat");
-            Label lblT = new Label(tieuDe);
-            lblT.getStyleClass().add("tieu-de-thong-ke-trang");
-            lblGiaTri.getStyleClass().add("gia-tri-thong-ke-trang");
-            Label lblM = new Label(moTa);
-            lblM.getStyleClass().add("mo-ta-thong-ke-trang");
-            card.getChildren().addAll(lblT, lblGiaTri, lblM);
-        } else {
-            card.getStyleClass().add("the-thong-ke");
-            Label lblT = new Label(tieuDe);
-            lblT.getStyleClass().add("tieu-de-thong-ke");
-            lblGiaTri.getStyleClass().add("gia-tri-thong-ke");
-            Label lblM = new Label(moTa);
-            lblM.getStyleClass().add("mo-ta-thong-ke");
-            card.getChildren().addAll(lblT, lblGiaTri, lblM);
-        }
-        return card;
+    private VBox taoTheKpi(String tieuDe, Label lblGiaTri, String phuDe, String styleCard) {
+        VBox pnlThe = new VBox(6);
+        pnlThe.getStyleClass().add(styleCard);
+        pnlThe.setPadding(new Insets(16));
+
+        Label lblTen = new Label(tieuDe);
+        lblTen.getStyleClass().add("the-thong-ke-noi-bat".equals(styleCard) ? "tieu-de-thong-ke-trang" : "tieu-de-thong-ke");
+
+        lblGiaTri.getStyleClass().add("the-thong-ke-noi-bat".equals(styleCard) ? "gia-tri-thong-ke-trang" : "gia-tri-thong-ke");
+
+        Label lblPhu = new Label(phuDe);
+        lblPhu.getStyleClass().add("the-thong-ke-noi-bat".equals(styleCard) ? "mo-ta-thong-ke-trang" : "mo-ta-thong-ke");
+
+        pnlThe.getChildren().addAll(lblTen, lblGiaTri, lblPhu);
+        return pnlThe;
     }
 
-    private VBox taoKhungBang() {
+    private VBox taoKhungBangChiTiet() {
         VBox pnlBang = new VBox(10);
+        pnlBang.getStyleClass().add("hop-noi-dung");
+        pnlBang.setPadding(new Insets(14));
 
         HBox pnlTieuDeBang = new HBox(10);
         pnlTieuDeBang.setAlignment(Pos.CENTER_LEFT);
-        Label lblBangTieuDe = new Label("Chi tiết danh mục sản phẩm và tồn kho");
-        lblBangTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+        Label lblBang = new Label("Chi tiết danh mục và giá trị tồn từng sản phẩm");
+        lblBang.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
 
-        pnlTieuDeBang.getChildren().addAll(lblBangTieuDe, spacer, btnLamMoi);
+        Region pnlSpacer = new Region();
+        HBox.setHgrow(pnlSpacer, Priority.ALWAYS);
 
-        TableColumn<SanPham, String> colMa = new TableColumn<>("Mã SP");
-        colMa.setPrefWidth(130);
+        btnLamMoi.getStyleClass().add("nut-phu");
+        btnLamMoi.setOnAction(e -> taiBaoCao());
+
+        pnlTieuDeBang.getChildren().addAll(lblBang, pnlSpacer, btnLamMoi);
+
+        TableColumn<SanPham, String> colMa = new TableColumn<>("Mã sản phẩm");
+        colMa.setPrefWidth(140);
         colMa.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getMaSanPham()));
 
         TableColumn<SanPham, String> colTen = new TableColumn<>("Tên sản phẩm");
@@ -181,7 +172,7 @@ public class BaoCaoSanPhamView extends VBox {
 
             lblTongGiaTriKho.setText(dinhDangTien.format(tongTienKho));
             lblTongSapHet.setText(String.valueOf(sapHet));
-        } catch (Exception ex) {
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("Lỗi");
             alert.setHeaderText(null);
@@ -190,4 +181,3 @@ public class BaoCaoSanPhamView extends VBox {
         }
     }
 }
-

@@ -1,5 +1,6 @@
 package com.petshop.dao;
 
+import com.petshop.model.NhaCungCap;
 import com.petshop.model.SanPham;
 import com.petshop.util.DatabaseManager;
 
@@ -13,6 +14,8 @@ import java.util.List;
  * Lớp DAO truy xuất và thao tác dữ liệu bảng SanPham trong CSDL SQL Server.
  */
 public class SanPhamDAO {
+
+    private final NhaCungCapDAO nhaCungCapDAO = new NhaCungCapDAO();
 
     /**
      * Tự động sinh mã sản phẩm theo định dạng SP-yyyyMMdd-xxxxxx.
@@ -306,6 +309,44 @@ public class SanPhamDAO {
         }
     }
 
+    /**
+     * Kiểm tra xem mã vạch đã tồn tại trong CSDL hay chưa.
+     * @param maVach Mã vạch cần kiểm tra
+     * @param maSanPhamHienTai Mã sản phẩm hiện tại để loại trừ khi cập nhật (null khi thêm mới)
+     * @return true nếu mã vạch đã tồn tại ở sản phẩm khác
+     */
+    public boolean kiemTraTonTaiMaVach(String maVach, String maSanPhamHienTai) {
+        if (maVach == null || maVach.isBlank()) return false;
+        String sql = "SELECT COUNT(*) FROM SanPham WHERE maVach = ?" +
+                (maSanPhamHienTai != null && !maSanPhamHienTai.isBlank() ? " AND maSanPham != ?" : "");
+
+        try (Connection conn = DatabaseManager.getConnection()) {
+            if (conn == null) return false;
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, maVach.trim());
+                if (maSanPhamHienTai != null && !maSanPhamHienTai.isBlank()) {
+                    ps.setString(2, maSanPhamHienTai.trim());
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1) > 0;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi kiểm tra mã vạch: " + e.getMessage(), e);
+        }
+        return false;
+    }
+
+    /**
+     * Lấy danh sách nhà cung cấp phục vụ combobox lựa chọn trong sản phẩm.
+     */
+    public List<NhaCungCap> layDanhSachNhaCungCap() {
+        return nhaCungCapDAO.layDanhSachNhaCungCap();
+    }
+
     private SanPham docDongSanPham(ResultSet rs) throws SQLException {
         SanPham sp = new SanPham(
                 rs.getString("maSanPham"),
@@ -322,4 +363,3 @@ public class SanPhamDAO {
         return sp;
     }
 }
-

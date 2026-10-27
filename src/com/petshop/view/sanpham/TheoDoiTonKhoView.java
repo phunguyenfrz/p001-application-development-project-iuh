@@ -13,16 +13,16 @@ import java.text.DecimalFormat;
 import java.util.List;
 
 /**
- * Màn hình Theo dõi Tồn kho & Lọc sản phẩm dưới ngưỡng an toàn (PRD_INVENTORY & PRD_LOW_STOCK).
- * Tiền tố điều khiển: lbl, btn, tbl, chk.
+ * Màn hình theo dõi số lượng tồn kho và cảnh báo dưới ngưỡng an toàn (PRD_INVENTORY, PRD_LOW_STOCK).
+ * Tiền tố điều khiển: lbl, txt, btn, tbl, chk.
  */
 public class TheoDoiTonKhoView extends VBox {
 
     private final SanPhamController sanPhamController = new SanPhamController();
     private final DecimalFormat dinhDangTien = new DecimalFormat("#,### đ");
 
-    private final CheckBox chkChiLocSapHet = new CheckBox("Chỉ hiển thị sản phẩm sắp hết hàng (tồn ≤ ngưỡng an toàn)");
-    private final Button btnLamMoi = new Button("🔄 Làm mới dữ liệu");
+    private final CheckBox chkChiLocSapHet = new CheckBox("Chỉ hiển thị sản phẩm sắp hết hàng (tồn <= ngưỡng)");
+    private final Button btnLamMoi = new Button("Làm mới dữ liệu");
     private final Label lblThongKeTong = new Label();
 
     private final TableView<SanPham> tblDanhSach = new TableView<>();
@@ -34,7 +34,7 @@ public class TheoDoiTonKhoView extends VBox {
         VBox pnlTieuDeMan = new VBox(4);
         Label lblTieuDe = new Label("SẢN PHẨM - THEO DÕI TỒN KHO");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-        Label lblMoTa = new Label("Giám sát số lượng tồn kho thực tế và phát hiện sớm các mặt hàng sắp hết để kịp thời nhập hàng.");
+        Label lblMoTa = new Label("Kiểm soát số lượng tồn kho theo thời gian thực và phát hiện kịp thời các sản phẩm sắp hết hàng.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
         pnlTieuDeMan.getChildren().addAll(lblTieuDe, lblMoTa);
 
@@ -43,22 +43,22 @@ public class TheoDoiTonKhoView extends VBox {
         pnlKhungChinh.setPadding(new Insets(14));
         VBox.setVgrow(pnlKhungChinh, Priority.ALWAYS);
 
-        HBox pnlThanhDieuKhien = taoThanhDieuKhien();
+        HBox pnlThanhCongCu = taoThanhCongCu();
         VBox pnlBang = taoKhungBang();
         VBox.setVgrow(pnlBang, Priority.ALWAYS);
 
-        pnlKhungChinh.getChildren().addAll(pnlThanhDieuKhien, pnlBang);
+        pnlKhungChinh.getChildren().addAll(pnlThanhCongCu, pnlBang);
         getChildren().addAll(pnlTieuDeMan, pnlKhungChinh);
 
-        chkChiLocSapHet.selectedProperty().addListener((obs, cu, moi) -> taiDuLieu());
         taiDuLieu();
     }
 
-    private HBox taoThanhDieuKhien() {
-        HBox pnlThanh = new HBox(14);
+    private HBox taoThanhCongCu() {
+        HBox pnlThanh = new HBox(12);
         pnlThanh.setAlignment(Pos.CENTER_LEFT);
 
         chkChiLocSapHet.setStyle("-fx-font-weight: bold; -fx-text-fill: #b91c1c;");
+        chkChiLocSapHet.setOnAction(e -> taiDuLieu());
 
         btnLamMoi.getStyleClass().add("nut-phu");
         btnLamMoi.setOnAction(e -> taiDuLieu());
@@ -66,7 +66,7 @@ public class TheoDoiTonKhoView extends VBox {
         Region pnlKhoangCach = new Region();
         HBox.setHgrow(pnlKhoangCach, Priority.ALWAYS);
 
-        lblThongKeTong.setStyle("-fx-font-weight: bold; -fx-text-fill: #1e293b;");
+        lblThongKeTong.setStyle("-fx-font-weight: bold; -fx-text-fill: #334155;");
 
         pnlThanh.getChildren().addAll(chkChiLocSapHet, btnLamMoi, pnlKhoangCach, lblThongKeTong);
         return pnlThanh;
@@ -87,8 +87,8 @@ public class TheoDoiTonKhoView extends VBox {
         colDonVi.setPrefWidth(80);
         colDonVi.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDonViTinh()));
 
-        TableColumn<SanPham, String> colTonKho = new TableColumn<>("Tồn kho hiện tại");
-        colTonKho.setPrefWidth(130);
+        TableColumn<SanPham, String> colTonKho = new TableColumn<>("Số lượng tồn");
+        colTonKho.setPrefWidth(110);
         colTonKho.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
         colTonKho.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getSoLuongTon())));
 
@@ -97,11 +97,12 @@ public class TheoDoiTonKhoView extends VBox {
         colNguong.setStyle("-fx-alignment: CENTER-RIGHT;");
         colNguong.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getNguongTonToiThieu())));
 
-        TableColumn<SanPham, String> colTinhTrang = new TableColumn<>("Tình trạng kho");
-        colTinhTrang.setPrefWidth(150);
-        colTinhTrang.setCellValueFactory(cell -> new SimpleStringProperty(
-                cell.getValue().isSapHetHang() ? "⚠️ Cần nhập hàng ngay" : "✅ Tồn kho an toàn"
-        ));
+        TableColumn<SanPham, String> colTinhTrang = new TableColumn<>("Tình trạng");
+        colTinhTrang.setPrefWidth(140);
+        colTinhTrang.setCellValueFactory(cell -> {
+            boolean sapHet = cell.getValue().isSapHetHang();
+            return new SimpleStringProperty(sapHet ? "⚠ SẮP HẾT HÀNG" : "Ổn định");
+        });
 
         TableColumn<SanPham, String> colGiaBan = new TableColumn<>("Giá bán");
         colGiaBan.setPrefWidth(110);
@@ -153,7 +154,7 @@ public class TheoDoiTonKhoView extends VBox {
 
             long soSapHet = ds.stream().filter(SanPham::isSapHetHang).count();
             lblThongKeTong.setText("Tổng sản phẩm: " + ds.size() + " | Sắp hết hàng: " + soSapHet);
-        } catch (Exception ex) {
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("Lỗi");
             alert.setHeaderText(null);
@@ -162,4 +163,3 @@ public class TheoDoiTonKhoView extends VBox {
         }
     }
 }
-

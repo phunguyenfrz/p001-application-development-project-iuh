@@ -1,9 +1,11 @@
 package com.petshop.view.sanpham;
 
 import com.petshop.controller.SanPhamController;
+import com.petshop.model.NhaCungCap;
 import com.petshop.model.SanPham;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,6 +15,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.math.BigDecimal;
+import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Optional;
@@ -20,7 +23,7 @@ import java.util.Optional;
 /**
  * Màn hình Quản lý / Cập nhật Sản phẩm (CapNhatSanPhamView).
  * Cho phép xem danh sách, Thêm mới, Sửa thông tin và Ngừng kinh doanh.
- * Tiền tố điều khiển: lbl, txt, btn, tbl.
+ * Tiền tố điều khiển: lbl, txt, btn, tbl, cbo.
  */
 public class CapNhatSanPhamView extends VBox {
 
@@ -140,7 +143,7 @@ public class CapNhatSanPhamView extends VBox {
         try {
             List<SanPham> ds = sanPhamController.layDanhSachSanPham();
             tblDanhSach.setItems(FXCollections.observableArrayList(ds));
-        } catch (Exception ex) {
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             hienThiCanhBao("Lỗi tải dữ liệu", ex.getMessage());
         }
     }
@@ -156,7 +159,14 @@ public class CapNhatSanPhamView extends VBox {
         Stage cuaSo = new Stage();
         cuaSo.setTitle("Happy Tails - Thêm sản phẩm mới");
         cuaSo.initModality(Modality.APPLICATION_MODAL);
-        cuaSo.setScene(new Scene(viewThem, 720, 360));
+        Scene scene = new Scene(viewThem, 720, 360);
+
+        URL css = getClass().getResource("/com/petshop/view/css/chung.css");
+        if (css != null) {
+            scene.getStylesheets().add(css.toExternalForm());
+        }
+
+        cuaSo.setScene(scene);
         cuaSo.centerOnScreen();
         cuaSo.show();
     }
@@ -169,6 +179,11 @@ public class CapNhatSanPhamView extends VBox {
         dlgCapNhat.setTitle("Happy Tails - Cập nhật sản phẩm");
         dlgCapNhat.setHeaderText(null);
 
+        URL css = getClass().getResource("/com/petshop/view/css/chung.css");
+        if (css != null) {
+            dlgCapNhat.getDialogPane().getStylesheets().add(css.toExternalForm());
+        }
+
         GridPane pnlGrid = new GridPane();
         pnlGrid.setHgap(12);
         pnlGrid.setVgap(10);
@@ -176,9 +191,28 @@ public class CapNhatSanPhamView extends VBox {
 
         TextField txtTen = new TextField(sp.getTenSanPham());
         TextField txtMaVach = new TextField(sp.getMaVach());
-        TextField txtGia = new TextField(sp.getGiaBan().toPlainString());
+        TextField txtGia = new TextField(sp.getGiaBan() != null ? sp.getGiaBan().toPlainString() : "0");
         TextField txtDonVi = new TextField(sp.getDonViTinh());
         TextField txtNguong = new TextField(String.valueOf(sp.getNguongTonToiThieu()));
+
+        ComboBox<NhaCungCap> cboNcc = new ComboBox<>();
+        cboNcc.setPromptText("-- Chọn nhà cung cấp --");
+        cboNcc.setMaxWidth(Double.MAX_VALUE);
+        try {
+            List<NhaCungCap> dsNcc = sanPhamController.layDanhSachNhaCungCap();
+            cboNcc.getItems().setAll(dsNcc);
+            if (sp.getMaNhaCungCap() != null) {
+                for (NhaCungCap ncc : dsNcc) {
+                    if (ncc.getMaNhaCungCap().equalsIgnoreCase(sp.getMaNhaCungCap())) {
+                        cboNcc.setValue(ncc);
+                        break;
+                    }
+                }
+            }
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
+            cboNcc.getItems().clear();
+        }
+
         CheckBox chkTrangThai = new CheckBox("Đang kinh doanh");
         chkTrangThai.setSelected(sp.isTrangThai());
 
@@ -204,23 +238,61 @@ public class CapNhatSanPhamView extends VBox {
         pnlGrid.add(new Label("Đơn vị tính (*):"), 0, 4);
         pnlGrid.add(txtDonVi, 1, 4);
 
-        pnlGrid.add(new Label("Ngưỡng an toàn:"), 0, 5);
-        pnlGrid.add(txtNguong, 1, 5);
+        pnlGrid.add(new Label("Nhà cung cấp:"), 0, 5);
+        pnlGrid.add(cboNcc, 1, 5);
 
-        pnlGrid.add(new Label("Trạng thái:"), 0, 6);
-        pnlGrid.add(chkTrangThai, 1, 6);
+        pnlGrid.add(new Label("Ngưỡng an toàn:"), 0, 6);
+        pnlGrid.add(txtNguong, 1, 6);
+
+        pnlGrid.add(new Label("Trạng thái:"), 0, 7);
+        pnlGrid.add(chkTrangThai, 1, 7);
 
         dlgCapNhat.getDialogPane().setContent(pnlGrid);
         dlgCapNhat.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-        Optional<ButtonType> ketQua = dlgCapNhat.showAndWait();
-        if (ketQua.isPresent() && ketQua.get() == ButtonType.OK) {
+        Button btnOk = (Button) dlgCapNhat.getDialogPane().lookupButton(ButtonType.OK);
+        btnOk.addEventFilter(ActionEvent.ACTION, event -> {
+            String strTen = txtTen.getText().trim();
+            String strMaVach = txtMaVach.getText().trim();
+            String strGia = txtGia.getText().trim();
+            String strDonVi = txtDonVi.getText().trim();
+            String strNguong = txtNguong.getText().trim();
+
+            if (strTen.isEmpty()) {
+                hienThiCanhBao("Dữ liệu không hợp lệ", "Tên sản phẩm không được để trống!");
+                event.consume();
+                return;
+            }
+            if (strMaVach.isEmpty()) {
+                hienThiCanhBao("Dữ liệu không hợp lệ", "Mã vạch không được để trống!");
+                event.consume();
+                return;
+            }
+            if (strGia.isEmpty()) {
+                hienThiCanhBao("Dữ liệu không hợp lệ", "Giá bán không được để trống!");
+                event.consume();
+                return;
+            }
+            if (strDonVi.isEmpty()) {
+                hienThiCanhBao("Dữ liệu không hợp lệ", "Đơn vị tính không được để trống!");
+                event.consume();
+                return;
+            }
+            if (strNguong.isEmpty()) {
+                hienThiCanhBao("Dữ liệu không hợp lệ", "Ngưỡng an toàn không được để trống!");
+                event.consume();
+                return;
+            }
+
             try {
-                sp.setTenSanPham(txtTen.getText().trim());
-                sp.setMaVach(txtMaVach.getText().trim());
-                sp.setGiaBan(new BigDecimal(txtGia.getText().trim()));
-                sp.setDonViTinh(txtDonVi.getText().trim());
-                sp.setNguongTonToiThieu(Integer.parseInt(txtNguong.getText().trim()));
+                sp.setTenSanPham(strTen);
+                sp.setMaVach(strMaVach);
+                sp.setGiaBan(new BigDecimal(strGia));
+                sp.setDonViTinh(strDonVi);
+                sp.setNguongTonToiThieu(Integer.parseInt(strNguong));
+                NhaCungCap nccChon = cboNcc.getValue();
+                sp.setMaNhaCungCap(nccChon != null ? nccChon.getMaNhaCungCap() : null);
+                sp.setTenNhaCungCap(nccChon != null ? nccChon.getTenNhaCungCap() : null);
                 sp.setTrangThai(chkTrangThai.isSelected());
 
                 boolean thanhCong = sanPhamController.capNhatSanPham(sp);
@@ -228,10 +300,16 @@ public class CapNhatSanPhamView extends VBox {
                     hienThiThongBao("Thông báo", "Cập nhật sản phẩm thành công!");
                     taiLaiBang();
                 }
-            } catch (Exception ex) {
-                hienThiCanhBao("Lỗi cập nhật", ex.getMessage());
+            } catch (IllegalArgumentException | SecurityException ex) {
+                hienThiCanhBao("Dữ liệu không hợp lệ", ex.getMessage());
+                event.consume();
+            } catch (IllegalStateException ex) {
+                hienThiCanhBao("Lỗi cơ sở dữ liệu", ex.getMessage());
+                event.consume();
             }
-        }
+        });
+
+        dlgCapNhat.showAndWait();
     }
 
     private void xuLyXoaMem() {
@@ -251,7 +329,7 @@ public class CapNhatSanPhamView extends VBox {
                     hienThiThongBao("Thông báo", "Đã chuyển sản phẩm sang ngừng kinh doanh!");
                     taiLaiBang();
                 }
-            } catch (Exception ex) {
+            } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
                 hienThiCanhBao("Lỗi", ex.getMessage());
             }
         }
@@ -273,4 +351,3 @@ public class CapNhatSanPhamView extends VBox {
         alert.showAndWait();
     }
 }
-

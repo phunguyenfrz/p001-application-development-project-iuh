@@ -1,6 +1,7 @@
 package com.petshop.view.sanpham;
 
 import com.petshop.controller.SanPhamController;
+import com.petshop.model.NhaCungCap;
 import com.petshop.model.SanPham;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -9,10 +10,11 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * Màn hình nhỏ (popup/dialog) dùng để thêm mới sản phẩm.
- * Tiền tố điều khiển: lbl, txt, btn.
+ * Tiền tố điều khiển: lbl, txt, btn, cbo.
  */
 public class ThemSanPhamView extends VBox {
 
@@ -26,7 +28,7 @@ public class ThemSanPhamView extends VBox {
     private final TextField txtSoLuongTon = new TextField();
     private final TextField txtNguongTon = new TextField();
     private final TextField txtDonViTinh = new TextField();
-    private final TextField txtMaNhaCungCap = new TextField();
+    private final ComboBox<NhaCungCap> cboNhaCungCap = new ComboBox<>();
 
     private final Button btnLuu = new Button("Lưu sản phẩm");
     private final Button btnLamMoi = new Button("Làm mới");
@@ -67,13 +69,15 @@ public class ThemSanPhamView extends VBox {
         txtMaSanPham.setEditable(false);
         txtMaSanPham.setStyle("-fx-background-color: #f1f5f9;");
 
+        cboNhaCungCap.setPromptText("-- Chọn nhà cung cấp --");
+        cboNhaCungCap.setMaxWidth(Double.MAX_VALUE);
+
         txtTenSanPham.setPromptText("Nhập tên sản phẩm (*)...");
         txtMaVach.setPromptText("Nhập mã vạch (*)...");
         txtGiaBan.setPromptText("Nhập giá bán (*, chỉ số)...");
         txtSoLuongTon.setPromptText("Số lượng tồn ban đầu (mặc định 0)...");
         txtNguongTon.setPromptText("Ngưỡng tồn an toàn (mặc định 10)...");
         txtDonViTinh.setPromptText("Cái, Gói, Hộp, Chai (*)...");
-        txtMaNhaCungCap.setPromptText("Mã NCC (tùy chọn, ví dụ: NCC-...)");
 
         // Chỉ cho phép nhập số ở ô giá bán, số lượng, ngưỡng tồn
         datBoLocChiSo(txtGiaBan);
@@ -83,8 +87,8 @@ public class ThemSanPhamView extends VBox {
         pnlGrid.add(new Label("Mã sản phẩm:"), 0, 0);
         pnlGrid.add(txtMaSanPham, 1, 0);
 
-        pnlGrid.add(new Label("Mã nhà cung cấp:"), 2, 0);
-        pnlGrid.add(txtMaNhaCungCap, 3, 0);
+        pnlGrid.add(new Label("Nhà cung cấp:"), 2, 0);
+        pnlGrid.add(cboNhaCungCap, 3, 0);
 
         pnlGrid.add(new Label("Tên sản phẩm (*):"), 0, 1);
         pnlGrid.add(txtTenSanPham, 1, 1);
@@ -153,7 +157,7 @@ public class ThemSanPhamView extends VBox {
         String ten = txtTenSanPham.getText().trim();
         String maVach = txtMaVach.getText().trim();
         String donVi = txtDonViTinh.getText().trim();
-        String ncc = txtMaNhaCungCap.getText().trim();
+        NhaCungCap ncc = cboNhaCungCap.getValue();
 
         BigDecimal gia = BigDecimal.ZERO;
         if (!txtGiaBan.getText().trim().isEmpty()) {
@@ -178,7 +182,7 @@ public class ThemSanPhamView extends VBox {
         sp.setSoLuongTon(ton);
         sp.setNguongTonToiThieu(nguong);
         sp.setDonViTinh(donVi);
-        sp.setMaNhaCungCap(ncc.isEmpty() ? null : ncc);
+        sp.setMaNhaCungCap(ncc != null ? ncc.getMaNhaCungCap() : null);
         sp.setTrangThai(true);
 
         return sp;
@@ -192,8 +196,19 @@ public class ThemSanPhamView extends VBox {
         txtSoLuongTon.setText("0");
         txtNguongTon.setText("10");
         txtDonViTinh.clear();
-        txtMaNhaCungCap.clear();
+        napDanhSachNhaCungCap();
         txtTenSanPham.requestFocus();
+    }
+
+    private void napDanhSachNhaCungCap() {
+        try {
+            List<NhaCungCap> dsNcc = sanPhamController.layDanhSachNhaCungCap();
+            cboNhaCungCap.getItems().setAll(dsNcc);
+            cboNhaCungCap.setValue(null);
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
+            // Khi không kết nối được CSDL, vẫn cho phép form hoạt động
+            cboNhaCungCap.getItems().clear();
+        }
     }
 
     private void datBoLocChiSo(TextField txt) {
@@ -234,4 +249,3 @@ public class ThemSanPhamView extends VBox {
         alert.showAndWait();
     }
 }
-

@@ -1,5 +1,6 @@
 package com.petshop.controller;
 
+import com.petshop.model.NhaCungCap;
 import com.petshop.model.SanPham;
 import com.petshop.service.SanPhamService;
 
@@ -59,5 +60,8 @@ public class SanPhamController {
     public String taoMaSanPham() {
         return sanPhamService.taoMaSanPham();
     }
-}
 
+    public List<NhaCungCap> layDanhSachNhaCungCap() {
+        return sanPhamService.layDanhSachNhaCungCap();
+    }
+}

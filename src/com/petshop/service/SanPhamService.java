@@ -1,6 +1,7 @@
 package com.petshop.service;
 
 import com.petshop.dao.SanPhamDAO;
+import com.petshop.model.NhaCungCap;
 import com.petshop.model.SanPham;
 
 import java.math.BigDecimal;
@@ -31,6 +32,10 @@ public class SanPhamService {
         xacThucService.kiemTraQuyen("SP_CAP_NHAT");
         kiemTraDuLieuSanPham(sp);
 
+        if (sanPhamDAO.kiemTraTonTaiMaVach(sp.getMaVach().trim(), null)) {
+            throw new IllegalArgumentException("Mã vạch đã tồn tại trên hệ thống!");
+        }
+
         if (sp.getMaSanPham() == null || sp.getMaSanPham().trim().isEmpty()) {
             sp.setMaSanPham(sanPhamDAO.taoMaSanPham());
         } else {
@@ -53,6 +58,11 @@ public class SanPhamService {
             throw new IllegalArgumentException("Mã sản phẩm cần cập nhật không được để trống!");
         }
         kiemTraDuLieuSanPham(sp);
+
+        if (sanPhamDAO.kiemTraTonTaiMaVach(sp.getMaVach().trim(), sp.getMaSanPham().trim())) {
+            throw new IllegalArgumentException("Mã vạch đã tồn tại trên hệ thống!");
+        }
+
         return sanPhamDAO.capNhatSanPham(sp);
     }
 
@@ -127,6 +137,13 @@ public class SanPhamService {
         return sanPhamDAO.taoMaSanPham();
     }
 
+    /**
+     * Lấy danh sách nhà cung cấp để hiển thị lựa chọn.
+     */
+    public List<NhaCungCap> layDanhSachNhaCungCap() {
+        return sanPhamDAO.layDanhSachNhaCungCap();
+    }
+
     private void kiemTraDuLieuSanPham(SanPham sp) {
         if (sp == null) {
             throw new IllegalArgumentException("Thông tin sản phẩm không được để trống!");
@@ -151,4 +168,3 @@ public class SanPhamService {
         }
     }
 }
-
