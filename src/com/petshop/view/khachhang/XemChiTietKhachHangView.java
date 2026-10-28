@@ -36,7 +36,6 @@ public class XemChiTietKhachHangView extends VBox {
     private final TextField txtSoDienThoai = new TextField();
     private final TextField txtEmail = new TextField();
     private final TextField txtDiemTichLuy = new TextField();
-    private final TextField txtTrangThai = new TextField();
     private final TextField txtDiaChi = new TextField();
     private final TextArea txtGhiChu = new TextArea();
 
@@ -105,7 +104,6 @@ public class XemChiTietKhachHangView extends VBox {
             txtSoDienThoai.setText(kh.getSoDienThoai());
             txtEmail.setText(kh.getEmail() != null ? kh.getEmail() : "—");
             txtDiemTichLuy.setText(kh.getDiemTichLuy() + " điểm");
-            txtTrangThai.setText(kh.isTrangThai() ? "Đang hoạt động" : "Ngừng hoạt động");
             txtDiaChi.setText(kh.getDiaChi() != null ? kh.getDiaChi() : "—");
             txtGhiChu.setText(kh.getGhiChu() != null ? kh.getGhiChu() : "—");
         }
@@ -115,7 +113,6 @@ public class XemChiTietKhachHangView extends VBox {
         khoaChiDoc(txtSoDienThoai);
         khoaChiDoc(txtEmail);
         khoaChiDoc(txtDiemTichLuy);
-        khoaChiDoc(txtTrangThai);
         khoaChiDoc(txtDiaChi);
         khoaChiDoc(txtGhiChu);
 
@@ -134,14 +131,11 @@ public class XemChiTietKhachHangView extends VBox {
 
         pnlLuoi.add(new Label("Điểm tích lũy:"), 0, 2);
         pnlLuoi.add(txtDiemTichLuy, 1, 2);
-        pnlLuoi.add(new Label("Trạng thái:"), 2, 2);
-        pnlLuoi.add(txtTrangThai, 3, 2);
+        pnlLuoi.add(new Label("Địa chỉ:"), 2, 2);
+        pnlLuoi.add(txtDiaChi, 3, 2);
 
-        pnlLuoi.add(new Label("Địa chỉ:"), 0, 3);
-        pnlLuoi.add(txtDiaChi, 1, 3, 3, 1);
-
-        pnlLuoi.add(new Label("Ghi chú:"), 0, 4);
-        pnlLuoi.add(txtGhiChu, 1, 4, 3, 1);
+        pnlLuoi.add(new Label("Ghi chú:"), 0, 3);
+        pnlLuoi.add(txtGhiChu, 1, 3, 3, 1);
 
         pnlKhung.getChildren().addAll(lblTieuDePhan, pnlLuoi);
         return pnlKhung;

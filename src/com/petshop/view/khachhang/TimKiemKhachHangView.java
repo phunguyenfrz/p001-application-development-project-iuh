@@ -29,7 +29,6 @@ public class TimKiemKhachHangView extends VBox {
 
     // Các thành phần tìm kiếm và lọc
     private final TextField txtTuKhoa = new TextField();
-    private final ComboBox<String> cboLocTrangThai = new ComboBox<>();
     private final Button btnTimKiem = new Button("Tìm kiếm");
     private final Button btnLamMoi = new Button("Làm mới");
     private final Button btnXemChiTiet = new Button("Xem chi tiết");
@@ -47,7 +46,7 @@ public class TimKiemKhachHangView extends VBox {
         Label lblTieuDe = new Label("TÌM KIẾM & TRA CỨU KHÁCH HÀNG");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
 
-        Label lblMoTa = new Label("Tra cứu nhanh thông tin khách hàng theo mã, tên, SĐT, email hoặc lọc theo trạng thái hoạt động.");
+        Label lblMoTa = new Label("Tra cứu nhanh thông tin khách hàng theo mã định danh, họ tên, số điện thoại hoặc email.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
         pnlTieuDeManHinh.getChildren().addAll(lblTieuDe, lblMoTa);
 
@@ -73,7 +72,6 @@ public class TimKiemKhachHangView extends VBox {
     /**
      * Khởi tạo thanh công cụ tìm kiếm:
      * - Ô nhập từ khóa (mã, tên, SĐT, email)
-     * - Bộ lọc trạng thái (Tất cả, Đang hoạt động, Ngừng hoạt động)
      * - Nút Tìm kiếm, Làm mới và Nút Xem chi tiết (khi chọn dòng)
      */
     private HBox taoThanhTimKiem() {
@@ -85,18 +83,10 @@ public class TimKiemKhachHangView extends VBox {
         // Ô nhập từ khóa tra cứu
         Label lblTuKhoa = new Label("Từ khóa:");
         txtTuKhoa.setPromptText("Nhập mã, tên, SĐT hoặc email khách hàng...");
-        txtTuKhoa.setPrefWidth(290);
+        txtTuKhoa.setPrefWidth(350);
         txtTuKhoa.setOnAction(e -> xuLyTimKiem());
         // Lọc tự động thời gian thực khi người dùng gõ từ khóa
         txtTuKhoa.textProperty().addListener((obs, oldVal, newVal) -> xuLyTimKiem());
-
-        // ComboBox lọc trạng thái hoạt động
-        Label lblTrangThai = new Label("Trạng thái:");
-        cboLocTrangThai.setItems(FXCollections.observableArrayList(
-                "Tất cả", "Đang hoạt động", "Ngừng hoạt động"
-        ));
-        cboLocTrangThai.setValue("Tất cả");
-        cboLocTrangThai.setOnAction(e -> xuLyTimKiem());
 
         // Nút Tìm kiếm
         btnTimKiem.getStyleClass().add("nut-chinh");
@@ -119,8 +109,6 @@ public class TimKiemKhachHangView extends VBox {
         pnlCongCu.getChildren().addAll(
                 lblTuKhoa, txtTuKhoa,
                 btnTimKiem,
-                lblTrangThai,
-                cboLocTrangThai,
                 btnLamMoi,
                 pnlKhoangTrong,
                 btnXemChiTiet, lblTongSo
@@ -141,25 +129,25 @@ public class TimKiemKhachHangView extends VBox {
 
         // --- Cột 1: Mã khách hàng ---
         TableColumn<KhachHang, String> colMa = new TableColumn<>("Mã khách hàng");
-        colMa.setPrefWidth(150);
+        colMa.setPrefWidth(160);
         colMa.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getMaKhachHang()));
         colMa.setStyle("-fx-alignment: CENTER;");
 
         // --- Cột 2: Họ và tên ---
         TableColumn<KhachHang, String> colHoTen = new TableColumn<>("Họ và tên");
-        colHoTen.setPrefWidth(180);
+        colHoTen.setPrefWidth(200);
         colHoTen.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getHoTen()));
         colHoTen.setStyle("-fx-alignment: CENTER-LEFT;");
 
         // --- Cột 3: Số điện thoại ---
         TableColumn<KhachHang, String> colSdt = new TableColumn<>("Số điện thoại");
-        colSdt.setPrefWidth(120);
+        colSdt.setPrefWidth(130);
         colSdt.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getSoDienThoai()));
         colSdt.setStyle("-fx-alignment: CENTER;");
 
         // --- Cột 4: Email ---
         TableColumn<KhachHang, String> colEmail = new TableColumn<>("Email");
-        colEmail.setPrefWidth(170);
+        colEmail.setPrefWidth(190);
         colEmail.setCellValueFactory(cellData -> new SimpleStringProperty(
                 cellData.getValue().getEmail() != null ? cellData.getValue().getEmail() : "-"
         ));
@@ -167,46 +155,24 @@ public class TimKiemKhachHangView extends VBox {
 
         // --- Cột 5: Điểm tích lũy ---
         TableColumn<KhachHang, Number> colDiem = new TableColumn<>("Điểm tích lũy");
-        colDiem.setPrefWidth(110);
+        colDiem.setPrefWidth(120);
         colDiem.setCellValueFactory(cellData -> new SimpleIntegerProperty(cellData.getValue().getDiemTichLuy()));
         colDiem.setStyle("-fx-alignment: CENTER-RIGHT;");
 
         // --- Cột 6: Địa chỉ ---
         TableColumn<KhachHang, String> colDiaChi = new TableColumn<>("Địa chỉ");
-        colDiaChi.setPrefWidth(220);
+        colDiaChi.setPrefWidth(260);
         colDiaChi.setCellValueFactory(cellData -> new SimpleStringProperty(
                 cellData.getValue().getDiaChi() != null ? cellData.getValue().getDiaChi() : "-"
         ));
         colDiaChi.setStyle("-fx-alignment: CENTER-LEFT;");
 
-        // --- Cột 7: Trạng thái (Hiển thị văn bản thuần giống bên dịch vụ) ---
-        TableColumn<KhachHang, String> colTrangThai = new TableColumn<>("Trạng thái");
-        colTrangThai.setPrefWidth(140);
-        colTrangThai.setStyle("-fx-alignment: CENTER;");
-        colTrangThai.setCellValueFactory(cellData -> new SimpleStringProperty(
-                cellData.getValue().isTrangThai() ? "Đang hoạt động" : "Ngừng hoạt động"
-        ));
-
-        tblDanhSach.getColumns().addAll(colMa, colHoTen, colSdt, colEmail, colDiem, colDiaChi, colTrangThai);
+        tblDanhSach.getColumns().addAll(colMa, colHoTen, colSdt, colEmail, colDiem, colDiaChi);
         tblDanhSach.setItems(danhSachHienThi);
 
-        // =====================================================================
-        // XỬ LÝ LÀM MỜ DÒNG NGỪNG HOẠT ĐỘNG VÀ SỰ KIỆN NHẤP ĐÚP CHUỘT
-        // =====================================================================
+        // Sự kiện nhấp đúp chuột để xem chi tiết khách hàng
         tblDanhSach.setRowFactory(tv -> {
-            TableRow<KhachHang> row = new TableRow<>() {
-                @Override
-                protected void updateItem(KhachHang khachHang, boolean empty) {
-                    super.updateItem(khachHang, empty);
-                    if (empty || khachHang == null) {
-                        setOpacity(1.0);
-                    } else {
-                        setOpacity(khachHang.isTrangThai() ? 1.0 : 0.55);
-                    }
-                }
-            };
-
-            // Sự kiện nhấp đúp chuột (2 lần) để xem thông tin chi tiết
+            TableRow<KhachHang> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
                     moXemChiTietKhachHang();
@@ -229,10 +195,9 @@ public class TimKiemKhachHangView extends VBox {
      */
     private void xuLyTimKiem() {
         String tuKhoa = txtTuKhoa.getText() != null ? txtTuKhoa.getText().trim() : "";
-        String trangThai = cboLocTrangThai.getValue();
 
         try {
-            List<KhachHang> ketQua = khachHangController.timKiemKhachHang(tuKhoa, trangThai);
+            List<KhachHang> ketQua = khachHangController.timKiemKhachHang(tuKhoa, null);
             danhSachHienThi.setAll(ketQua);
             lblTongSo.setText("Tổng số: " + ketQua.size() + " khách hàng");
             btnXemChiTiet.setDisable(true);
@@ -263,7 +228,6 @@ public class TimKiemKhachHangView extends VBox {
      */
     private void lamMoiTimKiem() {
         txtTuKhoa.clear();
-        cboLocTrangThai.setValue("Tất cả");
         xuLyTimKiem();
         txtTuKhoa.requestFocus();
     }

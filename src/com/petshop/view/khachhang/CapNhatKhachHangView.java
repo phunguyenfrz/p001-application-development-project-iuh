@@ -37,7 +37,6 @@ public class CapNhatKhachHangView extends VBox {
     // Các nút chức năng trên thanh tác vụ
     private final Button btnThemMoi = new Button();
     private final Button btnCapNhat = new Button();
-    private final Button btnXoaMem = new Button();
     private final Button btnLamMoi = new Button();
 
     // Bảng hiển thị danh sách khách hàng
@@ -53,7 +52,7 @@ public class CapNhatKhachHangView extends VBox {
         Label lblTieuDe = new Label("QUẢN LÝ KHÁCH HÀNG - CẬP NHẬT THÔNG TIN");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
 
-        Label lblMoTa = new Label("Quản lý danh sách khách hàng, cập nhật thông tin cá nhân và quản lý trạng thái hoạt động.");
+        Label lblMoTa = new Label("Quản lý danh sách khách hàng và cập nhật thông tin cá nhân.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
 
         pnlTieuDeManHinh.getChildren().addAll(lblTieuDe, lblMoTa);
@@ -64,7 +63,7 @@ public class CapNhatKhachHangView extends VBox {
 
         getChildren().addAll(pnlTieuDeManHinh, pnlBangDuLieu);
 
-        // Khởi tạo trạng thái ban đầu của các nút chức năng (vô hiệu hóa các nút cần chọn dòng)
+        // Khởi tạo trạng thái ban đầu của các nút chức năng
         capNhatTrangThaiNut(null);
 
         // Tải dữ liệu ban đầu từ cơ sở dữ liệu lên bảng
@@ -97,16 +96,12 @@ public class CapNhatKhachHangView extends VBox {
         btnCapNhat.getStyleClass().add("nut-phu");
         btnCapNhat.setOnAction(e -> moCuaSoCapNhat());
 
-        btnXoaMem.setText("Xóa");
-        btnXoaMem.getStyleClass().add("nut-xoa");
-        btnXoaMem.setOnAction(e -> xuLyXoaMemHoacKichHoat());
-
         btnLamMoi.setText("Làm mới");
         btnLamMoi.getStyleClass().add("nut-phu");
         btnLamMoi.setOnAction(e -> taiLaiDanhSach());
 
         // Ghép nối: [Nhãn bên trái] -> [Khoảng trống giãn] -> [Cụm nút bên phải]
-        pnlThanhNut.getChildren().addAll(lblDanhSach, pnlKhoangTrong, btnThemMoi, btnCapNhat, btnXoaMem, btnLamMoi);
+        pnlThanhNut.getChildren().addAll(lblDanhSach, pnlKhoangTrong, btnThemMoi, btnCapNhat, btnLamMoi);
         return pnlThanhNut;
     }
 
@@ -125,25 +120,25 @@ public class CapNhatKhachHangView extends VBox {
 
         // --- Cột 1: Mã khách hàng ---
         TableColumn<KhachHang, String> colMa = new TableColumn<>("Mã khách hàng");
-        colMa.setPrefWidth(150);
+        colMa.setPrefWidth(160);
         colMa.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getMaKhachHang()));
         colMa.setStyle("-fx-alignment: CENTER;");
 
         // --- Cột 2: Họ và tên ---
         TableColumn<KhachHang, String> colHoTen = new TableColumn<>("Họ và tên");
-        colHoTen.setPrefWidth(180);
+        colHoTen.setPrefWidth(200);
         colHoTen.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getHoTen()));
         colHoTen.setStyle("-fx-alignment: CENTER-LEFT;");
 
         // --- Cột 3: Số điện thoại ---
         TableColumn<KhachHang, String> colSdt = new TableColumn<>("Số điện thoại");
-        colSdt.setPrefWidth(120);
+        colSdt.setPrefWidth(130);
         colSdt.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getSoDienThoai()));
         colSdt.setStyle("-fx-alignment: CENTER;");
 
         // --- Cột 4: Email ---
         TableColumn<KhachHang, String> colEmail = new TableColumn<>("Email");
-        colEmail.setPrefWidth(170);
+        colEmail.setPrefWidth(190);
         colEmail.setCellValueFactory(cellData -> new SimpleStringProperty(
                 cellData.getValue().getEmail() != null ? cellData.getValue().getEmail() : "-"
         ));
@@ -151,45 +146,24 @@ public class CapNhatKhachHangView extends VBox {
 
         // --- Cột 5: Điểm tích lũy ---
         TableColumn<KhachHang, Number> colDiem = new TableColumn<>("Điểm tích lũy");
-        colDiem.setPrefWidth(110);
+        colDiem.setPrefWidth(120);
         colDiem.setCellValueFactory(cellData -> new SimpleIntegerProperty(cellData.getValue().getDiemTichLuy()));
         colDiem.setStyle("-fx-alignment: CENTER-RIGHT;");
 
         // --- Cột 6: Địa chỉ ---
         TableColumn<KhachHang, String> colDiaChi = new TableColumn<>("Địa chỉ");
-        colDiaChi.setPrefWidth(220);
+        colDiaChi.setPrefWidth(260);
         colDiaChi.setCellValueFactory(cellData -> new SimpleStringProperty(
                 cellData.getValue().getDiaChi() != null ? cellData.getValue().getDiaChi() : "-"
         ));
         colDiaChi.setStyle("-fx-alignment: CENTER-LEFT;");
 
-        // --- Cột 7: Trạng thái (Hiển thị văn bản thuần giống bên dịch vụ) ---
-        TableColumn<KhachHang, String> colTrangThai = new TableColumn<>("Trạng thái");
-        colTrangThai.setPrefWidth(140);
-        colTrangThai.setStyle("-fx-alignment: CENTER;");
-        colTrangThai.setCellValueFactory(cellData -> new SimpleStringProperty(
-                cellData.getValue().isTrangThai() ? "Đang hoạt động" : "Ngừng hoạt động"
-        ));
-
-        tblDanhSach.getColumns().addAll(colMa, colHoTen, colSdt, colEmail, colDiem, colDiaChi, colTrangThai);
+        tblDanhSach.getColumns().addAll(colMa, colHoTen, colSdt, colEmail, colDiem, colDiaChi);
         tblDanhSach.setItems(danhSachHienThi);
 
-        // =====================================================================
-        // XỬ LÝ LÀM MỜ DÒNG NGỪNG HOẠT ĐỘNG & HỖ TRỢ NHẤP ĐÚP CHUỘT ĐỂ SỬA NHANH
-        // =====================================================================
+        // Hỗ trợ nhấp đúp chuột vào dòng để mở nhanh cửa sổ Cập nhật
         tblDanhSach.setRowFactory(tv -> {
-            TableRow<KhachHang> row = new TableRow<>() {
-                @Override
-                protected void updateItem(KhachHang khachHang, boolean empty) {
-                    super.updateItem(khachHang, empty);
-                    if (empty || khachHang == null) {
-                        setOpacity(1.0);
-                    } else {
-                        setOpacity(khachHang.isTrangThai() ? 1.0 : 0.55);
-                    }
-                }
-            };
-            // Nhấp đúp chuột vào dòng để mở cửa sổ Cập nhật
+            TableRow<KhachHang> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
                     moCuaSoCapNhat();
@@ -198,7 +172,7 @@ public class CapNhatKhachHangView extends VBox {
             return row;
         });
 
-        // Lắng nghe sự kiện chọn dòng trên bảng để kích hoạt / vô hiệu hóa các nút tương ứng
+        // Lắng nghe sự kiện chọn dòng trên bảng để kích hoạt / vô hiệu hóa nút Cập nhật
         tblDanhSach.getSelectionModel().selectedItemProperty().addListener((obs, cu, moi) -> capNhatTrangThaiNut(moi));
 
         pnlKhung.getChildren().addAll(pnlThanhNut, tblDanhSach);
@@ -209,28 +183,7 @@ public class CapNhatKhachHangView extends VBox {
      * Bật / tắt các nút chức năng tùy theo trạng thái dòng được chọn trên bảng.
      */
     private void capNhatTrangThaiNut(KhachHang khachHangChon) {
-        if (khachHangChon == null) {
-            btnCapNhat.setDisable(true);
-            btnXoaMem.setDisable(true);
-            btnXoaMem.setText("Xóa");
-            btnXoaMem.getStyleClass().clear();
-            btnXoaMem.getStyleClass().addAll("button", "nut-xoa");
-        } else {
-            btnCapNhat.setDisable(false);
-            btnXoaMem.setDisable(false);
-
-            // Nếu khách hàng đang hoạt động: hiển thị nút "Xóa" (màu đỏ)
-            // Nếu khách hàng đã ngừng hoạt động: hiển thị nút "Kích hoạt lại" (màu xanh chính)
-            btnXoaMem.getStyleClass().clear();
-            btnXoaMem.getStyleClass().add("button");
-            if (khachHangChon.isTrangThai()) {
-                btnXoaMem.setText("Xóa");
-                btnXoaMem.getStyleClass().add("nut-xoa");
-            } else {
-                btnXoaMem.setText("Kích hoạt lại");
-                btnXoaMem.getStyleClass().add("nut-chinh");
-            }
-        }
+        btnCapNhat.setDisable(khachHangChon == null);
     }
 
     /**
@@ -302,11 +255,6 @@ public class CapNhatKhachHangView extends VBox {
         txtGhiChu.setPrefRowCount(2);
         txtGhiChu.setWrapText(true);
 
-        ComboBox<String> cboTrangThai = new ComboBox<>();
-        cboTrangThai.setItems(FXCollections.observableArrayList("Đang hoạt động", "Ngừng hoạt động"));
-        cboTrangThai.setValue(khChon.isTrangThai() ? "Đang hoạt động" : "Ngừng hoạt động");
-        cboTrangThai.setPrefWidth(200);
-
         // --- Ràng buộc dữ liệu thời gian thực trên form sửa ---
         // 1. Họ tên: Chỉ cho phép chữ cái tiếng Việt, số và khoảng trắng
         txtHoTen.textProperty().addListener((obs, cu, moi) -> {
@@ -336,10 +284,8 @@ public class CapNhatKhachHangView extends VBox {
         pnlLuoi.add(txtEmail, 1, 3);
         pnlLuoi.add(new Label("Địa chỉ:"), 0, 4);
         pnlLuoi.add(txtDiaChi, 1, 4);
-        pnlLuoi.add(new Label("Trạng thái:"), 0, 5);
-        pnlLuoi.add(cboTrangThai, 1, 5);
-        pnlLuoi.add(new Label("Ghi chú:"), 0, 6);
-        pnlLuoi.add(txtGhiChu, 1, 6);
+        pnlLuoi.add(new Label("Ghi chú:"), 0, 5);
+        pnlLuoi.add(txtGhiChu, 1, 5);
 
         ColumnConstraints colNhan = new ColumnConstraints(120);
         ColumnConstraints colNhap = new ColumnConstraints();
@@ -359,7 +305,6 @@ public class CapNhatKhachHangView extends VBox {
                 String email = txtEmail.getText();
                 String diaChi = txtDiaChi.getText();
                 String ghiChu = txtGhiChu.getText();
-                boolean trangThai = "Đang hoạt động".equalsIgnoreCase(cboTrangThai.getValue());
 
                 KhachHang khCapNhat = new KhachHang();
                 khCapNhat.setMaKhachHang(khChon.getMaKhachHang());
@@ -369,7 +314,7 @@ public class CapNhatKhachHangView extends VBox {
                 khCapNhat.setDiaChi(diaChi);
                 khCapNhat.setGhiChu(ghiChu);
                 khCapNhat.setDiemTichLuy(khChon.getDiemTichLuy());
-                khCapNhat.setTrangThai(trangThai);
+                khCapNhat.setTrangThai(true);
 
                 boolean thanhCong = khachHangController.capNhatKhachHang(khCapNhat);
                 if (thanhCong) {
@@ -392,7 +337,7 @@ public class CapNhatKhachHangView extends VBox {
         pnlForm.getChildren().addAll(pnlLuoi, pnlNutDieuKhien);
         pnlGoc.getChildren().addAll(pnlTieuDe, pnlForm);
 
-        Scene scene = new Scene(pnlGoc, 500, 480);
+        Scene scene = new Scene(pnlGoc, 500, 440);
         if (CapNhatKhachHangView.class.getResource(CSS_CHUNG) != null) {
             scene.getStylesheets().add(CapNhatKhachHangView.class.getResource(CSS_CHUNG).toExternalForm());
         }
@@ -400,55 +345,6 @@ public class CapNhatKhachHangView extends VBox {
         cuaSo.setScene(scene);
         cuaSo.setResizable(false);
         cuaSo.showAndWait();
-    }
-
-    /**
-     * Xử lý hành động xóa mềm (ngừng hoạt động) hoặc kích hoạt lại khách hàng.
-     */
-    private void xuLyXoaMemHoacKichHoat() {
-        KhachHang khChon = tblDanhSach.getSelectionModel().getSelectedItem();
-        if (khChon == null) {
-            return;
-        }
-
-        if (khChon.isTrangThai()) {
-            Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION);
-            xacNhan.setTitle("Xác nhận ngưng hoạt động");
-            xacNhan.setHeaderText("Ngưng hoạt động khách hàng: " + khChon.getHoTen());
-            xacNhan.setContentText("Bạn có chắc chắn muốn ngưng hoạt động khách hàng '" + khChon.getMaKhachHang() +
-                    "' không?\nKhách hàng này sẽ được làm mờ trên bảng.");
-
-            Optional<ButtonType> ketQua = xacNhan.showAndWait();
-            if (ketQua.isPresent() && ketQua.get() == ButtonType.OK) {
-                try {
-                    boolean ok = khachHangController.xoaMemKhachHang(khChon.getMaKhachHang());
-                    if (ok) {
-                        taiLaiDanhSach();
-                        hienThiThongBao("Thành công", "Đã chuyển trạng thái khách hàng sang ngừng hoạt động!");
-                    }
-                } catch (Exception ex) {
-                    hienThiLoi("Lỗi thực hiện", ex.getMessage());
-                }
-            }
-        } else {
-            Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION);
-            xacNhan.setTitle("Xác nhận kích hoạt lại");
-            xacNhan.setHeaderText("Kích hoạt lại khách hàng: " + khChon.getHoTen());
-            xacNhan.setContentText("Bạn có muốn kích hoạt lại khách hàng '" + khChon.getMaKhachHang() + "' không?");
-
-            Optional<ButtonType> ketQua = xacNhan.showAndWait();
-            if (ketQua.isPresent() && ketQua.get() == ButtonType.OK) {
-                try {
-                    boolean ok = khachHangController.kichHoatLaiKhachHang(khChon.getMaKhachHang());
-                    if (ok) {
-                        taiLaiDanhSach();
-                        hienThiThongBao("Thành công", "Khách hàng đã được kích hoạt lại thành công!");
-                    }
-                } catch (Exception ex) {
-                    hienThiLoi("Lỗi thực hiện", ex.getMessage());
-                }
-            }
-        }
     }
 
     private void hienThiThongBao(String tieuDe, String noiDung) {
