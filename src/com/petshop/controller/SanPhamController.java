@@ -45,6 +45,10 @@ public class SanPhamController {
         return sanPhamService.layDanhSachTonKho(chiDuoiNguong);
     }
 
+    public List<SanPham> layBaoCaoSanPham() {
+        return sanPhamService.layBaoCaoSanPham();
+    }
+
     public boolean capNhatSoLuongTon(String maSanPham, int soLuongThayDoi) {
         return sanPhamService.capNhatSoLuongTon(maSanPham, soLuongThayDoi);
     }

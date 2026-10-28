@@ -23,6 +23,7 @@ public class TheoDoiTonKhoView extends VBox {
     private final Label lblTongSoMatHang = new Label("0");
     private final Label lblTongSoLuongTon = new Label("0");
     private final Label lblCanNhapHang = new Label("0");
+    private final Label lblTongGiaTriTon = new Label("0 đ");
 
     private final CheckBox chkDuoiNguongAnToan = new CheckBox("Chỉ hiển thị sản phẩm dưới ngưỡng an toàn (Cần nhập hàng)");
     private final TextField txtTimKiem = new TextField();
@@ -31,11 +32,20 @@ public class TheoDoiTonKhoView extends VBox {
     private final TableView<SanPham> tblTonKho = new TableView<>();
 
     public TheoDoiTonKhoView() {
-        this(new SanPhamController());
+        this(new SanPhamController(), false);
+    }
+
+    public TheoDoiTonKhoView(boolean chiDuoiNguong) {
+        this(new SanPhamController(), chiDuoiNguong);
     }
 
     public TheoDoiTonKhoView(SanPhamController sanPhamController) {
+        this(sanPhamController, false);
+    }
+
+    public TheoDoiTonKhoView(SanPhamController sanPhamController, boolean chiDuoiNguong) {
         this.sanPhamController = sanPhamController;
+        this.chkDuoiNguongAnToan.setSelected(chiDuoiNguong);
 
         setSpacing(14);
         setPadding(new Insets(18));
@@ -71,12 +81,14 @@ public class TheoDoiTonKhoView extends VBox {
         VBox theMatHang = taoHopThongKe("TỔNG MÃ HÀNG", lblTongSoMatHang, "#1976d2");
         VBox theTonKho = taoHopThongKe("TỔNG TỒN KHO", lblTongSoLuongTon, "#2e7d32");
         VBox theCanNhap = taoHopThongKe("CẦN NHẬP BỔ SUNG", lblCanNhapHang, "#c62828");
+        VBox theGiaTriTon = taoHopThongKe("TỔNG GIÁ TRỊ TỒN KHO", lblTongGiaTriTon, "#ed6c02");
 
         HBox.setHgrow(theMatHang, Priority.ALWAYS);
         HBox.setHgrow(theTonKho, Priority.ALWAYS);
         HBox.setHgrow(theCanNhap, Priority.ALWAYS);
+        HBox.setHgrow(theGiaTriTon, Priority.ALWAYS);
 
-        pnlThe.getChildren().addAll(theMatHang, theTonKho, theCanNhap);
+        pnlThe.getChildren().addAll(theMatHang, theTonKho, theCanNhap, theGiaTriTon);
         return pnlThe;
     }
 
@@ -127,42 +139,59 @@ public class TheoDoiTonKhoView extends VBox {
         VBox.setVgrow(tblTonKho, Priority.ALWAYS);
 
         TableColumn<SanPham, String> colMa = new TableColumn<>("Mã sản phẩm");
-        colMa.setPrefWidth(160);
+        colMa.setPrefWidth(140);
         colMa.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getMaSanPham()));
 
         TableColumn<SanPham, String> colTen = new TableColumn<>("Tên sản phẩm");
-        colTen.setPrefWidth(240);
+        colTen.setPrefWidth(210);
         colTen.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getTenSanPham()));
 
         TableColumn<SanPham, String> colNcc = new TableColumn<>("Nhà cung cấp");
-        colNcc.setPrefWidth(200);
+        colNcc.setPrefWidth(170);
         colNcc.setCellValueFactory(c -> new SimpleStringProperty(
                 c.getValue().getTenNhaCungCap() != null ? c.getValue().getTenNhaCungCap() : c.getValue().getMaNhaCungCap()));
 
         TableColumn<SanPham, String> colDvt = new TableColumn<>("ĐVT");
-        colDvt.setPrefWidth(80);
+        colDvt.setPrefWidth(70);
         colDvt.setStyle("-fx-alignment: CENTER;");
         colDvt.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getDonViTinh()));
 
+        TableColumn<SanPham, String> colGiaBan = new TableColumn<>("Giá bán");
+        colGiaBan.setPrefWidth(110);
+        colGiaBan.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colGiaBan.setCellValueFactory(c -> new SimpleStringProperty(dinhDangTien(c.getValue().getGiaBan())));
+
         TableColumn<SanPham, String> colTon = new TableColumn<>("Số lượng tồn");
-        colTon.setPrefWidth(110);
+        colTon.setPrefWidth(90);
         colTon.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
         colTon.setCellValueFactory(c -> new SimpleStringProperty(String.valueOf(c.getValue().getSoLuongTon())));
 
         TableColumn<SanPham, String> colNguong = new TableColumn<>("Ngưỡng tối thiểu");
-        colNguong.setPrefWidth(130);
+        colNguong.setPrefWidth(110);
         colNguong.setStyle("-fx-alignment: CENTER-RIGHT;");
         colNguong.setCellValueFactory(c -> new SimpleStringProperty(String.valueOf(c.getValue().getNguongTonToiThieu())));
 
+        TableColumn<SanPham, String> colThanhTien = new TableColumn<>("Thành tiền tồn");
+        colThanhTien.setPrefWidth(130);
+        colThanhTien.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
+        colThanhTien.setCellValueFactory(c -> {
+            SanPham sp = c.getValue();
+            if (sp.getGiaBan() == null || sp.getSoLuongTon() < 0) {
+                return new SimpleStringProperty("0 đ");
+            }
+            BigDecimal tt = sp.getGiaBan().multiply(BigDecimal.valueOf(sp.getSoLuongTon()));
+            return new SimpleStringProperty(dinhDangTien(tt));
+        });
+
         TableColumn<SanPham, String> colTrangThaiTon = new TableColumn<>("Đánh giá tồn kho");
-        colTrangThaiTon.setPrefWidth(170);
+        colTrangThaiTon.setPrefWidth(150);
         colTrangThaiTon.setStyle("-fx-alignment: CENTER;");
         colTrangThaiTon.setCellValueFactory(c -> {
             boolean duoiNguong = c.getValue().isDuoiNguongAnToan();
             return new SimpleStringProperty(duoiNguong ? "Cảnh báo thiếu hàng" : "An toàn");
         });
 
-        tblTonKho.getColumns().addAll(List.of(colMa, colTen, colNcc, colDvt, colTon, colNguong, colTrangThaiTon));
+        tblTonKho.getColumns().addAll(List.of(colMa, colTen, colNcc, colDvt, colGiaBan, colTon, colNguong, colThanhTien, colTrangThaiTon));
 
         tblTonKho.setRowFactory(tv -> new TableRow<>() {
             @Override
@@ -185,21 +214,32 @@ public class TheoDoiTonKhoView extends VBox {
     public void taiDuLieu() {
         try {
             boolean chiDuoiNguong = chkDuoiNguongAnToan.isSelected();
-            List<SanPham> tatCaDangBan = sanPhamController.layDanhSachTonKho(false);
+            List<SanPham> tatCaDangBan;
+            try {
+                tatCaDangBan = sanPhamController.layBaoCaoSanPham();
+            } catch (Exception e) {
+                tatCaDangBan = sanPhamController.layDanhSachTonKho(false);
+            }
 
             int tongMatHang = tatCaDangBan.size();
             int tongTon = 0;
             int soLuongCanNhap = 0;
+            BigDecimal tongGiaTri = BigDecimal.ZERO;
+
             for (SanPham sp : tatCaDangBan) {
                 tongTon += sp.getSoLuongTon();
                 if (sp.isDuoiNguongAnToan()) {
                     soLuongCanNhap++;
+                }
+                if (sp.getGiaBan() != null && sp.getSoLuongTon() > 0) {
+                    tongGiaTri = tongGiaTri.add(sp.getGiaBan().multiply(BigDecimal.valueOf(sp.getSoLuongTon())));
                 }
             }
 
             lblTongSoMatHang.setText(String.format("%,d", tongMatHang));
             lblTongSoLuongTon.setText(String.format("%,d", tongTon));
             lblCanNhapHang.setText(String.format("%,d", soLuongCanNhap));
+            lblTongGiaTriTon.setText(dinhDangTien(tongGiaTri));
 
             String tuKhoa = txtTimKiem.getText() != null ? txtTimKiem.getText().trim().toLowerCase() : "";
             List<SanPham> danhSachHienThi = (chiDuoiNguong ? sanPhamController.layDanhSachTonKho(true) : tatCaDangBan)
@@ -214,6 +254,11 @@ public class TheoDoiTonKhoView extends VBox {
         } catch (Exception e) {
             hienThiLoi("Lỗi tải thông tin tồn kho: " + e.getMessage());
         }
+    }
+
+    private String dinhDangTien(BigDecimal soTien) {
+        if (soTien == null) return "0 đ";
+        return NumberFormat.getNumberInstance(LOCALE_VI_VN).format(soTien) + " đ";
     }
 
     private void hienThiLoi(String noiDung) {

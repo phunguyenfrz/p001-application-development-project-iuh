@@ -7,6 +7,10 @@ import com.petshop.view.dichvu.BangGiaDichVuView;
 import com.petshop.view.dichvu.BaoCaoDichVuView;
 import com.petshop.view.dichvu.CapNhatDichVuView;
 import com.petshop.view.dichvu.TimKiemDichVuView;
+import com.petshop.view.sanpham.CapNhatSanPhamView;
+import com.petshop.view.sanpham.ThemSanPhamView;
+import com.petshop.view.sanpham.TheoDoiTonKhoView;
+import com.petshop.view.sanpham.TimKiemSanPhamView;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -445,7 +449,16 @@ public class ManHinhChinhView extends BorderPane {
             }
             case "NHA_CUNG_CAP"          -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "DON_NHAP"      -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
-            case "SAN_PHAM"           -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
+            case "SAN_PHAM"           -> {
+                if ("PRD_SEARCH".equals(chucNang.getMaChucNang())) {
+                    yield new TimKiemSanPhamView();
+                } else if ("PRD_INVENTORY".equals(chucNang.getMaChucNang()) || "PRD_REPORT".equals(chucNang.getMaChucNang())) {
+                    yield new TheoDoiTonKhoView();
+                } else if (chucNang.getTenChucNang() != null && chucNang.getTenChucNang().toLowerCase().contains("thêm")) {
+                    yield new ThemSanPhamView();
+                }
+                yield new CapNhatSanPhamView();
+            }
             case "KHUYEN_MAI"         -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "HOA_DON"           -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "PHIEU_DOI_TRA"       -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());

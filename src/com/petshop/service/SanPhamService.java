@@ -25,13 +25,13 @@ public class SanPhamService {
     }
 
     public String themSanPham(SanPham sp) {
-        xacThucService.kiemTraQuyen("SP_CAP_NHAT");
+        xacThucService.kiemTraQuyen("PRD_CRUD");
         kiemTraThongTinSanPham(sp, true);
         return sanPhamDAO.themSanPham(sp);
     }
 
     public boolean capNhatSanPham(SanPham sp) {
-        xacThucService.kiemTraQuyen("SP_CAP_NHAT");
+        xacThucService.kiemTraQuyen("PRD_CRUD");
         if (sp == null || sp.getMaSanPham() == null || sp.getMaSanPham().isBlank()) {
             throw new IllegalArgumentException("Mã sản phẩm không được để trống khi cập nhật.");
         }
@@ -40,7 +40,7 @@ public class SanPhamService {
     }
 
     public boolean xoaMemSanPham(String maSanPham) {
-        xacThucService.kiemTraQuyen("SP_TIM_KIEM");
+        xacThucService.kiemTraQuyen("PRD_SEARCH");
         if (maSanPham == null || maSanPham.isBlank()) {
             throw new IllegalArgumentException("Vui lòng chọn sản phẩm cần xóa.");
         }
@@ -48,6 +48,7 @@ public class SanPhamService {
     }
 
     public SanPham laySanPhamTheoMa(String maSanPham) {
+        xacThucService.kiemTraQuyen("PRD_SEARCH");
         if (maSanPham == null || maSanPham.isBlank()) {
             return null;
         }
@@ -55,13 +56,22 @@ public class SanPhamService {
     }
 
     public List<SanPham> timKiemSanPham(String tuKhoa, String maNhaCungCap, Boolean chiDangKinhDoanh) {
-        xacThucService.kiemTraQuyen("SP_TIM_KIEM");
+        xacThucService.kiemTraQuyen("PRD_SEARCH");
         return sanPhamDAO.timKiemSanPham(tuKhoa, maNhaCungCap, chiDangKinhDoanh);
     }
 
     public List<SanPham> layDanhSachTonKho(boolean chiDuoiNguong) {
-        xacThucService.kiemTraQuyen("SP_TON_KHO");
+        if (chiDuoiNguong) {
+            xacThucService.kiemTraQuyen("PRD_LOW_STOCK");
+        } else {
+            xacThucService.kiemTraQuyen("PRD_INVENTORY");
+        }
         return sanPhamDAO.layDanhSachTonKho(chiDuoiNguong);
+    }
+
+    public List<SanPham> layBaoCaoSanPham() {
+        xacThucService.kiemTraQuyen("PRD_REPORT");
+        return sanPhamDAO.layDanhSachTonKho(false);
     }
 
     public boolean capNhatSoLuongTon(String maSanPham, int soLuongThayDoi) {
