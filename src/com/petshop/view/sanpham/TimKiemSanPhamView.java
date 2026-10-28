@@ -4,23 +4,20 @@ import com.petshop.controller.SanPhamController;
 import com.petshop.model.SanPham;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
-import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Optional;
 
 /**
  * Màn hình tra cứu, tìm kiếm sản phẩm và xóa mềm (PRD_SEARCH).
- * Tiền tố điều khiển: lbl, txt, btn, tbl, cbo.
+ * Thiết kế giao diện đồng bộ hoàn toàn theo phân hệ Dịch vụ (TimKiemDichVuView).
  */
 public class TimKiemSanPhamView extends VBox {
 
     private final SanPhamController sanPhamController = new SanPhamController();
-    private final DecimalFormat dinhDangTien = new DecimalFormat("#,### đ");
 
     private final TextField txtTuKhoa = new TextField();
     private final ComboBox<String> cboLocTrangThai = new ComboBox<>();
@@ -44,11 +41,10 @@ public class TimKiemSanPhamView extends VBox {
 
         VBox pnlKhungChinh = new VBox(12);
         pnlKhungChinh.getStyleClass().add("hop-noi-dung");
-        pnlKhungChinh.setPadding(new Insets(14));
         VBox.setVgrow(pnlKhungChinh, Priority.ALWAYS);
 
         HBox pnlThanhTimKiem = taoThanhTimKiem();
-        VBox pnlBang = taoKhungBang();
+        VBox pnlBang = taoKhungBangDanhSach();
         VBox.setVgrow(pnlBang, Priority.ALWAYS);
 
         pnlKhungChinh.getChildren().addAll(pnlThanhTimKiem, pnlBang);
@@ -63,28 +59,34 @@ public class TimKiemSanPhamView extends VBox {
     }
 
     private HBox taoThanhTimKiem() {
-        HBox pnlThanh = new HBox(10);
-        pnlThanh.setAlignment(Pos.CENTER_LEFT);
+        HBox pnlCongCu = new HBox(10);
+        pnlCongCu.getStyleClass().add("thanh-tac-vu");
+        pnlCongCu.setAlignment(Pos.CENTER_LEFT);
 
-        txtTuKhoa.setPromptText("Nhập mã, tên hoặc mã vạch...");
+        Label lblTim = new Label("Từ khóa:");
+        txtTuKhoa.setPromptText("Nhập mã hoặc tên sản phẩm...");
         txtTuKhoa.setPrefWidth(240);
+        txtTuKhoa.setOnAction(e -> xuLyTimKiem());
 
-        cboLocTrangThai.getItems().addAll("Tất cả trạng thái", "Đang kinh doanh", "Ngừng kinh doanh");
-        cboLocTrangThai.setValue("Tất cả trạng thái");
-        cboLocTrangThai.setPrefWidth(160);
+        Label lblTrangThai = new Label("Trạng thái:");
+        cboLocTrangThai.setItems(FXCollections.observableArrayList(
+                "Tất cả", "Đang kinh doanh", "Ngừng kinh doanh"
+        ));
+        cboLocTrangThai.setValue("Tất cả");
+        cboLocTrangThai.setPrefWidth(150);
+        cboLocTrangThai.setOnAction(e -> xuLyTimKiem());
 
         btnTimKiem.getStyleClass().add("nut-chinh");
         btnTimKiem.setOnAction(e -> xuLyTimKiem());
-        txtTuKhoa.setOnAction(e -> xuLyTimKiem());
 
         btnLamMoi.getStyleClass().add("nut-phu");
         btnLamMoi.setOnAction(e -> {
             txtTuKhoa.clear();
-            cboLocTrangThai.setValue("Tất cả trạng thái");
+            cboLocTrangThai.setValue("Tất cả");
             xuLyTimKiem();
         });
 
-        btnXoaMem.getStyleClass().add("nut-phu");
+        btnXoaMem.getStyleClass().add("nut-xoa");
         btnXoaMem.setOnAction(e -> xuLyXoaMem());
 
         Region pnlKhoangCach = new Region();
@@ -92,18 +94,21 @@ public class TimKiemSanPhamView extends VBox {
 
         lblKetQua.setStyle("-fx-font-weight: bold; -fx-text-fill: #475569;");
 
-        pnlThanh.getChildren().addAll(
-                new Label("Từ khóa:"), txtTuKhoa,
-                new Label("Trạng thái:"), cboLocTrangThai,
+        pnlCongCu.getChildren().addAll(
+                lblTim, txtTuKhoa,
+                lblTrangThai, cboLocTrangThai,
                 btnTimKiem, btnLamMoi, btnXoaMem,
                 pnlKhoangCach, lblKetQua
         );
-
-        return pnlThanh;
+        return pnlCongCu;
     }
 
-    private VBox taoKhungBang() {
-        VBox pnlBang = new VBox();
+    private VBox taoKhungBangDanhSach() {
+        VBox pnlBang = new VBox(8);
+
+        tblDanhSach.getStyleClass().add("bang-du-lieu");
+        tblDanhSach.setPlaceholder(new Label("Không tìm thấy sản phẩm phù hợp"));
+        VBox.setVgrow(tblDanhSach, Priority.ALWAYS);
 
         TableColumn<SanPham, String> colMa = new TableColumn<>("Mã sản phẩm");
         colMa.setPrefWidth(140);
@@ -113,18 +118,16 @@ public class TimKiemSanPhamView extends VBox {
         colTen.setPrefWidth(220);
         colTen.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getTenSanPham()));
 
-        TableColumn<SanPham, String> colMaVach = new TableColumn<>("Mã vạch");
-        colMaVach.setPrefWidth(120);
-        colMaVach.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getMaVach()));
+        TableColumn<SanPham, String> colLoai = new TableColumn<>("Loại / ĐVT");
+        colLoai.setPrefWidth(90);
+        colLoai.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDonViTinh()));
 
         TableColumn<SanPham, String> colGiaBan = new TableColumn<>("Giá bán");
-        colGiaBan.setPrefWidth(110);
+        colGiaBan.setPrefWidth(120);
         colGiaBan.setStyle("-fx-alignment: CENTER-RIGHT;");
-        colGiaBan.setCellValueFactory(cell -> new SimpleStringProperty(dinhDangTien.format(cell.getValue().getGiaBan())));
-
-        TableColumn<SanPham, String> colDonVi = new TableColumn<>("Đơn vị");
-        colDonVi.setPrefWidth(80);
-        colDonVi.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDonViTinh()));
+        colGiaBan.setCellValueFactory(cell -> new SimpleStringProperty(
+                ThemSanPhamView.dinhDangTien(cell.getValue().getGiaBan().doubleValue())
+        ));
 
         TableColumn<SanPham, String> colTon = new TableColumn<>("Tồn kho");
         colTon.setPrefWidth(90);
@@ -149,10 +152,21 @@ public class TimKiemSanPhamView extends VBox {
         ));
 
         tblDanhSach.getColumns().setAll(List.of(
-                colMa, colTen, colMaVach, colGiaBan, colDonVi, colTon, colNguong, colNcc, colTrangThai
+                colMa, colTen, colLoai, colGiaBan, colTon, colNguong, colNcc, colTrangThai
         ));
-        tblDanhSach.getStyleClass().add("bang-du-lieu");
-        tblDanhSach.setPlaceholder(new Label("Không tìm thấy sản phẩm phù hợp."));
+
+        // Làm mờ các dòng đã Ngừng kinh doanh
+        tblDanhSach.setRowFactory(tv -> new TableRow<>() {
+            @Override
+            protected void updateItem(SanPham item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setOpacity(1.0);
+                } else {
+                    setOpacity(item.isTrangThai() ? 1.0 : 0.5);
+                }
+            }
+        });
 
         pnlBang.getChildren().add(tblDanhSach);
         VBox.setVgrow(tblDanhSach, Priority.ALWAYS);
@@ -174,7 +188,7 @@ public class TimKiemSanPhamView extends VBox {
             tblDanhSach.setItems(FXCollections.observableArrayList(ds));
             lblKetQua.setText("Tổng số: " + ds.size() + " sản phẩm");
         } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
-            hienThiCanhBao("Lỗi tìm kiếm", ex.getMessage());
+            hienThiCanhBao("Lỗi tìm kiếm: " + ex.getMessage());
         }
     }
 
@@ -192,26 +206,26 @@ public class TimKiemSanPhamView extends VBox {
             try {
                 boolean thanhCong = sanPhamController.xoaMemSanPham(sp.getMaSanPham());
                 if (thanhCong) {
-                    hienThiThongBao("Thông báo", "Đã ngừng kinh doanh sản phẩm!");
+                    hienThiThongBao("Đã ngừng kinh doanh sản phẩm!");
                     xuLyTimKiem();
                 }
             } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
-                hienThiCanhBao("Lỗi", ex.getMessage());
+                hienThiCanhBao("Lỗi: " + ex.getMessage());
             }
         }
     }
 
-    private void hienThiThongBao(String tieuDe, String noiDung) {
+    private void hienThiThongBao(String noiDung) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(tieuDe);
+        alert.setTitle("Thông báo");
         alert.setHeaderText(null);
         alert.setContentText(noiDung);
         alert.showAndWait();
     }
 
-    private void hienThiCanhBao(String tieuDe, String noiDung) {
+    private void hienThiCanhBao(String noiDung) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle(tieuDe);
+        alert.setTitle("Cảnh báo");
         alert.setHeaderText(null);
         alert.setContentText(noiDung);
         alert.showAndWait();

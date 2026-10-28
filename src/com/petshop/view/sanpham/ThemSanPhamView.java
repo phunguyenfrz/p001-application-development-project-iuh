@@ -10,27 +10,30 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 
 /**
- * Màn hình nhỏ (popup/dialog) dùng để thêm mới sản phẩm.
- * Tiền tố điều khiển: lbl, txt, btn, cbo.
+ * Màn hình nhỏ (popup) dùng để thêm mới sản phẩm vào kho hàng.
+ * Thiết kế giao diện đồng bộ hoàn toàn theo cách bố trí của phân hệ Dịch vụ.
  */
 public class ThemSanPhamView extends VBox {
+
+    private static final Locale LOCALE_VI_VN = new Locale("vi", "VN");
 
     private final SanPhamController sanPhamController = new SanPhamController();
     private final Runnable khiThemThanhCong;
 
     private final TextField txtMaSanPham = new TextField();
     private final TextField txtTenSanPham = new TextField();
-    private final TextField txtMaVach = new TextField();
+    private final ComboBox<String> cboLoaiSanPham = new ComboBox<>();
+    private final ComboBox<NhaCungCap> cboNhaCungCap = new ComboBox<>();
     private final TextField txtGiaBan = new TextField();
     private final TextField txtSoLuongTon = new TextField();
     private final TextField txtNguongTon = new TextField();
-    private final TextField txtDonViTinh = new TextField();
-    private final ComboBox<NhaCungCap> cboNhaCungCap = new ComboBox<>();
 
-    private final Button btnLuu = new Button("Lưu sản phẩm");
+    private final Button btnThem = new Button("Lưu thêm mới");
     private final Button btnLamMoi = new Button("Làm mới");
     private final Button btnDong = new Button("Đóng");
 
@@ -51,151 +54,203 @@ public class ThemSanPhamView extends VBox {
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
         pnlTieuDe.getChildren().addAll(lblTieuDe, lblMoTa);
 
-        GridPane pnlForm = taoKhungNhapLieu();
-        HBox pnlNut = taoThanhNutBam();
+        VBox pnlForm = taoKhungNhapLieu();
+        getChildren().addAll(pnlTieuDe, pnlForm);
 
-        getChildren().addAll(pnlTieuDe, pnlForm, pnlNut);
-        lamMoiForm();
+        xoaTrangForm();
     }
 
-    private GridPane taoKhungNhapLieu() {
-        GridPane pnlGrid = new GridPane();
-        pnlGrid.setHgap(14);
-        pnlGrid.setVgap(12);
-        pnlGrid.getStyleClass().add("hop-noi-dung");
-        pnlGrid.setPadding(new Insets(16));
+    private VBox taoKhungNhapLieu() {
+        VBox pnlKhung = new VBox(14);
+        pnlKhung.getStyleClass().add("hop-noi-dung");
+
+        GridPane pnlLuoi = new GridPane();
+        pnlLuoi.setHgap(12);
+        pnlLuoi.setVgap(10);
 
         txtMaSanPham.setPromptText("Tự động sinh (SP-yyyyMMdd-xxxxxx)");
         txtMaSanPham.setEditable(false);
         txtMaSanPham.setStyle("-fx-background-color: #f1f5f9;");
 
-        cboNhaCungCap.setPromptText("-- Chọn nhà cung cấp --");
+        txtTenSanPham.setPromptText("Nhập tên sản phẩm (VD: Hạt Royal Canin Indoor 2kg)");
+
+        cboLoaiSanPham.getItems().addAll("Lọ", "Gói", "Hộp", "Chai", "Túi", "Cái");
+        cboLoaiSanPham.setValue("Lọ");
+        cboLoaiSanPham.setMaxWidth(Double.MAX_VALUE);
+
+        cboNhaCungCap.setPromptText("-- Chọn nhà cung cấp (tùy chọn) --");
         cboNhaCungCap.setMaxWidth(Double.MAX_VALUE);
 
-        txtTenSanPham.setPromptText("Nhập tên sản phẩm (*)...");
-        txtMaVach.setPromptText("Nhập mã vạch (*)...");
-        txtGiaBan.setPromptText("Nhập giá bán (*, chỉ số)...");
-        txtSoLuongTon.setPromptText("Số lượng tồn ban đầu (mặc định 0)...");
-        txtNguongTon.setPromptText("Ngưỡng tồn an toàn (mặc định 10)...");
-        txtDonViTinh.setPromptText("Cái, Gói, Hộp, Chai (*)...");
+        txtGiaBan.setPromptText("Nhập giá bán (VNĐ)");
+        txtSoLuongTon.setPromptText("Nhập số lượng tồn ban đầu (mặc định 0)");
+        txtNguongTon.setPromptText("Nhập ngưỡng an toàn (mặc định 10)");
 
-        // Chỉ cho phép nhập số ở ô giá bán, số lượng, ngưỡng tồn
-        datBoLocChiSo(txtGiaBan);
-        datBoLocChiSo(txtSoLuongTon);
-        datBoLocChiSo(txtNguongTon);
+        chanNhapSoNguyen(txtSoLuongTon);
+        chanNhapSoNguyen(txtNguongTon);
+        ganDinhDangTienChoO(txtGiaBan);
 
-        pnlGrid.add(new Label("Mã sản phẩm:"), 0, 0);
-        pnlGrid.add(txtMaSanPham, 1, 0);
+        pnlLuoi.add(new Label("Mã sản phẩm:"), 0, 0);
+        pnlLuoi.add(txtMaSanPham, 1, 0);
 
-        pnlGrid.add(new Label("Nhà cung cấp:"), 2, 0);
-        pnlGrid.add(cboNhaCungCap, 3, 0);
+        pnlLuoi.add(new Label("Tên sản phẩm (*):"), 0, 1);
+        pnlLuoi.add(txtTenSanPham, 1, 1);
 
-        pnlGrid.add(new Label("Tên sản phẩm (*):"), 0, 1);
-        pnlGrid.add(txtTenSanPham, 1, 1);
+        pnlLuoi.add(new Label("Loại sản phẩm (*):"), 0, 2);
+        pnlLuoi.add(cboLoaiSanPham, 1, 2);
 
-        pnlGrid.add(new Label("Mã vạch (*):"), 2, 1);
-        pnlGrid.add(txtMaVach, 3, 1);
+        pnlLuoi.add(new Label("Nhà cung cấp:"), 0, 3);
+        pnlLuoi.add(cboNhaCungCap, 1, 3);
 
-        pnlGrid.add(new Label("Giá bán (VNĐ) (*):"), 0, 2);
-        pnlGrid.add(txtGiaBan, 1, 2);
+        pnlLuoi.add(new Label("Giá bán (VNĐ) (*):"), 0, 4);
+        pnlLuoi.add(txtGiaBan, 1, 4);
 
-        pnlGrid.add(new Label("Đơn vị tính (*):"), 2, 2);
-        pnlGrid.add(txtDonViTinh, 3, 2);
+        pnlLuoi.add(new Label("Số lượng tồn ban đầu:"), 0, 5);
+        pnlLuoi.add(txtSoLuongTon, 1, 5);
 
-        pnlGrid.add(new Label("Số lượng tồn:"), 0, 3);
-        pnlGrid.add(txtSoLuongTon, 1, 3);
+        pnlLuoi.add(new Label("Ngưỡng an toàn (*):"), 0, 6);
+        pnlLuoi.add(txtNguongTon, 1, 6);
 
-        pnlGrid.add(new Label("Ngưỡng an toàn:"), 2, 3);
-        pnlGrid.add(txtNguongTon, 3, 3);
+        ColumnConstraints colNhan = new ColumnConstraints();
+        colNhan.setMinWidth(170);
+        ColumnConstraints colNhap = new ColumnConstraints();
+        colNhap.setHgrow(Priority.ALWAYS);
+        pnlLuoi.getColumnConstraints().addAll(colNhan, colNhap);
 
-        ColumnConstraints col1 = new ColumnConstraints(120);
-        ColumnConstraints col2 = new ColumnConstraints(220);
-        ColumnConstraints col3 = new ColumnConstraints(120);
-        ColumnConstraints col4 = new ColumnConstraints(220);
-        pnlGrid.getColumnConstraints().addAll(col1, col2, col3, col4);
-
-        return pnlGrid;
-    }
-
-    private HBox taoThanhNutBam() {
         HBox pnlNut = new HBox(10);
         pnlNut.setAlignment(Pos.CENTER_RIGHT);
-        pnlNut.setPadding(new Insets(10, 0, 0, 0));
 
-        btnLuu.getStyleClass().add("nut-chinh");
-        btnLuu.setOnAction(e -> xuLyLuuSanPham());
+        btnThem.getStyleClass().add("nut-chinh");
+        btnThem.setOnAction(e -> xuLyThem());
 
         btnLamMoi.getStyleClass().add("nut-phu");
-        btnLamMoi.setOnAction(e -> lamMoiForm());
+        btnLamMoi.setOnAction(e -> xoaTrangForm());
 
         btnDong.getStyleClass().add("nut-phu");
         btnDong.setOnAction(e -> dongCuaSo());
 
-        pnlNut.getChildren().addAll(btnLamMoi, btnDong, btnLuu);
-        return pnlNut;
+        pnlNut.getChildren().addAll(btnLamMoi, btnDong, btnThem);
+        pnlKhung.getChildren().addAll(pnlLuoi, pnlNut);
+        return pnlKhung;
     }
 
-    private void xuLyLuuSanPham() {
+    private void chanNhapSoNguyen(TextField txt) {
+        txt.textProperty().addListener((obs, cu, moi) -> {
+            if (moi != null && !moi.matches("\\d*")) {
+                txt.setText(cu);
+            }
+        });
+    }
+
+    private void ganDinhDangTienChoO(TextField txt) {
+        txt.textProperty().addListener((obs, cu, moi) -> {
+            if (moi != null && !moi.matches("[\\d.\\sđ]*")) {
+                txt.setText(cu);
+            }
+        });
+        txt.focusedProperty().addListener((obs, cu, dangChon) -> {
+            if (!dangChon) {
+                dinhDangLaiO(txt);
+            }
+        });
+    }
+
+    private void dinhDangLaiO(TextField txt) {
+        String chuoi = boKyTuDinhDangTien(txt.getText());
+        if (chuoi.isEmpty()) {
+            return;
+        }
         try {
-            SanPham sp = docDuLieuTuForm();
+            double soTien = Double.parseDouble(chuoi);
+            if (soTien >= 0) {
+                txt.setText(dinhDangTien(soTien));
+            }
+        } catch (NumberFormatException ignored) {
+        }
+    }
+
+    public static String dinhDangTien(double soTien) {
+        NumberFormat nf = NumberFormat.getCurrencyInstance(LOCALE_VI_VN);
+        return nf.format(soTien);
+    }
+
+    public static String boKyTuDinhDangTien(String chuoi) {
+        if (chuoi == null) return "";
+        return chuoi.replaceAll("[^\\d]", "").trim();
+    }
+
+    private void xuLyThem() {
+        try {
+            SanPham sp = docFormSanPham();
             boolean thanhCong = sanPhamController.themSanPham(sp);
             if (thanhCong) {
-                hienThiThongBao("Thông báo", "Thêm sản phẩm mới thành công!");
+                hienThiThongBao("Thêm sản phẩm mới thành công!");
                 if (khiThemThanhCong != null) {
                     khiThemThanhCong.run();
                 }
                 dongCuaSo();
             }
         } catch (IllegalArgumentException | SecurityException ex) {
-            hienThiCanhBao("Dữ liệu không hợp lệ", ex.getMessage());
+            hienThiCanhBao("Dữ liệu không hợp lệ: " + ex.getMessage());
         } catch (IllegalStateException ex) {
-            hienThiLoi("Lỗi cơ sở dữ liệu", ex.getMessage());
+            hienThiLoi("Lỗi cơ sở dữ liệu: " + ex.getMessage());
         }
     }
 
-    private SanPham docDuLieuTuForm() {
-        String ten = txtTenSanPham.getText().trim();
-        String maVach = txtMaVach.getText().trim();
-        String donVi = txtDonViTinh.getText().trim();
-        NhaCungCap ncc = cboNhaCungCap.getValue();
+    private SanPham docFormSanPham() {
+        String ten = txtTenSanPham.getText() == null ? "" : txtTenSanPham.getText().trim();
+        if (ten.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng nhập tên sản phẩm!");
+        }
 
-        BigDecimal gia = BigDecimal.ZERO;
-        if (!txtGiaBan.getText().trim().isEmpty()) {
-            gia = new BigDecimal(txtGiaBan.getText().trim());
+        String loaiSp = cboLoaiSanPham.getValue();
+        if (loaiSp == null || loaiSp.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng chọn loại sản phẩm!");
+        }
+
+        String chuoiGia = boKyTuDinhDangTien(txtGiaBan.getText());
+        if (chuoiGia.isEmpty()) {
+            throw new IllegalArgumentException("Giá bán không được để trống!");
+        }
+        BigDecimal gia = new BigDecimal(chuoiGia);
+        if (gia.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Giá bán phải lớn hơn hoặc bằng 0!");
         }
 
         int ton = 0;
-        if (!txtSoLuongTon.getText().trim().isEmpty()) {
+        if (txtSoLuongTon.getText() != null && !txtSoLuongTon.getText().trim().isEmpty()) {
             ton = Integer.parseInt(txtSoLuongTon.getText().trim());
         }
 
         int nguong = 10;
-        if (!txtNguongTon.getText().trim().isEmpty()) {
+        if (txtNguongTon.getText() != null && !txtNguongTon.getText().trim().isEmpty()) {
             nguong = Integer.parseInt(txtNguongTon.getText().trim());
         }
 
+        String maSp = txtMaSanPham.getText().trim();
+        String maVach = "893" + maSp.replace("SP-", "").replace("-", "");
+        NhaCungCap ncc = cboNhaCungCap.getValue();
+
         SanPham sp = new SanPham();
-        sp.setMaSanPham(txtMaSanPham.getText().trim());
+        sp.setMaSanPham(maSp);
         sp.setTenSanPham(ten);
         sp.setMaVach(maVach);
         sp.setGiaBan(gia);
         sp.setSoLuongTon(ton);
         sp.setNguongTonToiThieu(nguong);
-        sp.setDonViTinh(donVi);
+        sp.setDonViTinh(loaiSp);
         sp.setMaNhaCungCap(ncc != null ? ncc.getMaNhaCungCap() : null);
         sp.setTrangThai(true);
 
         return sp;
     }
 
-    private void lamMoiForm() {
+    private void xoaTrangForm() {
         txtMaSanPham.setText(sanPhamController.taoMaSanPham());
         txtTenSanPham.clear();
-        txtMaVach.clear();
+        cboLoaiSanPham.setValue("Lọ");
         txtGiaBan.clear();
         txtSoLuongTon.setText("0");
         txtNguongTon.setText("10");
-        txtDonViTinh.clear();
         napDanhSachNhaCungCap();
         txtTenSanPham.requestFocus();
     }
@@ -206,17 +261,8 @@ public class ThemSanPhamView extends VBox {
             cboNhaCungCap.getItems().setAll(dsNcc);
             cboNhaCungCap.setValue(null);
         } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
-            // Khi không kết nối được CSDL, vẫn cho phép form hoạt động
             cboNhaCungCap.getItems().clear();
         }
-    }
-
-    private void datBoLocChiSo(TextField txt) {
-        txt.textProperty().addListener((obs, cu, moi) -> {
-            if (!moi.matches("\\d*")) {
-                txt.setText(cu);
-            }
-        });
     }
 
     private void dongCuaSo() {
@@ -225,25 +271,25 @@ public class ThemSanPhamView extends VBox {
         }
     }
 
-    private void hienThiThongBao(String tieuDe, String noiDung) {
+    private void hienThiThongBao(String noiDung) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(tieuDe);
+        alert.setTitle("Thông báo");
         alert.setHeaderText(null);
         alert.setContentText(noiDung);
         alert.showAndWait();
     }
 
-    private void hienThiCanhBao(String tieuDe, String noiDung) {
+    private void hienThiCanhBao(String noiDung) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle(tieuDe);
+        alert.setTitle("Dữ liệu không hợp lệ");
         alert.setHeaderText(null);
         alert.setContentText(noiDung);
         alert.showAndWait();
     }
 
-    private void hienThiLoi(String tieuDe, String noiDung) {
+    private void hienThiLoi(String noiDung) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(tieuDe);
+        alert.setTitle("Lỗi");
         alert.setHeaderText(null);
         alert.setContentText(noiDung);
         alert.showAndWait();
