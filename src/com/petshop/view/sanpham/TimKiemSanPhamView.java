@@ -9,10 +9,9 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Màn hình tra cứu, tìm kiếm sản phẩm và xóa mềm (PRD_SEARCH).
+ * Màn hình tra cứu, tìm kiếm sản phẩm theo từ khóa và trạng thái kinh doanh (PRD_SEARCH).
  * Thiết kế giao diện đồng bộ hoàn toàn theo phân hệ Dịch vụ (TimKiemDichVuView).
  */
 public class TimKiemSanPhamView extends VBox {
@@ -23,7 +22,6 @@ public class TimKiemSanPhamView extends VBox {
     private final ComboBox<String> cboLocTrangThai = new ComboBox<>();
     private final Button btnTimKiem = new Button("Tìm kiếm");
     private final Button btnLamMoi = new Button("Làm mới");
-    private final Button btnXoaMem = new Button("Ngừng kinh doanh");
     private final Label lblKetQua = new Label("Tổng số: 0 sản phẩm");
 
     private final TableView<SanPham> tblDanhSach = new TableView<>();
@@ -49,11 +47,6 @@ public class TimKiemSanPhamView extends VBox {
 
         pnlKhungChinh.getChildren().addAll(pnlThanhTimKiem, pnlBang);
         getChildren().addAll(pnlTieuDeMan, pnlKhungChinh);
-
-        btnXoaMem.setDisable(true);
-        tblDanhSach.getSelectionModel().selectedItemProperty().addListener((obs, cu, moi) -> {
-            btnXoaMem.setDisable(moi == null || !moi.isTrangThai());
-        });
 
         xuLyTimKiem();
     }
@@ -86,9 +79,6 @@ public class TimKiemSanPhamView extends VBox {
             xuLyTimKiem();
         });
 
-        btnXoaMem.getStyleClass().add("nut-xoa");
-        btnXoaMem.setOnAction(e -> xuLyXoaMem());
-
         Region pnlKhoangCach = new Region();
         HBox.setHgrow(pnlKhoangCach, Priority.ALWAYS);
 
@@ -97,7 +87,7 @@ public class TimKiemSanPhamView extends VBox {
         pnlCongCu.getChildren().addAll(
                 lblTim, txtTuKhoa,
                 lblTrangThai, cboLocTrangThai,
-                btnTimKiem, btnLamMoi, btnXoaMem,
+                btnTimKiem, btnLamMoi,
                 pnlKhoangCach, lblKetQua
         );
         return pnlCongCu;
@@ -190,37 +180,6 @@ public class TimKiemSanPhamView extends VBox {
         } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             hienThiCanhBao("Lỗi tìm kiếm: " + ex.getMessage());
         }
-    }
-
-    private void xuLyXoaMem() {
-        SanPham sp = tblDanhSach.getSelectionModel().getSelectedItem();
-        if (sp == null) return;
-
-        Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION);
-        xacNhan.setTitle("Xác nhận ngừng kinh doanh");
-        xacNhan.setHeaderText(null);
-        xacNhan.setContentText("Bạn có chắc muốn chuyển sản phẩm \"" + sp.getTenSanPham() + "\" sang Ngừng kinh doanh không?");
-
-        Optional<ButtonType> ketQua = xacNhan.showAndWait();
-        if (ketQua.isPresent() && ketQua.get() == ButtonType.OK) {
-            try {
-                boolean thanhCong = sanPhamController.xoaMemSanPham(sp.getMaSanPham());
-                if (thanhCong) {
-                    hienThiThongBao("Đã ngừng kinh doanh sản phẩm!");
-                    xuLyTimKiem();
-                }
-            } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
-                hienThiCanhBao("Lỗi: " + ex.getMessage());
-            }
-        }
-    }
-
-    private void hienThiThongBao(String noiDung) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Thông báo");
-        alert.setHeaderText(null);
-        alert.setContentText(noiDung);
-        alert.showAndWait();
     }
 
     private void hienThiCanhBao(String noiDung) {

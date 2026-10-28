@@ -97,6 +97,9 @@ public class TheoDoiTonKhoView extends VBox {
         TableColumn<SanPham, String> colTinhTrang = new TableColumn<>("Tình trạng");
         colTinhTrang.setPrefWidth(140);
         colTinhTrang.setCellValueFactory(cell -> {
+            if (!cell.getValue().isTrangThai()) {
+                return new SimpleStringProperty("Ngừng kinh doanh");
+            }
             boolean sapHet = cell.getValue().isSapHetHang();
             return new SimpleStringProperty(sapHet ? "⚠ SẮP HẾT HÀNG" : "Ổn định");
         });
@@ -114,22 +117,34 @@ public class TheoDoiTonKhoView extends VBox {
                 cell.getValue().getTenNhaCungCap() != null ? cell.getValue().getTenNhaCungCap() : "Chưa xác định"
         ));
 
+        TableColumn<SanPham, String> colTrangThai = new TableColumn<>("Trạng thái");
+        colTrangThai.setPrefWidth(130);
+        colTrangThai.setCellValueFactory(cell -> new SimpleStringProperty(
+                cell.getValue().isTrangThai() ? "Đang kinh doanh" : "Ngừng kinh doanh"
+        ));
+
         tblDanhSach.getColumns().setAll(List.of(
-                colMa, colTen, colDonVi, colTonKho, colNguong, colTinhTrang, colGiaBan, colNcc
+                colMa, colTen, colDonVi, colTonKho, colNguong, colTinhTrang, colGiaBan, colNcc, colTrangThai
         ));
         tblDanhSach.getStyleClass().add("bang-du-lieu");
         tblDanhSach.setPlaceholder(new Label("Không có sản phẩm nào trong danh sách."));
 
-        // Highlight màu đỏ cho hàng có tồn kho dưới ngưỡng an toàn
+        // Phân biệt màu sắc: Ngừng kinh doanh thì làm mờ xám đi, Sắp hết hàng thì báo đỏ nhạt
         tblDanhSach.setRowFactory(tv -> new TableRow<>() {
             @Override
             protected void updateItem(SanPham item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
+                    setOpacity(1.0);
                     setStyle("");
+                } else if (!item.isTrangThai()) {
+                    setOpacity(0.5);
+                    setStyle("-fx-background-color: #f1f5f9;");
                 } else if (item.isSapHetHang()) {
+                    setOpacity(1.0);
                     setStyle("-fx-background-color: #fef2f2;");
                 } else {
+                    setOpacity(1.0);
                     setStyle("");
                 }
             }
@@ -151,7 +166,7 @@ public class TheoDoiTonKhoView extends VBox {
 
             tblDanhSach.setItems(FXCollections.observableArrayList(ds));
 
-            long soSapHet = ds.stream().filter(SanPham::isSapHetHang).count();
+            long soSapHet = ds.stream().filter(sp -> sp.isTrangThai() && sp.isSapHetHang()).count();
             lblThongKeTong.setText("Tổng sản phẩm: " + ds.size() + " | Sắp hết hàng: " + soSapHet);
         } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
