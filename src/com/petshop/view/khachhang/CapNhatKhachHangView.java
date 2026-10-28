@@ -127,7 +127,7 @@ public class CapNhatKhachHangView extends VBox {
         TableColumn<KhachHang, String> colMa = new TableColumn<>("Mã khách hàng");
         colMa.setPrefWidth(150);
         colMa.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getMaKhachHang()));
-        colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+        colMa.setStyle("-fx-alignment: CENTER;");
 
         // --- Cột 2: Họ và tên ---
         TableColumn<KhachHang, String> colHoTen = new TableColumn<>("Họ và tên");
@@ -153,7 +153,7 @@ public class CapNhatKhachHangView extends VBox {
         TableColumn<KhachHang, Number> colDiem = new TableColumn<>("Điểm tích lũy");
         colDiem.setPrefWidth(110);
         colDiem.setCellValueFactory(cellData -> new SimpleIntegerProperty(cellData.getValue().getDiemTichLuy()));
-        colDiem.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
+        colDiem.setStyle("-fx-alignment: CENTER-RIGHT;");
 
         // --- Cột 6: Địa chỉ ---
         TableColumn<KhachHang, String> colDiaChi = new TableColumn<>("Địa chỉ");
@@ -163,35 +163,13 @@ public class CapNhatKhachHangView extends VBox {
         ));
         colDiaChi.setStyle("-fx-alignment: CENTER-LEFT;");
 
-        // --- Cột 7: Trạng thái (Hiển thị Badge xanh / đỏ qua CSS chung) ---
+        // --- Cột 7: Trạng thái (Hiển thị văn bản thuần giống bên dịch vụ) ---
         TableColumn<KhachHang, String> colTrangThai = new TableColumn<>("Trạng thái");
         colTrangThai.setPrefWidth(140);
         colTrangThai.setStyle("-fx-alignment: CENTER;");
         colTrangThai.setCellValueFactory(cellData -> new SimpleStringProperty(
                 cellData.getValue().isTrangThai() ? "Đang hoạt động" : "Ngừng hoạt động"
         ));
-        colTrangThai.setCellFactory(col -> new TableCell<>() {
-            private final Label badge = new Label();
-
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setGraphic(null);
-                    setText(null);
-                } else {
-                    badge.setText(item);
-                    badge.getStyleClass().clear();
-                    if ("Đang hoạt động".equalsIgnoreCase(item)) {
-                        badge.getStyleClass().add("nhan-trang-thai-hoat-dong");
-                    } else {
-                        badge.getStyleClass().add("nhan-trang-thai-khoa");
-                    }
-                    setGraphic(badge);
-                    setAlignment(Pos.CENTER);
-                }
-            }
-        });
 
         tblDanhSach.getColumns().addAll(colMa, colHoTen, colSdt, colEmail, colDiem, colDiaChi, colTrangThai);
         tblDanhSach.setItems(danhSachHienThi);
@@ -314,8 +292,7 @@ public class CapNhatKhachHangView extends VBox {
         pnlLuoi.setVgap(10);
 
         TextField txtMa = new TextField(khChon.getMaKhachHang());
-        txtMa.setDisable(true);
-        txtMa.setStyle("-fx-opacity: 0.9; -fx-font-weight: bold; -fx-background-color: #f1f5f9;");
+        txtMa.setEditable(false);
 
         TextField txtHoTen = new TextField(khChon.getHoTen());
         TextField txtSdt = new TextField(khChon.getSoDienThoai());

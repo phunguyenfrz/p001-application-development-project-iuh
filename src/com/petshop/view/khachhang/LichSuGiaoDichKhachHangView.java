@@ -198,12 +198,7 @@ public class LichSuGiaoDichKhachHangView extends VBox {
 
                     boolean hoatDong = kh.isTrangThai();
                     lblTrangThaiItem.setText(hoatDong ? "Đang hoạt động" : "Ngừng hoạt động");
-                    lblTrangThaiItem.getStyleClass().clear();
-                    if (hoatDong) {
-                        lblTrangThaiItem.getStyleClass().add("nhan-trang-thai-hoat-dong");
-                    } else {
-                        lblTrangThaiItem.getStyleClass().add("nhan-trang-thai-khoa");
-                    }
+                    lblTrangThaiItem.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748b;");
 
                     setGraphic(pnlDong);
                 }
@@ -387,35 +382,11 @@ public class LichSuGiaoDichKhachHangView extends VBox {
         colTongTien.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
         colTongTien.setPrefWidth(130);
 
-        // Cột trạng thái thanh toán hiển thị Badge màu
+        // Cột trạng thái thanh toán
         TableColumn<LichSuGiaoDich, String> colTrangThai = new TableColumn<>("Trạng thái thanh toán");
         colTrangThai.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getTrangThaiThanhToan()));
         colTrangThai.setStyle("-fx-alignment: CENTER;");
         colTrangThai.setPrefWidth(140);
-        colTrangThai.setCellFactory(col -> new TableCell<>() {
-            private final Label badge = new Label();
-
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setGraphic(null);
-                    setText(null);
-                } else {
-                    badge.setText(item);
-                    badge.getStyleClass().clear();
-                    if ("Đã thanh toán".equalsIgnoreCase(item)) {
-                        badge.getStyleClass().add("nhan-trang-thai-hoat-dong");
-                    } else if ("Chưa thanh toán".equalsIgnoreCase(item)) {
-                        badge.setStyle("-fx-background-color: #fef3c7; -fx-text-fill: #d97706; -fx-padding: 3px 8px; -fx-background-radius: 4px; -fx-font-size: 11.5px; -fx-font-weight: 600;");
-                    } else {
-                        badge.getStyleClass().add("nhan-trang-thai-khoa");
-                    }
-                    setGraphic(badge);
-                    setAlignment(Pos.CENTER);
-                }
-            }
-        });
 
         tblHoaDon.getColumns().addAll(colMaHD, colNgayLap, colNhanVien, colHTTT, colTongTien, colTrangThai);
         tblHoaDon.setItems(danhSachHoaDon);

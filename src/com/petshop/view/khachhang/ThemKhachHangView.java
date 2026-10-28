@@ -79,8 +79,7 @@ public class ThemKhachHangView extends VBox {
         pnlLuoi.setVgap(10);
 
         // Mã khách hàng sinh tự động, chỉ đọc
-        txtMaKhachHang.setDisable(true);
-        txtMaKhachHang.setStyle("-fx-opacity: 0.9; -fx-font-weight: bold; -fx-background-color: #f1f5f9;");
+        txtMaKhachHang.setEditable(false);
 
         // Placeholder hướng dẫn người dùng
         txtHoTen.setPromptText("Nhập họ và tên đầy đủ (VD: Nguyễn Văn An, nguyen van 1)");
