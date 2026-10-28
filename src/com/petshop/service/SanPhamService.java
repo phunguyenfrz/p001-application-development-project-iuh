@@ -30,10 +30,9 @@ public class SanPhamService {
      */
     public boolean themSanPham(SanPham sp) {
         xacThucService.kiemTraQuyen("SP_CAP_NHAT");
-        kiemTraDuLieuSanPham(sp);
 
-        if (sanPhamDAO.kiemTraTonTaiMaVach(sp.getMaVach().trim(), null)) {
-            throw new IllegalArgumentException("Mã vạch đã tồn tại trên hệ thống!");
+        if (sp == null) {
+            throw new IllegalArgumentException("Thông tin sản phẩm không được để trống!");
         }
 
         if (sp.getMaSanPham() == null || sp.getMaSanPham().trim().isEmpty()) {
@@ -44,6 +43,17 @@ public class SanPhamService {
                 throw new IllegalArgumentException("Mã sản phẩm phải đúng định dạng SP-yyyyMMdd-xxxxxx!");
             }
             sp.setMaSanPham(ma);
+        }
+
+        // Tự động phát sinh mã vạch theo mã sản phẩm nếu để trống
+        if (sp.getMaVach() == null || sp.getMaVach().trim().isEmpty()) {
+            sp.setMaVach("893" + sp.getMaSanPham().replace("SP-", "").replace("-", ""));
+        }
+
+        kiemTraDuLieuSanPham(sp);
+
+        if (sanPhamDAO.kiemTraTonTaiMaVach(sp.getMaVach().trim(), null)) {
+            throw new IllegalArgumentException("Mã vạch đã tồn tại trên hệ thống!");
         }
 
         return sanPhamDAO.themSanPham(sp);
@@ -164,7 +174,7 @@ public class SanPhamService {
             throw new IllegalArgumentException("Ngưỡng tồn tối thiểu không được âm!");
         }
         if (sp.getDonViTinh() == null || sp.getDonViTinh().trim().isEmpty()) {
-            throw new IllegalArgumentException("Đơn vị tính không được để trống!");
+            throw new IllegalArgumentException("Loại sản phẩm / đơn vị tính không được để trống!");
         }
     }
 }

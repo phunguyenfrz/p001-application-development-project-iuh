@@ -10,17 +10,15 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.util.List;
 
 /**
  * Màn hình báo cáo thống kê danh mục sản phẩm và giá trị tồn kho (PRD_REPORT).
- * Tiền tố điều khiển: lbl, btn, tbl, pnl.
+ * Thiết kế giao diện đồng bộ hoàn toàn theo phân hệ Dịch vụ.
  */
 public class BaoCaoSanPhamView extends VBox {
 
     private final SanPhamController sanPhamController = new SanPhamController();
-    private final DecimalFormat dinhDangTien = new DecimalFormat("#,### đ");
 
     private final Label lblTongSanPham = new Label("0");
     private final Label lblTongGiaTriKho = new Label("0 đ");
@@ -87,10 +85,11 @@ public class BaoCaoSanPhamView extends VBox {
         pnlBang.setPadding(new Insets(14));
 
         HBox pnlTieuDeBang = new HBox(10);
+        pnlTieuDeBang.getStyleClass().add("thanh-tac-vu");
         pnlTieuDeBang.setAlignment(Pos.CENTER_LEFT);
 
         Label lblBang = new Label("Chi tiết danh mục và giá trị tồn từng sản phẩm");
-        lblBang.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
+        lblBang.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px; -fx-text-fill: #1e293b;");
 
         Region pnlSpacer = new Region();
         HBox.setHgrow(pnlSpacer, Priority.ALWAYS);
@@ -108,14 +107,16 @@ public class BaoCaoSanPhamView extends VBox {
         colTen.setPrefWidth(220);
         colTen.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getTenSanPham()));
 
-        TableColumn<SanPham, String> colDonVi = new TableColumn<>("ĐVT");
-        colDonVi.setPrefWidth(70);
+        TableColumn<SanPham, String> colDonVi = new TableColumn<>("Loại / ĐVT");
+        colDonVi.setPrefWidth(90);
         colDonVi.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDonViTinh()));
 
         TableColumn<SanPham, String> colGiaBan = new TableColumn<>("Giá bán");
-        colGiaBan.setPrefWidth(110);
+        colGiaBan.setPrefWidth(120);
         colGiaBan.setStyle("-fx-alignment: CENTER-RIGHT;");
-        colGiaBan.setCellValueFactory(cell -> new SimpleStringProperty(dinhDangTien.format(cell.getValue().getGiaBan())));
+        colGiaBan.setCellValueFactory(cell -> new SimpleStringProperty(
+                ThemSanPhamView.dinhDangTien(cell.getValue().getGiaBan().doubleValue())
+        ));
 
         TableColumn<SanPham, String> colTon = new TableColumn<>("SL Tồn");
         colTon.setPrefWidth(80);
@@ -123,11 +124,11 @@ public class BaoCaoSanPhamView extends VBox {
         colTon.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getSoLuongTon())));
 
         TableColumn<SanPham, String> colGiaTri = new TableColumn<>("Thành tiền tồn");
-        colGiaTri.setPrefWidth(130);
+        colGiaTri.setPrefWidth(140);
         colGiaTri.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
         colGiaTri.setCellValueFactory(cell -> {
             BigDecimal thanhTien = cell.getValue().getGiaBan().multiply(BigDecimal.valueOf(cell.getValue().getSoLuongTon()));
-            return new SimpleStringProperty(dinhDangTien.format(thanhTien));
+            return new SimpleStringProperty(ThemSanPhamView.dinhDangTien(thanhTien.doubleValue()));
         });
 
         TableColumn<SanPham, String> colNcc = new TableColumn<>("Nhà cung cấp");
@@ -144,7 +145,20 @@ public class BaoCaoSanPhamView extends VBox {
 
         tblDanhSach.getColumns().setAll(List.of(colMa, colTen, colDonVi, colGiaBan, colTon, colGiaTri, colNcc, colTrangThai));
         tblDanhSach.getStyleClass().add("bang-du-lieu");
-        tblDanhSach.setPlaceholder(new Label("Chưa có dữ liệu sản phẩm."));
+        tblDanhSach.setPlaceholder(new Label("Chưa có dữ liệu sản phẩm trong cơ sở dữ liệu."));
+
+        // Làm mờ dòng đã Ngừng bán
+        tblDanhSach.setRowFactory(tv -> new TableRow<>() {
+            @Override
+            protected void updateItem(SanPham item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setOpacity(1.0);
+                } else {
+                    setOpacity(item.isTrangThai() ? 1.0 : 0.5);
+                }
+            }
+        });
 
         pnlBang.getChildren().addAll(pnlTieuDeBang, tblDanhSach);
         VBox.setVgrow(tblDanhSach, Priority.ALWAYS);
@@ -170,7 +184,7 @@ public class BaoCaoSanPhamView extends VBox {
                 }
             }
 
-            lblTongGiaTriKho.setText(dinhDangTien.format(tongTienKho));
+            lblTongGiaTriKho.setText(ThemSanPhamView.dinhDangTien(tongTienKho.doubleValue()));
             lblTongSapHet.setText(String.valueOf(sapHet));
         } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             Alert alert = new Alert(Alert.AlertType.WARNING);

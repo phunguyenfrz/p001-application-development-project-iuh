@@ -4,22 +4,19 @@ import com.petshop.controller.SanPhamController;
 import com.petshop.model.SanPham;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
-import java.text.DecimalFormat;
 import java.util.List;
 
 /**
  * Màn hình theo dõi số lượng tồn kho và cảnh báo dưới ngưỡng an toàn (PRD_INVENTORY, PRD_LOW_STOCK).
- * Tiền tố điều khiển: lbl, txt, btn, tbl, chk.
+ * Thiết kế giao diện đồng bộ hoàn toàn theo phân hệ Dịch vụ.
  */
 public class TheoDoiTonKhoView extends VBox {
 
     private final SanPhamController sanPhamController = new SanPhamController();
-    private final DecimalFormat dinhDangTien = new DecimalFormat("#,### đ");
 
     private final CheckBox chkChiLocSapHet = new CheckBox("Chỉ hiển thị sản phẩm sắp hết hàng (tồn <= ngưỡng)");
     private final Button btnLamMoi = new Button("Làm mới dữ liệu");
@@ -40,7 +37,6 @@ public class TheoDoiTonKhoView extends VBox {
 
         VBox pnlKhungChinh = new VBox(12);
         pnlKhungChinh.getStyleClass().add("hop-noi-dung");
-        pnlKhungChinh.setPadding(new Insets(14));
         VBox.setVgrow(pnlKhungChinh, Priority.ALWAYS);
 
         HBox pnlThanhCongCu = taoThanhCongCu();
@@ -55,6 +51,7 @@ public class TheoDoiTonKhoView extends VBox {
 
     private HBox taoThanhCongCu() {
         HBox pnlThanh = new HBox(12);
+        pnlThanh.getStyleClass().add("thanh-tac-vu");
         pnlThanh.setAlignment(Pos.CENTER_LEFT);
 
         chkChiLocSapHet.setStyle("-fx-font-weight: bold; -fx-text-fill: #b91c1c;");
@@ -73,7 +70,7 @@ public class TheoDoiTonKhoView extends VBox {
     }
 
     private VBox taoKhungBang() {
-        VBox pnlBang = new VBox();
+        VBox pnlBang = new VBox(8);
 
         TableColumn<SanPham, String> colMa = new TableColumn<>("Mã sản phẩm");
         colMa.setPrefWidth(140);
@@ -83,8 +80,8 @@ public class TheoDoiTonKhoView extends VBox {
         colTen.setPrefWidth(240);
         colTen.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getTenSanPham()));
 
-        TableColumn<SanPham, String> colDonVi = new TableColumn<>("Đơn vị");
-        colDonVi.setPrefWidth(80);
+        TableColumn<SanPham, String> colDonVi = new TableColumn<>("Loại / ĐVT");
+        colDonVi.setPrefWidth(90);
         colDonVi.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDonViTinh()));
 
         TableColumn<SanPham, String> colTonKho = new TableColumn<>("Số lượng tồn");
@@ -100,14 +97,19 @@ public class TheoDoiTonKhoView extends VBox {
         TableColumn<SanPham, String> colTinhTrang = new TableColumn<>("Tình trạng");
         colTinhTrang.setPrefWidth(140);
         colTinhTrang.setCellValueFactory(cell -> {
+            if (!cell.getValue().isTrangThai()) {
+                return new SimpleStringProperty("Ngừng kinh doanh");
+            }
             boolean sapHet = cell.getValue().isSapHetHang();
             return new SimpleStringProperty(sapHet ? "⚠ SẮP HẾT HÀNG" : "Ổn định");
         });
 
         TableColumn<SanPham, String> colGiaBan = new TableColumn<>("Giá bán");
-        colGiaBan.setPrefWidth(110);
+        colGiaBan.setPrefWidth(120);
         colGiaBan.setStyle("-fx-alignment: CENTER-RIGHT;");
-        colGiaBan.setCellValueFactory(cell -> new SimpleStringProperty(dinhDangTien.format(cell.getValue().getGiaBan())));
+        colGiaBan.setCellValueFactory(cell -> new SimpleStringProperty(
+                ThemSanPhamView.dinhDangTien(cell.getValue().getGiaBan().doubleValue())
+        ));
 
         TableColumn<SanPham, String> colNcc = new TableColumn<>("Nhà cung cấp");
         colNcc.setPrefWidth(180);
@@ -115,22 +117,34 @@ public class TheoDoiTonKhoView extends VBox {
                 cell.getValue().getTenNhaCungCap() != null ? cell.getValue().getTenNhaCungCap() : "Chưa xác định"
         ));
 
+        TableColumn<SanPham, String> colTrangThai = new TableColumn<>("Trạng thái");
+        colTrangThai.setPrefWidth(130);
+        colTrangThai.setCellValueFactory(cell -> new SimpleStringProperty(
+                cell.getValue().isTrangThai() ? "Đang kinh doanh" : "Ngừng kinh doanh"
+        ));
+
         tblDanhSach.getColumns().setAll(List.of(
-                colMa, colTen, colDonVi, colTonKho, colNguong, colTinhTrang, colGiaBan, colNcc
+                colMa, colTen, colDonVi, colTonKho, colNguong, colTinhTrang, colGiaBan, colNcc, colTrangThai
         ));
         tblDanhSach.getStyleClass().add("bang-du-lieu");
-        tblDanhSach.setPlaceholder(new Label("Không có sản phẩm nào."));
+        tblDanhSach.setPlaceholder(new Label("Không có sản phẩm nào trong danh sách."));
 
-        // Highlight màu đỏ cho hàng có tồn kho dưới ngưỡng an toàn
+        // Phân biệt màu sắc: Ngừng kinh doanh thì làm mờ xám đi, Sắp hết hàng thì báo đỏ nhạt
         tblDanhSach.setRowFactory(tv -> new TableRow<>() {
             @Override
             protected void updateItem(SanPham item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
+                    setOpacity(1.0);
                     setStyle("");
+                } else if (!item.isTrangThai()) {
+                    setOpacity(0.5);
+                    setStyle("-fx-background-color: #f1f5f9;");
                 } else if (item.isSapHetHang()) {
+                    setOpacity(1.0);
                     setStyle("-fx-background-color: #fef2f2;");
                 } else {
+                    setOpacity(1.0);
                     setStyle("");
                 }
             }
@@ -152,7 +166,7 @@ public class TheoDoiTonKhoView extends VBox {
 
             tblDanhSach.setItems(FXCollections.observableArrayList(ds));
 
-            long soSapHet = ds.stream().filter(SanPham::isSapHetHang).count();
+            long soSapHet = ds.stream().filter(sp -> sp.isTrangThai() && sp.isSapHetHang()).count();
             lblThongKeTong.setText("Tổng sản phẩm: " + ds.size() + " | Sắp hết hàng: " + soSapHet);
         } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
