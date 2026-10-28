@@ -7,7 +7,6 @@ import javafx.collections.FXCollections;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
@@ -18,10 +17,9 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Màn hình tìm kiếm khuyến mãi theo mã, tên và trạng thái; hỗ trợ ngừng áp dụng.
+ * Màn hình tìm kiếm khuyến mãi theo mã, tên và trạng thái.
  */
 public class TimKiemKhuyenMaiView extends VBox {
 
@@ -31,7 +29,6 @@ public class TimKiemKhuyenMaiView extends VBox {
     private final ComboBox<String> cboTrangThai = new ComboBox<>();
     private final TableView<KhuyenMai> tblDanhSach = new TableView<>();
     private final Button btnTim = new Button("Tìm kiếm");
-    private final Button btnNgung = new Button("Ngừng áp dụng");
     private final Label lblKetQua = new Label("Tổng số: 0 khuyến mãi");
 
     public TimKiemKhuyenMaiView() {
@@ -61,23 +58,18 @@ public class TimKiemKhuyenMaiView extends VBox {
         btnTim.getStyleClass().add("nut-chinh");
         Button btnLamMoi = new Button("Làm mới");
         btnLamMoi.getStyleClass().add("nut-phu");
-        btnNgung.getStyleClass().add("nut-xoa");
-        btnNgung.setDisable(true);
         btnTim.setOnAction(e -> xuLyTimKiem());
         btnLamMoi.setOnAction(e -> taiLaiBang());
-        btnNgung.setOnAction(e -> xuLyNgung());
         txtMa.setOnAction(e -> xuLyTimKiem());
         txtTen.setOnAction(e -> xuLyTimKiem());
         cboTrangThai.setOnAction(e -> xuLyTimKiem());
         congCu.getChildren().addAll(new Label("Mã:"), txtMa, new Label("Tên:"), txtTen,
-                new Label("Trạng thái:"), cboTrangThai, btnTim, btnNgung, btnLamMoi);
+                new Label("Trạng thái:"), cboTrangThai, btnTim, btnLamMoi);
 
         taoCotBang();
         tblDanhSach.getStyleClass().add("bang-du-lieu");
         tblDanhSach.setPlaceholder(new Label("Không tìm thấy khuyến mãi phù hợp"));
         VBox.setVgrow(tblDanhSach, Priority.ALWAYS);
-        tblDanhSach.getSelectionModel().selectedItemProperty().addListener((obs, cu, moi) ->
-                btnNgung.setDisable(moi == null || !moi.isTrangThai()));
         khung.getChildren().addAll(congCu, tblDanhSach, lblKetQua);
         return khung;
     }
@@ -122,36 +114,6 @@ public class TimKiemKhuyenMaiView extends VBox {
         txtTen.clear();
         cboTrangThai.setValue("Tất cả");
         xuLyTimKiem();
-    }
-
-    private void xuLyNgung() {
-        KhuyenMai chon = tblDanhSach.getSelectionModel().getSelectedItem();
-        if (chon == null) return;
-        Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION);
-        xacNhan.setTitle("Xác nhận ngừng áp dụng");
-        xacNhan.setHeaderText(null);
-        xacNhan.setContentText("Ngừng chương trình " + chon.getTenChuongTrinh() + "?");
-        Optional<ButtonType> ketQua = xacNhan.showAndWait();
-        if (ketQua.isPresent() && ketQua.get() == ButtonType.OK) {
-            try {
-                if (controller.xoaKhuyenMai(chon.getMaKhuyenMai())) {
-                    hienThiThongBao("Thành công", "Đã ngừng khuyến mãi: " + chon.getMaKhuyenMai());
-                    xuLyTimKiem();
-                } else {
-                    hienThiLoi("Không thể ngừng khuyến mãi!");
-                }
-            } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
-                hienThiLoi(ex.getMessage());
-            }
-        }
-    }
-
-    private void hienThiThongBao(String tieuDe, String noiDung) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(tieuDe);
-        alert.setHeaderText(null);
-        alert.setContentText(noiDung);
-        alert.showAndWait();
     }
 
     private void hienThiLoi(String noiDung) {
