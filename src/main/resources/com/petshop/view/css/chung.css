@@ -1,20 +1,20 @@
-﻿/* ==========================================================================
-   HAPPY TAILS - CSS DĂ™NG CHUNG (CĂC ÄIá»€U KHIá»‚N & Báº¢NG BIá»‚U DESKTOP)
+/* ==========================================================================
+   HAPPY TAILS - CSS DÙNG CHUNG (CÁC ĐIỀU KHIỂN & BẢNG BIỂU DESKTOP)
    ========================================================================== */
 
-/* Thiáº¿t láº­p font chá»¯ vĂ  mĂ u ná»n máº·c Ä‘á»‹nh toĂ n á»©ng dá»¥ng */
+/* Thiết lập font chữ và màu nền mặc định toàn ứng dụng */
 .root {
     -fx-font-family: "Segoe UI", Arial, sans-serif;
     -fx-font-size: 13px;
     -fx-background-color: #f4f6f8;
 }
 
-/* NhĂ£n thĂ´ng tin máº·c Ä‘á»‹nh (Label) */
+/* Nhãn thông tin mặc định (Label) */
 .label {
     -fx-text-fill: #1f2937;
 }
 
-/* CĂ¡c Ă´ nháº­p liá»‡u chuáº©n (TextField, PasswordField) */
+/* Các ô nhập liệu chuẩn (TextField, PasswordField) */
 .text-field, .password-field {
     -fx-pref-height: 32px;
     -fx-background-color: #ffffff;
@@ -32,7 +32,7 @@
     -fx-background-color: #ffffff;
 }
 
-/* Ă” ComboBox vĂ  DatePicker */
+/* Ô ComboBox và DatePicker */
 .combo-box, .date-picker {
     -fx-pref-height: 32px;
     -fx-background-color: #ffffff;
@@ -46,7 +46,7 @@
     -fx-border-color: #0284c7;
 }
 
-/* NĂºt báº¥m chuáº©n Desktop (GĂ³c pháº³ng nháº¹ 4px) */
+/* Nút bấm chuẩn Desktop (Góc phẳng nhẹ 4px) */
 .button {
     -fx-pref-height: 32px;
     -fx-background-color: #ffffff;
@@ -69,7 +69,7 @@
     -fx-background-color: #e2e8f0;
 }
 
-/* NĂºt chĂ­nh (ThĂªm má»›i, LÆ°u, ÄÄƒng nháº­p, XĂ¡c nháº­n) */
+/* Nút chính (Thêm mới, Lưu, Đăng nhập, Xác nhận) */
 .nut-chinh {
     -fx-background-color: #0284c7;
     -fx-border-color: #0369a1;
@@ -84,7 +84,7 @@
     -fx-background-color: #075985;
 }
 
-/* NĂºt phá»¥ / NĂºt thoĂ¡t / Há»§y / LĂ m má»›i */
+/* Nút phụ / Nút thoát / Hủy / Làm mới */
 .nut-phu {
     -fx-background-color: #f8fafc;
     -fx-border-color: #cbd5e1;
@@ -96,7 +96,7 @@
     -fx-border-color: #94a3b8;
 }
 
-/* NĂºt XĂ³a / Thao tĂ¡c cáº£nh bĂ¡o */
+/* Nút Xóa / Thao tác cảnh báo */
 .nut-xoa {
     -fx-background-color: #dc2626;
     -fx-border-color: #b91c1c;
@@ -107,7 +107,7 @@
     -fx-background-color: #b91c1c;
 }
 
-/* Báº£ng dá»¯ liá»‡u chuáº©n Desktop (TableView) */
+/* Bảng dữ liệu chuẩn Desktop (TableView) */
 .bang-du-lieu {
     -fx-background-color: #ffffff;
     -fx-border-color: #cbd5e1;
@@ -142,7 +142,7 @@
 }
 
 /* ==========================================================================
-   Bá» Cá»¤C CHUNG CHO CĂC MĂ€N HĂŒNH PHĂ‚N Há»† NGHIá»†P Vá»¤ (CRUD)
+   BỐ CỤC CHUNG CHO CÁC MÀN HÌNH PHÂN HỆ NGHIỆP VỤ (CRUD)
    ========================================================================== */
 .khung-phan-he {
     -fx-background-color: #f4f6f8;
@@ -173,7 +173,7 @@
     -fx-spacing: 10px;
 }
 
-/* NhĂ£n tráº¡ng thĂ¡i (Badge) */
+/* Nhãn trạng thái (Badge) */
 .nhan-trang-thai-hoat-dong {
     -fx-background-color: #dcfce7;
     -fx-text-fill: #15803d;
@@ -190,199 +190,4 @@
     -fx-background-radius: 4px;
     -fx-font-size: 11.5px;
     -fx-font-weight: 600;
-}
-
-
-
-/* ==========================================================================
-   TIá»†N ĂCH Äá»NH Dáº NG & CÄ‚N Lá»€ GIAO DIá»†N PHĂ‚N Há»†
-   ========================================================================== */
-
-/* NhĂ£n hiá»ƒn thá»‹ tá»•ng sá»‘ káº¿t quáº£ trĂªn thanh tĂ¡c vá»¥ */
-.nhan-tong-so {
-    -fx-font-weight: 600;
-    -fx-text-fill: #475569;
-    -fx-font-size: 13px;
-}
-
-/* NhĂ£n thĂ´ng tin Ä‘á»‘i tÆ°á»£ng Ä‘ang chá»‰nh sá»­a / thao tĂ¡c */
-.nhan-dang-chon {
-    -fx-font-weight: bold;
-    -fx-font-size: 13px;
-    -fx-text-fill: #0284c7;
-}
-
-/* Ă” hiá»ƒn thá»‹ mĂ£ tá»± Ä‘á»™ng (chá»‰ Ä‘á»c) */
-.o-nhap-ma-tu-dong {
-    -fx-opacity: 0.9;
-    -fx-font-weight: bold;
-    -fx-background-color: #f1f5f9;
-}
-
-/* CÄƒn lá» cá»™t báº£ng dá»¯ liá»‡u */
-.cot-can-giua {
-    -fx-alignment: CENTER;
-}
-
-.cot-can-trai {
-    -fx-alignment: CENTER-LEFT;
-}
-
-.cot-can-phai {
-    -fx-alignment: CENTER-RIGHT;
-}
-
-.cot-in-dam {
-    -fx-font-weight: bold;
-}
-
-/* LĂ m má» dĂ²ng tráº¡ng thĂ¡i ngá»«ng hoáº¡t Ä‘á»™ng */
-.dong-ngung-hoat-dong {
-    -fx-opacity: 0.55;
-}
-
-/* TiĂªu Ä‘á» báº£ng danh sĂ¡ch trĂªn thanh tĂ¡c vá»¥ */
-.tieu-de-bang {
-    -fx-font-weight: bold;
-    -fx-font-size: 13.5px;
-    -fx-text-fill: #1e293b;
-}
-
-/* ==========================================================================
-   PHĂ‚N Há»† Lá»CH Sá»¬ GIAO Dá»CH KHĂCH HĂ€NG & CHI TIáº¾T GIAO Dá»CH
-   ========================================================================== */
-
-/* Tháº» thĂ´ng tin khĂ¡ch hĂ ng Ä‘ang chá»n */
-.the-khach-hang-lsgd {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #e2e8f0;
-    -fx-border-radius: 6px;
-    -fx-background-radius: 6px;
-    -fx-padding: 12px 16px;
-    -fx-alignment: center-left;
-}
-
-/* Avatar chá»¯ viáº¿t táº¯t Ä‘áº¡i diá»‡n khĂ¡ch hĂ ng */
-.avatar-khach-hang {
-    -fx-background-color: #dcfce7;
-    -fx-text-fill: #15803d;
-    -fx-font-weight: bold;
-    -fx-font-size: 15px;
-    -fx-alignment: center;
-    -fx-background-radius: 50%;
-    -fx-min-width: 44px;
-    -fx-min-height: 44px;
-    -fx-pref-width: 44px;
-    -fx-pref-height: 44px;
-}
-
-/* NhĂ£n chĂº thĂ­ch nhá», mĂ u xĂ¡m nháº¡t */
-.nhan-chu-thich-nho {
-    -fx-font-size: 11.5px;
-    -fx-text-fill: #64748b;
-}
-
-/* NhĂ£n giĂ¡ trá»‹ trong tháº» thĂ´ng tin */
-.nhan-gia-tri-thong-tin {
-    -fx-font-size: 13px;
-    -fx-font-weight: 600;
-    -fx-text-fill: #1e293b;
-}
-
-/* NhĂ£n tráº¡ng thĂ¡i thanh toĂ¡n */
-.nhan-chua-thanh-toan {
-    -fx-background-color: #fef3c7;
-    -fx-text-fill: #d97706;
-    -fx-padding: 3px 8px;
-    -fx-background-radius: 4px;
-    -fx-font-size: 11.5px;
-    -fx-font-weight: 600;
-}
-
-.nhan-da-huy {
-    -fx-background-color: #fee2e2;
-    -fx-text-fill: #b91c1c;
-    -fx-padding: 3px 8px;
-    -fx-background-radius: 4px;
-    -fx-font-size: 11.5px;
-    -fx-font-weight: 600;
-}
-
-/* Thanh tá»•ng káº¿t dÆ°á»›i Ä‘Ă¡y báº£ng */
-.thanh-tong-ket-lsgd {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #cbd5e1;
-    -fx-border-radius: 4px;
-    -fx-background-radius: 4px;
-    -fx-padding: 12px 16px;
-    -fx-alignment: center-left;
-}
-
-/* Sá»‘ tiá»n tá»•ng káº¿t ná»•i báº­t */
-.nhan-tong-tien-noi-bat {
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #0f172a;
-}
-
-
-/* ==========================================================================
-   POPUP GỢI Ý TÌM KIẾM KHÁCH HÀNG (AUTOCOMPLETE)
-   ========================================================================== */
-
-/* Danh sách gợi ý tìm kiếm khách hàng */
-.danh-sach-goi-y-kh {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #0284c7;
-    -fx-border-width: 1.5px;
-    -fx-border-radius: 4px;
-    -fx-background-radius: 4px;
-    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.18), 10, 0, 0, 4);
-}
-
-.danh-sach-goi-y-kh .list-cell {
-    -fx-background-color: #ffffff;
-    -fx-padding: 6px 10px;
-    -fx-border-color: transparent transparent #f1f5f9 transparent;
-    -fx-border-width: 0.5px;
-}
-
-.danh-sach-goi-y-kh .list-cell:hover {
-    -fx-background-color: #f0f9ff;
-    -fx-cursor: hand;
-}
-
-.danh-sach-goi-y-kh .list-cell:filled:selected {
-    -fx-background-color: #e0f2fe;
-}
-
-/* Avatar nhỏ trong dòng gợi ý */
-.avatar-goi-y-kh {
-    -fx-background-color: #dcfce7;
-    -fx-text-fill: #15803d;
-    -fx-font-weight: bold;
-    -fx-font-size: 12px;
-    -fx-alignment: center;
-    -fx-background-radius: 50%;
-    -fx-min-width: 32px;
-    -fx-min-height: 32px;
-    -fx-pref-width: 32px;
-    -fx-pref-height: 32px;
-}
-
-.nhan-ten-goi-y {
-    -fx-font-weight: bold;
-    -fx-font-size: 13px;
-    -fx-text-fill: #0f172a;
-}
-
-.nhan-ma-goi-y {
-    -fx-font-size: 11px;
-    -fx-text-fill: #64748b;
-}
-
-.nhan-sdt-goi-y {
-    -fx-font-size: 12px;
-    -fx-font-weight: 600;
-    -fx-text-fill: #334155;
 }

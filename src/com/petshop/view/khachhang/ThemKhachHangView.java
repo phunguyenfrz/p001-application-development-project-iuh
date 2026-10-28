@@ -4,22 +4,29 @@ import com.petshop.controller.KhachHangController;
 import com.petshop.model.KhachHang;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 /**
- * Màn hình phụ (Popup / Modal Dialog) dùng để thêm mới khách hàng vào hệ thống.
- * Cung cấp form nhập liệu có ràng buộc:
- * - Họ tên: Cho phép chữ cái, chữ số (ví dụ: nguyen van 1, a2, b3), chặn ký tự đặc biệt (!@#$%^&*...)
- * - Số điện thoại: Chỉ cho phép nhập đúng 10 chữ số bắt đầu bằng 0.
+ * Hộp thoại (Modal Dialog) Thêm mới khách hàng vào hệ thống.
+ * Ràng buộc dữ liệu:
+ * - Họ tên: Cho phép chữ cái (kể cả tiếng Việt), chữ số và khoảng trắng (VD: nguyen van 1, a2);
+ *   chặn hoàn toàn ký tự đặc biệt (!@#$%^&*...).
+ * - Số điện thoại: Ràng buộc nhập số thời gian thực, đúng 10 chữ số và bắt đầu bằng số 0.
+ * - Mã khách hàng: Tự động sinh theo mẫu chuẩn KH-yyyyMMdd-xxxxxx và ở chế độ chỉ đọc.
  */
 public class ThemKhachHangView extends VBox {
 
-    private final KhachHangController khachHangController = new KhachHangController();
-    private final Runnable khiThemThanhCong;
+    private static final String CSS_CHUNG = "/com/petshop/view/css/chung.css";
 
-    // Các trường nhập liệu trên form
+    private final KhachHangController khachHangController = new KhachHangController();
+    private final Runnable callbackSauKhiLuu;
+
+    // Các trường nhập liệu
     private final TextField txtMaKhachHang = new TextField();
     private final TextField txtHoTen = new TextField();
     private final TextField txtSoDienThoai = new TextField();
@@ -27,36 +34,36 @@ public class ThemKhachHangView extends VBox {
     private final TextField txtDiaChi = new TextField();
     private final TextArea txtGhiChu = new TextArea();
 
-    // Các nút bấm điều khiển
-    private final Button btnLuu = new Button("Lưu thêm mới");
+    // Các nút chức năng trong form
+    private final Button btnLuu = new Button("Lưu khách hàng");
     private final Button btnLamMoi = new Button("Làm mới");
     private final Button btnDong = new Button("Đóng");
 
-    public ThemKhachHangView() {
-        this(null);
-    }
-
-    public ThemKhachHangView(Runnable khiThemThanhCong) {
-        this.khiThemThanhCong = khiThemThanhCong;
+    public ThemKhachHangView(Runnable callbackSauKhiLuu) {
+        this.callbackSauKhiLuu = callbackSauKhiLuu;
 
         setSpacing(14);
         setPadding(new Insets(18));
         getStyleClass().add("khung-phan-he");
 
-        // 1. Tiêu đề màn hình
+        // 1. Tiêu đề hộp thoại
         VBox pnlTieuDe = new VBox(4);
-        Label lblTieuDe = new Label("THÊM KHÁCH HÀNG MỚI");
+        Label lblTieuDe = new Label("THÊM MỚI KHÁCH HÀNG");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-        Label lblMoTa = new Label("Nhập đầy đủ thông tin khách hàng; họ tên (không chứa ký tự đặc biệt) và số điện thoại (10 số) là bắt buộc.");
+
+        Label lblMoTa = new Label("Nhập đầy đủ thông tin khách hàng. Các trường đánh dấu (*) là bắt buộc.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
         pnlTieuDe.getChildren().addAll(lblTieuDe, lblMoTa);
 
         // 2. Khung form nhập liệu
         VBox pnlForm = taoKhungNhapLieu();
 
-        getChildren().addAll(pnlTieuDe, pnlForm);
+        // 3. Thanh nút bấm
+        HBox pnlNut = taoThanhNutBam();
 
-        // 3. Khởi tạo mã tự động và làm sạch form
+        getChildren().addAll(pnlTieuDe, pnlForm, pnlNut);
+
+        // Khởi tạo mã tự động ban đầu
         lamMoiForm();
     }
 
@@ -73,7 +80,7 @@ public class ThemKhachHangView extends VBox {
 
         // Mã khách hàng sinh tự động, chỉ đọc
         txtMaKhachHang.setDisable(true);
-        txtMaKhachHang.getStyleClass().add("o-nhap-ma-tu-dong");
+        txtMaKhachHang.setStyle("-fx-opacity: 0.9; -fx-font-weight: bold; -fx-background-color: #f1f5f9;");
 
         // Placeholder hướng dẫn người dùng
         txtHoTen.setPromptText("Nhập họ và tên đầy đủ (VD: Nguyễn Văn An, nguyen van 1)");
@@ -101,16 +108,13 @@ public class ThemKhachHangView extends VBox {
         // =====================================================================
         txtSoDienThoai.textProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal == null) return;
-            String chiSo = newVal.replaceAll("[^0-9]", "");
-            if (chiSo.length() > 10) {
-                chiSo = chiSo.substring(0, 10);
-            }
-            if (!chiSo.equals(newVal)) {
-                txtSoDienThoai.setText(chiSo);
+            if (!newVal.matches("\\d*")) {
+                txtSoDienThoai.setText(newVal.replaceAll("[^\\d]", ""));
+            } else if (newVal.length() > 10) {
+                txtSoDienThoai.setText(newVal.substring(0, 10));
             }
         });
 
-        // Thêm các thành phần vào lưới GridPane
         pnlLuoi.add(new Label("Mã khách hàng:"), 0, 0);
         pnlLuoi.add(txtMaKhachHang, 1, 0);
 
@@ -129,14 +133,19 @@ public class ThemKhachHangView extends VBox {
         pnlLuoi.add(new Label("Ghi chú:"), 0, 5);
         pnlLuoi.add(txtGhiChu, 1, 5);
 
-        // Thiết lập độ rộng cột nhãn và cột ô nhập
-        ColumnConstraints colNhan = new ColumnConstraints();
-        colNhan.setMinWidth(140);
+        ColumnConstraints colNhan = new ColumnConstraints(120);
         ColumnConstraints colNhap = new ColumnConstraints();
         colNhap.setHgrow(Priority.ALWAYS);
         pnlLuoi.getColumnConstraints().addAll(colNhan, colNhap);
 
-        // Thanh nút chức năng (Đẩy sang bên phải)
+        pnlKhung.getChildren().add(pnlLuoi);
+        return pnlKhung;
+    }
+
+    /**
+     * Tạo thanh nút chức năng (Lưu, Làm mới, Đóng) ở chân hộp thoại.
+     */
+    private HBox taoThanhNutBam() {
         HBox pnlNut = new HBox(10);
         pnlNut.setAlignment(Pos.CENTER_RIGHT);
 
@@ -150,81 +159,59 @@ public class ThemKhachHangView extends VBox {
         btnDong.setOnAction(e -> dongCuaSo());
 
         pnlNut.getChildren().addAll(btnLuu, btnLamMoi, btnDong);
-
-        pnlKhung.getChildren().addAll(pnlLuoi, pnlNut);
-        return pnlKhung;
+        return pnlNut;
     }
 
     /**
-     * Xử lý kiểm tra dữ liệu và lưu khách hàng mới thông qua Controller.
+     * Xử lý lưu khách hàng mới vào cơ sở dữ liệu.
      */
     private void xuLyLuuKhachHang() {
-        String hoTen = txtHoTen.getText();
-        String sdt = txtSoDienThoai.getText();
-        String email = txtEmail.getText();
-        String diaChi = txtDiaChi.getText();
-        String ghiChu = txtGhiChu.getText();
-
-        // 1. Kiểm tra nhanh tại View
-        if (hoTen == null || hoTen.trim().isEmpty()) {
-            hienThongBao(Alert.AlertType.WARNING, "Cảnh báo nhập liệu", "Họ và tên khách hàng không được để trống!");
-            txtHoTen.requestFocus();
-            return;
-        }
-
-        if (!hoTen.trim().matches("^[\\p{L}0-9\\s]+$")) {
-            hienThongBao(Alert.AlertType.WARNING, "Cảnh báo nhập liệu", "Họ và tên khách hàng không được chứa ký tự đặc biệt (!@#$%^&*...)!");
-            txtHoTen.requestFocus();
-            return;
-        }
-
-        if (sdt == null || sdt.trim().isEmpty()) {
-            hienThongBao(Alert.AlertType.WARNING, "Cảnh báo nhập liệu", "Số điện thoại không được để trống!");
-            txtSoDienThoai.requestFocus();
-            return;
-        }
-
-        if (!sdt.trim().matches("^0\\d{9}$")) {
-            hienThongBao(Alert.AlertType.WARNING, "Cảnh báo nhập liệu", "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0!");
-            txtSoDienThoai.requestFocus();
-            return;
-        }
-
-        // 2. Đóng gói đối tượng KhachHang
-        KhachHang kh = new KhachHang();
-        kh.setMaKhachHang(txtMaKhachHang.getText());
-        kh.setHoTen(hoTen.trim());
-        kh.setSoDienThoai(sdt.trim());
-        kh.setEmail(email);
-        kh.setDiaChi(diaChi);
-        kh.setGhiChu(ghiChu);
-        kh.setDiemTichLuy(0);
-        kh.setTrangThai(true);
-
-        // 3. Gọi Controller để lưu vào cơ sở dữ liệu
         try {
-            boolean thanhCong = khachHangController.themKhachHang(kh);
+            String hoTen = txtHoTen.getText();
+            String sdt = txtSoDienThoai.getText();
+            String email = txtEmail.getText();
+            String diaChi = txtDiaChi.getText();
+            String ghiChu = txtGhiChu.getText();
+
+            KhachHang khMoi = new KhachHang();
+            khMoi.setMaKhachHang(txtMaKhachHang.getText());
+            khMoi.setHoTen(hoTen);
+            khMoi.setSoDienThoai(sdt);
+            khMoi.setEmail(email);
+            khMoi.setDiaChi(diaChi);
+            khMoi.setGhiChu(ghiChu);
+            khMoi.setDiemTichLuy(0);
+            khMoi.setTrangThai(true);
+
+            boolean thanhCong = khachHangController.themKhachHang(khMoi);
             if (thanhCong) {
-                hienThongBao(Alert.AlertType.INFORMATION, "Thành công", "Đã thêm mới khách hàng: " + kh.getHoTen() + " (" + kh.getMaKhachHang() + ")");
-                if (khiThemThanhCong != null) {
-                    khiThemThanhCong.run();
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Thành công");
+                alert.setHeaderText(null);
+                alert.setContentText("Đã thêm mới khách hàng '" + khMoi.getHoTen() + "' thành công!");
+                alert.showAndWait();
+
+                if (callbackSauKhiLuu != null) {
+                    callbackSauKhiLuu.run();
                 }
                 dongCuaSo();
-            } else {
-                hienThongBao(Alert.AlertType.ERROR, "Thất bại", "Không thể thêm khách hàng vào cơ sở dữ liệu!");
             }
-        } catch (IllegalArgumentException | SecurityException ex) {
-            hienThongBao(Alert.AlertType.ERROR, "Lỗi nghiệp vụ", ex.getMessage());
+        } catch (IllegalArgumentException ex) {
+            hienThiCanhBao("Dữ liệu không hợp lệ", ex.getMessage());
         } catch (Exception ex) {
-            hienThongBao(Alert.AlertType.ERROR, "Lỗi hệ thống", "Đã xảy ra lỗi: " + ex.getMessage());
+            hienThiLoi("Lỗi hệ thống", ex.getMessage());
         }
     }
 
     /**
-     * Làm mới form và tự động lấy mã khách hàng mới tiếp theo từ cơ sở dữ liệu.
+     * Xóa trắng các trường nhập liệu và tự động sinh mã khách hàng mới.
      */
-    public void lamMoiForm() {
-        txtMaKhachHang.setText(khachHangController.taoMaKhachHangMoi());
+    private void lamMoiForm() {
+        try {
+            txtMaKhachHang.setText(khachHangController.taoMaKhachHangMoi());
+        } catch (Exception e) {
+            txtMaKhachHang.setText("KH-" + System.currentTimeMillis());
+        }
         txtHoTen.clear();
         txtSoDienThoai.clear();
         txtEmail.clear();
@@ -234,7 +221,7 @@ public class ThemKhachHangView extends VBox {
     }
 
     /**
-     * Đóng cửa sổ Stage chứa màn hình này (nếu có).
+     * Đóng cửa sổ Stage chứa form này.
      */
     private void dongCuaSo() {
         if (getScene() != null && getScene().getWindow() instanceof Stage stage) {
@@ -242,14 +229,42 @@ public class ThemKhachHangView extends VBox {
         }
     }
 
-    /**
-     * Tiện ích hiển thị hộp thoại thông báo Alert.
-     */
-    private void hienThongBao(Alert.AlertType loai, String tieuDe, String noiDung) {
-        Alert alert = new Alert(loai);
+    private void hienThiCanhBao(String tieuDe, String noiDung) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setTitle(tieuDe);
         alert.setHeaderText(null);
         alert.setContentText(noiDung);
         alert.showAndWait();
+    }
+
+    private void hienThiLoi(String tieuDe, String noiDung) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(tieuDe);
+        alert.setHeaderText(null);
+        alert.setContentText(noiDung);
+        alert.showAndWait();
+    }
+
+    /**
+     * Phương thức tĩnh tiện ích mở nhanh hộp thoại Thêm mới khách hàng dạng modal dialog.
+     */
+    public static void hienThi(Window cuaSoCha, Runnable callbackSauKhiLuu) {
+        Stage dlg = new Stage();
+        dlg.initModality(Modality.APPLICATION_MODAL);
+        if (cuaSoCha != null) {
+            dlg.initOwner(cuaSoCha);
+        }
+        dlg.setTitle("Thêm mới khách hàng - Happy Tails");
+
+        ThemKhachHangView pnlNoiDung = new ThemKhachHangView(callbackSauKhiLuu);
+        Scene scene = new Scene(pnlNoiDung, 520, 480);
+
+        if (ThemKhachHangView.class.getResource(CSS_CHUNG) != null) {
+            scene.getStylesheets().add(ThemKhachHangView.class.getResource(CSS_CHUNG).toExternalForm());
+        }
+
+        dlg.setScene(scene);
+        dlg.setResizable(false);
+        dlg.showAndWait();
     }
 }

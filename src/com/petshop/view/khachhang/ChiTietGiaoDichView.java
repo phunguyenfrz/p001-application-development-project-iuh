@@ -103,7 +103,7 @@ public class ChiTietGiaoDichView extends VBox {
 
         VBox boxTT = new VBox(4);
         Label lblTieuDeTT = new Label("Trạng thái thanh toán");
-        lblTieuDeTT.getStyleClass().add("nhan-chu-thich-nho");
+        lblTieuDeTT.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748b;");
         Label lblGiaTriTT = new Label(hoaDon.getTrangThaiThanhToan());
         ganStyleBadgeTrangThai(lblGiaTriTT, hoaDon.getTrangThaiThanhToan());
         boxTT.getChildren().addAll(lblTieuDeTT, lblGiaTriTT);
@@ -119,10 +119,10 @@ public class ChiTietGiaoDichView extends VBox {
     private VBox taoDongThongTin(String tieuDe, String giaTri) {
         VBox box = new VBox(4);
         Label lblTieuDe = new Label(tieuDe);
-        lblTieuDe.getStyleClass().add("nhan-chu-thich-nho");
+        lblTieuDe.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748b;");
 
         Label lblGiaTri = new Label(giaTri);
-        lblGiaTri.getStyleClass().add("nhan-gia-tri-thong-tin");
+        lblGiaTri.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1e293b;");
         box.getChildren().addAll(lblTieuDe, lblGiaTri);
         return box;
     }
@@ -131,12 +131,13 @@ public class ChiTietGiaoDichView extends VBox {
      * Gán style class badge trạng thái thanh toán.
      */
     private void ganStyleBadgeTrangThai(Label lblBadge, String trangThai) {
+        lblBadge.getStyleClass().clear();
         if ("Đã thanh toán".equalsIgnoreCase(trangThai)) {
             lblBadge.getStyleClass().add("nhan-trang-thai-hoat-dong");
         } else if ("Chưa thanh toán".equalsIgnoreCase(trangThai)) {
-            lblBadge.getStyleClass().add("nhan-chua-thanh-toan");
+            lblBadge.setStyle("-fx-background-color: #fef3c7; -fx-text-fill: #d97706; -fx-padding: 3px 8px; -fx-background-radius: 4px; -fx-font-size: 11.5px; -fx-font-weight: 600;");
         } else {
-            lblBadge.getStyleClass().add("nhan-da-huy");
+            lblBadge.getStyleClass().add("nhan-trang-thai-khoa");
         }
     }
 
@@ -147,7 +148,7 @@ public class ChiTietGiaoDichView extends VBox {
         VBox pnlKhung = new VBox(8);
 
         Label lblTieuDe = new Label("Sản phẩm");
-        lblTieuDe.getStyleClass().add("tieu-de-bang");
+        lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px; -fx-text-fill: #1e293b;");
 
         cauHinhBangChiTiet(tblSanPham, "sản phẩm");
         pnlKhung.getChildren().addAll(lblTieuDe, tblSanPham);
@@ -161,7 +162,7 @@ public class ChiTietGiaoDichView extends VBox {
         VBox pnlKhung = new VBox(8);
 
         Label lblTieuDe = new Label("Dịch vụ");
-        lblTieuDe.getStyleClass().add("tieu-de-bang");
+        lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px; -fx-text-fill: #1e293b;");
 
         cauHinhBangChiTiet(tblDichVu, "dịch vụ");
         pnlKhung.getChildren().addAll(lblTieuDe, tblDichVu);
@@ -179,22 +180,22 @@ public class ChiTietGiaoDichView extends VBox {
 
         TableColumn<ChiTietGiaoDich, String> colTen = new TableColumn<>("Tên " + loaiDoiTuong);
         colTen.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getTenDoiTuong()));
-        colTen.getStyleClass().add("cot-can-trai");
+        colTen.setStyle("-fx-alignment: CENTER-LEFT;");
 
         TableColumn<ChiTietGiaoDich, String> colSoLuong = new TableColumn<>("Số lượng");
         colSoLuong.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getSoLuong())));
-        colSoLuong.getStyleClass().add("cot-can-giua");
+        colSoLuong.setStyle("-fx-alignment: CENTER;");
         colSoLuong.setPrefWidth(90);
         colSoLuong.setMaxWidth(110);
 
         TableColumn<ChiTietGiaoDich, String> colDonGia = new TableColumn<>("Đơn giá");
         colDonGia.setCellValueFactory(cell -> new SimpleStringProperty(DINH_DANG_TIEN.format(cell.getValue().getDonGia())));
-        colDonGia.getStyleClass().add("cot-can-phai");
+        colDonGia.setStyle("-fx-alignment: CENTER-RIGHT;");
         colDonGia.setPrefWidth(130);
 
         TableColumn<ChiTietGiaoDich, String> colThanhTien = new TableColumn<>("Thành tiền");
         colThanhTien.setCellValueFactory(cell -> new SimpleStringProperty(DINH_DANG_TIEN.format(cell.getValue().getThanhTien())));
-        colThanhTien.getStyleClass().addAll("cot-can-phai", "cot-in-dam");
+        colThanhTien.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
         colThanhTien.setPrefWidth(140);
 
         bang.getColumns().addAll(colTen, colSoLuong, colDonGia, colThanhTien);
@@ -212,16 +213,16 @@ public class ChiTietGiaoDichView extends VBox {
 
         VBox boxNhanTong = new VBox(3);
         Label lblTongTieuDe = new Label("Tổng thanh toán thực tế");
-        lblTongTieuDe.getStyleClass().add("tieu-de-bang");
+        lblTongTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px; -fx-text-fill: #1e293b;");
         Label lblTongMoTa = new Label("Theo tổng tiền thực tế đã lưu của hóa đơn.");
-        lblTongMoTa.getStyleClass().add("nhan-chu-thich-nho");
+        lblTongMoTa.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748b;");
         boxNhanTong.getChildren().addAll(lblTongTieuDe, lblTongMoTa);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Label lblTongTien = new Label(DINH_DANG_TIEN.format(hoaDon.getTongTien()));
-        lblTongTien.getStyleClass().addAll("nhan-tong-tien-noi-bat");
+        lblTongTien.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
 
         pnlTongKet.getChildren().addAll(boxNhanTong, spacer, lblTongTien);
 
@@ -241,11 +242,16 @@ public class ChiTietGiaoDichView extends VBox {
      */
     private void taiDuLieuChiTiet() {
         if (hoaDon == null) return;
-        List<ChiTietGiaoDich> dsSP = khachHangController.laySanPhamHoaDon(hoaDon.getMaKhachHang(), hoaDon.getMaHoaDon());
-        tblSanPham.setItems(FXCollections.observableArrayList(dsSP));
+        try {
+            List<ChiTietGiaoDich> dsSP = khachHangController.laySanPhamHoaDon(hoaDon.getMaKhachHang(), hoaDon.getMaHoaDon());
+            tblSanPham.setItems(FXCollections.observableArrayList(dsSP));
 
-        List<ChiTietGiaoDich> dsDV = khachHangController.layDichVuHoaDon(hoaDon.getMaKhachHang(), hoaDon.getMaHoaDon());
-        tblDichVu.setItems(FXCollections.observableArrayList(dsDV));
+            List<ChiTietGiaoDich> dsDV = khachHangController.layDichVuHoaDon(hoaDon.getMaKhachHang(), hoaDon.getMaHoaDon());
+            tblDichVu.setItems(FXCollections.observableArrayList(dsDV));
+        } catch (Exception ignored) {
+            tblSanPham.setItems(FXCollections.observableArrayList());
+            tblDichVu.setItems(FXCollections.observableArrayList());
+        }
     }
 
     /**
@@ -287,4 +293,3 @@ public class ChiTietGiaoDichView extends VBox {
         dlg.showAndWait();
     }
 }
-

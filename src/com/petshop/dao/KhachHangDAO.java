@@ -13,46 +13,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Lớp truy xuất dữ liệu (Data Access Object - DAO) cho phân hệ Khách hàng và Lịch sử giao dịch trong SQL Server.
- * Thực hiện các thao tác:
- * - Quản lý thông tin khách hàng (CRUD, xóa mềm, tìm kiếm)
- * - Tra cứu lịch sử hóa đơn giao dịch của khách hàng
- * - Tra cứu chi tiết sản phẩm và dịch vụ trong từng hóa đơn
+ * Lớp truy xuất dữ liệu (Data Access Object - DAO) cho phân hệ Khách hàng trong SQL Server.
+ * Tuân thủ nghiêm ngặt Quy ước #60:
+ * - Không nuốt ngoại lệ SQLException, chuyển sang IllegalStateException có ngữ cảnh rõ ràng.
+ * - Không tự ý chạy DDL runtime (ALTER TABLE).
+ * - Đánh dấu TODO cho các truy vấn bảng chéo phân hệ (Hóa đơn).
  */
 public class KhachHangDAO {
 
     /** Định dạng ngày tạo mã theo chuẩn hệ thống: yyyyMMdd */
     private static final DateTimeFormatter DINH_DANG_NGAY = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    /** Biến cờ kiểm tra cột trangThai đã được đảm bảo tồn tại trong cơ sở dữ liệu hay chưa */
-    private static volatile boolean daKiemTraCotTrangThai = false;
-
     public KhachHangDAO() {
-        damBaoCotTrangThaiTonTai();
-    }
-
-    /**
-     * Tự động bổ sung cột trangThai vào bảng KhachHang nếu CSDL chưa có (hỗ trợ tính năng xóa mềm).
-     */
-    private synchronized void damBaoCotTrangThaiTonTai() {
-        if (daKiemTraCotTrangThai) {
-            return;
-        }
-        String sqlKiemTra = """
-                IF COL_LENGTH('dbo.KhachHang', 'trangThai') IS NULL
-                BEGIN
-                    ALTER TABLE dbo.KhachHang
-                    ADD trangThai BIT NOT NULL
-                        CONSTRAINT DF_KhachHang_TrangThai DEFAULT (1) WITH VALUES;
-                END
-                """;
-        try (Connection conn = DatabaseManager.getConnection();
-             Statement stmt = conn.createStatement()) {
-            stmt.execute(sqlKiemTra);
-            daKiemTraCotTrangThai = true;
-        } catch (SQLException e) {
-            System.err.println("[KhachHangDAO] Kiểm tra cột trangThai: " + e.getMessage());
-        }
     }
 
     /**
@@ -75,7 +47,7 @@ public class KhachHangDAO {
                 danhSach.add(anhXaDongKhachHang(rs));
             }
         } catch (SQLException e) {
-            System.err.println("[KhachHangDAO] Lỗi khi lấy danh sách khách hàng: " + e.getMessage());
+            throw new IllegalStateException("Lỗi khi lấy danh sách khách hàng: " + e.getMessage(), e);
         }
         return danhSach;
     }
@@ -101,15 +73,15 @@ public class KhachHangDAO {
                 danhSach.add(anhXaDongKhachHang(rs));
             }
         } catch (SQLException e) {
-            System.err.println("[KhachHangDAO] Lỗi khi lấy danh sách khách hàng hoạt động: " + e.getMessage());
+            throw new IllegalStateException("Lỗi khi lấy danh sách khách hàng đang hoạt động: " + e.getMessage(), e);
         }
         return danhSach;
     }
 
     /**
-     * Tra cứu thông tin khách hàng theo mã định danh.
+     * Tìm khách hàng theo mã định danh duy nhất.
      */
-    public KhachHang layKhachHangTheoMa(String maKhachHang) {
+    public KhachHang timTheoMa(String maKhachHang) {
         if (maKhachHang == null || maKhachHang.trim().isEmpty()) {
             return null;
         }
@@ -131,15 +103,15 @@ public class KhachHangDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[KhachHangDAO] Lỗi tra cứu khách hàng theo mã: " + e.getMessage());
+            throw new IllegalStateException("Lỗi khi tìm khách hàng theo mã " + maKhachHang + ": " + e.getMessage(), e);
         }
         return null;
     }
 
     /**
-     * Tra cứu thông tin khách hàng theo số điện thoại (phục vụ kiểm tra trùng lặp).
+     * Tìm khách hàng theo số điện thoại chính xác.
      */
-    public KhachHang layKhachHangTheoSoDienThoai(String soDienThoai) {
+    public KhachHang timTheoSoDienThoai(String soDienThoai) {
         if (soDienThoai == null || soDienThoai.trim().isEmpty()) {
             return null;
         }
@@ -161,15 +133,45 @@ public class KhachHangDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[KhachHangDAO] Lỗi tra cứu khách hàng theo SĐT: " + e.getMessage());
+            throw new IllegalStateException("Lỗi khi tìm khách hàng theo số điện thoại " + soDienThoai + ": " + e.getMessage(), e);
         }
         return null;
     }
 
     /**
-     * Tìm kiếm và lọc danh sách khách hàng linh hoạt:
-     * - Tìm kiếm theo từ khóa qua 4 tiêu chí: mã khách hàng, họ tên, số điện thoại hoặc email.
-     * - Lọc theo trạng thái hoạt động: "Tất cả", "Đang hoạt động", "Ngừng hoạt động".
+     * Kiểm tra số điện thoại có bị trùng với khách hàng khác hay không.
+     */
+    public boolean kiemTraTrungSoDienThoai(String soDienThoai, String maKhachHangHienTai) {
+        if (soDienThoai == null || soDienThoai.trim().isEmpty()) {
+            return false;
+        }
+
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM KhachHang WHERE soDienThoai = ?");
+        if (maKhachHangHienTai != null && !maKhachHangHienTai.trim().isEmpty()) {
+            sql.append(" AND maKhachHang <> ?");
+        }
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            ps.setString(1, soDienThoai.trim());
+            if (maKhachHangHienTai != null && !maKhachHangHienTai.trim().isEmpty()) {
+                ps.setString(2, maKhachHangHienTai.trim());
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi kiểm tra trùng số điện thoại: " + e.getMessage(), e);
+        }
+        return false;
+    }
+
+    /**
+     * Tìm kiếm khách hàng theo từ khóa và bộ lọc trạng thái.
      */
     public List<KhachHang> timKiemKhachHang(String tuKhoa, String locTrangThai) {
         List<KhachHang> danhSach = new ArrayList<>();
@@ -182,19 +184,21 @@ public class KhachHangDAO {
 
         List<Object> thamSo = new ArrayList<>();
 
-        if ("Đang hoạt động".equalsIgnoreCase(locTrangThai)) {
-            sql.append(" AND ISNULL(trangThai, 1) = 1");
-        } else if ("Ngừng hoạt động".equalsIgnoreCase(locTrangThai)) {
-            sql.append(" AND ISNULL(trangThai, 1) = 0");
+        if (tuKhoa != null && !tuKhoa.trim().isEmpty()) {
+            String pattern = "%" + tuKhoa.trim() + "%";
+            sql.append(" AND (maKhachHang LIKE ? OR hoTen LIKE ? OR soDienThoai LIKE ? OR email LIKE ?)");
+            thamSo.add(pattern);
+            thamSo.add(pattern);
+            thamSo.add(pattern);
+            thamSo.add(pattern);
         }
 
-        if (tuKhoa != null && !tuKhoa.trim().isEmpty()) {
-            String giaTriTim = "%" + tuKhoa.trim() + "%";
-            sql.append(" AND (maKhachHang LIKE ? OR hoTen LIKE ? OR soDienThoai LIKE ? OR email LIKE ?)");
-            thamSo.add(giaTriTim);
-            thamSo.add(giaTriTim);
-            thamSo.add(giaTriTim);
-            thamSo.add(giaTriTim);
+        if (locTrangThai != null && !locTrangThai.trim().isEmpty()) {
+            if ("Đang hoạt động".equalsIgnoreCase(locTrangThai.trim())) {
+                sql.append(" AND ISNULL(trangThai, 1) = 1");
+            } else if ("Ngừng hoạt động".equalsIgnoreCase(locTrangThai.trim())) {
+                sql.append(" AND ISNULL(trangThai, 1) = 0");
+            }
         }
 
         sql.append(" ORDER BY maKhachHang DESC");
@@ -212,7 +216,7 @@ public class KhachHangDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[KhachHangDAO] Lỗi khi tìm kiếm khách hàng: " + e.getMessage());
+            throw new IllegalStateException("Lỗi khi tìm kiếm khách hàng: " + e.getMessage(), e);
         }
 
         return danhSach;
@@ -241,8 +245,7 @@ public class KhachHangDAO {
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.err.println("[KhachHangDAO] Lỗi khi thêm khách hàng: " + e.getMessage());
-            return false;
+            throw new IllegalStateException("Lỗi khi thêm mới khách hàng: " + e.getMessage(), e);
         }
     }
 
@@ -276,13 +279,12 @@ public class KhachHangDAO {
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.err.println("[KhachHangDAO] Lỗi khi cập nhật khách hàng: " + e.getMessage());
-            return false;
+            throw new IllegalStateException("Lỗi khi cập nhật thông tin khách hàng: " + e.getMessage(), e);
         }
     }
 
     /**
-     * Xóa mềm khách hàng (trangThai = 0).
+     * Xóa mềm khách hàng (chuyển trangThai = 0).
      */
     public boolean xoaMemKhachHang(String maKhachHang) {
         String sql = "UPDATE KhachHang SET trangThai = 0 WHERE maKhachHang = ?";
@@ -293,13 +295,12 @@ public class KhachHangDAO {
             ps.setString(1, maKhachHang);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.err.println("[KhachHangDAO] Lỗi khi xóa mềm khách hàng: " + e.getMessage());
-            return false;
+            throw new IllegalStateException("Lỗi khi xóa mềm khách hàng " + maKhachHang + ": " + e.getMessage(), e);
         }
     }
 
     /**
-     * Kích hoạt lại khách hàng đã ngừng hoạt động (trangThai = 1).
+     * Kích hoạt lại khách hàng đã ngừng hoạt động (chuyển trangThai = 1).
      */
     public boolean kichHoatLaiKhachHang(String maKhachHang) {
         String sql = "UPDATE KhachHang SET trangThai = 1 WHERE maKhachHang = ?";
@@ -310,8 +311,7 @@ public class KhachHangDAO {
             ps.setString(1, maKhachHang);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.err.println("[KhachHangDAO] Lỗi khi kích hoạt lại khách hàng: " + e.getMessage());
-            return false;
+            throw new IllegalStateException("Lỗi khi kích hoạt lại khách hàng " + maKhachHang + ": " + e.getMessage(), e);
         }
     }
 
@@ -342,7 +342,7 @@ public class KhachHangDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[KhachHangDAO] Lỗi khi tạo mã khách hàng: " + e.getMessage());
+            throw new IllegalStateException("Lỗi khi sinh mã khách hàng tự động: " + e.getMessage(), e);
         }
 
         return tienTo + String.format("%06d", soThuTu);
@@ -350,18 +350,12 @@ public class KhachHangDAO {
 
     // =========================================================================
     // CÁC PHƯƠNG THỨC TRUY XUẤT LỊCH SỬ GIAO DỊCH & CHI TIẾT HÓA ĐƠN
+    // TODO: nối HoaDonService khi phân hệ Hóa đơn merge theo Quy ước #60 (Mục 7.3)
     // =========================================================================
 
     /**
-     * Lấy danh sách lịch sử hóa đơn giao dịch của khách hàng theo bộ lọc:
-     * - Từ ngày đến ngày (nếu có)
-     * - Trạng thái thanh toán (Tất cả, Đã thanh toán, Chưa thanh toán, Đã hủy)
-     *
-     * @param maKhachHang Mã khách hàng cần xem lịch sử
-     * @param tuNgay Ngày bắt đầu (null nếu không lọc)
-     * @param denNgay Ngày kết thúc (null nếu không lọc)
-     * @param trangThaiThanhToan Trạng thái thanh toán ("Tất cả" hoặc null nếu không lọc)
-     * @return Danh sách LichSuGiaoDich sắp xếp ngày lập mới nhất lên đầu
+     * Lấy danh sách lịch sử hóa đơn giao dịch của khách hàng.
+     * // TODO: nối HoaDonService khi phân hệ Hóa đơn merge theo Quy ước #60 (Mục 7.3)
      */
     public List<LichSuGiaoDich> layLichSuGiaoDich(String maKhachHang, LocalDate tuNgay, LocalDate denNgay, String trangThaiThanhToan) {
         List<LichSuGiaoDich> danhSach = new ArrayList<>();
@@ -430,7 +424,7 @@ public class KhachHangDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[KhachHangDAO] Lỗi lấy lịch sử giao dịch: " + e.getMessage());
+            throw new IllegalStateException("Lỗi khi lấy lịch sử giao dịch khách hàng: " + e.getMessage(), e);
         }
 
         return danhSach;
@@ -438,6 +432,7 @@ public class KhachHangDAO {
 
     /**
      * Lấy danh sách sản phẩm trong một hóa đơn của khách hàng.
+     * // TODO: nối HoaDonService khi phân hệ Hóa đơn merge theo Quy ước #60 (Mục 7.3)
      */
     public List<ChiTietGiaoDich> laySanPhamHoaDon(String maKhachHang, String maHoaDon) {
         List<ChiTietGiaoDich> danhSach = new ArrayList<>();
@@ -470,13 +465,14 @@ public class KhachHangDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[KhachHangDAO] Lỗi lấy chi tiết sản phẩm hóa đơn: " + e.getMessage());
+            throw new IllegalStateException("Lỗi khi lấy chi tiết sản phẩm hóa đơn: " + e.getMessage(), e);
         }
         return danhSach;
     }
 
     /**
      * Lấy danh sách dịch vụ chăm sóc trong một hóa đơn của khách hàng.
+     * // TODO: nối HoaDonService khi phân hệ Hóa đơn merge theo Quy ước #60 (Mục 7.3)
      */
     public List<ChiTietGiaoDich> layDichVuHoaDon(String maKhachHang, String maHoaDon) {
         List<ChiTietGiaoDich> danhSach = new ArrayList<>();
@@ -509,7 +505,7 @@ public class KhachHangDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[KhachHangDAO] Lỗi lấy chi tiết dịch vụ hóa đơn: " + e.getMessage());
+            throw new IllegalStateException("Lỗi khi lấy chi tiết dịch vụ hóa đơn: " + e.getMessage(), e);
         }
         return danhSach;
     }

@@ -13,18 +13,21 @@ import javafx.scene.layout.*;
 import java.util.List;
 
 /**
- * Màn hình Tìm kiếm khách hàng (KH_TIM_KIEM).
- * Hỗ trợ tra cứu linh hoạt qua mã, họ tên, số điện thoại, email và bộ lọc trạng thái hoạt động.
- * Tính năng xem chi tiết:
- * - Nút "Xem chi tiết" trên thanh tác vụ (kích hoạt khi chọn 1 khách hàng trên bảng)
- * - Nhấp đúp chuột vào bất kỳ dòng khách hàng nào để mở hộp thoại XemThongTinKhachHangView.
+ * Màn hình Tìm kiếm & Tra cứu khách hàng (KH_TIM_KIEM).
+ * <p>
+ * Tính năng chính:
+ * 1. Tra cứu linh hoạt theo từ khóa: Mã khách hàng, Họ tên, Số điện thoại và Email.
+ * 2. Lọc khách hàng theo trạng thái hoạt động: "Tất cả", "Đang hoạt động", "Ngừng hoạt động".
+ * 3. Hỗ trợ xem thông tin chi tiết khách hàng và danh sách thú cưng (XemChiTietKhachHangView):
+ *    - Bấm nút "Xem chi tiết" trên thanh tác vụ khi chọn dòng.
+ *    - Nhấp đúp chuột vào bất kỳ dòng khách hàng nào để mở hộp thoại XemChiTietKhachHangView.
  */
 public class TimKiemKhachHangView extends VBox {
 
     private final KhachHangController khachHangController = new KhachHangController();
     private final ObservableList<KhachHang> danhSachHienThi = FXCollections.observableArrayList();
 
-    // Các thành phần trên thanh công cụ tìm kiếm
+    // Các thành phần tìm kiếm và lọc
     private final TextField txtTuKhoa = new TextField();
     private final ComboBox<String> cboLocTrangThai = new ComboBox<>();
     private final Button btnTimKiem = new Button("Tìm kiếm");
@@ -32,35 +35,38 @@ public class TimKiemKhachHangView extends VBox {
     private final Button btnXemChiTiet = new Button("Xem chi tiết");
     private final Label lblTongSo = new Label("Tổng số: 0 khách hàng");
 
-    // Bảng hiển thị danh sách kết quả
+    // Bảng dữ liệu hiển thị kết quả
     private final TableView<KhachHang> tblDanhSach = new TableView<>();
 
     public TimKiemKhachHangView() {
         setSpacing(14);
         getStyleClass().add("khung-phan-he");
 
-        // 1. Tiêu đề phân hệ
-        VBox pnlTieuDeMan = new VBox(4);
-        Label lblTieuDe = new Label("KHÁCH HÀNG - TÌM KIẾM KHÁCH HÀNG");
+        // 1. Tiêu đề màn hình
+        VBox pnlTieuDeManHinh = new VBox(4);
+        Label lblTieuDe = new Label("TÌM KIẾM & TRA CỨU KHÁCH HÀNG");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-        Label lblMoTa = new Label("Tra cứu danh mục khách hàng theo mã, họ tên, số điện thoại hoặc email và lọc theo trạng thái hoạt động.");
-        lblMoTa.getStyleClass().add("mo-ta-phan-he");
-        pnlTieuDeMan.getChildren().addAll(lblTieuDe, lblMoTa);
 
-        // 2. Khung nội dung chính bao gồm thanh công cụ và bảng danh sách
+        Label lblMoTa = new Label("Tra cứu nhanh thông tin khách hàng theo mã, tên, SĐT, email hoặc lọc theo trạng thái hoạt động.");
+        lblMoTa.getStyleClass().add("mo-ta-phan-he");
+        pnlTieuDeManHinh.getChildren().addAll(lblTieuDe, lblMoTa);
+
+        // 2. Khung nội dung chính gồm thanh công cụ và bảng kết quả
         VBox pnlKhungChinh = new VBox(12);
         pnlKhungChinh.getStyleClass().add("hop-noi-dung");
         VBox.setVgrow(pnlKhungChinh, Priority.ALWAYS);
 
-        HBox pnlThanhCongCu = taoThanhTimKiem();
+        HBox pnlCongCu = taoThanhTimKiem();
         VBox pnlBang = taoKhungBangDanhSach();
         VBox.setVgrow(pnlBang, Priority.ALWAYS);
 
-        pnlKhungChinh.getChildren().addAll(pnlThanhCongCu, pnlBang);
-        getChildren().addAll(pnlTieuDeMan, pnlKhungChinh);
+        pnlKhungChinh.getChildren().addAll(pnlCongCu, pnlBang);
+        getChildren().addAll(pnlTieuDeManHinh, pnlKhungChinh);
 
-        // 3. Nạp dữ liệu ban đầu
+        // Vô hiệu hóa nút xem chi tiết khi chưa chọn dòng
         btnXemChiTiet.setDisable(true);
+
+        // Nạp dữ liệu ban đầu
         xuLyTimKiem();
     }
 
@@ -108,14 +114,14 @@ public class TimKiemKhachHangView extends VBox {
         btnXemChiTiet.getStyleClass().add("nut-phu");
         btnXemChiTiet.setOnAction(e -> moXemChiTietKhachHang());
 
-        lblTongSo.getStyleClass().add("nhan-tong-so");
+        lblTongSo.setStyle("-fx-font-weight: 600; -fx-text-fill: #475569; -fx-font-size: 13px;");
 
         pnlCongCu.getChildren().addAll(
                 lblTuKhoa, txtTuKhoa,
-                 btnTimKiem
-                , lblTrangThai,
-                 cboLocTrangThai
-                , btnLamMoi,
+                btnTimKiem,
+                lblTrangThai,
+                cboLocTrangThai,
+                btnLamMoi,
                 pnlKhoangTrong,
                 btnXemChiTiet, lblTongSo
         );
@@ -137,33 +143,33 @@ public class TimKiemKhachHangView extends VBox {
         TableColumn<KhachHang, String> colMa = new TableColumn<>("Mã khách hàng");
         colMa.setPrefWidth(150);
         colMa.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getMaKhachHang()));
-        colMa.getStyleClass().addAll("cot-can-giua", "cot-in-dam");
+        colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
 
         // --- Cột 2: Họ và tên ---
         TableColumn<KhachHang, String> colHoTen = new TableColumn<>("Họ và tên");
         colHoTen.setPrefWidth(180);
         colHoTen.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getHoTen()));
-        colHoTen.getStyleClass().add("cot-can-trai");
+        colHoTen.setStyle("-fx-alignment: CENTER-LEFT;");
 
         // --- Cột 3: Số điện thoại ---
         TableColumn<KhachHang, String> colSdt = new TableColumn<>("Số điện thoại");
         colSdt.setPrefWidth(120);
         colSdt.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getSoDienThoai()));
-        colSdt.getStyleClass().add("cot-can-giua");
+        colSdt.setStyle("-fx-alignment: CENTER;");
 
         // --- Cột 4: Email ---
         TableColumn<KhachHang, String> colEmail = new TableColumn<>("Email");
-        colEmail.setPrefWidth(180);
+        colEmail.setPrefWidth(170);
         colEmail.setCellValueFactory(cellData -> new SimpleStringProperty(
                 cellData.getValue().getEmail() != null ? cellData.getValue().getEmail() : "-"
         ));
-        colEmail.getStyleClass().add("cot-can-trai");
+        colEmail.setStyle("-fx-alignment: CENTER-LEFT;");
 
         // --- Cột 5: Điểm tích lũy ---
         TableColumn<KhachHang, Number> colDiem = new TableColumn<>("Điểm tích lũy");
         colDiem.setPrefWidth(110);
         colDiem.setCellValueFactory(cellData -> new SimpleIntegerProperty(cellData.getValue().getDiemTichLuy()));
-        colDiem.getStyleClass().addAll("cot-can-phai", "cot-in-dam");
+        colDiem.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
 
         // --- Cột 6: Địa chỉ ---
         TableColumn<KhachHang, String> colDiaChi = new TableColumn<>("Địa chỉ");
@@ -171,16 +177,18 @@ public class TimKiemKhachHangView extends VBox {
         colDiaChi.setCellValueFactory(cellData -> new SimpleStringProperty(
                 cellData.getValue().getDiaChi() != null ? cellData.getValue().getDiaChi() : "-"
         ));
-        colDiaChi.getStyleClass().add("cot-can-trai");
+        colDiaChi.setStyle("-fx-alignment: CENTER-LEFT;");
 
-        // --- Cột 7: Trạng thái (Badge xanh / đỏ) ---
+        // --- Cột 7: Trạng thái (Hiển thị Badge màu sắc) ---
         TableColumn<KhachHang, String> colTrangThai = new TableColumn<>("Trạng thái");
         colTrangThai.setPrefWidth(140);
+        colTrangThai.setStyle("-fx-alignment: CENTER;");
         colTrangThai.setCellValueFactory(cellData -> new SimpleStringProperty(
                 cellData.getValue().isTrangThai() ? "Đang hoạt động" : "Ngừng hoạt động"
         ));
-        colTrangThai.setCellFactory(col -> new TableCell<KhachHang, String>() {
+        colTrangThai.setCellFactory(col -> new TableCell<>() {
             private final Label badge = new Label();
+
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -190,14 +198,13 @@ public class TimKiemKhachHangView extends VBox {
                 } else {
                     badge.setText(item);
                     badge.getStyleClass().clear();
-                    if ("Đang hoạt động".equals(item)) {
+                    if ("Đang hoạt động".equalsIgnoreCase(item)) {
                         badge.getStyleClass().add("nhan-trang-thai-hoat-dong");
                     } else {
                         badge.getStyleClass().add("nhan-trang-thai-khoa");
                     }
                     setGraphic(badge);
                     setAlignment(Pos.CENTER);
-                    setText(null);
                 }
             }
         });
@@ -206,21 +213,22 @@ public class TimKiemKhachHangView extends VBox {
         tblDanhSach.setItems(danhSachHienThi);
 
         // =====================================================================
-        // ROW FACTORY: Làm mờ dòng ngừng hoạt động & Nhấp đúp chuột xem chi tiết
+        // XỬ LÝ LÀM MỜ DÒNG NGỪNG HOẠT ĐỘNG VÀ SỰ KIỆN NHẤP ĐÚP CHUỘT
         // =====================================================================
         tblDanhSach.setRowFactory(tv -> {
             TableRow<KhachHang> row = new TableRow<>() {
                 @Override
                 protected void updateItem(KhachHang khachHang, boolean empty) {
                     super.updateItem(khachHang, empty);
-                    getStyleClass().remove("dong-ngung-hoat-dong");
-                    if (!empty && khachHang != null && !khachHang.isTrangThai()) {
-                        getStyleClass().add("dong-ngung-hoat-dong");
+                    if (empty || khachHang == null) {
+                        setOpacity(1.0);
+                    } else {
+                        setOpacity(khachHang.isTrangThai() ? 1.0 : 0.55);
                     }
                 }
             };
 
-            // Sự kiện nhấp đúp chuột vào bất kỳ dòng nào để xem chi tiết thông tin
+            // Sự kiện nhấp đúp chuột (2 lần) để xem thông tin chi tiết
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
                     moXemChiTietKhachHang();
@@ -229,7 +237,7 @@ public class TimKiemKhachHangView extends VBox {
             return row;
         });
 
-        // Kích hoạt / vô hiệu hóa nút "Xem chi tiết" theo dòng đang chọn
+        // Lắng nghe sự kiện chọn dòng trên bảng để kích hoạt / vô hiệu hóa nút Xem chi tiết
         tblDanhSach.getSelectionModel().selectedItemProperty().addListener((obs, cu, moi) -> {
             btnXemChiTiet.setDisable(moi == null);
         });
@@ -239,24 +247,24 @@ public class TimKiemKhachHangView extends VBox {
     }
 
     /**
-     * Xử lý tìm kiếm theo từ khóa và trạng thái được chọn trên thanh công cụ.
+     * Thực thi truy vấn tìm kiếm dữ liệu từ KhachHangController và cập nhật lên TableView.
      */
     private void xuLyTimKiem() {
-        String tuKhoa = txtTuKhoa.getText();
-        String locTrangThai = cboLocTrangThai.getValue();
+        String tuKhoa = txtTuKhoa.getText() != null ? txtTuKhoa.getText().trim() : "";
+        String trangThai = cboLocTrangThai.getValue();
 
         try {
-            List<KhachHang> ketQua = khachHangController.timKiemKhachHang(tuKhoa, locTrangThai);
+            List<KhachHang> ketQua = khachHangController.timKiemKhachHang(tuKhoa, trangThai);
             danhSachHienThi.setAll(ketQua);
             lblTongSo.setText("Tổng số: " + ketQua.size() + " khách hàng");
-            tblDanhSach.refresh();
-        } catch (Exception ex) {
-            System.err.println("[TimKiemKhachHangView] Lỗi tìm kiếm: " + ex.getMessage());
+            btnXemChiTiet.setDisable(true);
+        } catch (Exception e) {
+            lblTongSo.setText("Tổng số: 0 khách hàng");
         }
     }
 
     /**
-     * Mở hộp thoại Xem thông tin chi tiết của khách hàng đang chọn trên bảng.
+     * Mở hộp thoại Xem chi tiết khách hàng và danh sách thú cưng (XemChiTietKhachHangView).
      */
     private void moXemChiTietKhachHang() {
         KhachHang khChon = tblDanhSach.getSelectionModel().getSelectedItem();
@@ -269,7 +277,7 @@ public class TimKiemKhachHangView extends VBox {
             return;
         }
 
-        XemThongTinKhachHangView.hienThi(khChon, getScene() != null ? getScene().getWindow() : null);
+        XemChiTietKhachHangView.hienThi(khChon, getScene() != null ? getScene().getWindow() : null);
     }
 
     /**
@@ -282,4 +290,3 @@ public class TimKiemKhachHangView extends VBox {
         txtTuKhoa.requestFocus();
     }
 }
-

@@ -4,7 +4,6 @@ import com.petshop.dao.KhachHangDAO;
 import com.petshop.model.ChiTietGiaoDich;
 import com.petshop.model.KhachHang;
 import com.petshop.model.LichSuGiaoDich;
-import com.petshop.util.SessionManager;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -13,6 +12,7 @@ import java.util.List;
  * Lớp dịch vụ (Service Layer) xử lý logic nghiệp vụ cho phân hệ Khách hàng:
  * Kiểm tra tính hợp lệ của dữ liệu (validation), chặn ký tự đặc biệt trong họ tên,
  * kiểm tra định dạng và trùng lặp số điện thoại, tra cứu lịch sử giao dịch và chi tiết hóa đơn.
+ * Tuân thủ Quy ước #60 về phân quyền bảo mật nghiệp vụ.
  */
 public class KhachHangService {
 
@@ -42,6 +42,7 @@ public class KhachHangService {
      * Lấy toàn bộ danh sách khách hàng.
      */
     public List<KhachHang> layDanhSachKhachHang() {
+        kiemTraQuyen("KH_CAP_NHAT");
         return khachHangDAO.layDanhSachKhachHang();
     }
 
@@ -49,6 +50,7 @@ public class KhachHangService {
      * Lấy danh sách khách hàng đang hoạt động.
      */
     public List<KhachHang> layDanhSachKhachHangDangHoatDong() {
+        kiemTraQuyen("KH_CAP_NHAT");
         return khachHangDAO.layDanhSachKhachHangDangHoatDong();
     }
 
@@ -56,41 +58,50 @@ public class KhachHangService {
      * Tra cứu khách hàng theo mã.
      */
     public KhachHang layKhachHangTheoMa(String maKhachHang) {
-        return khachHangDAO.layKhachHangTheoMa(maKhachHang);
+        kiemTraQuyen("KH_CAP_NHAT");
+        return khachHangDAO.timTheoMa(maKhachHang);
     }
 
     /**
      * Tra cứu khách hàng theo số điện thoại.
      */
     public KhachHang layKhachHangTheoSoDienThoai(String soDienThoai) {
-        return khachHangDAO.layKhachHangTheoSoDienThoai(soDienThoai);
+        kiemTraQuyen("KH_CAP_NHAT");
+        return khachHangDAO.timTheoSoDienThoai(soDienThoai);
     }
 
     /**
      * Tìm kiếm và lọc danh sách khách hàng linh hoạt theo từ khóa và trạng thái hoạt động.
      */
     public List<KhachHang> timKiemKhachHang(String tuKhoa, String locTrangThai) {
+        kiemTraQuyen("KH_TIM_KIEM");
         return khachHangDAO.timKiemKhachHang(tuKhoa, locTrangThai);
     }
 
     /**
      * Lấy lịch sử giao dịch hóa đơn của khách hàng theo bộ lọc thời gian và trạng thái.
+     * // TODO: nối HoaDonService khi phân hệ Hóa đơn merge theo Quy ước #60 (Mục 7.3)
      */
     public List<LichSuGiaoDich> layLichSuGiaoDich(String maKhachHang, LocalDate tuNgay, LocalDate denNgay, String trangThaiThanhToan) {
+        kiemTraQuyen("KH_LICH_SU");
         return khachHangDAO.layLichSuGiaoDich(maKhachHang, tuNgay, denNgay, trangThaiThanhToan);
     }
 
     /**
      * Lấy danh sách sản phẩm trong một hóa đơn của khách hàng.
+     * // TODO: nối HoaDonService khi phân hệ Hóa đơn merge theo Quy ước #60 (Mục 7.3)
      */
     public List<ChiTietGiaoDich> laySanPhamHoaDon(String maKhachHang, String maHoaDon) {
+        kiemTraQuyen("KH_LICH_SU");
         return khachHangDAO.laySanPhamHoaDon(maKhachHang, maHoaDon);
     }
 
     /**
      * Lấy danh sách dịch vụ trong một hóa đơn của khách hàng.
+     * // TODO: nối HoaDonService khi phân hệ Hóa đơn merge theo Quy ước #60 (Mục 7.3)
      */
     public List<ChiTietGiaoDich> layDichVuHoaDon(String maKhachHang, String maHoaDon) {
+        kiemTraQuyen("KH_LICH_SU");
         return khachHangDAO.layDichVuHoaDon(maKhachHang, maHoaDon);
     }
 
@@ -184,12 +195,9 @@ public class KhachHangService {
         khachHang.setSoDienThoai(sdt);
 
         // 3. Kiểm tra trùng số điện thoại với khách hàng khác trong hệ thống
-        KhachHang khTonTai = khachHangDAO.layKhachHangTheoSoDienThoai(sdt);
-        if (khTonTai != null) {
-            if (!laCapNhat || !khTonTai.getMaKhachHang().equals(khachHang.getMaKhachHang())) {
-                throw new IllegalArgumentException("Số điện thoại '" + sdt + "' đã tồn tại cho khách hàng: " +
-                        khTonTai.getHoTen() + " (" + khTonTai.getMaKhachHang() + ")!");
-            }
+        boolean trungSDT = khachHangDAO.kiemTraTrungSoDienThoai(sdt, laCapNhat ? khachHang.getMaKhachHang() : null);
+        if (trungSDT) {
+            throw new IllegalArgumentException("Số điện thoại '" + sdt + "' đã tồn tại cho một khách hàng khác trong hệ thống!");
         }
 
         // 4. Kiểm tra email (nếu có nhập thì phải đúng cấu trúc)
@@ -218,11 +226,9 @@ public class KhachHangService {
     }
 
     /**
-     * Kiểm tra quyền hạn nếu người dùng đã đăng nhập hệ thống.
+     * Kiểm tra quyền hạn trực tiếp qua XacThucService (sẽ ném SecurityException nếu chưa đăng nhập hoặc không có quyền).
      */
     private void kiemTraQuyen(String maChucNang) {
-        if (SessionManager.getTaiKhoanHienTai() != null) {
-            xacThucService.kiemTraQuyen(maChucNang);
-        }
+        xacThucService.kiemTraQuyen(maChucNang);
     }
 }

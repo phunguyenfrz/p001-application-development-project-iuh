@@ -127,7 +127,7 @@ public class LichSuGiaoDichKhachHangView extends VBox {
         VBox pnlKhung = new VBox(6);
 
         Label lblNhan = new Label("Tìm kiếm khách hàng");
-        lblNhan.getStyleClass().add("tieu-de-bang");
+        lblNhan.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px; -fx-text-fill: #1e293b;");
 
         HBox pnlThanh = new HBox(10);
         pnlThanh.setAlignment(Pos.CENTER_LEFT);
@@ -145,13 +145,12 @@ public class LichSuGiaoDichKhachHangView extends VBox {
 
     /**
      * Khởi tạo Popup bảng gợi ý khách hàng (Autocomplete).
-     * Khi người dùng nhập ký tự vào ô tìm kiếm, bảng này sẽ hiển thị các khách hàng tương ứng ngay bên dưới.
      */
     private void khoiTaoPopupGoiY() {
         popupGoiY.setAutoHide(true);
         popupGoiY.setHideOnEscape(true);
 
-        lstGoiY.getStyleClass().add("danh-sach-goi-y-kh");
+        lstGoiY.setStyle("-fx-background-color: #ffffff; -fx-border-color: #0284c7; -fx-border-width: 1.5px; -fx-border-radius: 4px;");
 
         // Tùy biến hiển thị từng dòng khách hàng trong danh sách gợi ý
         lstGoiY.setCellFactory(lv -> new ListCell<>() {
@@ -164,11 +163,11 @@ public class LichSuGiaoDichKhachHangView extends VBox {
 
             {
                 pnlDong.setAlignment(Pos.CENTER_LEFT);
-                lblAvatarItem.getStyleClass().add("avatar-goi-y-kh");
+                lblAvatarItem.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #15803d; -fx-font-weight: bold; -fx-font-size: 12px; -fx-alignment: center; -fx-background-radius: 50%; -fx-min-width: 32px; -fx-min-height: 32px;");
 
                 VBox boxThongTin = new VBox(2);
-                lblTenItem.getStyleClass().add("nhan-ten-goi-y");
-                lblMaItem.getStyleClass().add("nhan-ma-goi-y");
+                lblTenItem.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #0f172a;");
+                lblMaItem.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
                 boxThongTin.getChildren().addAll(lblTenItem, lblMaItem);
 
                 Region spacer = new Region();
@@ -176,7 +175,7 @@ public class LichSuGiaoDichKhachHangView extends VBox {
 
                 VBox boxPhu = new VBox(2);
                 boxPhu.setAlignment(Pos.CENTER_RIGHT);
-                lblSdtItem.getStyleClass().add("nhan-sdt-goi-y");
+                lblSdtItem.setStyle("-fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: #334155;");
                 boxPhu.getChildren().addAll(lblSdtItem, lblTrangThaiItem);
 
                 pnlDong.getChildren().addAll(lblAvatarItem, boxThongTin, spacer, boxPhu);
@@ -218,33 +217,33 @@ public class LichSuGiaoDichKhachHangView extends VBox {
      * Cấu hình thẻ thông tin khách hàng đang được chọn.
      */
     private void cauHinhTheKhachHang() {
-        theKhachHang.getStyleClass().add("the-khach-hang-lsgd");
+        theKhachHang.getStyleClass().add("hop-noi-dung");
         theKhachHang.setAlignment(Pos.CENTER_LEFT);
 
         // Avatar viết tắt
-        lblAvatar.getStyleClass().add("avatar-khach-hang");
+        lblAvatar.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #15803d; -fx-font-weight: bold; -fx-font-size: 15px; -fx-alignment: center; -fx-background-radius: 50%; -fx-min-width: 44px; -fx-min-height: 44px;");
 
         // Tên và mã khách hàng
         VBox boxTenMa = new VBox(3);
         boxTenMa.setMinWidth(180);
-        lblTenKhachHang.getStyleClass().add("nhan-gia-tri-thong-tin");
-        lblMaKhachHang.getStyleClass().add("nhan-chu-thich-nho");
+        lblTenKhachHang.setStyle("-fx-font-size: 13.5px; -fx-font-weight: bold; -fx-text-fill: #1e293b;");
+        lblMaKhachHang.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748b;");
         boxTenMa.getChildren().addAll(lblTenKhachHang, lblMaKhachHang);
 
         // Số điện thoại
         VBox boxSDT = new VBox(3);
         boxSDT.setMinWidth(140);
         Label lblTieuDeSDT = new Label("Số điện thoại");
-        lblTieuDeSDT.getStyleClass().add("nhan-chu-thich-nho");
-        lblSoDienThoai.getStyleClass().add("nhan-gia-tri-thong-tin");
+        lblTieuDeSDT.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748b;");
+        lblSoDienThoai.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1e293b;");
         boxSDT.getChildren().addAll(lblTieuDeSDT, lblSoDienThoai);
 
         // Email
         VBox boxEmail = new VBox(3);
         boxEmail.setMinWidth(200);
         Label lblTieuDeEmail = new Label("Email");
-        lblTieuDeEmail.getStyleClass().add("nhan-chu-thich-nho");
-        lblEmail.getStyleClass().add("nhan-gia-tri-thong-tin");
+        lblTieuDeEmail.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748b;");
+        lblEmail.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1e293b;");
         boxEmail.getChildren().addAll(lblTieuDeEmail, lblEmail);
 
         // Khoảng đệm đẩy nút đổi khách hàng sang phải
@@ -288,7 +287,7 @@ public class LichSuGiaoDichKhachHangView extends VBox {
         // Từ ngày
         VBox boxTuNgay = new VBox(4);
         Label lblTuNgay = new Label("Từ ngày");
-        lblTuNgay.getStyleClass().add("nhan-chu-thich-nho");
+        lblTuNgay.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748b;");
         dpTuNgay.setConverter(converterNgay);
         dpTuNgay.setPromptText("dd/MM/yyyy");
         dpTuNgay.setPrefWidth(140);
@@ -297,7 +296,7 @@ public class LichSuGiaoDichKhachHangView extends VBox {
         // Đến ngày
         VBox boxDenNgay = new VBox(4);
         Label lblDenNgay = new Label("Đến ngày");
-        lblDenNgay.getStyleClass().add("nhan-chu-thich-nho");
+        lblDenNgay.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748b;");
         dpDenNgay.setConverter(converterNgay);
         dpDenNgay.setPromptText("dd/MM/yyyy");
         dpDenNgay.setPrefWidth(140);
@@ -306,7 +305,7 @@ public class LichSuGiaoDichKhachHangView extends VBox {
         // Trạng thái thanh toán
         VBox boxTrangThai = new VBox(4);
         Label lblTrangThai = new Label("Trạng thái thanh toán");
-        lblTrangThai.getStyleClass().add("nhan-chu-thich-nho");
+        lblTrangThai.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748b;");
         cboTrangThaiThanhToan.getItems().addAll("Tất cả", "Chưa thanh toán", "Đã thanh toán", "Đã hủy");
         cboTrangThaiThanhToan.setValue("Tất cả");
         cboTrangThaiThanhToan.setPrefWidth(160);
@@ -319,7 +318,7 @@ public class LichSuGiaoDichKhachHangView extends VBox {
         pnlBoLoc.getChildren().addAll(boxTuNgay, boxDenNgay, boxTrangThai, btnApDung, btnXoaBoLoc);
 
         Label lblGhiChuNgay = new Label("Để trống ngày để xem lịch sử không giới hạn khoảng ngày.");
-        lblGhiChuNgay.getStyleClass().add("nhan-chu-thich-nho");
+        lblGhiChuNgay.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748b;");
 
         pnlKhung.getChildren().addAll(pnlBoLoc, lblGhiChuNgay);
         return pnlKhung;
@@ -338,9 +337,9 @@ public class LichSuGiaoDichKhachHangView extends VBox {
 
         VBox boxTieuDeBang = new VBox(2);
         Label lblTieuDeBang = new Label("Danh sách hóa đơn");
-        lblTieuDeBang.getStyleClass().add("tieu-de-bang");
+        lblTieuDeBang.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px; -fx-text-fill: #1e293b;");
         Label lblSapXep = new Label("Ngày lập mới nhất trước");
-        lblSapXep.getStyleClass().add("nhan-chu-thich-nho");
+        lblSapXep.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748b;");
         boxTieuDeBang.getChildren().addAll(lblTieuDeBang, lblSapXep);
 
         Region spacer = new Region();
@@ -358,7 +357,7 @@ public class LichSuGiaoDichKhachHangView extends VBox {
 
         TableColumn<LichSuGiaoDich, String> colMaHD = new TableColumn<>("Mã hóa đơn");
         colMaHD.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getMaHoaDon()));
-        colMaHD.getStyleClass().addAll("cot-can-trai", "cot-in-dam");
+        colMaHD.setStyle("-fx-alignment: CENTER-LEFT; -fx-font-weight: bold;");
         colMaHD.setPrefWidth(160);
 
         TableColumn<LichSuGiaoDich, String> colNgayLap = new TableColumn<>("Ngày lập");
@@ -366,13 +365,13 @@ public class LichSuGiaoDichKhachHangView extends VBox {
             LocalDate nl = cell.getValue().getNgayLap();
             return new SimpleStringProperty(nl != null ? nl.format(DINH_DANG_NGAY) : "—");
         });
-        colNgayLap.getStyleClass().add("cot-can-giua");
+        colNgayLap.setStyle("-fx-alignment: CENTER;");
         colNgayLap.setPrefWidth(110);
 
         TableColumn<LichSuGiaoDich, String> colNhanVien = new TableColumn<>("Nhân viên lập");
         colNhanVien.setCellValueFactory(cell -> new SimpleStringProperty(
                 cell.getValue().getTenNhanVien() != null ? cell.getValue().getTenNhanVien() : "—"));
-        colNhanVien.getStyleClass().add("cot-can-trai");
+        colNhanVien.setStyle("-fx-alignment: CENTER-LEFT;");
         colNhanVien.setPrefWidth(140);
 
         TableColumn<LichSuGiaoDich, String> colHTTT = new TableColumn<>("Hình thức thanh toán");
@@ -380,18 +379,18 @@ public class LichSuGiaoDichKhachHangView extends VBox {
             String httt = cell.getValue().getHinhThucThanhToan();
             return new SimpleStringProperty(httt != null && !httt.isBlank() ? httt : "—");
         });
-        colHTTT.getStyleClass().add("cot-can-trai");
+        colHTTT.setStyle("-fx-alignment: CENTER-LEFT;");
         colHTTT.setPrefWidth(140);
 
         TableColumn<LichSuGiaoDich, String> colTongTien = new TableColumn<>("Tổng tiền");
         colTongTien.setCellValueFactory(cell -> new SimpleStringProperty(DINH_DANG_TIEN.format(cell.getValue().getTongTien())));
-        colTongTien.getStyleClass().addAll("cot-can-phai", "cot-in-dam");
+        colTongTien.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
         colTongTien.setPrefWidth(130);
 
         // Cột trạng thái thanh toán hiển thị Badge màu
         TableColumn<LichSuGiaoDich, String> colTrangThai = new TableColumn<>("Trạng thái thanh toán");
         colTrangThai.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getTrangThaiThanhToan()));
-        colTrangThai.getStyleClass().add("cot-can-giua");
+        colTrangThai.setStyle("-fx-alignment: CENTER;");
         colTrangThai.setPrefWidth(140);
         colTrangThai.setCellFactory(col -> new TableCell<>() {
             private final Label badge = new Label();
@@ -408,9 +407,9 @@ public class LichSuGiaoDichKhachHangView extends VBox {
                     if ("Đã thanh toán".equalsIgnoreCase(item)) {
                         badge.getStyleClass().add("nhan-trang-thai-hoat-dong");
                     } else if ("Chưa thanh toán".equalsIgnoreCase(item)) {
-                        badge.getStyleClass().add("nhan-chua-thanh-toan");
+                        badge.setStyle("-fx-background-color: #fef3c7; -fx-text-fill: #d97706; -fx-padding: 3px 8px; -fx-background-radius: 4px; -fx-font-size: 11.5px; -fx-font-weight: 600;");
                     } else {
-                        badge.getStyleClass().add("nhan-da-huy");
+                        badge.getStyleClass().add("nhan-trang-thai-khoa");
                     }
                     setGraphic(badge);
                     setAlignment(Pos.CENTER);
@@ -430,18 +429,18 @@ public class LichSuGiaoDichKhachHangView extends VBox {
      */
     private HBox taoThanhTongKet() {
         HBox pnlTongKet = new HBox();
-        pnlTongKet.getStyleClass().add("thanh-tong-ket-lsgd");
+        pnlTongKet.getStyleClass().add("hop-noi-dung");
         pnlTongKet.setAlignment(Pos.CENTER_LEFT);
 
-        lblKetQuaHienThi.getStyleClass().add("nhan-chu-thich-nho");
+        lblKetQuaHienThi.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748b;");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         VBox boxTongTien = new VBox(2);
         boxTongTien.setAlignment(Pos.CENTER_RIGHT);
-        lblTongTienThanhToanTieuDe.getStyleClass().add("nhan-chu-thich-nho");
-        lblTongTienThanhToan.getStyleClass().add("nhan-tong-tien-noi-bat");
+        lblTongTienThanhToanTieuDe.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748b;");
+        lblTongTienThanhToan.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
         boxTongTien.getChildren().addAll(lblTongTienThanhToanTieuDe, lblTongTienThanhToan);
 
         pnlTongKet.getChildren().addAll(lblKetQuaHienThi, spacer, boxTongTien);
@@ -463,12 +462,16 @@ public class LichSuGiaoDichKhachHangView extends VBox {
                 return;
             }
             String tuKhoa = newVal.trim();
-            List<KhachHang> ketQua = khachHangController.timKiemKhachHang(tuKhoa, "Tất cả");
-            if (ketQua.isEmpty()) {
+            try {
+                List<KhachHang> ketQua = khachHangController.timKiemKhachHang(tuKhoa, "Tất cả");
+                if (ketQua.isEmpty()) {
+                    popupGoiY.hide();
+                } else {
+                    lstGoiY.getItems().setAll(ketQua);
+                    hienThiPopupGoiY();
+                }
+            } catch (Exception ignored) {
                 popupGoiY.hide();
-            } else {
-                lstGoiY.getItems().setAll(ketQua);
-                hienThiPopupGoiY();
             }
         });
 
@@ -476,11 +479,13 @@ public class LichSuGiaoDichKhachHangView extends VBox {
         txtTimKhachHang.setOnMouseClicked(e -> {
             String text = txtTimKhachHang.getText();
             if (text != null && !text.trim().isEmpty() && !popupGoiY.isShowing()) {
-                List<KhachHang> ketQua = khachHangController.timKiemKhachHang(text.trim(), "Tất cả");
-                if (!ketQua.isEmpty()) {
-                    lstGoiY.getItems().setAll(ketQua);
-                    hienThiPopupGoiY();
-                }
+                try {
+                    List<KhachHang> ketQua = khachHangController.timKiemKhachHang(text.trim(), "Tất cả");
+                    if (!ketQua.isEmpty()) {
+                        lstGoiY.getItems().setAll(ketQua);
+                        hienThiPopupGoiY();
+                    }
+                } catch (Exception ignored) {}
             }
         });
 
@@ -540,11 +545,13 @@ public class LichSuGiaoDichKhachHangView extends VBox {
             txtTimKhachHang.selectAll();
             String text = txtTimKhachHang.getText();
             if (text != null && !text.trim().isEmpty()) {
-                List<KhachHang> ketQua = khachHangController.timKiemKhachHang(text.trim(), "Tất cả");
-                if (!ketQua.isEmpty()) {
-                    lstGoiY.getItems().setAll(ketQua);
-                    hienThiPopupGoiY();
-                }
+                try {
+                    List<KhachHang> ketQua = khachHangController.timKiemKhachHang(text.trim(), "Tất cả");
+                    if (!ketQua.isEmpty()) {
+                        lstGoiY.getItems().setAll(ketQua);
+                        hienThiPopupGoiY();
+                    }
+                } catch (Exception ignored) {}
             }
         });
 
@@ -630,15 +637,22 @@ public class LichSuGiaoDichKhachHangView extends VBox {
             return;
         }
 
-        List<KhachHang> ketQua = khachHangController.timKiemKhachHang(tuKhoa, "Tất cả");
-        if (ketQua.isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Không tìm thấy khách hàng nào với thông tin: \"" + tuKhoa + "\"", ButtonType.OK);
-            alert.setTitle("Thông báo");
+        try {
+            List<KhachHang> ketQua = khachHangController.timKiemKhachHang(tuKhoa, "Tất cả");
+            if (ketQua.isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Không tìm thấy khách hàng nào với thông tin: \"" + tuKhoa + "\"", ButtonType.OK);
+                alert.setTitle("Thông báo");
+                alert.setHeaderText(null);
+                alert.showAndWait();
+            } else {
+                // Chọn khách hàng đầu tiên trong kết quả tìm được
+                chonKhachHang(ketQua.get(0));
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Lỗi tìm kiếm: " + e.getMessage(), ButtonType.OK);
+            alert.setTitle("Lỗi");
             alert.setHeaderText(null);
             alert.showAndWait();
-        } else {
-            // Chọn khách hàng đầu tiên trong kết quả tìm được
-            chonKhachHang(ketQua.get(0));
         }
     }
 
@@ -646,19 +660,27 @@ public class LichSuGiaoDichKhachHangView extends VBox {
      * Nạp khách hàng đầu tiên trong hệ thống để người dùng tiện theo dõi ngay khi mở màn hình.
      */
     private void taiKhachHangMacDinh() {
-        List<KhachHang> danhSach = khachHangController.layDanhSachKhachHang();
-        if (!danhSach.isEmpty()) {
-            chonKhachHang(danhSach.get(0));
-        } else {
-            khachHangHienTai = null;
-            lblAvatar.setText("--");
-            lblTenKhachHang.setText("Không có khách hàng trong hệ thống");
-            lblMaKhachHang.setText("—");
-            lblSoDienThoai.setText("—");
-            lblEmail.setText("—");
-            danhSachHoaDon.clear();
-            capNhatThanhTongKet();
+        try {
+            List<KhachHang> danhSach = khachHangController.layDanhSachKhachHang();
+            if (!danhSach.isEmpty()) {
+                chonKhachHang(danhSach.get(0));
+            } else {
+                datRongThongTinKhachHang();
+            }
+        } catch (Exception e) {
+            datRongThongTinKhachHang();
         }
+    }
+
+    private void datRongThongTinKhachHang() {
+        khachHangHienTai = null;
+        lblAvatar.setText("--");
+        lblTenKhachHang.setText("Không có khách hàng trong hệ thống");
+        lblMaKhachHang.setText("—");
+        lblSoDienThoai.setText("—");
+        lblEmail.setText("—");
+        danhSachHoaDon.clear();
+        capNhatThanhTongKet();
     }
 
     /**
@@ -706,14 +728,17 @@ public class LichSuGiaoDichKhachHangView extends VBox {
         LocalDate denNgay = dpDenNgay.getValue();
         String trangThai = cboTrangThaiThanhToan.getValue();
 
-        List<LichSuGiaoDich> ds = khachHangController.layLichSuGiaoDich(
-                khachHangHienTai.getMaKhachHang(),
-                tuNgay,
-                denNgay,
-                trangThai
-        );
-
-        danhSachHoaDon.setAll(ds);
+        try {
+            List<LichSuGiaoDich> ds = khachHangController.layLichSuGiaoDich(
+                    khachHangHienTai.getMaKhachHang(),
+                    tuNgay,
+                    denNgay,
+                    trangThai
+            );
+            danhSachHoaDon.setAll(ds);
+        } catch (Exception e) {
+            danhSachHoaDon.clear();
+        }
         capNhatThanhTongKet();
     }
 
