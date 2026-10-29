@@ -11,6 +11,8 @@ public class NhaCungCap {
     private String tenNhaCungCap;
     private String soDienThoai;
     private String diaChi;
+    private String email;
+    private boolean trangThai = true;
 
     public NhaCungCap() {
     }
@@ -18,6 +20,7 @@ public class NhaCungCap {
     public NhaCungCap(String maNhaCungCap, String tenNhaCungCap) {
         this.maNhaCungCap = maNhaCungCap;
         this.tenNhaCungCap = tenNhaCungCap;
+        this.trangThai = true;
     }
 
     public NhaCungCap(String maNhaCungCap, String tenNhaCungCap, String soDienThoai, String diaChi) {
@@ -25,6 +28,24 @@ public class NhaCungCap {
         this.tenNhaCungCap = tenNhaCungCap;
         this.soDienThoai = soDienThoai;
         this.diaChi = diaChi;
+        this.trangThai = true;
+    }
+
+    public NhaCungCap(String maNhaCungCap, String tenNhaCungCap, String soDienThoai, String diaChi, boolean trangThai) {
+        this.maNhaCungCap = maNhaCungCap;
+        this.tenNhaCungCap = tenNhaCungCap;
+        this.soDienThoai = soDienThoai;
+        this.diaChi = diaChi;
+        this.trangThai = trangThai;
+    }
+
+    public NhaCungCap(String maNhaCungCap, String tenNhaCungCap, String soDienThoai, String diaChi, String email, boolean trangThai) {
+        this.maNhaCungCap = maNhaCungCap;
+        this.tenNhaCungCap = tenNhaCungCap;
+        this.soDienThoai = soDienThoai;
+        this.diaChi = diaChi;
+        this.email = email;
+        this.trangThai = trangThai;
     }
 
     public String getMaNhaCungCap() {
@@ -59,6 +80,22 @@ public class NhaCungCap {
         this.diaChi = diaChi;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public boolean isTrangThai() {
+        return trangThai;
+    }
+
+    public void setTrangThai(boolean trangThai) {
+        this.trangThai = trangThai;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -80,4 +117,3 @@ public class NhaCungCap {
         return tenNhaCungCap + " (" + maNhaCungCap + ")";
     }
 }
-
