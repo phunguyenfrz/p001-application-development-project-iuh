@@ -4,6 +4,7 @@ import com.petshop.controller.NhaCungCapController;
 import com.petshop.model.NhaCungCap;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
@@ -35,6 +36,7 @@ import java.util.Optional;
 public class TimKiemNhaCungCapView extends VBox {
 
     private final NhaCungCapController controller = new NhaCungCapController();
+    private final ObservableList<NhaCungCap> danhSachHienThi = FXCollections.observableArrayList();
 
     private final TextField txtTuKhoa = new TextField();
     private final TableView<NhaCungCap> tblDanhSach = new TableView<>();
@@ -53,6 +55,7 @@ public class TimKiemNhaCungCapView extends VBox {
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
 
         getChildren().addAll(lblTieuDe, lblMoTa, taoKhungChinh());
+        tblDanhSach.setItems(danhSachHienThi);
         capNhatTrangThaiNut(null);
         taiLaiBang();
     }
@@ -145,8 +148,11 @@ public class TimKiemNhaCungCapView extends VBox {
         try {
             String tuKhoa = txtTuKhoa.getText();
             List<NhaCungCap> ketQua = controller.timKiemNhaCungCap(tuKhoa);
-            tblDanhSach.setItems(FXCollections.observableArrayList(ketQua));
+            danhSachHienThi.setAll(ketQua);
+            tblDanhSach.getSelectionModel().clearSelection();
+            tblDanhSach.refresh();
             lblKetQua.setText("Tổng số: " + ketQua.size() + " nhà cung cấp");
+            capNhatTrangThaiNut(null);
         } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             hienThiLoi(ex.getMessage());
         }
@@ -308,4 +314,3 @@ public class TimKiemNhaCungCapView extends VBox {
         alert.showAndWait();
     }
 }
-

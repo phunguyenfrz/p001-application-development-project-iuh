@@ -4,6 +4,7 @@ import com.petshop.controller.NhaCungCapController;
 import com.petshop.model.NhaCungCap;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
@@ -34,6 +35,7 @@ import java.util.Optional;
 public class CapNhatNhaCungCapView extends VBox {
 
     private final NhaCungCapController controller = new NhaCungCapController();
+    private final ObservableList<NhaCungCap> danhSachHienThi = FXCollections.observableArrayList();
     private final TableView<NhaCungCap> tblDanhSach = new TableView<>();
     private final Button btnThem = new Button("Thêm mới");
     private final Button btnCapNhat = new Button("Cập nhật");
@@ -50,6 +52,7 @@ public class CapNhatNhaCungCapView extends VBox {
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
 
         getChildren().addAll(lblTieuDe, lblMoTa, taoKhungBang());
+        tblDanhSach.setItems(danhSachHienThi);
         capNhatTrangThaiNut(null);
         taiLaiBang();
     }
@@ -280,7 +283,11 @@ public class CapNhatNhaCungCapView extends VBox {
 
     public void taiLaiBang() {
         try {
-            tblDanhSach.setItems(FXCollections.observableArrayList(controller.layTatCaNhaCungCap()));
+            List<NhaCungCap> danhSachMoi = controller.layTatCaNhaCungCap();
+            danhSachHienThi.setAll(danhSachMoi);
+            tblDanhSach.getSelectionModel().clearSelection();
+            tblDanhSach.refresh();
+            capNhatTrangThaiNut(null);
         } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             hienThiLoi(ex.getMessage());
         }
@@ -302,4 +309,3 @@ public class CapNhatNhaCungCapView extends VBox {
         alert.showAndWait();
     }
 }
-
