@@ -370,6 +370,28 @@ public class LichHenDAO {
         return false;
     }
 
+    // Lấy danh sách nhân viên đang làm việc để phân công lịch hẹn
+    public List<String[]> layDanhSachNhanVienChamSoc() {
+        String sql = "SELECT maNhanVien, hoTen, chucVu FROM NhanVien WHERE trangThai = N'Đang làm' ORDER BY hoTen";
+        List<String[]> danhSach = new ArrayList<>();
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                danhSach.add(new String[]{
+                        rs.getString("maNhanVien"),
+                        rs.getString("hoTen"),
+                        rs.getString("chucVu")
+                });
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi lấy danh sách nhân viên: " + e.getMessage(), e);
+        }
+
+        return danhSach;
+    }
+
     // Ánh xạ ResultSet thành đối tượng LichHen
     private LichHen docLichHen(ResultSet rs) throws SQLException {
         Date ngay = rs.getDate("ngayHen");
