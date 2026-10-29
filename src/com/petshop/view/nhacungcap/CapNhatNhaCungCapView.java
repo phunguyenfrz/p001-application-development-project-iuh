@@ -15,6 +15,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
@@ -90,6 +91,25 @@ public class CapNhatNhaCungCapView extends VBox {
         VBox.setVgrow(tblDanhSach, Priority.ALWAYS);
 
         tblDanhSach.getSelectionModel().selectedItemProperty().addListener((obs, cu, moi) -> capNhatTrangThaiNut(moi));
+
+        tblDanhSach.setRowFactory(tv -> {
+            TableRow<NhaCungCap> row = new TableRow<>();
+            row.itemProperty().addListener((obs, cu, moi) -> {
+                if (moi == null) {
+                    row.setStyle("");
+                } else if (!moi.isTrangThai()) {
+                    row.setStyle("-fx-opacity: 0.55;");
+                } else {
+                    row.setStyle("");
+                }
+            });
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && (!row.isEmpty())) {
+                    moCuaSoCapNhat(row.getItem());
+                }
+            });
+            return row;
+        });
 
         khung.getChildren().addAll(thanhNut, tblDanhSach);
         return khung;
