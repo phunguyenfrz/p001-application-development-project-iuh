@@ -161,5 +161,23 @@ public class LichHen {
         }
         return tong;
     }
+
+    // Lấy chuỗi danh sách tên dịch vụ để hiển thị lên bảng
+    public String getChuoiDichVu() {
+        if (danhSachChiTiet == null || danhSachChiTiet.isEmpty()) {
+            return "Chưa có dịch vụ";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < danhSachChiTiet.size(); i++) {
+            ChiTietLichHen ct = danhSachChiTiet.get(i);
+            if (ct.getTenDichVu() != null && !ct.getTenDichVu().isEmpty()) {
+                if (sb.length() > 0) {
+                    sb.append(", ");
+                }
+                sb.append(ct.getTenDichVu());
+            }
+        }
+        return sb.toString();
+    }
 }
 

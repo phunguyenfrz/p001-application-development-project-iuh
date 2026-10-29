@@ -56,7 +56,7 @@ public class LichHenDAO {
     public boolean themLichHen(LichHen lichHen, List<ChiTietLichHen> danhSachChiTiet) {
         String sqlLichHen = """
                 INSERT INTO LichHen (maLichHen, maKhachHang, maThuCung, maNhanVien, ngayHen, gioHen, trangThai, ghiChu)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, CAST(? AS TIME), ?, ?)
                 """;
         String sqlChiTiet = """
                 INSERT INTO ChiTietLichHen (maLichHen, maDichVu, canNangThuCung, donGia)
@@ -73,7 +73,7 @@ public class LichHenDAO {
                     psLh.setString(3, lichHen.getMaThuCung());
                     psLh.setString(4, lichHen.getMaNhanVien());
                     psLh.setDate(5, Date.valueOf(lichHen.getNgayHen()));
-                    psLh.setTime(6, Time.valueOf(lichHen.getGioHen()));
+                    psLh.setString(6, lichHen.getGioHen().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
                     psLh.setString(7, lichHen.getTrangThai());
                     psLh.setString(8, lichHen.getGhiChu());
                     psLh.executeUpdate();
@@ -109,7 +109,7 @@ public class LichHenDAO {
     public boolean capNhatLichHen(LichHen lichHen, List<ChiTietLichHen> danhSachChiTiet) {
         String sqlLichHen = """
                 UPDATE LichHen
-                SET maKhachHang = ?, maThuCung = ?, maNhanVien = ?, ngayHen = ?, gioHen = ?, ghiChu = ?
+                SET maKhachHang = ?, maThuCung = ?, maNhanVien = ?, ngayHen = ?, gioHen = CAST(? AS TIME), ghiChu = ?
                 WHERE maLichHen = ?
                 """;
         String sqlXoaChiTiet = "DELETE FROM ChiTietLichHen WHERE maLichHen = ?";
@@ -127,7 +127,7 @@ public class LichHenDAO {
                     psLh.setString(2, lichHen.getMaThuCung());
                     psLh.setString(3, lichHen.getMaNhanVien());
                     psLh.setDate(4, Date.valueOf(lichHen.getNgayHen()));
-                    psLh.setTime(5, Time.valueOf(lichHen.getGioHen()));
+                    psLh.setString(5, lichHen.getGioHen().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
                     psLh.setString(6, lichHen.getGhiChu());
                     psLh.setString(7, lichHen.getMaLichHen());
                     psLh.executeUpdate();
@@ -180,11 +180,6 @@ public class LichHenDAO {
         }
     }
 
-    // Hủy lịch hẹn (chuyển trạng thái sang 'Đã hủy')
-    public boolean xoaLichHen(String maLichHen) {
-        return capNhatTrangThai(maLichHen, "Đã hủy");
-    }
-
     // Lấy toàn bộ danh sách lịch hẹn
     public List<LichHen> layDanhSachLichHen() {
         String sql = """
@@ -192,9 +187,9 @@ public class LichHenDAO {
                        lh.maThuCung, tc.tenThuCung, lh.maNhanVien, nv.hoTen AS tenNhanVien,
                        lh.ngayHen, lh.gioHen, lh.trangThai, lh.ghiChu
                 FROM LichHen lh
-                JOIN KhachHang kh ON kh.maKhachHang = lh.maKhachHang
-                JOIN ThuCung tc ON tc.maThuCung = lh.maThuCung
-                JOIN NhanVien nv ON nv.maNhanVien = lh.maNhanVien
+                LEFT JOIN KhachHang kh ON kh.maKhachHang = lh.maKhachHang
+                LEFT JOIN ThuCung tc ON tc.maThuCung = lh.maThuCung
+                LEFT JOIN NhanVien nv ON nv.maNhanVien = lh.maNhanVien
                 ORDER BY lh.ngayHen DESC, lh.gioHen DESC
                 """;
         List<LichHen> danhSach = new ArrayList<>();
@@ -210,6 +205,10 @@ public class LichHenDAO {
             throw new IllegalStateException("Lỗi khi lấy danh sách lịch hẹn: " + e.getMessage(), e);
         }
 
+        for (LichHen lh : danhSach) {
+            lh.setDanhSachChiTiet(layChiTietLichHen(lh.getMaLichHen()));
+        }
+
         return danhSach;
     }
 
@@ -220,9 +219,9 @@ public class LichHenDAO {
                        lh.maThuCung, tc.tenThuCung, lh.maNhanVien, nv.hoTen AS tenNhanVien,
                        lh.ngayHen, lh.gioHen, lh.trangThai, lh.ghiChu
                 FROM LichHen lh
-                JOIN KhachHang kh ON kh.maKhachHang = lh.maKhachHang
-                JOIN ThuCung tc ON tc.maThuCung = lh.maThuCung
-                JOIN NhanVien nv ON nv.maNhanVien = lh.maNhanVien
+                LEFT JOIN KhachHang kh ON kh.maKhachHang = lh.maKhachHang
+                LEFT JOIN ThuCung tc ON tc.maThuCung = lh.maThuCung
+                LEFT JOIN NhanVien nv ON nv.maNhanVien = lh.maNhanVien
                 WHERE lh.maLichHen = ?
                 """;
 
@@ -248,7 +247,7 @@ public class LichHenDAO {
         String sql = """
                 SELECT ct.maLichHen, ct.maDichVu, dv.tenDichVu, ct.canNangThuCung, ct.donGia
                 FROM ChiTietLichHen ct
-                JOIN DichVuChamSoc dv ON dv.maDichVu = ct.maDichVu
+                LEFT JOIN DichVuChamSoc dv ON dv.maDichVu = ct.maDichVu
                 WHERE ct.maLichHen = ?
                 """;
         List<ChiTietLichHen> danhSach = new ArrayList<>();
@@ -258,10 +257,11 @@ public class LichHenDAO {
             ps.setString(1, maLichHen);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
+                    String tenDv = rs.getString("tenDichVu");
                     ChiTietLichHen ct = new ChiTietLichHen(
                             rs.getString("maLichHen"),
                             rs.getString("maDichVu"),
-                            rs.getString("tenDichVu"),
+                            tenDv != null ? tenDv : rs.getString("maDichVu"),
                             rs.getBigDecimal("canNangThuCung"),
                             rs.getBigDecimal("donGia")
                     );
@@ -277,14 +277,19 @@ public class LichHenDAO {
 
     // Tìm kiếm lịch hẹn theo từ khóa khách hàng, khoảng ngày và trạng thái
     public List<LichHen> timKiemLichHen(String tuKhoaKhach, LocalDate tuNgay, LocalDate denNgay, String trangThai) {
+        return timKiemLichHen(tuKhoaKhach, tuNgay, denNgay, trangThai, null);
+    }
+
+    // Tìm kiếm lịch hẹn theo từ khóa khách hàng, khoảng ngày, trạng thái và nhân viên phụ trách
+    public List<LichHen> timKiemLichHen(String tuKhoaKhach, LocalDate tuNgay, LocalDate denNgay, String trangThai, String maNhanVien) {
         StringBuilder sql = new StringBuilder("""
                 SELECT lh.maLichHen, lh.maKhachHang, kh.hoTen AS tenKhachHang, kh.soDienThoai,
                        lh.maThuCung, tc.tenThuCung, lh.maNhanVien, nv.hoTen AS tenNhanVien,
                        lh.ngayHen, lh.gioHen, lh.trangThai, lh.ghiChu
                 FROM LichHen lh
-                JOIN KhachHang kh ON kh.maKhachHang = lh.maKhachHang
-                JOIN ThuCung tc ON tc.maThuCung = lh.maThuCung
-                JOIN NhanVien nv ON nv.maNhanVien = lh.maNhanVien
+                LEFT JOIN KhachHang kh ON kh.maKhachHang = lh.maKhachHang
+                LEFT JOIN ThuCung tc ON tc.maThuCung = lh.maThuCung
+                LEFT JOIN NhanVien nv ON nv.maNhanVien = lh.maNhanVien
                 WHERE 1 = 1
                 """);
 
@@ -315,6 +320,11 @@ public class LichHenDAO {
             params.add(trangThai.trim());
         }
 
+        if (maNhanVien != null && !maNhanVien.trim().isEmpty() && !"Tất cả".equalsIgnoreCase(maNhanVien.trim())) {
+            sql.append(" AND lh.maNhanVien = ?");
+            params.add(maNhanVien.trim());
+        }
+
         sql.append(" ORDER BY lh.ngayHen DESC, lh.gioHen DESC");
 
         List<LichHen> danhSach = new ArrayList<>();
@@ -333,6 +343,10 @@ public class LichHenDAO {
             throw new IllegalStateException("Lỗi khi tìm kiếm lịch hẹn: " + e.getMessage(), e);
         }
 
+        for (LichHen lh : danhSach) {
+            lh.setDanhSachChiTiet(layChiTietLichHen(lh.getMaLichHen()));
+        }
+
         return danhSach;
     }
 
@@ -340,7 +354,7 @@ public class LichHenDAO {
     public boolean kiemTraTrungLich(String maNhanVien, String maThuCung, LocalDate ngayHen, LocalTime gioHen, String maLichHenBoQua) {
         StringBuilder sql = new StringBuilder("""
                 SELECT COUNT(*) FROM LichHen
-                WHERE ngayHen = ? AND gioHen = ? AND trangThai != N'Đã hủy'
+                WHERE ngayHen = ? AND gioHen = CAST(? AS TIME) AND trangThai != N'Đã hủy'
                   AND (maThuCung = ? OR maNhanVien = ?)
                 """);
 
@@ -351,7 +365,7 @@ public class LichHenDAO {
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             ps.setDate(1, Date.valueOf(ngayHen));
-            ps.setTime(2, Time.valueOf(gioHen));
+            ps.setString(2, gioHen.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
             ps.setString(3, maThuCung);
             ps.setString(4, maNhanVien);
             if (maLichHenBoQua != null && !maLichHenBoQua.trim().isEmpty()) {
@@ -395,9 +409,24 @@ public class LichHenDAO {
     // Ánh xạ ResultSet thành đối tượng LichHen
     private LichHen docLichHen(ResultSet rs) throws SQLException {
         Date ngay = rs.getDate("ngayHen");
-        Time gio = rs.getTime("gioHen");
         LocalDate ngayHen = (ngay != null) ? ngay.toLocalDate() : null;
-        LocalTime gioHen = (gio != null) ? gio.toLocalTime() : null;
+
+        LocalTime gioHen = null;
+        try {
+            Time gio = rs.getTime("gioHen");
+            if (gio != null) {
+                gioHen = gio.toLocalTime();
+            }
+        } catch (Exception ignored) {}
+
+        if (gioHen == null) {
+            String gioStr = rs.getString("gioHen");
+            if (gioStr != null && !gioStr.trim().isEmpty()) {
+                try {
+                    gioHen = LocalTime.parse(gioStr.split("\\.")[0]);
+                } catch (Exception ignored) {}
+            }
+        }
 
         LichHen lh = new LichHen(
                 rs.getString("maLichHen"),
@@ -409,10 +438,13 @@ public class LichHenDAO {
                 rs.getString("trangThai"),
                 rs.getString("ghiChu")
         );
-        lh.setTenKhachHang(rs.getString("tenKhachHang"));
-        lh.setSoDienThoai(rs.getString("soDienThoai"));
-        lh.setTenThuCung(rs.getString("tenThuCung"));
-        lh.setTenNhanVien(rs.getString("tenNhanVien"));
+        String tenKh = rs.getString("tenKhachHang");
+        lh.setTenKhachHang(tenKh != null ? tenKh : rs.getString("maKhachHang"));
+        lh.setSoDienThoai(rs.getString("soDienThoai") != null ? rs.getString("soDienThoai") : "");
+        String tenTc = rs.getString("tenThuCung");
+        lh.setTenThuCung(tenTc != null ? tenTc : rs.getString("maThuCung"));
+        String tenNv = rs.getString("tenNhanVien");
+        lh.setTenNhanVien(tenNv != null ? tenNv : rs.getString("maNhanVien"));
         return lh;
     }
 }

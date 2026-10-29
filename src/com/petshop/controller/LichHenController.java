@@ -14,14 +14,13 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Điều phối thao tác lịch hẹn từ giao diện xuống tầng nghiệp vụ LichHenService.
+ * Dieu phoi thao tac lich hen tu giao dien xuong tang nghiep vu LichHenService.
  */
 public class LichHenController {
 
     private final LichHenService lichHenService;
 
-    // Các DAO hỗ trợ nạp dữ liệu khách hàng, thú cưng, dịch vụ cho form
-    // TODO: nối KhachHangService, ThuCungService, DichVuChamSocService khi các phân hệ hoàn thiện
+    // Cac DAO ho tro nap du lieu khach hang, thu cung, dich vu cho form
     private final KhachHangDAO khachHangDAO;
     private final ThuCungDAO thuCungDAO;
     private final DichVuChamSocDAO dichVuChamSocDAO;
@@ -40,82 +39,107 @@ public class LichHenController {
         this.dichVuChamSocDAO = new DichVuChamSocDAO();
     }
 
-    // Đặt lịch hẹn mới
+    // Dat lich hen moi
     public boolean datLichHen(LichHen lichHen, List<ChiTietLichHen> danhSachChiTiet) {
         return lichHenService.datLichHen(lichHen, danhSachChiTiet);
     }
 
-    // Đổi ngày giờ hoặc dịch vụ của lịch hẹn
+    // Doi ngay gio hoac dich vu cua lich hen
     public boolean capNhatLichHen(LichHen lichHen, List<ChiTietLichHen> danhSachChiTiet) {
         return lichHenService.capNhatLichHen(lichHen, danhSachChiTiet);
     }
 
-    // Cập nhật trạng thái duyệt lịch (Đã đặt, Đã xác nhận, Hoàn thành, Đã hủy)
+    // Cap nhat trang thai duyet lich (Da dat, Da xac nhan, Hoan thanh, Da huy)
     public boolean capNhatTrangThai(String maLichHen, String trangThaiMoi) {
         return lichHenService.capNhatTrangThai(maLichHen, trangThaiMoi);
     }
 
-    // Hủy lịch hẹn
+    // Huy lich hen
     public boolean huyLichHen(String maLichHen, String lyDoHuy) {
         return lichHenService.huyLichHen(maLichHen, lyDoHuy);
     }
 
-    // Lấy toàn bộ danh sách lịch hẹn
+    // Lay toan bo danh sach lich hen
     public List<LichHen> layDanhSachLichHen() {
         return lichHenService.layDanhSachLichHen();
     }
 
-    // Lấy một lịch hẹn theo mã
+    // Lay mot lich hen theo ma (cung cap cho #71 Hoa don)
     public LichHen layLichHenTheoMa(String maLichHen) {
         return lichHenService.layLichHenTheoMa(maLichHen);
     }
 
-    // Lấy danh sách dịch vụ chi tiết của lịch hẹn
+    // Lay danh sach dich vu chi tiet cua lich hen (cung cap cho #71 Hoa don)
     public List<ChiTietLichHen> layChiTietLichHen(String maLichHen) {
         return lichHenService.layChiTietLichHen(maLichHen);
     }
 
-    // Tìm kiếm và lọc lịch hẹn
+    // Tim kiem va loc lich hen
     public List<LichHen> timKiemLichHen(String tuKhoaKhach, LocalDate tuNgay, LocalDate denNgay, String trangThai) {
         return lichHenService.timKiemLichHen(tuKhoaKhach, tuNgay, denNgay, trangThai);
     }
 
-    // Sinh mã lịch hẹn mới tiếp theo
+    // Tim kiem va loc lich hen theo tu khoa, ngay, trang thai va nhan vien
+    public List<LichHen> timKiemLichHen(String tuKhoaKhach, LocalDate tuNgay, LocalDate denNgay, String trangThai, String maNhanVien) {
+        return lichHenService.timKiemLichHen(tuKhoaKhach, tuNgay, denNgay, trangThai, maNhanVien);
+    }
+
+    // Sinh ma lich hen moi tiep theo
     public String taoMaLichHenMoi() {
         return lichHenService.taoMaLichHenMoi();
     }
 
     // =========================================================================
-    // HÀM HỖ TRỢ NẠP DỮ LIỆU LIÊN QUAN LÊN GIAO DIỆN FORM ĐẶT LỊCH
+    // HAM HO TRO NAP DU LIEU LIEN QUAN LEN GIAO DIEN FORM DAT LICH
     // =========================================================================
 
-    // Lấy danh sách khách hàng để chọn trong ComboBox
-    // TODO: nối KhachHangService
+    // Lay danh sach khach hang de chon trong ComboBox
     public List<KhachHang> layDanhSachKhachHang() {
         return khachHangDAO.layDanhSachKhachHang();
     }
 
-    // Lấy danh sách thú cưng của một khách hàng
-    // TODO: nối ThuCungService
+    // Lay danh sach thu cung cua mot khach hang
     public List<ThuCung> layDanhSachThuCungTheoKhachHang(String maKhachHang) {
         return thuCungDAO.layDanhSachTheoKhachHang(maKhachHang);
     }
 
-    // Lấy danh sách các dịch vụ chăm sóc đang kinh doanh
-    // TODO: nối DichVuChamSocService
+    // Lay danh sach cac dich vu cham soc dang kinh doanh
     public List<DichVuChamSoc> layDanhSachDichVu() {
         return dichVuChamSocDAO.layDanhSachDichVuDangKinhDoanh();
     }
 
-    // Tra giá dịch vụ dựa trên cân nặng của thú cưng
-    // TODO: nối DichVuChamSocService
+    // Tra gia dich vu dua tren can nang cua thu cung
     public double traGiaDichVuTheoCanNang(String maDichVu, double canNang) {
         return dichVuChamSocDAO.traGiaTheoCanNang(maDichVu, canNang);
     }
 
-    // Lấy danh sách nhân viên chăm sóc đang làm việc
+    // Lay danh sach nhan vien cham soc dang lam viec
     public List<String[]> layDanhSachNhanVienChamSoc() {
-        return new com.petshop.dao.LichHenDAO().layDanhSachNhanVienChamSoc();
+        return lichHenService.layDanhSachNhanVienChamSoc();
+    }
+
+    // Them nhanh khach hang moi (phuc vu dat lich cho khach la)
+    public boolean themKhachHang(KhachHang kh) {
+        return khachHangDAO.themKhachHang(kh);
+    }
+
+    // Sinh ma khach hang tu dong
+    public String taoMaKhachHang() {
+        return khachHangDAO.taoMaKhachHang();
+    }
+
+    // Kiem tra trung so dien thoai khach hang
+    public boolean kiemTraTrungSoDienThoai(String soDienThoai) {
+        return khachHangDAO.kiemTraTrungSoDienThoai(soDienThoai, null);
+    }
+
+    // Them nhanh thu cung moi (phuc vu dat lich cho khach la)
+    public boolean themThuCung(ThuCung tc) {
+        return thuCungDAO.themThuCung(tc);
+    }
+
+    // Sinh ma thu cung tu dong
+    public String taoMaThuCung() {
+        return thuCungDAO.taoMaThuCung();
     }
 }
-

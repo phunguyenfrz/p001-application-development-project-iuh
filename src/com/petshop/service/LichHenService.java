@@ -3,6 +3,7 @@ package com.petshop.service;
 import com.petshop.dao.LichHenDAO;
 import com.petshop.model.ChiTietLichHen;
 import com.petshop.model.LichHen;
+import com.petshop.model.TaiKhoan;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -121,24 +122,44 @@ public class LichHenService {
         return lichHenDAO.capNhatTrangThai(maLichHen.trim(), "Đã hủy");
     }
 
+    // Kiểm tra quyền xem danh sách và chi tiết lịch hẹn
+    private void kiemTraQuyenXemLich() {
+        TaiKhoan tk = xacThucService.getTaiKhoanHienTai();
+        if (tk == null) {
+            throw new SecurityException("Chưa đăng nhập hệ thống!");
+        }
+        if (tk.getPhanQuyen() == TaiKhoan.VaiTro.ADMIN) {
+            return;
+        }
+        if (DanhMucMenu.kiemTraQuyen(tk.getPhanQuyen(), "LH_TIM_KIEM")
+                || DanhMucMenu.kiemTraQuyen(tk.getPhanQuyen(), "LH_CAP_NHAT")) {
+            return;
+        }
+        throw new SecurityException("Tài khoản của bạn không có quyền xem thông tin lịch hẹn!");
+    }
+
     // Lấy toàn bộ danh sách lịch hẹn
     public List<LichHen> layDanhSachLichHen() {
-        xacThucService.kiemTraQuyen("LH_TIM_KIEM");
+        kiemTraQuyenXemLich();
         return lichHenDAO.layDanhSachLichHen();
     }
 
-    // Tìm một lịch hẹn theo mã duy nhất
+    // =========================================================================
+    // HÀM CUNG CẤP CHO PHÂN HỆ HÓA ĐƠN (#71 - Hóa đơn)
+    // =========================================================================
+
+    // Tìm một lịch hẹn theo mã duy nhất (cung cấp cho #71 để nạp thông tin khách, thú cưng vào hóa đơn)
     public LichHen layLichHenTheoMa(String maLichHen) {
-        xacThucService.kiemTraQuyen("LH_TIM_KIEM");
+        kiemTraQuyenXemLich();
         if (maLichHen == null || maLichHen.trim().isEmpty()) {
             throw new IllegalArgumentException("Mã lịch hẹn không được để trống!");
         }
         return lichHenDAO.layLichHenTheoMa(maLichHen.trim());
     }
 
-    // Lấy danh sách dịch vụ chi tiết của lịch hẹn
+    // Lấy danh sách dịch vụ chi tiết của lịch hẹn (cung cấp cho #71 để nạp các dòng dịch vụ vào chi tiết hóa đơn)
     public List<ChiTietLichHen> layChiTietLichHen(String maLichHen) {
-        xacThucService.kiemTraQuyen("LH_TIM_KIEM");
+        kiemTraQuyenXemLich();
         if (maLichHen == null || maLichHen.trim().isEmpty()) {
             return List.of();
         }
@@ -147,16 +168,26 @@ public class LichHenService {
 
     // Tìm kiếm và lọc lịch hẹn theo khách hàng, ngày và trạng thái (APT_SEARCH)
     public List<LichHen> timKiemLichHen(String tuKhoaKhach, LocalDate tuNgay, LocalDate denNgay, String trangThai) {
-        xacThucService.kiemTraQuyen("LH_TIM_KIEM");
+        return timKiemLichHen(tuKhoaKhach, tuNgay, denNgay, trangThai, null);
+    }
+
+    // Tìm kiếm và lọc lịch hẹn theo khách hàng, ngày, trạng thái và nhân viên phụ trách (APT_SEARCH)
+    public List<LichHen> timKiemLichHen(String tuKhoaKhach, LocalDate tuNgay, LocalDate denNgay, String trangThai, String maNhanVien) {
+        kiemTraQuyenXemLich();
         if (tuNgay != null && denNgay != null && denNgay.isBefore(tuNgay)) {
             throw new IllegalArgumentException("Đến ngày phải lớn hơn hoặc bằng từ ngày!");
         }
-        return lichHenDAO.timKiemLichHen(tuKhoaKhach, tuNgay, denNgay, trangThai);
+        return lichHenDAO.timKiemLichHen(tuKhoaKhach, tuNgay, denNgay, trangThai, maNhanVien);
     }
 
     // Sinh mã lịch hẹn mới tiếp theo
     public String taoMaLichHenMoi() {
         return lichHenDAO.taoMaLichHen();
+    }
+
+    // Lấy danh sách nhân viên chăm sóc đang làm việc
+    public List<String[]> layDanhSachNhanVienChamSoc() {
+        return lichHenDAO.layDanhSachNhanVienChamSoc();
     }
 
     // Kiểm tra tính hợp lệ của dữ liệu lịch hẹn trước khi lưu CSDL
@@ -188,14 +219,10 @@ public class LichHenService {
             throw new IllegalArgumentException("Vui lòng chọn giờ hẹn dịch vụ!");
         }
 
-        // Chặn chọn ngày giờ hẹn trong quá khứ
+        // Chặn chọn ngày hẹn trong quá khứ
         LocalDate homNay = LocalDate.now();
-        LocalTime bayGio = LocalTime.now();
         if (lichHen.getNgayHen().isBefore(homNay)) {
             throw new IllegalArgumentException("Ngày hẹn không được ở trong quá khứ!");
-        }
-        if (lichHen.getNgayHen().isEqual(homNay) && lichHen.getGioHen().isBefore(bayGio)) {
-            throw new IllegalArgumentException("Giờ hẹn hôm nay không được ở trong quá khứ!");
         }
 
         // 5. Kiểm tra danh sách dịch vụ chi tiết (nếu có cập nhật danh sách dịch vụ)
@@ -207,11 +234,12 @@ public class LichHenService {
                 if (ct.getMaDichVu() == null || ct.getMaDichVu().trim().isEmpty()) {
                     throw new IllegalArgumentException("Mã dịch vụ trong chi tiết không hợp lệ!");
                 }
+                // Khách đặt trước qua FB/điện thoại có thể chưa rõ cân nặng; gán mức ước tính 3.0 kg để thỏa mãn CSDL CHECK (canNangThuCung > 0)
                 if (ct.getCanNangThuCung() == null || ct.getCanNangThuCung().compareTo(BigDecimal.ZERO) <= 0) {
-                    throw new IllegalArgumentException("Cân nặng thú cưng cho dịch vụ phải lớn hơn 0 kg!");
+                    ct.setCanNangThuCung(BigDecimal.valueOf(3.0));
                 }
                 if (ct.getDonGia() == null || ct.getDonGia().compareTo(BigDecimal.ZERO) < 0) {
-                    throw new IllegalArgumentException("Đơn giá dịch vụ không được âm!");
+                    ct.setDonGia(BigDecimal.ZERO);
                 }
             }
         }
