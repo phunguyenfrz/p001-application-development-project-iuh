@@ -36,7 +36,14 @@ public class ThuCung {
     /** Giới tính: Đực hoặc Cái */
     private String gioiTinh;
 
+    /** Tên khách hàng sở hữu (thuộc tính hiển thị mở rộng khi JOIN) */
+    private String tenKhachHang;
+
+    /** Số điện thoại khách hàng sở hữu (thuộc tính hiển thị mở rộng khi JOIN) */
+    private String soDienThoaiKhachHang;
+
     public ThuCung() {
+        this.canNang = BigDecimal.ZERO;
     }
 
     public ThuCung(String maThuCung, String maKhachHang, String tenThuCung, String loaiThuCung,
@@ -50,6 +57,14 @@ public class ThuCung {
         this.ngaySinh = ngaySinh;
         this.diUng = diUng;
         this.gioiTinh = gioiTinh;
+    }
+
+    public ThuCung(String maThuCung, String maKhachHang, String tenThuCung, String loaiThuCung,
+                   String giongLoai, BigDecimal canNang, LocalDate ngaySinh, String diUng, String gioiTinh,
+                   String tenKhachHang, String soDienThoaiKhachHang) {
+        this(maThuCung, maKhachHang, tenThuCung, loaiThuCung, giongLoai, canNang, ngaySinh, diUng, gioiTinh);
+        this.tenKhachHang = tenKhachHang;
+        this.soDienThoaiKhachHang = soDienThoaiKhachHang;
     }
 
     // =========================================================================
@@ -128,9 +143,24 @@ public class ThuCung {
         this.gioiTinh = gioiTinh;
     }
 
+    public String getTenKhachHang() {
+        return tenKhachHang;
+    }
+
+    public void setTenKhachHang(String tenKhachHang) {
+        this.tenKhachHang = tenKhachHang;
+    }
+
+    public String getSoDienThoaiKhachHang() {
+        return soDienThoaiKhachHang;
+    }
+
+    public void setSoDienThoaiKhachHang(String soDienThoaiKhachHang) {
+        this.soDienThoaiKhachHang = soDienThoaiKhachHang;
+    }
+
     @Override
     public String toString() {
         return (tenThuCung != null ? tenThuCung : "") + " (" + (loaiThuCung != null ? loaiThuCung : "") + ")";
     }
 }
-
