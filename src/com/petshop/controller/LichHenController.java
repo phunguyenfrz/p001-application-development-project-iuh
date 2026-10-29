@@ -132,14 +132,4 @@ public class LichHenController {
     public boolean kiemTraTrungSoDienThoai(String soDienThoai) {
         return khachHangDAO.kiemTraTrungSoDienThoai(soDienThoai, null);
     }
-
-    // Them nhanh thu cung moi (phuc vu dat lich cho khach la)
-    public boolean themThuCung(ThuCung tc) {
-        return thuCungDAO.themThuCung(tc);
-    }
-
-    // Sinh ma thu cung tu dong
-    public String taoMaThuCung() {
-        return thuCungDAO.taoMaThuCung();
-    }
 }
