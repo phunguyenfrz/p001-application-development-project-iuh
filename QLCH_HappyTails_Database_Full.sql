@@ -224,7 +224,9 @@ CREATE TABLE NhaCungCap (
     maNhaCungCap VARCHAR(20) PRIMARY KEY CHECK (maNhaCungCap LIKE 'NCC-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]'),
     tenNhaCungCap NVARCHAR(150) NOT NULL CHECK (LEN(LTRIM(RTRIM(tenNhaCungCap))) > 0),
     soDienThoai VARCHAR(10) NOT NULL CHECK (soDienThoai LIKE '0[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'),
-    diaChi NVARCHAR(255)
+    diaChi NVARCHAR(255),
+    email NVARCHAR(100) NULL,
+    trangThai BIT NOT NULL DEFAULT 1
 );
 GO
 
