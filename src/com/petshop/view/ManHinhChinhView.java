@@ -15,10 +15,15 @@ import com.petshop.view.lichhen.DatLichHenView;
 import com.petshop.view.lichhen.TimKiemLichHenView;
 import com.petshop.view.khuyenmai.CapNhatKhuyenMaiView;
 import com.petshop.view.khuyenmai.TimKiemKhuyenMaiView;
+import com.petshop.view.nhacungcap.CapNhatNhaCungCapView;
+import com.petshop.view.nhacungcap.TimKiemNhaCungCapView;
 import com.petshop.view.sanpham.BaoCaoSanPhamView;
 import com.petshop.view.sanpham.CapNhatSanPhamView;
 import com.petshop.view.sanpham.TheoDoiTonKhoView;
 import com.petshop.view.sanpham.TimKiemSanPhamView;
+import com.petshop.view.thucung.CapNhatThuCungView;
+import com.petshop.view.thucung.LichSuChamSocThuCungView;
+import com.petshop.view.thucung.TimKiemThuCungView;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -449,7 +454,14 @@ public class ManHinhChinhView extends BorderPane {
                 }
                 yield new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             }
-            case "THU_CUNG"               -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
+            case "THU_CUNG"               -> {
+                if ("TC_TIM_KIEM".equals(chucNang.getMaChucNang())) {
+                    yield new TimKiemThuCungView();
+                } else if ("TC_CHAM_SOC".equals(chucNang.getMaChucNang())) {
+                    yield new LichSuChamSocThuCungView();
+                }
+                yield new CapNhatThuCungView();
+            }
             case "LICH_HEN"       -> {
                 if ("LH_TAO".equals(chucNang.getMaChucNang())) {
                     yield new DatLichHenView();
@@ -473,7 +485,12 @@ public class ManHinhChinhView extends BorderPane {
                 }
                 yield new CapNhatDichVuView();
             }
-            case "NHA_CUNG_CAP"          -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
+            case "NHA_CUNG_CAP"        -> {
+                if ("NCC_TIM_KIEM".equals(chucNang.getMaChucNang())) {
+                    yield new TimKiemNhaCungCapView();
+                }
+                yield new CapNhatNhaCungCapView();
+            }
             case "DON_NHAP"      -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "SAN_PHAM"           -> {
                 if ("SP_TIM_KIEM".equals(chucNang.getMaChucNang())) {
