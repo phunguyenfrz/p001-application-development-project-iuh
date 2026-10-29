@@ -48,8 +48,11 @@ public class ThemNhaCungCapView extends VBox {
 
         // Bộ lọc chỉ cho nhập ký tự số vào ô SĐT
         txtSoDienThoai.textProperty().addListener((obs, cu, moi) -> {
-            if (moi != null && !moi.matches("\\d*")) {
-                txtSoDienThoai.setText(cu);
+            if (moi == null) return;
+            if (!moi.matches("\\d*")) {
+                txtSoDienThoai.setText(moi.replaceAll("[^\\d]", ""));
+            } else if (moi.length() > 10) {
+                txtSoDienThoai.setText(moi.substring(0, 10));
             }
         });
     }

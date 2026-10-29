@@ -194,8 +194,11 @@ public class TimKiemNhaCungCapView extends VBox {
         cboTrangThai.setValue(chon.isTrangThai() ? "Đang hoạt động" : "Ngừng hợp tác");
 
         txtSdt.textProperty().addListener((obs, cu, moi) -> {
-            if (moi != null && !moi.matches("\\d*")) {
-                txtSdt.setText(cu);
+            if (moi == null) return;
+            if (!moi.matches("\\d*")) {
+                txtSdt.setText(moi.replaceAll("[^\\d]", ""));
+            } else if (moi.length() > 10) {
+                txtSdt.setText(moi.substring(0, 10));
             }
         });
 
