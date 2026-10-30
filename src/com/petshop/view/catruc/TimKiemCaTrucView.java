@@ -82,6 +82,8 @@ public class TimKiemCaTrucView extends VBox {
         ScrollPane scrCuonLich = new ScrollPane(pnlLichContainer);
         scrCuonLich.setFitToWidth(true);
         scrCuonLich.setStyle("-fx-background-color: transparent; -fx-background: white; -fx-border-color: transparent;");
+        pnlLichContainer.setFillWidth(true);
+        pnlLichContainer.setMaxWidth(Double.MAX_VALUE);
         VBox.setVgrow(scrCuonLich, Priority.ALWAYS);
 
         pnlChuThichMau.setAlignment(Pos.CENTER_LEFT);
@@ -281,6 +283,7 @@ public class TimKiemCaTrucView extends VBox {
         GridPane grid = new GridPane();
         grid.setStyle("-fx-background-color: white; -fx-border-color: #e5e7eb; -fx-border-width: 1px; -fx-border-radius: 8px;");
         grid.setGridLinesVisible(false);
+        grid.setMaxWidth(Double.MAX_VALUE);
 
         // Thiết lập kích thước các cột: Cột 0 (Giờ) rộng 75px, 7 cột còn lại chia đều
         ColumnConstraints colGio = new ColumnConstraints();
@@ -290,7 +293,6 @@ public class TimKiemCaTrucView extends VBox {
 
         for (int i = 0; i < 7; i++) {
             ColumnConstraints colNgay = new ColumnConstraints();
-            colNgay.setPercentWidth(100.0 / 7.0);
             colNgay.setHgrow(Priority.ALWAYS);
             grid.getColumnConstraints().add(colNgay);
         }
@@ -392,10 +394,11 @@ public class TimKiemCaTrucView extends VBox {
         // Grid xem tháng 7 cột
         GridPane gridThang = new GridPane();
         gridThang.setStyle("-fx-background-color: white; -fx-border-color: #e5e7eb; -fx-border-radius: 8px;");
+        gridThang.setMaxWidth(Double.MAX_VALUE);
 
         for (int i = 0; i < 7; i++) {
             ColumnConstraints col = new ColumnConstraints();
-            col.setPercentWidth(100.0 / 7.0);
+            col.setHgrow(Priority.ALWAYS);
             gridThang.getColumnConstraints().add(col);
         }
 

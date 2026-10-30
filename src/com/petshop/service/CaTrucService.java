@@ -7,8 +7,11 @@ import com.petshop.model.Ca;
 import com.petshop.model.NhanVien;
 import com.petshop.model.PhanCa;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Lớp nghiệp vụ quản lý Ca trực và Phân công ca trực cho nhân viên.
@@ -136,7 +139,9 @@ public class CaTrucService {
 
     /**
      * Phân công ca trực cho nhân viên. Yêu cầu quyền CT_PHAN_CONG.
-     * Quy tắc nghiệp vụ: Không phân công một nhân viên 2 ca trùng khung giờ trong cùng ngày.
+     * Quy tắc nghiệp vụ:
+     * - Không phân công một nhân viên 2 ca trùng khung giờ trong cùng ngày.
+     * - Không phân ca vào ngày quá khứ (trước ngày hiện tại).
      */
     public boolean phanCa(PhanCa phanCa) {
         xacThucService.kiemTraQuyen("CT_PHAN_CONG");
@@ -152,6 +157,12 @@ public class CaTrucService {
         }
         if (phanCa.getNgayLam() == null) {
             throw new IllegalArgumentException("Vui lòng chọn ngày làm việc!");
+        }
+
+        // Kiểm tra không cho phân ca vào ngày quá khứ
+        if (phanCa.getNgayLam().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Không thể phân ca cho ngày đã qua ("
+                    + phanCa.getNgayLamDinhDang() + ")! Chỉ được phân ca từ ngày hôm nay trở đi.");
         }
 
         // Lấy thông tin chi tiết ca trực mới
@@ -183,6 +194,79 @@ public class CaTrucService {
         }
 
         return phanCaDAO.themPhanCa(phanCa);
+    }
+
+    /**
+     * Phân ca hàng loạt: phân công nhiều ca cho một nhân viên trong một khoảng ngày,
+     * chỉ áp dụng cho các thứ trong tuần được chọn.
+     *
+     * @param maNhanVien  mã nhân viên được phân ca
+     * @param tenNhanVien tên nhân viên (hiển thị)
+     * @param dsCa        danh sách các ca trực cần phân (cho phép nhiều ca/ngày, miễn không trùng giờ)
+     * @param tuNgay      ngày bắt đầu khoảng phân ca
+     * @param denNgay     ngày kết thúc khoảng phân ca
+     * @param cacThuTrongTuan tập hợp các thứ trong tuần cần phân ca (MONDAY, TUESDAY, ...)
+     * @return danh sách kết quả: mỗi phần tử mô tả thành công / lỗi cho từng (ngày, ca)
+     */
+    public List<String> phanCaHangLoat(String maNhanVien, String tenNhanVien,
+                                        List<Ca> dsCa, LocalDate tuNgay, LocalDate denNgay,
+                                        Set<DayOfWeek> cacThuTrongTuan) {
+        xacThucService.kiemTraQuyen("CT_PHAN_CONG");
+
+        if (maNhanVien == null || maNhanVien.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng chọn nhân viên được phân ca!");
+        }
+        if (dsCa == null || dsCa.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn ít nhất một ca trực!");
+        }
+        if (tuNgay == null || denNgay == null) {
+            throw new IllegalArgumentException("Vui lòng chọn khoảng ngày phân ca!");
+        }
+        if (denNgay.isBefore(tuNgay)) {
+            throw new IllegalArgumentException("Ngày kết thúc phải sau hoặc bằng ngày bắt đầu!");
+        }
+        if (tuNgay.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Ngày bắt đầu không thể là ngày đã qua! Chỉ được phân ca từ ngày hôm nay trở đi.");
+        }
+        if (cacThuTrongTuan == null || cacThuTrongTuan.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn ít nhất một thứ trong tuần!");
+        }
+
+        List<String> ketQua = new ArrayList<>();
+        int thanhCong = 0;
+        int thatBai = 0;
+
+        LocalDate ngayHienTai = tuNgay;
+        while (!ngayHienTai.isAfter(denNgay)) {
+            if (cacThuTrongTuan.contains(ngayHienTai.getDayOfWeek())) {
+                for (Ca ca : dsCa) {
+                    try {
+                        PhanCa phanCaMoi = new PhanCa(
+                                phanCaDAO.taoMaPhanCa(),
+                                maNhanVien,
+                                ca.getMaCa(),
+                                ngayHienTai,
+                                PhanCa.TRANG_THAI_DA_PHAN_CONG
+                        );
+                        phanCaMoi.setTenNhanVien(tenNhanVien);
+                        phanCaMoi.setTenCa(ca.getTenCa());
+                        phanCaMoi.setGioBatDau(ca.getGioBatDau());
+                        phanCaMoi.setGioKetThuc(ca.getGioKetThuc());
+
+                        phanCa(phanCaMoi);
+                        thanhCong++;
+                    } catch (IllegalArgumentException ex) {
+                        thatBai++;
+                        ketQua.add("⚠ " + ngayHienTai.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                                + " - " + ca.getTenCa() + ": " + ex.getMessage());
+                    }
+                }
+            }
+            ngayHienTai = ngayHienTai.plusDays(1);
+        }
+
+        ketQua.add(0, "✅ Phân ca hàng loạt hoàn tất: " + thanhCong + " thành công, " + thatBai + " bỏ qua.");
+        return ketQua;
     }
 
     public boolean themPhanCa(PhanCa phanCa) {
@@ -266,4 +350,3 @@ public class CaTrucService {
         return nhanVienDAO.layDanhSachNhanVienDangLamViec();
     }
 }
-

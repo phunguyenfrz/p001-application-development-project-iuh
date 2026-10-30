@@ -5,8 +5,10 @@ import com.petshop.model.NhanVien;
 import com.petshop.model.PhanCa;
 import com.petshop.service.CaTrucService;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Điều phối thao tác giữa các màn hình giao diện Ca trực và tầng CaTrucService.
@@ -87,6 +89,24 @@ public class CaTrucController {
         return caTrucService.kiemTraTrungCa(maNhanVien, maCa, ngayLam);
     }
 
+    /**
+     * Phân ca hàng loạt: phân công nhiều ca cho nhân viên trong khoảng ngày,
+     * theo các thứ trong tuần được chọn.
+     *
+     * @param maNhanVien      mã nhân viên
+     * @param tenNhanVien     tên nhân viên
+     * @param dsCa            danh sách ca trực cần phân
+     * @param tuNgay          ngày bắt đầu
+     * @param denNgay         ngày kết thúc
+     * @param cacThuTrongTuan tập hợp các thứ trong tuần
+     * @return danh sách kết quả (thành công/lỗi cho từng ngày-ca)
+     */
+    public List<String> phanCaHangLoat(String maNhanVien, String tenNhanVien,
+                                        List<Ca> dsCa, LocalDate tuNgay, LocalDate denNgay,
+                                        Set<DayOfWeek> cacThuTrongTuan) {
+        return caTrucService.phanCaHangLoat(maNhanVien, tenNhanVien, dsCa, tuNgay, denNgay, cacThuTrongTuan);
+    }
+
     public List<PhanCa> xemLichTheoNhanVien(String maNhanVien) {
         return caTrucService.xemLichTheoNhanVien(maNhanVien);
     }
@@ -111,4 +131,3 @@ public class CaTrucController {
         return caTrucService.layDanhSachNhanVienDangLamViec();
     }
 }
-
