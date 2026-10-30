@@ -1,8 +1,8 @@
 package com.petshop.view.lichhen;
 
 import com.petshop.controller.LichHenController;
+import com.petshop.controller.ThuCungController;
 import com.petshop.model.*;
-import com.petshop.view.thucung.ThemThuCungView;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -14,11 +14,9 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import javafx.util.StringConverter;
 
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -33,11 +31,9 @@ import java.util.function.Function;
 public class DatLichHenView extends VBox {
 
     private static final String CSS_CHUNG = "/com/petshop/view/css/chung.css";
-    private static final DecimalFormat DINH_DANG_TIEN = new DecimalFormat("#,##0 'đ'");
 
     private final LichHenController controller = new LichHenController();
     private final Runnable khiDatThanhCong;
-    private boolean laHopThoaiModal = false;
     private boolean dangDongBo = false;
 
     // Danh sách dữ liệu liên kết
@@ -49,7 +45,6 @@ public class DatLichHenView extends VBox {
     private final TextField txtTimKhach = new TextField();
     private final Button btnTimSdt = new Button("Kiểm tra");
     private final ComboBox<KhachHang> cboKhachHang = new ComboBox<>();
-    private final Button btnThemKhachNhanh = new Button("+ Mới");
 
     private final ComboBox<ThuCung> cboThuCung = new ComboBox<>();
     private final Button btnThemThuCungNhanh = new Button("+ Mới");
@@ -61,16 +56,12 @@ public class DatLichHenView extends VBox {
 
     // Điều khiển dịch vụ chăm sóc
     private final ComboBox<DichVuChamSoc> cboDichVu = new ComboBox<>();
-    private final TextField txtCanNangThuCung = new TextField();
-    private final TextField txtDonGia = new TextField();
-    private final Button btnThemDichVu = new Button("Thêm dịch vụ");
+    private final Button btnThemDichVu = new Button("+ Thêm vào bảng");
     private final TableView<ChiTietLichHen> tblDichVu = new TableView<>();
-    private final Label lblTongTien = new Label("Tổng tiền dự kiến (tạm tính): 0 đ");
 
     // Nút chức năng
     private final Button btnLuu = new Button("✔ Xác nhận đặt lịch");
     private final Button btnLamMoi = new Button("Làm mới");
-    private final Button btnDong = new Button("Đóng");
 
     public DatLichHenView() {
         this(null);
@@ -92,12 +83,19 @@ public class DatLichHenView extends VBox {
         pnlTieuDe.getChildren().addAll(lblTieuDe, lblMoTa);
 
         // 2. Nội dung cuộn (Thông tin lịch + Dịch vụ)
-        VBox pnlCuon = new VBox(10, taoKhungThongTinLich(), taoKhungChonDichVu());
+        VBox pnlThongTinLich = taoKhungThongTinLich();
+        VBox pnlChonDichVu = taoKhungChonDichVu();
+        VBox.setVgrow(pnlChonDichVu, Priority.ALWAYS);
+
+        VBox pnlCuon = new VBox(10, pnlThongTinLich, pnlChonDichVu);
+        pnlCuon.setFillWidth(true);
+        VBox.setVgrow(pnlCuon, Priority.ALWAYS);
+
         ScrollPane spCuon = new ScrollPane(pnlCuon);
         spCuon.setFitToWidth(true);
+        spCuon.setFitToHeight(true);
         spCuon.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         spCuon.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        spCuon.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0;");
         VBox.setVgrow(spCuon, Priority.ALWAYS);
 
         // 3. Thanh nút đáy màn hình
@@ -118,18 +116,43 @@ public class DatLichHenView extends VBox {
         Label lblTieuDePhan = new Label("1. Thông tin lịch hẹn");
         lblTieuDePhan.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px; -fx-text-fill: #1e293b;");
 
-        GridPane pnlLuoi = new GridPane();
-        pnlLuoi.setHgap(12);
-        pnlLuoi.setVgap(8);
+        // Bố cục 2 nửa đối xứng (Trái 50% - Phải 50%) khóa cứng tỷ lệ, không co giật kích thước khi nhập SĐT
+        GridPane pnlHaiCot = new GridPane();
+        pnlHaiCot.setHgap(20);
+        pnlHaiCot.setMaxWidth(Double.MAX_VALUE);
+        ColumnConstraints colTrai = new ColumnConstraints();
+        colTrai.setPercentWidth(50.0);
+        colTrai.setFillWidth(true);
+        colTrai.setHgrow(Priority.ALWAYS);
+
+        ColumnConstraints colPhai = new ColumnConstraints();
+        colPhai.setPercentWidth(50.0);
+        colPhai.setFillWidth(true);
+        colPhai.setHgrow(Priority.ALWAYS);
+        pnlHaiCot.getColumnConstraints().addAll(colTrai, colPhai);
+
+        // --- CỘT TRÁI (Mã lịch hẹn, SĐT tra cứu, Thú cưng) ---
+        GridPane pnlCotTrai = new GridPane();
+        pnlCotTrai.setHgap(10);
+        pnlCotTrai.setVgap(8);
+        pnlCotTrai.setMaxWidth(Double.MAX_VALUE);
+
+        ColumnConstraints cTrai1 = new ColumnConstraints();
+        cTrai1.setMinWidth(135);
+        cTrai1.setPrefWidth(135);
+        cTrai1.setMaxWidth(135);
+
+        ColumnConstraints cTrai2 = new ColumnConstraints();
+        cTrai2.setHgrow(Priority.ALWAYS);
+        cTrai2.setFillWidth(true);
+        pnlCotTrai.getColumnConstraints().addAll(cTrai1, cTrai2);
 
         txtMaLichHen.setEditable(false);
-        txtMaLichHen.setStyle("-fx-background-color: #f1f5f9; -fx-font-weight: bold;");
+        txtMaLichHen.setMaxWidth(Double.MAX_VALUE);
 
-        cboNhanVien.setPromptText("Chọn nhân viên chăm sóc");
-        cboNhanVien.setMaxWidth(Double.MAX_VALUE);
-
-        // Hàng 1 - Cột trái: SĐT khách hàng + Nút Kiểm tra
+        // SĐT khách hàng + Nút Kiểm tra
         txtTimKhach.setPromptText("Nhập SĐT (10 số) rồi bấm Enter...");
+        txtTimKhach.setMaxWidth(Double.MAX_VALUE);
         txtTimKhach.setOnAction(e -> xuLyNhapSdtKhachHang());
 
         btnTimSdt.getStyleClass().add("nut-phu");
@@ -140,11 +163,7 @@ public class DatLichHenView extends VBox {
         pnlSdt.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(txtTimKhach, Priority.ALWAYS);
 
-        // Hàng 1 - Cột phải: ComboBox Khách hàng (trọn cột 3)
-        cboKhachHang.setPromptText("Chọn khách hàng");
-        cboKhachHang.setMaxWidth(Double.MAX_VALUE);
-
-        // Hàng 2 - Cột trái: Thú cưng + Nút "+ Mới"
+        // Thú cưng + Nút "+ Mới"
         cboThuCung.setPromptText("Chọn thú cưng");
         cboThuCung.setMaxWidth(Double.MAX_VALUE);
 
@@ -152,22 +171,49 @@ public class DatLichHenView extends VBox {
         btnThemThuCungNhanh.setMinWidth(Region.USE_PREF_SIZE);
         btnThemThuCungNhanh.setOnAction(e -> moCuaSoThemThuCungNhanh());
 
-        btnThemKhachNhanh.setMinWidth(Region.USE_PREF_SIZE);
-
         HBox pnlChonThuCung = new HBox(6, cboThuCung, btnThemThuCungNhanh);
         pnlChonThuCung.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(cboThuCung, Priority.ALWAYS);
 
-        // Hàng 2 - Cột phải: Ngày & Giờ
+        pnlCotTrai.add(new Label("Mã lịch hẹn:"), 0, 0);
+        pnlCotTrai.add(txtMaLichHen, 1, 0);
+        pnlCotTrai.add(new Label("SĐT khách hàng (*):"), 0, 1);
+        pnlCotTrai.add(pnlSdt, 1, 1);
+        pnlCotTrai.add(new Label("Thú cưng (*):"), 0, 2);
+        pnlCotTrai.add(pnlChonThuCung, 1, 2);
+
+        // --- CỘT PHẢI (NV phụ trách, Khách hàng, Ngày & Giờ) ---
+        GridPane pnlCotPhai = new GridPane();
+        pnlCotPhai.setHgap(10);
+        pnlCotPhai.setVgap(8);
+        pnlCotPhai.setMaxWidth(Double.MAX_VALUE);
+
+        ColumnConstraints cPhai1 = new ColumnConstraints();
+        cPhai1.setMinWidth(135);
+        cPhai1.setPrefWidth(135);
+        cPhai1.setMaxWidth(135);
+
+        ColumnConstraints cPhai2 = new ColumnConstraints();
+        cPhai2.setHgrow(Priority.ALWAYS);
+        cPhai2.setFillWidth(true);
+        pnlCotPhai.getColumnConstraints().addAll(cPhai1, cPhai2);
+
+        cboNhanVien.setPromptText("Chọn nhân viên chăm sóc");
+        cboNhanVien.setMaxWidth(Double.MAX_VALUE);
+
+        cboKhachHang.setPromptText("Chọn khách hàng");
+        cboKhachHang.setMaxWidth(Double.MAX_VALUE);
+
+        // Ngày & Giờ
         dpNgayHen.setPromptText("dd/MM/yyyy");
-        dpNgayHen.setPrefWidth(145);
+        dpNgayHen.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(dpNgayHen, Priority.ALWAYS);
         dpNgayHen.setDayCellFactory(picker -> new DateCell() {
             @Override
             public void updateItem(LocalDate date, boolean empty) {
                 super.updateItem(date, empty);
                 if (date != null && date.isBefore(LocalDate.now())) {
                     setDisable(true);
-                    setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #94a3b8;");
                 }
             }
         });
@@ -178,7 +224,8 @@ public class DatLichHenView extends VBox {
             if (h < 20) cboGioHen.getItems().add(String.format("%02d:30", h));
         }
         cboGioHen.setValue("09:00");
-        cboGioHen.setPrefWidth(115);
+        cboGioHen.setPrefWidth(95);
+        cboGioHen.setMinWidth(85);
 
         Label lblGio = new Label("Giờ:");
         lblGio.setMinWidth(Region.USE_PREF_SIZE);
@@ -186,47 +233,39 @@ public class DatLichHenView extends VBox {
         HBox pnlThoiGian = new HBox(8, dpNgayHen, lblGio, cboGioHen);
         pnlThoiGian.setAlignment(Pos.CENTER_LEFT);
 
-        // Hàng 3: Ghi chú / Lưu ý trải ngang 3 cột
+        pnlCotPhai.add(new Label("NV phụ trách (*):"), 0, 0);
+        pnlCotPhai.add(cboNhanVien, 1, 0);
+        pnlCotPhai.add(new Label("Khách hàng (*):"), 0, 1);
+        pnlCotPhai.add(cboKhachHang, 1, 1);
+        pnlCotPhai.add(new Label("Ngày & Giờ (*):"), 0, 2);
+        pnlCotPhai.add(pnlThoiGian, 1, 2);
+
+        // Đưa 2 cột vào pnlHaiCot (50% - 50%)
+        GridPane.setHgrow(pnlCotTrai, Priority.ALWAYS);
+        GridPane.setHgrow(pnlCotPhai, Priority.ALWAYS);
+        pnlHaiCot.add(pnlCotTrai, 0, 0);
+        pnlHaiCot.add(pnlCotPhai, 1, 0);
+
+        // --- HÀNG DƯỚI: Ghi chú / Lưu ý trải ngang toàn bộ chiều rộng ---
+        HBox pnlGhiChu = new HBox(10);
+        pnlGhiChu.setAlignment(Pos.CENTER_LEFT);
+
+        Label lblGhiChu = new Label("Ghi chú / Lưu ý:");
+        lblGhiChu.setMinWidth(135);
+        lblGhiChu.setPrefWidth(135);
+        lblGhiChu.setMaxWidth(135);
+
         txtGhiChu.setPromptText("Ghi chú thêm (yêu cầu riêng của khách hàng, lưu ý thú cưng nhát nước...)");
         txtGhiChu.setPrefRowCount(1);
         txtGhiChu.setPrefHeight(36);
         txtGhiChu.setMaxHeight(36);
         txtGhiChu.setWrapText(true);
+        txtGhiChu.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(txtGhiChu, Priority.ALWAYS);
 
-        // Sắp xếp vào lưới 4 hàng rõ ràng, cân đối
-        // Hàng 0:
-        pnlLuoi.add(new Label("Mã lịch hẹn:"), 0, 0);
-        pnlLuoi.add(txtMaLichHen, 1, 0);
-        pnlLuoi.add(new Label("NV phụ trách (*):"), 2, 0);
-        pnlLuoi.add(cboNhanVien, 3, 0);
+        pnlGhiChu.getChildren().addAll(lblGhiChu, txtGhiChu);
 
-        // Hàng 1:
-        pnlLuoi.add(new Label("SĐT khách hàng (*):"), 0, 1);
-        pnlLuoi.add(pnlSdt, 1, 1);
-        pnlLuoi.add(new Label("Khách hàng (*):"), 2, 1);
-        pnlLuoi.add(cboKhachHang, 3, 1);
-
-        // Hàng 2:
-        pnlLuoi.add(new Label("Thú cưng (*):"), 0, 2);
-        pnlLuoi.add(pnlChonThuCung, 1, 2);
-        pnlLuoi.add(new Label("Ngày & Giờ (*):"), 2, 2);
-        pnlLuoi.add(pnlThoiGian, 3, 2);
-
-        // Hàng 3:
-        pnlLuoi.add(new Label("Ghi chú / Lưu ý:"), 0, 3);
-        pnlLuoi.add(txtGhiChu, 1, 3);
-        GridPane.setColumnSpan(txtGhiChu, 3);
-
-        // Cấu hình ColumnConstraints chuẩn để nhãn và control thoáng, không bị cắt chữ
-        ColumnConstraints c1 = new ColumnConstraints(135);
-        ColumnConstraints c2 = new ColumnConstraints();
-        c2.setHgrow(Priority.ALWAYS);
-        ColumnConstraints c3 = new ColumnConstraints(150);
-        ColumnConstraints c4 = new ColumnConstraints();
-        c4.setHgrow(Priority.ALWAYS);
-        pnlLuoi.getColumnConstraints().addAll(c1, c2, c3, c4);
-
-        pnlKhung.getChildren().addAll(lblTieuDePhan, pnlLuoi);
+        pnlKhung.getChildren().addAll(lblTieuDePhan, pnlHaiCot, pnlGhiChu);
         return pnlKhung;
     }
 
@@ -238,57 +277,43 @@ public class DatLichHenView extends VBox {
         Label lblTieuDe = new Label("2. Dịch vụ chăm sóc đăng ký");
         lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px; -fx-text-fill: #1e293b;");
 
-        cboDichVu.setPromptText("Chọn dịch vụ chăm sóc");
-        cboDichVu.setPrefWidth(240);
-
-        txtCanNangThuCung.setPromptText("Để trống = 3kg");
-        txtCanNangThuCung.setPrefWidth(120);
-
-        txtDonGia.setPromptText("Đơn giá");
-        txtDonGia.setEditable(false);
-        txtDonGia.setPrefWidth(135);
-        txtDonGia.setStyle("-fx-background-color: #f1f5f9; -fx-font-weight: bold; -fx-alignment: CENTER-RIGHT;");
+        cboDichVu.setPromptText("Chọn dịch vụ chăm sóc thú cưng...");
+        cboDichVu.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(cboDichVu, Priority.ALWAYS);
 
         btnThemDichVu.setText("+ Thêm vào bảng");
         btnThemDichVu.getStyleClass().add("nut-chinh");
         btnThemDichVu.setMinWidth(Region.USE_PREF_SIZE);
-        HBox pnlChon = new HBox(10, new Label("Dịch vụ:"), cboDichVu, new Label("Cân nặng (kg):"), txtCanNangThuCung, new Label("Đơn giá:"), txtDonGia, btnThemDichVu);
+
+        HBox pnlChon = new HBox(10, new Label("Dịch vụ chăm sóc:"), cboDichVu, btnThemDichVu);
         pnlChon.setAlignment(Pos.CENTER_LEFT);
 
         // Bảng danh sách dịch vụ chi tiết
         tblDichVu.getStyleClass().add("bang-du-lieu");
         tblDichVu.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        tblDichVu.setPrefHeight(110);
-        tblDichVu.setMinHeight(95);
+        tblDichVu.setPrefHeight(260);
+        tblDichVu.setMinHeight(180);
         tblDichVu.setPlaceholder(new Label("Chưa có dịch vụ nào được thêm vào lịch hẹn"));
         VBox.setVgrow(tblDichVu, Priority.ALWAYS);
 
         TableColumn<ChiTietLichHen, String> colMaDV = new TableColumn<>("Mã dịch vụ");
-        colMaDV.setStyle("-fx-alignment: CENTER;"); colMaDV.setPrefWidth(120);
+        colMaDV.setStyle("-fx-alignment: CENTER;");
+        colMaDV.setPrefWidth(140);
         colMaDV.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getMaDichVu()));
 
-        TableColumn<ChiTietLichHen, String> colTenDV = new TableColumn<>("Tên dịch vụ");
-        colTenDV.setStyle("-fx-alignment: CENTER-LEFT;"); colTenDV.setPrefWidth(220);
+        TableColumn<ChiTietLichHen, String> colTenDV = new TableColumn<>("Tên dịch vụ chăm sóc");
+        colTenDV.setStyle("-fx-alignment: CENTER-LEFT;");
+        colTenDV.setPrefWidth(500);
         colTenDV.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getTenDichVu()));
 
-        TableColumn<ChiTietLichHen, String> colCanNang = new TableColumn<>("Cân nặng (ước tính)");
-        colCanNang.setStyle("-fx-alignment: CENTER;"); colCanNang.setPrefWidth(130);
-        colCanNang.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getCanNangThuCung() != null ? c.getValue().getCanNangThuCung() + " kg" : "3.0 kg"));
-
-        TableColumn<ChiTietLichHen, String> colDonGia = new TableColumn<>("Đơn giá");
-        colDonGia.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;"); colDonGia.setPrefWidth(130);
-        colDonGia.setCellValueFactory(c -> new SimpleStringProperty(DINH_DANG_TIEN.format(c.getValue().getDonGia())));
-
         TableColumn<ChiTietLichHen, Void> colXoa = new TableColumn<>("Thao tác");
-        colXoa.setStyle("-fx-alignment: CENTER;"); colXoa.setPrefWidth(90);
+        colXoa.setStyle("-fx-alignment: CENTER;");
+        colXoa.setPrefWidth(90);
         colXoa.setCellFactory(col -> new TableCell<>() {
             private final Button btnXoaDong = new Button("Xóa");
             {
                 btnXoaDong.getStyleClass().addAll("button", "nut-xoa");
-                btnXoaDong.setOnAction(e -> {
-                    danhSachDichVuChon.remove(getTableView().getItems().get(getIndex()));
-                    capNhatTongTien();
-                });
+                btnXoaDong.setOnAction(e -> danhSachDichVuChon.remove(getTableView().getItems().get(getIndex())));
             }
             @Override
             protected void updateItem(Void item, boolean empty) {
@@ -297,16 +322,13 @@ public class DatLichHenView extends VBox {
             }
         });
 
-        tblDichVu.getColumns().addAll(List.of(colMaDV, colTenDV, colCanNang, colDonGia, colXoa));
+        tblDichVu.getColumns().setAll(List.of(colMaDV, colTenDV, colXoa));
         tblDichVu.setItems(danhSachDichVuChon);
 
-        lblTongTien.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #0284c7;");
-        Label lblLuuY = new Label("(*) Đơn giá tạm tính theo mức chuẩn (bậc Nhỏ nếu chưa rõ cân nặng). Nhân viên tiếp nhận sẽ cân lại khi làm dịch vụ.");
-        lblLuuY.setStyle("-fx-font-style: italic; -fx-text-fill: #64748b; -fx-font-size: 11.5px;");
-        VBox pnlTongTien = new VBox(2, lblTongTien, lblLuuY);
-        pnlTongTien.setAlignment(Pos.CENTER_RIGHT);
+        Label lblGhiChuCuoi = new Label("💡 Tiếp nhận danh sách dịch vụ khách hẹn trước. Cân đo thú cưng và tính tiền thanh toán sẽ thực hiện khi lập hóa đơn.");
+        lblGhiChuCuoi.setStyle("-fx-font-style: italic; -fx-text-fill: #64748b; -fx-font-size: 11.5px;");
 
-        pnlKhung.getChildren().addAll(lblTieuDe, pnlChon, tblDichVu, pnlTongTien);
+        pnlKhung.getChildren().addAll(lblTieuDe, pnlChon, tblDichVu, lblGhiChuCuoi);
         return pnlKhung;
     }
 
@@ -323,15 +345,11 @@ public class DatLichHenView extends VBox {
         btnLuu.getStyleClass().add("nut-chinh");
         btnLuu.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px; -fx-padding: 8 22;");
         btnLamMoi.getStyleClass().add("nut-phu");
-        btnDong.getStyleClass().add("nut-phu");
 
         btnLuu.setOnAction(e -> xuLyDatLich());
         btnLamMoi.setOnAction(e -> lamMoiForm());
-        btnDong.setOnAction(e -> dongCuaSo());
-        btnDong.setVisible(false);
-        btnDong.setManaged(false);
 
-        pnlNut.getChildren().addAll(lblNhacNho, khoangCach, btnLamMoi, btnDong, btnLuu);
+        pnlNut.getChildren().addAll(lblNhacNho, khoangCach, btnLamMoi, btnLuu);
         return pnlNut;
     }
 
@@ -347,9 +365,7 @@ public class DatLichHenView extends VBox {
         cboThuCung.setConverter(taoConverter(tc -> {
             String loai = tc.getLoaiThuCung() != null ? tc.getLoaiThuCung() : "Thú cưng";
             String giong = tc.getGiongLoai() != null && !tc.getGiongLoai().isEmpty() ? " - " + tc.getGiongLoai() : "";
-            String cn = (tc.getCanNang() != null && tc.getCanNang().compareTo(BigDecimal.ZERO) > 0)
-                    ? " (" + tc.getCanNang().stripTrailingZeros().toPlainString() + " kg)" : " (chưa rõ cân nặng)";
-            return tc.getTenThuCung() + " [" + loai + giong + "]" + cn;
+            return tc.getTenThuCung() + " [" + loai + giong + "]";
         }));
         cboThuCung.setCellFactory(lv -> new ListCell<>() {
             @Override
@@ -360,9 +376,7 @@ public class DatLichHenView extends VBox {
                 } else {
                     String loai = tc.getLoaiThuCung() != null ? tc.getLoaiThuCung() : "Thú cưng";
                     String giong = tc.getGiongLoai() != null && !tc.getGiongLoai().isEmpty() ? " - " + tc.getGiongLoai() : "";
-                    String cn = (tc.getCanNang() != null && tc.getCanNang().compareTo(BigDecimal.ZERO) > 0)
-                            ? " (" + tc.getCanNang().stripTrailingZeros().toPlainString() + " kg)" : " (chưa rõ cân nặng)";
-                    setText(tc.getTenThuCung() + " [" + loai + giong + "]" + cn);
+                    setText(tc.getTenThuCung() + " [" + loai + giong + "]");
                 }
             }
         });
@@ -407,20 +421,12 @@ public class DatLichHenView extends VBox {
                 }
             } else {
                 cboThuCung.getItems().clear();
-                txtCanNangThuCung.clear();
             }
         });
 
-        // Khi chọn thú cưng: điền cân nặng & ghi chú dị ứng
+        // Khi chọn thú cưng: ghi chú dị ứng nếu có
         cboThuCung.setOnAction(e -> {
             ThuCung tc = cboThuCung.getValue();
-            if (tc != null && tc.getCanNang() != null && tc.getCanNang().compareTo(BigDecimal.ZERO) > 0) {
-                txtCanNangThuCung.setText(tc.getCanNang().stripTrailingZeros().toPlainString());
-            } else {
-                txtCanNangThuCung.clear();
-            }
-            tinhDonGiaDichVu();
-
             if (tc != null && tc.getDiUng() != null && !tc.getDiUng().trim().isEmpty() && !"Không có".equalsIgnoreCase(tc.getDiUng().trim())) {
                 String luuY = "[Lưu ý dị ứng: " + tc.getDiUng().trim() + "] ";
                 if (!txtGhiChu.getText().contains(luuY)) {
@@ -429,36 +435,12 @@ public class DatLichHenView extends VBox {
             }
         });
 
-        cboDichVu.setOnAction(e -> tinhDonGiaDichVu());
-        txtCanNangThuCung.textProperty().addListener((obs, cu, moi) -> tinhDonGiaDichVu());
-        txtCanNangThuCung.setOnAction(e -> xuLyThemDichVuVaoBang());
         btnThemDichVu.setOnAction(e -> xuLyThemDichVuVaoBang());
     }
 
     // -------------------------------------------------------------------------
-    // NGHIỆP VỤ ĐẶT LỊCH HẸN & TÍNH TOÁN
+    // NGHIỆP VỤ TIẾP NHẬN ĐẶT LỊCH HẸN
     // -------------------------------------------------------------------------
-
-    private void tinhDonGiaDichVu() {
-        DichVuChamSoc dv = cboDichVu.getValue();
-        if (dv == null) { txtDonGia.clear(); return; }
-
-        double canNang = 3.0;
-        boolean laUocTinh = true;
-        try {
-            String s = txtCanNangThuCung.getText() != null ? txtCanNangThuCung.getText().trim() : "";
-            if (!s.isEmpty() && Double.parseDouble(s) > 0) {
-                canNang = Double.parseDouble(s);
-                laUocTinh = false;
-            } else if (cboThuCung.getValue() != null && cboThuCung.getValue().getCanNang() != null) {
-                canNang = cboThuCung.getValue().getCanNang().doubleValue();
-                laUocTinh = false;
-            }
-        } catch (Exception ignored) {}
-
-        double gia = controller.traGiaDichVuTheoCanNang(dv.getMaDichVu(), canNang);
-        txtDonGia.setText(DINH_DANG_TIEN.format(gia) + (laUocTinh ? " (tạm tính)" : ""));
-    }
 
     private void xuLyThemDichVuVaoBang() {
         DichVuChamSoc dv = cboDichVu.getValue();
@@ -470,24 +452,12 @@ public class DatLichHenView extends VBox {
         }
 
         BigDecimal canNang = BigDecimal.valueOf(3.0);
-        try {
-            String s = txtCanNangThuCung.getText() != null ? txtCanNangThuCung.getText().trim() : "";
-            if (!s.isEmpty()) canNang = new BigDecimal(s);
-            else if (cboThuCung.getValue() != null && cboThuCung.getValue().getCanNang() != null) {
-                canNang = cboThuCung.getValue().getCanNang();
-            }
-        } catch (Exception ignored) {}
-
+        if (cboThuCung.getValue() != null && cboThuCung.getValue().getCanNang() != null && cboThuCung.getValue().getCanNang().compareTo(BigDecimal.ZERO) > 0) {
+            canNang = cboThuCung.getValue().getCanNang();
+        }
         double gia = controller.traGiaDichVuTheoCanNang(dv.getMaDichVu(), canNang.doubleValue());
         danhSachDichVuChon.add(new ChiTietLichHen(txtMaLichHen.getText(), dv.getMaDichVu(), dv.getTenDichVu(), canNang, BigDecimal.valueOf(gia)));
-        capNhatTongTien();
         cboDichVu.setValue(null);
-        txtDonGia.clear();
-    }
-
-    private void capNhatTongTien() {
-        BigDecimal tong = danhSachDichVuChon.stream().map(ct -> ct.getDonGia() != null ? ct.getDonGia() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
-        lblTongTien.setText("Tổng tiền dự kiến (tạm tính): " + DINH_DANG_TIEN.format(tong));
     }
 
     private void xuLyDatLich() {
@@ -529,8 +499,7 @@ public class DatLichHenView extends VBox {
             if (controller.datLichHen(lh, danhSachDichVuChon)) {
                 hienThiThongBao("Đặt lịch thành công", "✔ Đã đặt lịch hẹn mã: " + lh.getMaLichHen() + " cho bé " + tc.getTenThuCung() + " thành công!");
                 if (khiDatThanhCong != null) khiDatThanhCong.run();
-                if (laHopThoaiModal) dongCuaSo();
-                else lamMoiForm();
+                lamMoiForm();
             } else {
                 hienThiLoi("Không thể tạo lịch hẹn mới!");
             }
@@ -577,11 +546,9 @@ public class DatLichHenView extends VBox {
                     .findFirst().ifPresentOrElse(cboGioHen::setValue, () -> cboGioHen.setValue("09:00"));
         }
 
-        txtCanNangThuCung.clear();
-        txtDonGia.clear();
+        cboDichVu.setValue(null);
         txtGhiChu.clear();
         danhSachDichVuChon.clear();
-        capNhatTongTien();
     }
 
     private void taiDanhSachThuCung(String maKhachHang) {
@@ -591,12 +558,6 @@ public class DatLichHenView extends VBox {
             if (!ds.isEmpty()) {
                 ThuCung tc = ds.get(ds.size() - 1);
                 cboThuCung.setValue(tc);
-                if (tc.getCanNang() != null && tc.getCanNang().compareTo(BigDecimal.ZERO) > 0) {
-                    txtCanNangThuCung.setText(tc.getCanNang().stripTrailingZeros().toPlainString());
-                } else {
-                    txtCanNangThuCung.clear();
-                }
-                tinhDonGiaDichVu();
                 if (tc.getDiUng() != null && !tc.getDiUng().trim().isEmpty() && !"Không có".equalsIgnoreCase(tc.getDiUng().trim())) {
                     String luuY = "[Lưu ý dị ứng: " + tc.getDiUng().trim() + "] ";
                     if (!txtGhiChu.getText().contains(luuY)) {
@@ -605,8 +566,6 @@ public class DatLichHenView extends VBox {
                 }
             } else {
                 cboThuCung.setValue(null);
-                txtCanNangThuCung.clear();
-                tinhDonGiaDichVu();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -683,7 +642,7 @@ public class DatLichHenView extends VBox {
         pnlGoc.getStyleClass().add("khung-phan-he");
 
         Label lblTieuDe = new Label("THÊM NHANH KHÁCH HÀNG MỚI");
-        lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px; -fx-text-fill: #0284c7;");
+        lblTieuDe.getStyleClass().add("tieu-de-phan-he");
 
         GridPane luoi = new GridPane();
         luoi.setHgap(10); luoi.setVgap(10);
@@ -701,6 +660,15 @@ public class DatLichHenView extends VBox {
                 Platform.runLater(txtSdtMoi::requestFocus);
             }
         }
+
+        // Ràng buộc họ tên: Chỉ cho phép chữ cái tiếng Việt, số và khoảng trắng; chặn hoàn toàn ký tự đặc biệt (!@#$%^&*...)
+        txtHoTenMoi.textProperty().addListener((obs, cu, moi) -> {
+            if (moi == null) return;
+            String locKyTu = moi.replaceAll("[^\\p{L}0-9\\s]", "");
+            if (!locKyTu.equals(moi)) {
+                txtHoTenMoi.setText(locKyTu);
+            }
+        });
 
         // Khóa cứng SĐT 10 chữ số
         txtSdtMoi.textProperty().addListener((obs, cu, moi) -> {
@@ -723,6 +691,10 @@ public class DatLichHenView extends VBox {
             String ten = txtHoTenMoi.getText() != null ? txtHoTenMoi.getText().trim() : "";
             String sdt = txtSdtMoi.getText() != null ? txtSdtMoi.getText().trim() : "";
             if (ten.isEmpty()) { hienThiLoi("Họ tên không được để trống!"); return; }
+            if (!ten.matches("^[\\p{L}0-9\\s]+$")) {
+                hienThiLoi("Họ và tên khách hàng không được chứa ký tự đặc biệt (!@#$%^&*...)!");
+                return;
+            }
             if (!sdt.matches("^0\\d{9}$")) { hienThiLoi("Số điện thoại phải đúng 10 số bắt đầu bằng 0!"); return; }
             if (controller.kiemTraTrungSoDienThoai(sdt)) { hienThiLoi("Số điện thoại này đã tồn tại!"); return; }
 
@@ -768,15 +740,203 @@ public class DatLichHenView extends VBox {
         if (getScene() != null && getScene().getWindow() != null) dlg.initOwner(getScene().getWindow());
         dlg.setTitle("Thêm nhanh thú cưng - " + kh.getHoTen());
 
-        ThemThuCungView pnlThem = new ThemThuCungView(kh.getMaKhachHang(), () -> taiDanhSachThuCung(kh.getMaKhachHang()));
-        Scene scene = new Scene(pnlThem, 580, 520);
+        VBox pnlGoc = new VBox(12);
+        pnlGoc.setPadding(new Insets(16));
+        pnlGoc.getStyleClass().add("khung-phan-he");
+
+        // 1. Tiêu đề
+        VBox pnlTieuDe = new VBox(4);
+        Label lblTieuDe = new Label("THÊM NHANH HỒ SƠ THÚ CƯNG");
+        lblTieuDe.getStyleClass().add("tieu-de-phan-he");
+        Label lblMoTa = new Label("Thêm nhanh hồ sơ thú cưng cho khách hàng: " + kh.getHoTen() + " (" + kh.getSoDienThoai() + ")");
+        lblMoTa.getStyleClass().add("mo-ta-phan-he");
+        pnlTieuDe.getChildren().addAll(lblTieuDe, lblMoTa);
+
+        // 2. Lưới nhập liệu
+        GridPane luoi = new GridPane();
+        luoi.setHgap(10);
+        luoi.setVgap(10);
+
+        ThuCungController tcCtrl = new ThuCungController();
+
+        TextField txtMaThuCung = new TextField();
+        try {
+            txtMaThuCung.setText(tcCtrl.taoMaThuCungMoi());
+        } catch (Exception e) {
+            txtMaThuCung.setText("TC-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-000001");
+        }
+        txtMaThuCung.setEditable(false);
+
+        // Chủ nuôi: Cố định là khách hàng vừa chọn/tạo, chỉ đọc, không có dòng tìm kiếm hay ComboBox
+        TextField txtChuNoi = new TextField(kh.getHoTen() + " (" + kh.getSoDienThoai() + ") - " + kh.getMaKhachHang());
+        txtChuNoi.setEditable(false);
+
+        TextField txtTenThuCung = new TextField();
+        txtTenThuCung.setPromptText("Nhập tên thú cưng (VD: Mochi, Bông, Lu, Corgi...) (*)");
+
+        ComboBox<String> cboLoai = new ComboBox<>();
+        cboLoai.getItems().addAll("Chó", "Mèo", "Thỏ", "Hamster", "Chim", "Khác");
+        cboLoai.setValue("Chó");
+        cboLoai.setMaxWidth(Double.MAX_VALUE);
+
+        TextField txtLoaiKhac = new TextField();
+        txtLoaiKhac.setPromptText("Nhập tên loài cụ thể...");
+        txtLoaiKhac.setVisible(false);
+        txtLoaiKhac.setManaged(false);
+
+        cboLoai.valueProperty().addListener((obs, cu, moi) -> {
+            boolean laKhac = "Khác".equalsIgnoreCase(moi);
+            txtLoaiKhac.setVisible(laKhac);
+            txtLoaiKhac.setManaged(laKhac);
+            if (laKhac) txtLoaiKhac.requestFocus();
+        });
+
+        VBox boxLoai = new VBox(4, cboLoai, txtLoaiKhac);
+
+        TextField txtGiongLoai = new TextField();
+        txtGiongLoai.setPromptText("VD: Poodle Tiny, Mèo Anh lông ngắn, Corgi...");
+
+        ComboBox<String> cboGioiTinh = new ComboBox<>();
+        cboGioiTinh.getItems().addAll("Đực", "Cái");
+        cboGioiTinh.setValue("Đực");
+        cboGioiTinh.setMaxWidth(Double.MAX_VALUE);
+
+        TextField txtCanNang = new TextField();
+        txtCanNang.setPromptText("Tùy chọn (để trống = 3.0 kg, cập nhật sau tại quầy)");
+        txtCanNang.textProperty().addListener((obs, cu, moi) -> {
+            if (moi != null && !moi.matches("\\d*(\\.\\d{0,2})?")) {
+                txtCanNang.setText(cu != null ? cu : "");
+            }
+        });
+
+        DatePicker dpNgaySinh = new DatePicker();
+        dpNgaySinh.setPromptText("dd/MM/yyyy (tùy chọn)");
+        dpNgaySinh.setMaxWidth(Double.MAX_VALUE);
+        dpNgaySinh.setDayCellFactory(picker -> new DateCell() {
+            @Override
+            public void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                if (date != null && date.isAfter(LocalDate.now())) {
+                    setDisable(true);
+                }
+            }
+        });
+
+        TextArea txtDiUng = new TextArea();
+        txtDiUng.setPromptText("Ghi chú dị ứng thức ăn/sữa tắm, tính cách của thú cưng...");
+        txtDiUng.setPrefRowCount(2);
+        txtDiUng.setWrapText(true);
+
+        luoi.add(new Label("Mã thú cưng:"), 0, 0); luoi.add(txtMaThuCung, 1, 0);
+        luoi.add(new Label("Chủ nuôi:"), 0, 1); luoi.add(txtChuNoi, 1, 1);
+        luoi.add(new Label("Tên thú cưng (*):"), 0, 2); luoi.add(txtTenThuCung, 1, 2);
+        luoi.add(new Label("Loài thú cưng:"), 0, 3); luoi.add(boxLoai, 1, 3);
+        luoi.add(new Label("Giống loài:"), 0, 4); luoi.add(txtGiongLoai, 1, 4);
+        luoi.add(new Label("Giới tính (*):"), 0, 5); luoi.add(cboGioiTinh, 1, 5);
+        luoi.add(new Label("Cân nặng (kg):"), 0, 6); luoi.add(txtCanNang, 1, 6);
+        luoi.add(new Label("Ngày sinh:"), 0, 7); luoi.add(dpNgaySinh, 1, 7);
+        luoi.add(new Label("Dị ứng / Ghi chú:"), 0, 8); luoi.add(txtDiUng, 1, 8);
+
+        ColumnConstraints col1 = new ColumnConstraints(120);
+        ColumnConstraints col2 = new ColumnConstraints();
+        col2.setHgrow(Priority.ALWAYS);
+        luoi.getColumnConstraints().addAll(col1, col2);
+
+        VBox pnlHop = new VBox(10, luoi);
+        pnlHop.getStyleClass().add("hop-noi-dung");
+
+        ScrollPane spCuon = new ScrollPane(pnlHop);
+        spCuon.setFitToWidth(true);
+        spCuon.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        spCuon.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        VBox.setVgrow(spCuon, Priority.ALWAYS);
+
+        // Nút lưu & Đóng cố định dưới đáy (không bị che khuất)
+        Button btnLuu = new Button("Lưu thú cưng");
+        btnLuu.getStyleClass().add("nut-chinh");
+        Button btnHuy = new Button("Đóng");
+        btnHuy.getStyleClass().add("nut-phu");
+        btnHuy.setOnAction(e -> dlg.close());
+
+        btnLuu.setOnAction(e -> {
+            String ten = txtTenThuCung.getText() != null ? txtTenThuCung.getText().trim() : "";
+            if (ten.isEmpty()) {
+                hienThiCanhBao("Vui lòng nhập tên cho thú cưng!");
+                txtTenThuCung.requestFocus();
+                return;
+            }
+
+            BigDecimal canNang = BigDecimal.valueOf(3.0);
+            String cnStr = txtCanNang.getText() != null ? txtCanNang.getText().trim() : "";
+            if (!cnStr.isEmpty()) {
+                try {
+                    canNang = new BigDecimal(cnStr);
+                    if (canNang.compareTo(BigDecimal.ZERO) <= 0) {
+                        hienThiCanhBao("Cân nặng thú cưng phải lớn hơn 0 kg!");
+                        txtCanNang.requestFocus();
+                        return;
+                    }
+                } catch (Exception ex) {
+                    hienThiCanhBao("Cân nặng phải là số hợp lệ (VD: 3.5)!");
+                    txtCanNang.requestFocus();
+                    return;
+                }
+            }
+
+            LocalDate ns = dpNgaySinh.getValue();
+            if (ns != null && ns.isAfter(LocalDate.now())) {
+                hienThiCanhBao("Ngày sinh không được ở tương lai!");
+                dpNgaySinh.requestFocus();
+                return;
+            }
+
+            String loai = cboLoai.getValue();
+            if ("Khác".equalsIgnoreCase(loai)) {
+                String lk = txtLoaiKhac.getText() != null ? txtLoaiKhac.getText().trim() : "";
+                if (lk.isEmpty()) {
+                    hienThiCanhBao("Vui lòng nhập loài thú cưng cụ thể!");
+                    txtLoaiKhac.requestFocus();
+                    return;
+                }
+                loai = lk;
+            }
+
+            ThuCung tc = new ThuCung();
+            tc.setMaThuCung(txtMaThuCung.getText().trim());
+            tc.setMaKhachHang(kh.getMaKhachHang());
+            tc.setTenThuCung(ten);
+            tc.setLoaiThuCung(loai);
+            tc.setGiongLoai(txtGiongLoai.getText() != null ? txtGiongLoai.getText().trim() : "");
+            tc.setGioiTinh(cboGioiTinh.getValue());
+            tc.setCanNang(canNang);
+            tc.setNgaySinh(ns);
+            tc.setDiUng(txtDiUng.getText() != null ? txtDiUng.getText().trim() : "");
+
+            try {
+                if (tcCtrl.themThuCung(tc)) {
+                    dlg.close();
+                    hienThiThongBao("Thành công", "Đã thêm nhanh hồ sơ thú cưng '" + tc.getTenThuCung() + "' cho khách hàng '" + kh.getHoTen() + "' thành công!");
+                    taiDanhSachThuCung(kh.getMaKhachHang());
+                    cboThuCung.getItems().stream()
+                            .filter(t -> t.getMaThuCung().equals(tc.getMaThuCung()))
+                            .findFirst().ifPresent(cboThuCung::setValue);
+                }
+            } catch (Exception ex) {
+                hienThiLoi("Lỗi khi thêm thú cưng: " + ex.getMessage());
+            }
+        });
+
+        HBox pnlNut = new HBox(8, btnLuu, btnHuy);
+        pnlNut.setAlignment(Pos.CENTER_RIGHT);
+
+        pnlGoc.getChildren().addAll(pnlTieuDe, spCuon, pnlNut);
+
+        Scene scene = new Scene(pnlGoc, 500, 480);
         if (DatLichHenView.class.getResource(CSS_CHUNG) != null) scene.getStylesheets().add(DatLichHenView.class.getResource(CSS_CHUNG).toExternalForm());
         dlg.setScene(scene);
+        dlg.setMinWidth(460);
+        dlg.setMinHeight(400);
         dlg.showAndWait();
-    }
-
-    private void dongCuaSo() {
-        if (laHopThoaiModal && getScene() != null && getScene().getWindow() instanceof Stage stage) stage.close();
     }
 
     private static <T> StringConverter<T> taoConverter(Function<T, String> fn) {
@@ -799,22 +959,5 @@ public class DatLichHenView extends VBox {
     private void hienThiLoi(String noiDung) {
         Alert alert = new Alert(Alert.AlertType.ERROR, noiDung);
         alert.setTitle("Thông báo lỗi"); alert.setHeaderText(null); alert.showAndWait();
-    }
-
-    public static void hienThi(Window cuaSoCha, Runnable khiDatThanhCong) {
-        Stage dlg = new Stage();
-        dlg.initModality(Modality.APPLICATION_MODAL);
-        if (cuaSoCha != null) dlg.initOwner(cuaSoCha);
-        dlg.setTitle("Đặt lịch hẹn chăm sóc thú cưng - Happy Tails");
-
-        DatLichHenView view = new DatLichHenView(khiDatThanhCong);
-        view.laHopThoaiModal = true;
-        view.btnDong.setVisible(true);
-        view.btnDong.setManaged(true);
-
-        Scene scene = new Scene(view, 800, 660);
-        if (DatLichHenView.class.getResource(CSS_CHUNG) != null) scene.getStylesheets().add(DatLichHenView.class.getResource(CSS_CHUNG).toExternalForm());
-        dlg.setScene(scene);
-        dlg.showAndWait();
     }
 }
