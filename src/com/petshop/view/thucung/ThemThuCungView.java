@@ -193,8 +193,8 @@ public class ThemThuCungView extends VBox {
         cboGioiTinh.setValue("Đực");
         cboGioiTinh.setMaxWidth(Double.MAX_VALUE);
 
-        // Cân nặng (kg) - Tùy chọn (để trống tự động nhận 3.0 kg, có thể cập nhật sau tại quầy)
-        txtCanNang.setPromptText("Tùy chọn (để trống = 3.0 kg, cập nhật sau tại quầy)");
+        // Cân nặng (kg) - Giới hạn chỉ nhập số và tối đa 2 chữ số thập phân
+        txtCanNang.setPromptText("Nhập cân nặng tính bằng kg (VD: 3.5, 12.0)");
         txtCanNang.textProperty().addListener((obs, cu, moi) -> {
             if (moi != null && !moi.matches("\\d*(\\.\\d{0,2})?")) {
                 txtCanNang.setText(cu != null ? cu : "");
@@ -239,7 +239,7 @@ public class ThemThuCungView extends VBox {
         pnlLuoi.add(new Label("Giới tính (*):"), 0, 5);
         pnlLuoi.add(cboGioiTinh, 1, 5);
 
-        pnlLuoi.add(new Label("Cân nặng (kg):"), 0, 6);
+        pnlLuoi.add(new Label("Cân nặng (kg) (*):"), 0, 6);
         pnlLuoi.add(txtCanNang, 1, 6);
 
         pnlLuoi.add(new Label("Ngày sinh:"), 0, 7);
@@ -297,23 +297,24 @@ public class ThemThuCungView extends VBox {
             }
 
             String canNangStr = txtCanNang.getText() != null ? txtCanNang.getText().trim() : "";
-            BigDecimal canNang;
             if (canNangStr.isEmpty()) {
-                // Tùy chọn khi tiếp nhận nhanh: mặc định 3.0 kg để đáp ứng CSDL và tính giá tạm tính
-                canNang = BigDecimal.valueOf(3.0);
-            } else {
-                try {
-                    canNang = new BigDecimal(canNangStr);
-                    if (canNang.compareTo(BigDecimal.ZERO) <= 0) {
-                        hienThiCanhBao("Cân nặng không hợp lệ", "Cân nặng thú cưng phải lớn hơn 0 kg!");
-                        txtCanNang.requestFocus();
-                        return;
-                    }
-                } catch (NumberFormatException ex) {
-                    hienThiCanhBao("Cân nặng không hợp lệ", "Cân nặng phải là định dạng số hợp lệ (VD: 3.5)!");
+                hienThiCanhBao("Thiếu thông tin", "Vui lòng nhập cân nặng của thú cưng!");
+                txtCanNang.requestFocus();
+                return;
+            }
+
+            BigDecimal canNang;
+            try {
+                canNang = new BigDecimal(canNangStr);
+                if (canNang.compareTo(BigDecimal.ZERO) <= 0) {
+                    hienThiCanhBao("Cân nặng không hợp lệ", "Cân nặng thú cưng phải lớn hơn 0 kg!");
                     txtCanNang.requestFocus();
                     return;
                 }
+            } catch (NumberFormatException ex) {
+                hienThiCanhBao("Cân nặng không hợp lệ", "Cân nặng phải là định dạng số hợp lệ (VD: 3.5)!");
+                txtCanNang.requestFocus();
+                return;
             }
 
             LocalDate ngaySinh = dpNgaySinh.getValue();
