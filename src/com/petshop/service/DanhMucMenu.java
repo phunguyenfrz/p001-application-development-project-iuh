@@ -152,7 +152,7 @@ public class DanhMucMenu {
 
                 // Quản lý: Quản trị nhân sự, ca trực, danh mục dịch vụ, khuyến mãi và báo cáo
                 if (nhom.getMaNhom().equals("NHAN_VIEN") || nhom.getMaNhom().equals("CA_TRUC") ||
-                    nhom.getMaNhom().equals("NHA_CUNG_CAP") || nhom.getMaNhom().equals("DICH_VU_CHAM_SOC") ||
+                    nhom.getMaNhom().equals("NHA_CUNG_CAP") || nhom.getMaNhom().equals("DON_NHAP") || nhom.getMaNhom().equals("DICH_VU_CHAM_SOC") ||
                     nhom.getMaNhom().equals("KHUYEN_MAI") || nhom.getMaNhom().equals("SAN_PHAM") ||
                     chucNang.getMaChucNang().equals("HD_DOANH_THU")) {
                     dsVaiTro.add(TaiKhoan.VaiTro.QUAN_LY);
