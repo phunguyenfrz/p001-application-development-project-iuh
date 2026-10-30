@@ -14,6 +14,10 @@ import com.petshop.view.khuyenmai.CapNhatKhuyenMaiView;
 import com.petshop.view.khuyenmai.TimKiemKhuyenMaiView;
 import com.petshop.view.nhacungcap.CapNhatNhaCungCapView;
 import com.petshop.view.nhacungcap.TimKiemNhaCungCapView;
+import com.petshop.view.nhanvien.CapNhatNhanVienView;
+import com.petshop.view.nhanvien.PhanQuyenNhanVienView;
+import com.petshop.view.nhanvien.TaiKhoanDangNhapView;
+import com.petshop.view.nhanvien.TimKiemNhanVienView;
 import com.petshop.view.sanpham.BaoCaoSanPhamView;
 import com.petshop.view.sanpham.CapNhatSanPhamView;
 import com.petshop.view.sanpham.TheoDoiTonKhoView;
@@ -174,8 +178,7 @@ public class ManHinhChinhView extends BorderPane {
         pnlDanhSachMenu.getChildren().add(mnuTongQuan);
 
         // Dựng Menu từ DanhMucMenu
-        TaiKhoan.VaiTro vaiTro = (taiKhoan != null) ? taiKhoan.getPhanQuyen() : TaiKhoan.VaiTro.ADMIN;
-        List<DanhMucMenu.NhomMenu> dsNhomMenu = DanhMucMenu.layMenuTheoVaiTro(vaiTro);
+        List<DanhMucMenu.NhomMenu> dsNhomMenu = DanhMucMenu.layMenuTheoTaiKhoan(taiKhoan);
 
         for (DanhMucMenu.NhomMenu nhom : dsNhomMenu) {
             VBox pnlMucMenu = taoMucMenu(nhom);
@@ -318,8 +321,7 @@ public class ManHinhChinhView extends BorderPane {
         mnuTongQuanThuGon.setOnAction(e -> hienThiTongQuan());
         pnlDanhSachMenu.getChildren().add(mnuTongQuanThuGon);
 
-        TaiKhoan.VaiTro vaiTro = (taiKhoan != null) ? taiKhoan.getPhanQuyen() : TaiKhoan.VaiTro.ADMIN;
-        List<DanhMucMenu.NhomMenu> dsNhomMenu = DanhMucMenu.layMenuTheoVaiTro(vaiTro);
+        List<DanhMucMenu.NhomMenu> dsNhomMenu = DanhMucMenu.layMenuTheoTaiKhoan(taiKhoan);
 
         for (DanhMucMenu.NhomMenu nhom : dsNhomMenu) {
             Button mnuNhom = new Button();
@@ -461,7 +463,16 @@ public class ManHinhChinhView extends BorderPane {
             }
             case "LICH_HEN"       -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "PHIEU_DICH_VU" -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
-            case "NHAN_VIEN"          -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
+            case "NHAN_VIEN"          -> {
+                if ("NV_TIM_KIEM".equals(chucNang.getMaChucNang())) {
+                    yield new TimKiemNhanVienView();
+                } else if ("NV_TAI_KHOAN".equals(chucNang.getMaChucNang())) {
+                    yield new TaiKhoanDangNhapView();
+                } else if ("NV_PHAN_QUYEN".equals(chucNang.getMaChucNang())) {
+                    yield new PhanQuyenNhanVienView();
+                }
+                yield new CapNhatNhanVienView();
+            }
             case "CA_TRUC"             -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "DICH_VU_CHAM_SOC"      -> {
                 if ("DVCS_TIM_KIEM".equals(chucNang.getMaChucNang())) {
