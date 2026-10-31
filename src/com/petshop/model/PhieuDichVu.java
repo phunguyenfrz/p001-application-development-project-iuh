@@ -59,6 +59,25 @@ public class PhieuDichVu {
         return tong;
     }
 
+    // Chuỗi tóm tắt các dịch vụ thực hiện để hiển thị lên bảng
+    public String getChuoiDichVu() {
+        if (danhSachChiTiet == null || danhSachChiTiet.isEmpty()) {
+            return "Chưa có dịch vụ";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < danhSachChiTiet.size(); i++) {
+            ChiTietPhieuDichVu ct = danhSachChiTiet.get(i);
+            String tenTc = ct.getTenThuCung() != null ? ct.getTenThuCung() : "";
+            String tenDv = ct.getTenDichVu() != null ? ct.getTenDichVu() : ct.getMaDichVu();
+            if (i > 0) sb.append(", ");
+            sb.append(tenDv);
+            if (!tenTc.isEmpty()) {
+                sb.append(" (").append(tenTc).append(")");
+            }
+        }
+        return sb.toString();
+    }
+
     public String getMaPhieuDichVu() {
         return maPhieuDichVu;
     }
