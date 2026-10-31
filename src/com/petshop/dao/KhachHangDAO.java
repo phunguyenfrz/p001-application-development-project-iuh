@@ -237,7 +237,10 @@ public class KhachHangDAO {
             ps.setString(1, khachHang.getMaKhachHang());
             ps.setString(2, khachHang.getHoTen());
             ps.setString(3, khachHang.getSoDienThoai());
-            ps.setString(4, khachHang.getEmail());
+            String email = (khachHang.getEmail() != null && !khachHang.getEmail().trim().isEmpty())
+                    ? khachHang.getEmail().trim()
+                    : null;
+            ps.setString(4, email);
             ps.setInt(5, khachHang.getDiemTichLuy());
             ps.setString(6, khachHang.getDiaChi());
             ps.setString(7, khachHang.getGhiChu());
@@ -270,7 +273,10 @@ public class KhachHangDAO {
 
             ps.setString(1, khachHang.getHoTen());
             ps.setString(2, khachHang.getSoDienThoai());
-            ps.setString(3, khachHang.getEmail());
+            String email = (khachHang.getEmail() != null && !khachHang.getEmail().trim().isEmpty())
+                    ? khachHang.getEmail().trim()
+                    : null;
+            ps.setString(3, email);
             ps.setInt(4, khachHang.getDiemTichLuy());
             ps.setString(5, khachHang.getDiaChi());
             ps.setString(6, khachHang.getGhiChu());
