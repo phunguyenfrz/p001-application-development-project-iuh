@@ -5,7 +5,6 @@ import com.petshop.model.NhaCungCap;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -19,6 +18,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.Window;
 
 import java.util.List;
 
@@ -154,16 +154,8 @@ public class TimKiemNhaCungCapView extends VBox {
     private void moXemChiTiet() {
         NhaCungCap ncc = tblDanhSach.getSelectionModel().getSelectedItem();
         if (ncc == null) return;
-
-        Alert chiTiet = new Alert(Alert.AlertType.INFORMATION);
-        chiTiet.setTitle("Chi tiết nhà cung cấp");
-        chiTiet.setHeaderText(ncc.getTenNhaCungCap());
-        chiTiet.setContentText("Mã nhà cung cấp: " + giaTriHoacGach(ncc.getMaNhaCungCap())
-                + "\nSố điện thoại: " + giaTriHoacGach(ncc.getSoDienThoai())
-                + "\nEmail: " + giaTriHoacGach(ncc.getEmail())
-                + "\nĐịa chỉ: " + giaTriHoacGach(ncc.getDiaChi())
-                + "\nTrạng thái: " + (ncc.isTrangThai() ? "Đang hoạt động" : "Ngừng hợp tác"));
-        chiTiet.showAndWait();
+        Window owner = getScene() != null ? getScene().getWindow() : null;
+        XemChiTietNhaCungCapDialog.hienThi(ncc, owner);
     }
 
     private String giaTriHoacGach(String giaTri) {
