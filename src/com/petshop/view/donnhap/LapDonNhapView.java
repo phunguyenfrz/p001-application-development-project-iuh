@@ -1,9 +1,9 @@
 package com.petshop.view.donnhap;
 
-import com.petshop.controller.DonHangController;
+import com.petshop.controller.DonNhapHangController;
 import com.petshop.controller.SanPhamController;
-import com.petshop.model.ChiTietDonHang;
-import com.petshop.model.DonHang;
+import com.petshop.model.ChiTietDonNhap;
+import com.petshop.model.DonNhapHang;
 import com.petshop.model.SanPham;
 import com.petshop.model.TaiKhoan;
 import com.petshop.util.SessionManager;
@@ -46,7 +46,7 @@ public class LapDonNhapView extends VBox {
     private static final DecimalFormat DINH_DANG_TIEN = new DecimalFormat("#,##0");
 
     // Controller
-    private final DonHangController donHangController = new DonHangController();
+    private final DonNhapHangController donHangController = new DonNhapHangController();
 
     // --- Phần thông tin đơn hàng ---
     private final TextField txtMaDon = new TextField();
@@ -62,8 +62,8 @@ public class LapDonNhapView extends VBox {
     private final Map<String, String> tenNhaCungCapTheoSanPham = new LinkedHashMap<>();
 
     // --- Bảng chi tiết sản phẩm ---
-    private final TableView<ChiTietDonHang> bangChiTiet = new TableView<>();
-    private final ObservableList<ChiTietDonHang> danhSachChiTiet = FXCollections.observableArrayList();
+    private final TableView<ChiTietDonNhap> bangChiTiet = new TableView<>();
+    private final ObservableList<ChiTietDonNhap> danhSachChiTiet = FXCollections.observableArrayList();
 
     // --- Tổng tiền ---
     private final Label lblTongTien = new Label("Tổng tiền: 0");
@@ -227,7 +227,7 @@ public class LapDonNhapView extends VBox {
         VBox.setVgrow(bangChiTiet, Priority.ALWAYS);
 
         // Cột STT
-        TableColumn<ChiTietDonHang, Number> cotSTT = new TableColumn<>("STT");
+        TableColumn<ChiTietDonNhap, Number> cotSTT = new TableColumn<>("STT");
         cotSTT.setMinWidth(50);
         cotSTT.setMaxWidth(60);
         cotSTT.setStyle("-fx-alignment: CENTER;");
@@ -238,16 +238,16 @@ public class LapDonNhapView extends VBox {
         });
 
         // Cột mã sản phẩm
-        TableColumn<ChiTietDonHang, String> cotMaSP = new TableColumn<>("Mã SP");
+        TableColumn<ChiTietDonNhap, String> cotMaSP = new TableColumn<>("Mã SP");
         cotMaSP.setMinWidth(130);
         cotMaSP.setCellValueFactory(new PropertyValueFactory<>("maSanPham"));
 
         // Cột tên sản phẩm
-        TableColumn<ChiTietDonHang, String> cotTenSP = new TableColumn<>("Tên sản phẩm");
+        TableColumn<ChiTietDonNhap, String> cotTenSP = new TableColumn<>("Tên sản phẩm");
         cotTenSP.setMinWidth(180);
         cotTenSP.setCellValueFactory(new PropertyValueFactory<>("tenSanPham"));
 
-        TableColumn<ChiTietDonHang, String> cotNhaCungCap = new TableColumn<>("Nhà cung cấp");
+        TableColumn<ChiTietDonNhap, String> cotNhaCungCap = new TableColumn<>("Nhà cung cấp");
         cotNhaCungCap.setMinWidth(150);
         cotNhaCungCap.setCellValueFactory(cellData -> {
             String ten = tenNhaCungCapTheoSanPham.get(cellData.getValue().getMaSanPham());
@@ -255,13 +255,13 @@ public class LapDonNhapView extends VBox {
         });
 
         // Cột đơn vị tính
-        TableColumn<ChiTietDonHang, String> cotDVT = new TableColumn<>("Đơn vị tính");
+        TableColumn<ChiTietDonNhap, String> cotDVT = new TableColumn<>("Đơn vị tính");
         cotDVT.setMinWidth(80);
         cotDVT.setStyle("-fx-alignment: CENTER;");
         cotDVT.setCellValueFactory(new PropertyValueFactory<>("donViTinh"));
 
         // Cột số lượng (chỉnh sửa bằng Spinner)
-        TableColumn<ChiTietDonHang, Integer> cotSoLuong = new TableColumn<>("Số lượng");
+        TableColumn<ChiTietDonNhap, Integer> cotSoLuong = new TableColumn<>("Số lượng");
         cotSoLuong.setMinWidth(100);
         cotSoLuong.setStyle("-fx-alignment: CENTER;");
         cotSoLuong.setCellValueFactory(new PropertyValueFactory<>("soLuong"));
@@ -299,7 +299,7 @@ public class LapDonNhapView extends VBox {
         });
 
         // Cột đơn giá (chỉnh sửa bằng TextField)
-        TableColumn<ChiTietDonHang, BigDecimal> cotDonGia = new TableColumn<>("Đơn giá");
+        TableColumn<ChiTietDonNhap, BigDecimal> cotDonGia = new TableColumn<>("Đơn giá");
         cotDonGia.setMinWidth(130);
         cotDonGia.setStyle("-fx-alignment: CENTER-RIGHT;");
         cotDonGia.setCellValueFactory(new PropertyValueFactory<>("donGia"));
@@ -340,7 +340,7 @@ public class LapDonNhapView extends VBox {
         });
 
         // Cột thành tiền
-        TableColumn<ChiTietDonHang, BigDecimal> cotThanhTien = new TableColumn<>("Thành tiền");
+        TableColumn<ChiTietDonNhap, BigDecimal> cotThanhTien = new TableColumn<>("Thành tiền");
         cotThanhTien.setMinWidth(130);
         cotThanhTien.setStyle("-fx-alignment: CENTER-RIGHT;");
         cotThanhTien.setCellValueFactory(cellData ->
@@ -358,7 +358,7 @@ public class LapDonNhapView extends VBox {
         });
 
         // Cột nút xóa
-        TableColumn<ChiTietDonHang, Void> cotXoa = new TableColumn<>("Xóa");
+        TableColumn<ChiTietDonNhap, Void> cotXoa = new TableColumn<>("Xóa");
         cotXoa.setMinWidth(70);
         cotXoa.setMaxWidth(80);
         cotXoa.setStyle("-fx-alignment: CENTER;");
@@ -369,7 +369,7 @@ public class LapDonNhapView extends VBox {
             {
                 btnXoa.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-cursor: hand;");
                 btnXoa.setOnAction(e -> {
-                    ChiTietDonHang ct = getTableView().getItems().get(getIndex());
+                    ChiTietDonNhap ct = getTableView().getItems().get(getIndex());
                     danhSachChiTiet.remove(ct);
                     nhaCungCapTheoSanPham.remove(ct.getMaSanPham());
                     tenNhaCungCapTheoSanPham.remove(ct.getMaSanPham());
@@ -399,7 +399,7 @@ public class LapDonNhapView extends VBox {
     /**
      * Cập nhật đơn giá từ TextField.
      */
-    private void capNhatDonGia(ChiTietDonHang chiTiet, String giaText) {
+    private void capNhatDonGia(ChiTietDonNhap chiTiet, String giaText) {
         try {
             if (giaText == null || giaText.trim().isEmpty()) {
                 chiTiet.setDonGia(BigDecimal.ZERO);
@@ -484,7 +484,7 @@ public class LapDonNhapView extends VBox {
         }
 
         // Kiểm tra sản phẩm đã tồn tại trong bảng chưa
-        for (ChiTietDonHang ct : danhSachChiTiet) {
+        for (ChiTietDonNhap ct : danhSachChiTiet) {
             if (ct.getMaSanPham().equals(sanPhamDuocChon.getMaSanPham())) {
                 hienThiLoi("Sản phẩm \"" + sanPhamDuocChon.getTenSanPham()
                         + "\" đã có trong danh sách. Vui lòng chỉnh sửa số lượng trực tiếp trên bảng.");
@@ -493,7 +493,7 @@ public class LapDonNhapView extends VBox {
         }
 
         // Tạo chi tiết đơn hàng mới
-        ChiTietDonHang chiTietMoi = new ChiTietDonHang();
+        ChiTietDonNhap chiTietMoi = new ChiTietDonNhap();
         chiTietMoi.setMaSanPham(sanPhamDuocChon.getMaSanPham());
         chiTietMoi.setTenSanPham(sanPhamDuocChon.getTenSanPham());
         chiTietMoi.setDonViTinh(sanPhamDuocChon.getDonViTinh());
@@ -525,7 +525,7 @@ public class LapDonNhapView extends VBox {
             return;
         }
         // Kiểm tra số lượng và đơn giá hợp lệ
-        for (ChiTietDonHang ct : danhSachChiTiet) {
+        for (ChiTietDonNhap ct : danhSachChiTiet) {
             if (ct.getSoLuong() <= 0) {
                 hienThiLoi("Số lượng sản phẩm \"" + ct.getTenSanPham() + "\" phải lớn hơn 0.");
                 return;
@@ -557,8 +557,8 @@ public class LapDonNhapView extends VBox {
             return;
         }
 
-        Map<String, List<ChiTietDonHang>> chiTietTheoNhaCungCap = new LinkedHashMap<>();
-        for (ChiTietDonHang ct : danhSachChiTiet) {
+        Map<String, List<ChiTietDonNhap>> chiTietTheoNhaCungCap = new LinkedHashMap<>();
+        for (ChiTietDonNhap ct : danhSachChiTiet) {
             String maNhaCungCap = nhaCungCapTheoSanPham.get(ct.getMaSanPham());
             SanPham hienTai = sanPhamHienTai.get(ct.getMaSanPham());
             if (hienTai == null || !hienTai.isTrangThai()) {
@@ -588,15 +588,15 @@ public class LapDonNhapView extends VBox {
             return;
         }
 
-        List<DonHang> danhSachDonHang = new ArrayList<>();
-        for (Map.Entry<String, List<ChiTietDonHang>> entry : chiTietTheoNhaCungCap.entrySet()) {
-            DonHang donHang = new DonHang();
+        List<DonNhapHang> danhSachDonHang = new ArrayList<>();
+        for (Map.Entry<String, List<ChiTietDonNhap>> entry : chiTietTheoNhaCungCap.entrySet()) {
+            DonNhapHang donHang = new DonNhapHang();
             donHang.setMaNhaCungCap(entry.getKey());
             donHang.setMaNhanVien(taiKhoan.getMaNhanVien());
             donHang.setNgayLap(dpNgayLap.getValue());
             donHang.setGioLap(LocalTime.of(spGio.getValue(), spPhut.getValue(), spGiay.getValue()));
-            List<ChiTietDonHang> dsBanSao = entry.getValue().stream()
-                    .map(ct -> new ChiTietDonHang(null, ct.getMaSanPham(), ct.getTenSanPham(),
+            List<ChiTietDonNhap> dsBanSao = entry.getValue().stream()
+                    .map(ct -> new ChiTietDonNhap(null, ct.getMaSanPham(), ct.getTenSanPham(),
                             ct.getDonViTinh(), ct.getSoLuong(), ct.getDonGia()))
                     .collect(Collectors.toList());
             donHang.setDanhSachChiTiet(dsBanSao);
@@ -626,7 +626,7 @@ public class LapDonNhapView extends VBox {
      */
     private void capNhatTongTien() {
         BigDecimal tongTien = BigDecimal.ZERO;
-        for (ChiTietDonHang ct : danhSachChiTiet) {
+        for (ChiTietDonNhap ct : danhSachChiTiet) {
             tongTien = tongTien.add(ct.getThanhTien());
         }
         lblTongTien.setText("Tổng tiền: " + DINH_DANG_TIEN.format(tongTien) + " đ");

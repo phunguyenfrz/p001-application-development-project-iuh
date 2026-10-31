@@ -1,8 +1,8 @@
 package com.petshop.view.donnhap;
 
-import com.petshop.controller.DonHangController;
-import com.petshop.model.ChiTietDonHang;
-import com.petshop.model.DonHang;
+import com.petshop.controller.DonNhapHangController;
+import com.petshop.model.ChiTietDonNhap;
+import com.petshop.model.DonNhapHang;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -33,20 +33,20 @@ public class XemChiTietDonNhapView extends Stage {
     private static final DateTimeFormatter DINH_DANG_NGAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter DINH_DANG_GIO = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    private final DonHang donHang;
-    private final DonHangController donHangController;
+    private final DonNhapHang donHang;
+    private final DonNhapHangController donHangController;
 
     // Bảng chi tiết đơn hàng
-    private TableView<ChiTietDonHang> bangChiTiet;
+    private TableView<ChiTietDonNhap> bangChiTiet;
 
     /**
      * Khởi tạo dialog xem chi tiết đơn nhập.
      *
      * @param donHang đơn hàng cần xem chi tiết
      */
-    public XemChiTietDonNhapView(DonHang donHang) {
+    public XemChiTietDonNhapView(DonNhapHang donHang) {
         this.donHang = donHang;
-        this.donHangController = new DonHangController();
+        this.donHangController = new DonNhapHangController();
 
         khoiTaoGiaoDien();
         taiDuLieu();
@@ -168,7 +168,7 @@ public class XemChiTietDonNhapView extends Stage {
         VBox.setVgrow(bangChiTiet, Priority.ALWAYS);
 
         // Cột STT
-        TableColumn<ChiTietDonHang, Number> cotSTT = new TableColumn<>("STT");
+        TableColumn<ChiTietDonNhap, Number> cotSTT = new TableColumn<>("STT");
         cotSTT.setMinWidth(50);
         cotSTT.setMaxWidth(60);
         cotSTT.setStyle("-fx-alignment: CENTER;");
@@ -178,33 +178,33 @@ public class XemChiTietDonNhapView extends Stage {
         });
 
         // Cột mã sản phẩm
-        TableColumn<ChiTietDonHang, String> cotMaSP = new TableColumn<>("Mã SP");
+        TableColumn<ChiTietDonNhap, String> cotMaSP = new TableColumn<>("Mã SP");
         cotMaSP.setMinWidth(100);
         cotMaSP.setCellValueFactory(new PropertyValueFactory<>("maSanPham"));
 
         // Cột tên sản phẩm
-        TableColumn<ChiTietDonHang, String> cotTenSP = new TableColumn<>("Tên sản phẩm");
+        TableColumn<ChiTietDonNhap, String> cotTenSP = new TableColumn<>("Tên sản phẩm");
         cotTenSP.setMinWidth(200);
         cotTenSP.setCellValueFactory(new PropertyValueFactory<>("tenSanPham"));
 
         // Cột đơn vị tính
-        TableColumn<ChiTietDonHang, String> cotDVT = new TableColumn<>("Đơn vị tính");
+        TableColumn<ChiTietDonNhap, String> cotDVT = new TableColumn<>("Đơn vị tính");
         cotDVT.setMinWidth(80);
         cotDVT.setStyle("-fx-alignment: CENTER;");
         cotDVT.setCellValueFactory(new PropertyValueFactory<>("donViTinh"));
 
         // Cột số lượng
-        TableColumn<ChiTietDonHang, Integer> cotSoLuong = new TableColumn<>("Số lượng");
+        TableColumn<ChiTietDonNhap, Integer> cotSoLuong = new TableColumn<>("Số lượng");
         cotSoLuong.setMinWidth(80);
         cotSoLuong.setStyle("-fx-alignment: CENTER;");
         cotSoLuong.setCellValueFactory(new PropertyValueFactory<>("soLuong"));
 
         // Cột đơn giá
-        TableColumn<ChiTietDonHang, BigDecimal> cotDonGia = new TableColumn<>("Đơn giá");
+        TableColumn<ChiTietDonNhap, BigDecimal> cotDonGia = new TableColumn<>("Đơn giá");
         cotDonGia.setMinWidth(120);
         cotDonGia.setStyle("-fx-alignment: CENTER-RIGHT;");
         cotDonGia.setCellValueFactory(new PropertyValueFactory<>("donGia"));
-        cotDonGia.setCellFactory(col -> new TableCell<ChiTietDonHang, BigDecimal>() {
+        cotDonGia.setCellFactory(col -> new TableCell<ChiTietDonNhap, BigDecimal>() {
             @Override
             protected void updateItem(BigDecimal item, boolean empty) {
                 super.updateItem(item, empty);
@@ -217,12 +217,12 @@ public class XemChiTietDonNhapView extends Stage {
         });
 
         // Cột thành tiền
-        TableColumn<ChiTietDonHang, BigDecimal> cotThanhTien = new TableColumn<>("Thành tiền");
+        TableColumn<ChiTietDonNhap, BigDecimal> cotThanhTien = new TableColumn<>("Thành tiền");
         cotThanhTien.setMinWidth(120);
         cotThanhTien.setStyle("-fx-alignment: CENTER-RIGHT;");
         cotThanhTien.setCellValueFactory(cellData ->
                 new ReadOnlyObjectWrapper<>(cellData.getValue().getThanhTien()));
-        cotThanhTien.setCellFactory(col -> new TableCell<ChiTietDonHang, BigDecimal>() {
+        cotThanhTien.setCellFactory(col -> new TableCell<ChiTietDonNhap, BigDecimal>() {
             @Override
             protected void updateItem(BigDecimal item, boolean empty) {
                 super.updateItem(item, empty);
@@ -262,9 +262,9 @@ public class XemChiTietDonNhapView extends Stage {
      */
     private void taiDuLieu() {
         try {
-            List<ChiTietDonHang> danhSachChiTiet =
+            List<ChiTietDonNhap> danhSachChiTiet =
                     donHangController.layChiTietTheoMaDonHang(donHang.getMaDonHang());
-            ObservableList<ChiTietDonHang> duLieu = FXCollections.observableArrayList(danhSachChiTiet);
+            ObservableList<ChiTietDonNhap> duLieu = FXCollections.observableArrayList(danhSachChiTiet);
             bangChiTiet.setItems(duLieu);
         } catch (Exception e) {
             bangChiTiet.setPlaceholder(new Label("Lỗi khi tải dữ liệu chi tiết đơn hàng"));
@@ -278,7 +278,7 @@ public class XemChiTietDonNhapView extends Stage {
      * @param chuSoHuu cửa sổ cha
      * @param donHang  đơn hàng cần xem chi tiết
      */
-    public static void moDialog(Window chuSoHuu, DonHang donHang) {
+    public static void moDialog(Window chuSoHuu, DonNhapHang donHang) {
         XemChiTietDonNhapView dialog = new XemChiTietDonNhapView(donHang);
         if (chuSoHuu != null) {
             dialog.initOwner(chuSoHuu);

@@ -1,7 +1,7 @@
 package com.petshop.view.donnhap;
 
-import com.petshop.controller.DonHangController;
-import com.petshop.model.DonHang;
+import com.petshop.controller.DonNhapHangController;
+import com.petshop.model.DonNhapHang;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -30,7 +30,7 @@ import java.util.Optional;
 public class CapNhatDonNhapView extends VBox {
 
     // === Các thành phần giao diện ===
-    private TableView<DonHang> bangDonHang;
+    private TableView<DonNhapHang> bangDonHang;
     private Button nutXacNhan;
     private Button nutHuyDon;
     private Button nutXemChiTiet;
@@ -38,7 +38,7 @@ public class CapNhatDonNhapView extends VBox {
     private Label nhanTrangThai;
 
     // === Controller ===
-    private final DonHangController controller;
+    private final DonNhapHangController controller;
 
     // === Định dạng ===
     private final DecimalFormat dinhDangTien = new DecimalFormat("#,##0");
@@ -49,7 +49,7 @@ public class CapNhatDonNhapView extends VBox {
      * Khởi tạo giao diện cập nhật đơn nhập hàng.
      */
     public CapNhatDonNhapView() {
-        controller = new DonHangController();
+        controller = new DonNhapHangController();
         khoiTaoGiaoDien();
         taiDuLieu();
     }
@@ -138,28 +138,28 @@ public class CapNhatDonNhapView extends VBox {
      * Tạo bảng hiển thị danh sách đơn hàng.
      */
     @SuppressWarnings("unchecked")
-    private TableView<DonHang> taoBangDonHang() {
-        TableView<DonHang> bang = new TableView<>();
+    private TableView<DonNhapHang> taoBangDonHang() {
+        TableView<DonNhapHang> bang = new TableView<>();
         bang.getStyleClass().add("bang-du-lieu");
         bang.setPlaceholder(new Label("Không có đơn nhập hàng nào."));
 
         // Cột mã đơn hàng
-        TableColumn<DonHang, String> cotMa = new TableColumn<>("Mã đơn hàng");
+        TableColumn<DonNhapHang, String> cotMa = new TableColumn<>("Mã đơn hàng");
         cotMa.setCellValueFactory(new PropertyValueFactory<>("maDonHang"));
         cotMa.setPrefWidth(120);
 
         // Cột tên nhà cung cấp
-        TableColumn<DonHang, String> cotNCC = new TableColumn<>("Nhà cung cấp");
+        TableColumn<DonNhapHang, String> cotNCC = new TableColumn<>("Nhà cung cấp");
         cotNCC.setCellValueFactory(new PropertyValueFactory<>("tenNhaCungCap"));
         cotNCC.setPrefWidth(180);
 
         // Cột tên nhân viên
-        TableColumn<DonHang, String> cotNV = new TableColumn<>("Nhân viên");
+        TableColumn<DonNhapHang, String> cotNV = new TableColumn<>("Nhân viên");
         cotNV.setCellValueFactory(new PropertyValueFactory<>("tenNhanVien"));
         cotNV.setPrefWidth(150);
 
         // Cột ngày lập (định dạng dd/MM/yyyy)
-        TableColumn<DonHang, String> cotNgayLap = new TableColumn<>("Ngày lập");
+        TableColumn<DonNhapHang, String> cotNgayLap = new TableColumn<>("Ngày lập");
         cotNgayLap.setCellValueFactory(cellData -> {
             LocalDate ngay = cellData.getValue().getNgayLap();
             String ngayStr = (ngay != null) ? ngay.format(dinhDangNgay) : "";
@@ -167,7 +167,7 @@ public class CapNhatDonNhapView extends VBox {
         });
         cotNgayLap.setPrefWidth(120);
 
-        TableColumn<DonHang, String> cotGioLap = new TableColumn<>("Thời gian");
+        TableColumn<DonNhapHang, String> cotGioLap = new TableColumn<>("Thời gian");
         cotGioLap.setCellValueFactory(cellData -> {
             LocalTime gio = cellData.getValue().getGioLap();
             return new SimpleStringProperty(gio != null ? gio.format(dinhDangGio) : "");
@@ -175,7 +175,7 @@ public class CapNhatDonNhapView extends VBox {
         cotGioLap.setPrefWidth(100);
 
         // Cột tổng tiền (định dạng #,##0)
-        TableColumn<DonHang, String> cotTongTien = new TableColumn<>("Tổng tiền");
+        TableColumn<DonNhapHang, String> cotTongTien = new TableColumn<>("Tổng tiền");
         cotTongTien.setCellValueFactory(cellData -> {
             BigDecimal tongTien = cellData.getValue().getTongTien();
             String tienStr = (tongTien != null) ? dinhDangTien.format(tongTien) : "0";
@@ -185,10 +185,10 @@ public class CapNhatDonNhapView extends VBox {
         cotTongTien.setStyle("-fx-alignment: CENTER-RIGHT;");
 
         // Cột trạng thái (tô màu theo trạng thái)
-        TableColumn<DonHang, String> cotTrangThai = new TableColumn<>("Trạng thái");
+        TableColumn<DonNhapHang, String> cotTrangThai = new TableColumn<>("Trạng thái");
         cotTrangThai.setCellValueFactory(new PropertyValueFactory<>("trangThai"));
         cotTrangThai.setPrefWidth(140);
-        cotTrangThai.setCellFactory(col -> new TableCell<DonHang, String>() {
+        cotTrangThai.setCellFactory(col -> new TableCell<DonNhapHang, String>() {
             @Override
             protected void updateItem(String trangThai, boolean empty) {
                 super.updateItem(trangThai, empty);
@@ -198,11 +198,11 @@ public class CapNhatDonNhapView extends VBox {
                 } else {
                     setText(trangThai);
                     setStyle("-fx-font-weight: bold;");
-                    if (DonHang.TRANG_THAI_CHO_NHAN.equals(trangThai)) {
+                    if (DonNhapHang.TRANG_THAI_CHO_NHAN.equals(trangThai)) {
                         setTextFill(Color.ORANGE);
-                    } else if (DonHang.TRANG_THAI_HOAN_TAT.equals(trangThai)) {
+                    } else if (DonNhapHang.TRANG_THAI_HOAN_TAT.equals(trangThai)) {
                         setTextFill(Color.GREEN);
-                    } else if (DonHang.TRANG_THAI_DA_HUY.equals(trangThai)) {
+                    } else if (DonNhapHang.TRANG_THAI_DA_HUY.equals(trangThai)) {
                         setTextFill(Color.RED);
                     } else {
                         setTextFill(Color.BLACK);
@@ -213,7 +213,7 @@ public class CapNhatDonNhapView extends VBox {
 
         bang.getColumns().addAll(cotMa, cotNCC, cotNV, cotNgayLap, cotGioLap, cotTongTien, cotTrangThai);
         bang.setRowFactory(tv -> {
-            TableRow<DonHang> row = new TableRow<>();
+            TableRow<DonNhapHang> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
                     bang.getSelectionModel().select(row.getIndex());
@@ -228,14 +228,14 @@ public class CapNhatDonNhapView extends VBox {
     /**
      * Cập nhật trạng thái bật/tắt các nút dựa trên dòng được chọn.
      */
-    private void capNhatTrangThaiNut(DonHang donHang) {
+    private void capNhatTrangThaiNut(DonNhapHang donHang) {
         if (donHang == null) {
             // Không có dòng nào được chọn → tắt hết
             nutXacNhan.setDisable(true);
             nutHuyDon.setDisable(true);
             nutXemChiTiet.setDisable(true);
         } else {
-            boolean laChoNhanHang = DonHang.TRANG_THAI_CHO_NHAN.equals(donHang.getTrangThai());
+            boolean laChoNhanHang = DonNhapHang.TRANG_THAI_CHO_NHAN.equals(donHang.getTrangThai());
             // Chỉ bật xác nhận và hủy khi trạng thái là "Chờ nhận hàng"
             nutXacNhan.setDisable(!laChoNhanHang);
             nutHuyDon.setDisable(!laChoNhanHang);
@@ -249,13 +249,13 @@ public class CapNhatDonNhapView extends VBox {
      */
     private void taiDuLieu() {
         try {
-            List<DonHang> danhSach = controller.layTatCaDonHang();
-            ObservableList<DonHang> danhSachObservable = FXCollections.observableArrayList(danhSach);
+            List<DonNhapHang> danhSach = controller.layTatCaDonHang();
+            ObservableList<DonNhapHang> danhSachObservable = FXCollections.observableArrayList(danhSach);
             bangDonHang.setItems(danhSachObservable);
 
             // Cập nhật nhãn trạng thái
             long soChoNhan = danhSach.stream()
-                    .filter(dh -> DonHang.TRANG_THAI_CHO_NHAN.equals(dh.getTrangThai()))
+                    .filter(dh -> DonNhapHang.TRANG_THAI_CHO_NHAN.equals(dh.getTrangThai()))
                     .count();
             nhanTrangThai.setText("Tổng số đơn: " + danhSach.size()
                     + " | Đang chờ nhận hàng: " + soChoNhan);
@@ -271,7 +271,7 @@ public class CapNhatDonNhapView extends VBox {
      * Xử lý xác nhận nhận hàng cho đơn được chọn.
      */
     private void xuLyXacNhanNhanHang() {
-        DonHang donHang = bangDonHang.getSelectionModel().getSelectedItem();
+        DonNhapHang donHang = bangDonHang.getSelectionModel().getSelectedItem();
         if (donHang == null) return;
 
         // Hiển thị hộp thoại xác nhận
@@ -302,7 +302,7 @@ public class CapNhatDonNhapView extends VBox {
      * Xử lý hủy đơn nhập hàng được chọn.
      */
     private void xuLyHuyDon() {
-        DonHang donHang = bangDonHang.getSelectionModel().getSelectedItem();
+        DonNhapHang donHang = bangDonHang.getSelectionModel().getSelectedItem();
         if (donHang == null) return;
 
         // Hiển thị hộp thoại xác nhận hủy
@@ -333,7 +333,7 @@ public class CapNhatDonNhapView extends VBox {
      * Xử lý xem chi tiết đơn nhập hàng được chọn.
      */
     private void xuLyXemChiTiet() {
-        DonHang donHang = bangDonHang.getSelectionModel().getSelectedItem();
+        DonNhapHang donHang = bangDonHang.getSelectionModel().getSelectedItem();
         if (donHang == null) return;
 
         // Mở dialog xem chi tiết đơn nhập

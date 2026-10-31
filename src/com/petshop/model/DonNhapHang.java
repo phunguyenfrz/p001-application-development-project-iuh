@@ -8,15 +8,15 @@ import java.util.List;
 
 /**
  * Thực thể Đơn nhập hàng.
- * Khớp với bảng DonHang trong CSDL SQL Server:
- * - maDonHang VARCHAR(20) PRIMARY KEY (DH-YYYYMMDD-XXXXXX)
+ * Khớp với bảng DonNhapHang trong CSDL SQL Server:
+ * - maDonHang VARCHAR(20) PRIMARY KEY (PN-YYYYMMDD-XXXXXX hoặc DH-YYYYMMDD-XXXXXX)
  * - maNhaCungCap VARCHAR(20) NOT NULL
  * - maNhanVien VARCHAR(20) NOT NULL
  * - ngayLap DATE NOT NULL, gioLap TIME NOT NULL
  * - tongTien DECIMAL(18,2) NOT NULL DEFAULT 0
  * - trangThai NVARCHAR(30) NOT NULL (Chờ nhận hàng, Hoàn tất, Đã hủy)
  */
-public class DonHang {
+public class DonNhapHang {
 
     public static final String TRANG_THAI_CHO_NHAN = "Chờ nhận hàng";
     public static final String TRANG_THAI_HOAN_TAT = "Hoàn tất";
@@ -33,16 +33,16 @@ public class DonHang {
     // Các trường hiển thị bổ trợ (JOIN view)
     private String tenNhaCungCap;
     private String tenNhanVien;
-    private List<ChiTietDonHang> danhSachChiTiet = new ArrayList<>();
+    private List<ChiTietDonNhap> danhSachChiTiet = new ArrayList<>();
 
-    public DonHang() {
+    public DonNhapHang() {
         this.ngayLap = LocalDate.now();
         this.gioLap = LocalTime.now().withNano(0);
         this.tongTien = BigDecimal.ZERO;
         this.trangThai = TRANG_THAI_CHO_NHAN;
     }
 
-    public DonHang(String maDonHang, String maNhaCungCap, String maNhanVien, LocalDate ngayLap, BigDecimal tongTien, String trangThai) {
+    public DonNhapHang(String maDonHang, String maNhaCungCap, String maNhanVien, LocalDate ngayLap, BigDecimal tongTien, String trangThai) {
         this.maDonHang = maDonHang;
         this.maNhaCungCap = maNhaCungCap;
         this.maNhanVien = maNhanVien;
@@ -58,6 +58,14 @@ public class DonHang {
 
     public void setMaDonHang(String maDonHang) {
         this.maDonHang = maDonHang;
+    }
+
+    public String getMaDonNhap() {
+        return maDonHang;
+    }
+
+    public void setMaDonNhap(String maDonNhap) {
+        this.maDonHang = maDonNhap;
     }
 
     public String getMaNhaCungCap() {
@@ -124,17 +132,17 @@ public class DonHang {
         this.tenNhanVien = tenNhanVien;
     }
 
-    public List<ChiTietDonHang> getDanhSachChiTiet() {
+    public List<ChiTietDonNhap> getDanhSachChiTiet() {
         return danhSachChiTiet;
     }
 
-    public void setDanhSachChiTiet(List<ChiTietDonHang> danhSachChiTiet) {
+    public void setDanhSachChiTiet(List<ChiTietDonNhap> danhSachChiTiet) {
         this.danhSachChiTiet = danhSachChiTiet != null ? danhSachChiTiet : new ArrayList<>();
     }
 
     @Override
     public String toString() {
-        return "DonHang{" +
+        return "DonNhapHang{" +
                 "maDonHang='" + maDonHang + '\'' +
                 ", maNhaCungCap='" + maNhaCungCap + '\'' +
                 ", maNhanVien='" + maNhanVien + '\'' +

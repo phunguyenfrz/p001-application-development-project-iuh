@@ -4,37 +4,37 @@ import java.math.BigDecimal;
 
 /**
  * Thực thể Chi tiết đơn nhập hàng.
- * Khớp với bảng ChiTietDonHang trong CSDL SQL Server:
+ * Khớp với bảng ChiTietDonNhap trong CSDL SQL Server:
  * - maDonHang VARCHAR(20) NOT NULL
  * - maSanPham VARCHAR(20) NOT NULL
  * - soLuong INT NOT NULL CHECK (soLuong > 0)
  * - donGia DECIMAL(18,2) NOT NULL CHECK (donGia >= 0)
- * PRIMARY KEY (maDonHang, maSanPham)
+ * - PRIMARY KEY (maDonHang, maSanPham)
  */
-public class ChiTietDonHang {
+public class ChiTietDonNhap {
 
     private String maDonHang;
     private String maSanPham;
     private int soLuong;
     private BigDecimal donGia;
 
-    // Các trường bổ trợ hiển thị trên bảng
+    // Các trường hiển thị bổ trợ (JOIN view)
     private String tenSanPham;
     private String donViTinh;
 
-    public ChiTietDonHang() {
+    public ChiTietDonNhap() {
         this.soLuong = 1;
         this.donGia = BigDecimal.ZERO;
     }
 
-    public ChiTietDonHang(String maDonHang, String maSanPham, int soLuong, BigDecimal donGia) {
+    public ChiTietDonNhap(String maDonHang, String maSanPham, int soLuong, BigDecimal donGia) {
         this.maDonHang = maDonHang;
         this.maSanPham = maSanPham;
         this.soLuong = soLuong;
         this.donGia = donGia != null ? donGia : BigDecimal.ZERO;
     }
 
-    public ChiTietDonHang(String maDonHang, String maSanPham, String tenSanPham, String donViTinh, int soLuong, BigDecimal donGia) {
+    public ChiTietDonNhap(String maDonHang, String maSanPham, String tenSanPham, String donViTinh, int soLuong, BigDecimal donGia) {
         this.maDonHang = maDonHang;
         this.maSanPham = maSanPham;
         this.tenSanPham = tenSanPham;
@@ -49,6 +49,14 @@ public class ChiTietDonHang {
 
     public void setMaDonHang(String maDonHang) {
         this.maDonHang = maDonHang;
+    }
+
+    public String getMaDonNhap() {
+        return maDonHang;
+    }
+
+    public void setMaDonNhap(String maDonNhap) {
+        this.maDonHang = maDonNhap;
     }
 
     public String getMaSanPham() {
@@ -91,8 +99,11 @@ public class ChiTietDonHang {
         this.donViTinh = donViTinh;
     }
 
+    /**
+     * Thành tiền = soLuong * donGia.
+     */
     public BigDecimal getThanhTien() {
-        if (donGia == null) {
+        if (donGia == null || soLuong <= 0) {
             return BigDecimal.ZERO;
         }
         return donGia.multiply(BigDecimal.valueOf(soLuong));
@@ -100,12 +111,13 @@ public class ChiTietDonHang {
 
     @Override
     public String toString() {
-        return "ChiTietDonHang{" +
+        return "ChiTietDonNhap{" +
                 "maDonHang='" + maDonHang + '\'' +
                 ", maSanPham='" + maSanPham + '\'' +
                 ", tenSanPham='" + tenSanPham + '\'' +
                 ", soLuong=" + soLuong +
                 ", donGia=" + donGia +
+                ", thanhTien=" + getThanhTien() +
                 '}';
     }
 }
