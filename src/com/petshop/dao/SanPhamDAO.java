@@ -158,39 +158,6 @@ public class SanPhamDAO {
     }
 
     /**
-     * Lấy tất cả sản phẩm đã gán cho một nhà cung cấp, gồm cả sản phẩm ngừng kinh doanh.
-     */
-    public List<SanPham> layTheoNhaCungCap(String maNhaCungCap) {
-        List<SanPham> danhSach = new ArrayList<>();
-        String sql = """
-                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaBan,
-                       sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
-                       ncc.tenNhaCungCap
-                FROM SanPham sp
-                LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
-                WHERE sp.maNhaCungCap = ?
-                ORDER BY sp.trangThai DESC, sp.tenSanPham ASC
-                """;
-
-        try (Connection conn = DatabaseManager.getConnection()) {
-            if (conn == null) return danhSach;
-
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, maNhaCungCap);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        danhSach.add(docDongSanPham(rs));
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            throw new IllegalStateException("Lỗi khi lấy sản phẩm theo nhà cung cấp: " + e.getMessage(), e);
-        }
-
-        return danhSach;
-    }
-
-    /**
      * Lấy sản phẩm theo mã.
      */
     public SanPham layTheoMa(String maSanPham) {
