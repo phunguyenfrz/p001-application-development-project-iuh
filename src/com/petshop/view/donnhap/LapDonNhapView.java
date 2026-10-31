@@ -4,11 +4,9 @@ import com.petshop.controller.DonHangController;
 import com.petshop.controller.SanPhamController;
 import com.petshop.model.ChiTietDonHang;
 import com.petshop.model.DonHang;
-import com.petshop.model.NhaCungCap;
 import com.petshop.model.SanPham;
 import com.petshop.model.TaiKhoan;
 import com.petshop.util.SessionManager;
-import com.petshop.view.nhacungcap.ChonNhaCungCapDialog;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -29,6 +27,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -50,7 +49,7 @@ public class LapDonNhapView extends VBox {
     private final TextField txtNhaCungCap = new TextField();
     private final TextField txtNhanVien = new TextField();
 
-    // Mã nhà cung cấp đã chọn
+    // Nhà cung cấp được tự xác định từ sản phẩm đầu tiên trong đơn.
     private String maNhaCungCapDaChon = null;
 
     // --- Bảng chi tiết sản phẩm ---
@@ -78,7 +77,7 @@ public class LapDonNhapView extends VBox {
         Label tieuDe = new Label("LẬP ĐƠN NHẬP HÀNG");
         tieuDe.getStyleClass().add("tieu-de-phan-he");
 
-        Label moTa = new Label("Tạo đơn nhập hàng mới từ nhà cung cấp. Chọn sản phẩm, nhập số lượng và đơn giá nhập.");
+        Label moTa = new Label("Chọn sản phẩm cần nhập; nhà cung cấp sẽ được lấy tự động từ sản phẩm.");
         moTa.getStyleClass().add("mo-ta-phan-he");
         moTa.setWrapText(true);
 
@@ -138,22 +137,15 @@ public class LapDonNhapView extends VBox {
         HBox hang2 = new HBox(20);
         hang2.setAlignment(Pos.CENTER_LEFT);
 
-        // Nhà cung cấp
+        // Nhà cung cấp được tự điền khi chọn sản phẩm.
         VBox hopNCC = new VBox(5);
         Label lblNCC = new Label("Nhà cung cấp:");
         lblNCC.setStyle("-fx-font-weight: bold;");
-        HBox hopChonNCC = new HBox(8);
-        hopChonNCC.setAlignment(Pos.CENTER_LEFT);
         txtNhaCungCap.setEditable(false);
-        txtNhaCungCap.setPrefWidth(220);
-        txtNhaCungCap.setPromptText("Chưa chọn nhà cung cấp");
+        txtNhaCungCap.setMaxWidth(Double.MAX_VALUE);
+        txtNhaCungCap.setPromptText("Tự động điền sau khi chọn sản phẩm");
         txtNhaCungCap.setStyle("-fx-background-color: #f0f0f0;");
-        Button btnChonNCC = new Button("Chọn NCC");
-        btnChonNCC.getStyleClass().add("nut-phu");
-        btnChonNCC.setOnAction(e -> xuLyChonNhaCungCap());
-        hopChonNCC.getChildren().addAll(txtNhaCungCap, btnChonNCC);
-        HBox.setHgrow(txtNhaCungCap, Priority.ALWAYS);
-        hopNCC.getChildren().addAll(lblNCC, hopChonNCC);
+        hopNCC.getChildren().addAll(lblNCC, txtNhaCungCap);
         HBox.setHgrow(hopNCC, Priority.ALWAYS);
 
         // Nhân viên lập
@@ -342,6 +334,10 @@ public class LapDonNhapView extends VBox {
                 btnXoa.setOnAction(e -> {
                     ChiTietDonHang ct = getTableView().getItems().get(getIndex());
                     danhSachChiTiet.remove(ct);
+                    if (danhSachChiTiet.isEmpty()) {
+                        maNhaCungCapDaChon = null;
+                        txtNhaCungCap.clear();
+                    }
                     capNhatTongTien();
                     bangChiTiet.refresh();
                 });
@@ -441,18 +437,6 @@ public class LapDonNhapView extends VBox {
     // ========================= XỬ LÝ SỰ KIỆN =========================
 
     /**
-     * Mở dialog chọn nhà cung cấp.
-     */
-    private void xuLyChonNhaCungCap() {
-        Window owner = getScene() != null ? getScene().getWindow() : null;
-        Optional<NhaCungCap> ketQua = ChonNhaCungCapDialog.moDialog(owner);
-        ketQua.ifPresent(ncc -> {
-            maNhaCungCapDaChon = ncc.getMaNhaCungCap();
-            txtNhaCungCap.setText(ncc.getTenNhaCungCap());
-        });
-    }
-
-    /**
      * Mở dialog chọn sản phẩm và thêm vào bảng chi tiết.
      */
     private void xuLyThemSanPham() {
@@ -462,6 +446,20 @@ public class LapDonNhapView extends VBox {
 
         SanPham sanPhamDuocChon = dialog.getSanPhamDuocChon();
         if (sanPhamDuocChon == null) {
+            return;
+        }
+
+        if (sanPhamDuocChon.getMaNhaCungCap() == null || sanPhamDuocChon.getMaNhaCungCap().isBlank()) {
+            hienThiLoi("Sản phẩm này chưa được gắn với nhà cung cấp nên chưa thể lập đơn nhập. Vui lòng cập nhật nhà cung cấp cho sản phẩm trước.");
+            return;
+        }
+
+        if (maNhaCungCapDaChon != null
+                && !maNhaCungCapDaChon.equals(sanPhamDuocChon.getMaNhaCungCap())) {
+            String tenNhaCungCap = sanPhamDuocChon.getTenNhaCungCap() != null
+                    ? sanPhamDuocChon.getTenNhaCungCap() : sanPhamDuocChon.getMaNhaCungCap();
+            hienThiLoi("Sản phẩm này thuộc nhà cung cấp " + tenNhaCungCap
+                    + ". Mỗi đơn nhập chỉ gắn với một nhà cung cấp; hãy lập đơn riêng cho sản phẩm này.");
             return;
         }
 
@@ -484,6 +482,11 @@ public class LapDonNhapView extends VBox {
         chiTietMoi.setDonGia(sanPhamDuocChon.getGiaBan() != null ? sanPhamDuocChon.getGiaBan() : BigDecimal.ZERO);
 
         danhSachChiTiet.add(chiTietMoi);
+        if (maNhaCungCapDaChon == null) {
+            maNhaCungCapDaChon = sanPhamDuocChon.getMaNhaCungCap();
+            txtNhaCungCap.setText(sanPhamDuocChon.getTenNhaCungCap() != null
+                    ? sanPhamDuocChon.getTenNhaCungCap() : maNhaCungCapDaChon);
+        }
         capNhatTongTien();
         bangChiTiet.refresh();
     }
@@ -647,7 +650,7 @@ public class LapDonNhapView extends VBox {
             if (owner != null) {
                 initOwner(owner);
             }
-            setTitle("Chọn sản phẩm");
+            setTitle("Chọn sản phẩm nhập hàng");
 
             VBox root = new VBox(14);
             root.setPadding(new Insets(18));
@@ -656,7 +659,7 @@ public class LapDonNhapView extends VBox {
             // Tiêu đề
             Label lblTieuDe = new Label("CHỌN SẢN PHẨM");
             lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-            Label lblMoTa = new Label("Tìm kiếm và chọn sản phẩm đang kinh doanh để thêm vào đơn nhập hàng.");
+            Label lblMoTa = new Label("Chọn sản phẩm cần nhập. Nhà cung cấp của sản phẩm sẽ được liên kết tự động.");
             lblMoTa.getStyleClass().add("mo-ta-phan-he");
             lblMoTa.setWrapText(true);
 
@@ -771,6 +774,12 @@ public class LapDonNhapView extends VBox {
             colTen.setPrefWidth(200);
             colTen.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTenSanPham()));
 
+            TableColumn<SanPham, String> colNhaCungCap = new TableColumn<>("Nhà cung cấp");
+            colNhaCungCap.setPrefWidth(190);
+            colNhaCungCap.setCellValueFactory(d -> new SimpleStringProperty(
+                    d.getValue().getTenNhaCungCap() != null ? d.getValue().getTenNhaCungCap() : "Chưa gán"
+            ));
+
             TableColumn<SanPham, String> colDVT = new TableColumn<>("Đơn vị tính");
             colDVT.setPrefWidth(90);
             colDVT.setStyle("-fx-alignment: CENTER;");
@@ -790,7 +799,7 @@ public class LapDonNhapView extends VBox {
                     String.valueOf(d.getValue().getSoLuongTon())
             ));
 
-            tblSanPham.getColumns().setAll(List.of(colMa, colTen, colDVT, colGia, colTon));
+            tblSanPham.getColumns().setAll(List.of(colMa, colTen, colNhaCungCap, colDVT, colGia, colTon));
         }
 
         /**
@@ -799,10 +808,15 @@ public class LapDonNhapView extends VBox {
         private void taiDuLieu() {
             try {
                 SanPhamController sanPhamController = new SanPhamController();
-                // Lấy tất cả sản phẩm và lọc chỉ lấy đang kinh doanh (trangThai = true)
+                Set<String> maNhaCungCapDangHoatDong = sanPhamController.layDanhSachNhaCungCap().stream()
+                        .map(ncc -> ncc.getMaNhaCungCap())
+                        .collect(Collectors.toSet());
+                // Chỉ cho chọn sản phẩm đang kinh doanh và còn nhà cung cấp hoạt động.
                 tatCaSanPham = sanPhamController.layDanhSachSanPham()
                         .stream()
                         .filter(SanPham::isTrangThai)
+                        .filter(sp -> sp.getMaNhaCungCap() != null
+                                && maNhaCungCapDangHoatDong.contains(sp.getMaNhaCungCap()))
                         .collect(Collectors.toList());
                 tblSanPham.setItems(FXCollections.observableArrayList(tatCaSanPham));
             } catch (Exception ex) {
@@ -821,7 +835,8 @@ public class LapDonNhapView extends VBox {
             String tuKhoaLower = tuKhoa.trim().toLowerCase();
             List<SanPham> ketQua = tatCaSanPham.stream()
                     .filter(sp -> (sp.getMaSanPham() != null && sp.getMaSanPham().toLowerCase().contains(tuKhoaLower))
-                            || (sp.getTenSanPham() != null && sp.getTenSanPham().toLowerCase().contains(tuKhoaLower)))
+                            || (sp.getTenSanPham() != null && sp.getTenSanPham().toLowerCase().contains(tuKhoaLower))
+                            || (sp.getTenNhaCungCap() != null && sp.getTenNhaCungCap().toLowerCase().contains(tuKhoaLower)))
                     .collect(Collectors.toList());
             tblSanPham.setItems(FXCollections.observableArrayList(ketQua));
         }
