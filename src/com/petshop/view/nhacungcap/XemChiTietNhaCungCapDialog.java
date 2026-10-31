@@ -34,6 +34,8 @@ public final class XemChiTietNhaCungCapDialog {
 
         try {
             List<SanPham> sanPham = new SanPhamController().layTheoNhaCungCap(nhaCungCap.getMaNhaCungCap());
+            // Không đưa sản phẩm đã ngừng kinh doanh (dữ liệu legacy có thể lỗi mã hóa) vào danh sách hiện tại.
+            sanPham.removeIf(sp -> !sp.isTrangThai());
             Stage stage = new Stage();
             stage.initModality(Modality.APPLICATION_MODAL);
             if (owner != null) stage.initOwner(owner);
