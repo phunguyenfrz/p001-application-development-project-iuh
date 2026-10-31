@@ -7,11 +7,14 @@ import com.petshop.model.TaiKhoan;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 
 /**
  * Lớp dịch vụ nghiệp vụ Đơn nhập hàng.
+ * Phụ trách kiểm tra quyền, validation, tự động tách đơn theo NCC,
+ * xác nhận nhận hàng thiếu/hỏng và truy vết người nhận/hủy.
  */
 public class DonNhapHangService {
 
@@ -36,7 +39,63 @@ public class DonNhapHangService {
     }
 
     /**
-     * Lập đơn nhập hàng mới (IMP_CREATE).
+     * Tự động tách đơn theo từng Nhà cung cấp tại tầng Service và lưu trong một Transaction.
+     * View chỉ cần truyền danh sách sản phẩm và map thông tin NCC của từng SP.
+     */
+    public List<DonNhapHang> lapDonNhapHangTuDanhSach(List<ChiTietDonNhap> danhSachChiTiet,
+                                                      Map<String, String> sanPhamNhaCungCapMap,
+                                                      LocalDate ngayLap, LocalTime gioLap) {
+        xacThucService.kiemTraQuyen("DN_TAO");
+
+        if (danhSachChiTiet == null || danhSachChiTiet.isEmpty()) {
+            throw new IllegalArgumentException("Danh sách sản phẩm nhập không được để trống!");
+        }
+
+        TaiKhoan tkHienTai = xacThucService.getTaiKhoanHienTai();
+        if (tkHienTai == null || tkHienTai.getMaNhanVien() == null || tkHienTai.getMaNhanVien().isBlank()) {
+            throw new IllegalArgumentException("Không xác định được nhân viên lập đơn đang đăng nhập!");
+        }
+
+        // Nhóm chi tiết theo nhà cung cấp
+        Map<String, List<ChiTietDonNhap>> gomNhomTheoNCC = new LinkedHashMap<>();
+        for (ChiTietDonNhap ct : danhSachChiTiet) {
+            String maNCC = (sanPhamNhaCungCapMap != null) ? sanPhamNhaCungCapMap.get(ct.getMaSanPham()) : null;
+            if (maNCC == null || maNCC.isBlank()) {
+                throw new IllegalArgumentException("Không xác định được nhà cung cấp của sản phẩm: " + ct.getTenSanPham());
+            }
+            gomNhomTheoNCC.computeIfAbsent(maNCC.trim(), k -> new ArrayList<>()).add(ct);
+        }
+
+        List<DonNhapHang> danhSachDonHang = new ArrayList<>();
+        LocalDate ngay = ngayLap != null ? ngayLap : LocalDate.now();
+        LocalTime gio = gioLap != null ? gioLap : LocalTime.now().withNano(0);
+
+        for (Map.Entry<String, List<ChiTietDonNhap>> entry : gomNhomTheoNCC.entrySet()) {
+            DonNhapHang donHang = new DonNhapHang();
+            donHang.setMaNhaCungCap(entry.getKey());
+            donHang.setMaNhanVien(tkHienTai.getMaNhanVien());
+            donHang.setNgayLap(ngay);
+            donHang.setGioLap(gio);
+
+            List<ChiTietDonNhap> dsBanSao = new ArrayList<>();
+            for (ChiTietDonNhap ct : entry.getValue()) {
+                ChiTietDonNhap banSao = new ChiTietDonNhap(
+                        null, ct.getMaSanPham(), ct.getTenSanPham(), ct.getDonViTinh(),
+                        ct.getSoLuong(), ct.getSoLuong(), ct.getDonGia()
+                );
+                dsBanSao.add(banSao);
+            }
+            donHang.setDanhSachChiTiet(dsBanSao);
+            danhSachDonHang.add(donHang);
+        }
+
+        // Gọi lưu nhiều đơn trong 1 transaction
+        lapNhieuDonNhapHang(danhSachDonHang);
+        return danhSachDonHang;
+    }
+
+    /**
+     * Lập đơn nhập hàng mới đơn lẻ (IMP_CREATE).
      */
     public boolean lapDonNhapHang(DonNhapHang donHang, List<ChiTietDonNhap> danhSachChiTiet) {
         xacThucService.kiemTraQuyen("DN_TAO");
@@ -152,9 +211,13 @@ public class DonNhapHangService {
     }
 
     /**
-     * Xác nhận nhận hàng và cộng tồn kho (IMP_CONFIRM).
+     * Xác nhận nhận hàng và cộng tồn kho với danh sách thực nhận (IMP_CONFIRM).
+     * Bắt buộc kiểm tra:
+     * - soLuongThucNhan: >= 0 và <= soLuong
+     * - Nếu toàn bộ dòng đều có soLuongThucNhan = 0 thì chặn, báo lỗi và gợi ý Hủy đơn.
+     * - Tính lại tongTienThucNhan.
      */
-    public boolean xacNhanNhanHang(String maDonHang) {
+    public boolean xacNhanNhanHang(String maDonHang, List<ChiTietDonNhap> chiTietCapNhat) {
         xacThucService.kiemTraQuyen("DN_CAP_NHAT");
 
         if (maDonHang == null || maDonHang.trim().isEmpty()) {
@@ -178,17 +241,67 @@ public class DonNhapHangService {
             throw new IllegalStateException("Chỉ có thể xác nhận đơn hàng đang ở trạng thái 'Chờ nhận hàng'!");
         }
 
-        return donNhapHangDAO.xacNhanNhanHangVaCongTonKho(maDonHang);
+        if (chiTietCapNhat == null || chiTietCapNhat.isEmpty()) {
+            chiTietCapNhat = donNhapHangDAO.layChiTietTheoMaDonHang(maDonHang);
+        }
+
+        if (chiTietCapNhat.isEmpty()) {
+            throw new IllegalStateException("Đơn hàng không có sản phẩm nào để xác nhận!");
+        }
+
+        boolean coItNhatMotSanPhamThucNhan = false;
+        BigDecimal tongTienThucNhan = BigDecimal.ZERO;
+
+        for (ChiTietDonNhap ct : chiTietCapNhat) {
+            int thucNhan = ct.getSoLuongThucNhan();
+            if (thucNhan < 0) {
+                throw new IllegalArgumentException("Số lượng thực nhận của sản phẩm " + ct.getTenSanPham() + " không được âm!");
+            }
+            if (thucNhan > ct.getSoLuong()) {
+                throw new IllegalArgumentException("Số lượng thực nhận (" + thucNhan + ") của sản phẩm "
+                        + ct.getTenSanPham() + " không được vượt quá số lượng đặt (" + ct.getSoLuong() + ")!");
+            }
+            if (thucNhan > 0) {
+                coItNhatMotSanPhamThucNhan = true;
+            }
+            tongTienThucNhan = tongTienThucNhan.add(ct.getThanhTienThucNhan());
+        }
+
+        // Chặn nếu toàn bộ dòng đều thực nhận = 0
+        if (!coItNhatMotSanPhamThucNhan) {
+            throw new IllegalArgumentException("Tất cả sản phẩm đều có số lượng thực nhận bằng 0. Vui lòng sử dụng chức năng 'Hủy đơn' nếu không nhận hàng.");
+        }
+
+        TaiKhoan tk = xacThucService.getTaiKhoanHienTai();
+        String maNhanVienNhan = (tk != null && tk.getMaNhanVien() != null) ? tk.getMaNhanVien() : dh.getMaNhanVien();
+        LocalDateTime ngayGioNhan = LocalDateTime.now();
+
+        return donNhapHangDAO.xacNhanNhanHangVaCongTonKho(maDonHang, maNhanVienNhan, ngayGioNhan, tongTienThucNhan, chiTietCapNhat);
     }
 
     /**
-     * Hủy đơn nhập hàng chưa nhận (IMP_CANCEL).
+     * Xác nhận nhận hàng mặc định nhận đủ (tương thích ngược).
      */
-    public boolean huyDonNhapHang(String maDonHang) {
+    public boolean xacNhanNhanHang(String maDonHang) {
+        List<ChiTietDonNhap> dsChiTiet = donNhapHangDAO.layChiTietTheoMaDonHang(maDonHang);
+        for (ChiTietDonNhap ct : dsChiTiet) {
+            ct.setSoLuongThucNhan(ct.getSoLuong());
+        }
+        return xacNhanNhanHang(maDonHang, dsChiTiet);
+    }
+
+    /**
+     * Hủy đơn nhập hàng chưa nhận (IMP_CANCEL) với lý do hủy bắt buộc.
+     */
+    public boolean huyDonNhapHang(String maDonHang, String lyDoHuy) {
         xacThucService.kiemTraQuyen("DN_CAP_NHAT");
 
         if (maDonHang == null || maDonHang.trim().isEmpty()) {
             throw new IllegalArgumentException("Mã đơn hàng không được để trống!");
+        }
+
+        if (lyDoHuy == null || lyDoHuy.trim().isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng nhập lý do hủy đơn nhập hàng!");
         }
 
         DonNhapHang dh = donNhapHangDAO.timTheoMa(maDonHang);
@@ -208,8 +321,17 @@ public class DonNhapHangService {
             throw new IllegalStateException("Chỉ có thể hủy đơn hàng đang ở trạng thái 'Chờ nhận hàng'!");
         }
 
-        return donNhapHangDAO.capNhatTrangThai(maDonHang,
-                DonNhapHang.TRANG_THAI_CHO_NHAN, DonNhapHang.TRANG_THAI_DA_HUY);
+        TaiKhoan tk = xacThucService.getTaiKhoanHienTai();
+        String maNhanVienHuy = (tk != null && tk.getMaNhanVien() != null) ? tk.getMaNhanVien() : dh.getMaNhanVien();
+
+        return donNhapHangDAO.capNhatTrangThaiHuy(maDonHang, maNhanVienHuy, lyDoHuy.trim());
+    }
+
+    /**
+     * Hủy đơn không truyền lý do (tương thích ngược với unit test cũ).
+     */
+    public boolean huyDonNhapHang(String maDonHang) {
+        return huyDonNhapHang(maDonHang, "Hủy đơn theo yêu cầu");
     }
 
     /**
@@ -253,4 +375,3 @@ public class DonNhapHangService {
         return donNhapHangDAO.layChiTietTheoMaDonHang(maDonHang.trim());
     }
 }
-

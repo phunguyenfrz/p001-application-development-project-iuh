@@ -5,7 +5,9 @@ import com.petshop.model.DonNhapHang;
 import com.petshop.service.DonNhapHangService;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Controller điều phối nghiệp vụ Đơn nhập hàng giữa View và Service.
@@ -34,10 +36,19 @@ public class DonNhapHangController {
     }
 
     /**
-     * IMP_CREATE: Lập đơn nhập hàng mới.
+     * IMP_CREATE: Lập đơn nhập hàng mới (đơn lẻ).
      */
     public boolean lapDonNhapHang(DonNhapHang donHang, List<ChiTietDonNhap> danhSachChiTiet) {
         return donNhapHangService.lapDonNhapHang(donHang, danhSachChiTiet);
+    }
+
+    /**
+     * Tự động tách đơn theo nhà cung cấp ở tầng Service và lưu trong một Transaction.
+     */
+    public List<DonNhapHang> lapDonNhapHangTuDanhSach(List<ChiTietDonNhap> danhSachChiTiet,
+                                                      Map<String, String> sanPhamNhaCungCapMap,
+                                                      LocalDate ngayLap, LocalTime gioLap) {
+        return donNhapHangService.lapDonNhapHangTuDanhSach(danhSachChiTiet, sanPhamNhaCungCapMap, ngayLap, gioLap);
     }
 
     /**
@@ -48,14 +59,28 @@ public class DonNhapHangController {
     }
 
     /**
-     * IMP_CONFIRM: Xác nhận nhận hàng và cộng tồn kho.
+     * IMP_CONFIRM: Xác nhận nhận hàng với danh sách thực nhận (xử lý thiếu/hỏng).
+     */
+    public boolean xacNhanNhanHang(String maDonHang, List<ChiTietDonNhap> chiTietCapNhat) {
+        return donNhapHangService.xacNhanNhanHang(maDonHang, chiTietCapNhat);
+    }
+
+    /**
+     * Xác nhận nhận hàng mặc định nhận đủ.
      */
     public boolean xacNhanNhanHang(String maDonHang) {
         return donNhapHangService.xacNhanNhanHang(maDonHang);
     }
 
     /**
-     * IMP_CANCEL: Hủy đơn nhập hàng chưa nhận.
+     * IMP_CANCEL: Hủy đơn nhập hàng chưa nhận với lý do hủy bắt buộc.
+     */
+    public boolean huyDonNhapHang(String maDonHang, String lyDoHuy) {
+        return donNhapHangService.huyDonNhapHang(maDonHang, lyDoHuy);
+    }
+
+    /**
+     * Hủy đơn nhập hàng (lý do mặc định).
      */
     public boolean huyDonNhapHang(String maDonHang) {
         return donNhapHangService.huyDonNhapHang(maDonHang);
@@ -89,4 +114,3 @@ public class DonNhapHangController {
         return donNhapHangService.layChiTietTheoMaDonHang(maDonHang);
     }
 }
-

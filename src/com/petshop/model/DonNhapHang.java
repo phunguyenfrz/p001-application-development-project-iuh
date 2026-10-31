@@ -2,6 +2,7 @@ package com.petshop.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +15,10 @@ import java.util.List;
  * - maNhanVien VARCHAR(20) NOT NULL
  * - ngayLap DATE NOT NULL, gioLap TIME NOT NULL
  * - tongTien DECIMAL(18,2) NOT NULL DEFAULT 0
+ * - tongTienThucNhan DECIMAL(18,2) NULL
  * - trangThai NVARCHAR(30) NOT NULL (Chờ nhận hàng, Hoàn tất, Đã hủy)
+ * - maNhanVienNhan VARCHAR(20) NULL, ngayGioNhan DATETIME2 NULL
+ * - maNhanVienHuy VARCHAR(20) NULL, lyDoHuy NVARCHAR(255) NULL
  */
 public class DonNhapHang {
 
@@ -28,7 +32,18 @@ public class DonNhapHang {
     private LocalDate ngayLap;
     private LocalTime gioLap;
     private BigDecimal tongTien;
+    private BigDecimal tongTienThucNhan;
     private String trangThai;
+
+    // Truy vết người nhận và thời gian nhận
+    private String maNhanVienNhan;
+    private String tenNhanVienNhan;
+    private LocalDateTime ngayGioNhan;
+
+    // Truy vết người hủy và lý do hủy
+    private String maNhanVienHuy;
+    private String tenNhanVienHuy;
+    private String lyDoHuy;
 
     // Các trường hiển thị bổ trợ (JOIN view)
     private String tenNhaCungCap;
@@ -108,12 +123,68 @@ public class DonNhapHang {
         this.tongTien = tongTien != null ? tongTien : BigDecimal.ZERO;
     }
 
+    public BigDecimal getTongTienThucNhan() {
+        return tongTienThucNhan;
+    }
+
+    public void setTongTienThucNhan(BigDecimal tongTienThucNhan) {
+        this.tongTienThucNhan = tongTienThucNhan;
+    }
+
     public String getTrangThai() {
         return trangThai;
     }
 
     public void setTrangThai(String trangThai) {
         this.trangThai = trangThai;
+    }
+
+    public String getMaNhanVienNhan() {
+        return maNhanVienNhan;
+    }
+
+    public void setMaNhanVienNhan(String maNhanVienNhan) {
+        this.maNhanVienNhan = maNhanVienNhan;
+    }
+
+    public String getTenNhanVienNhan() {
+        return tenNhanVienNhan;
+    }
+
+    public void setTenNhanVienNhan(String tenNhanVienNhan) {
+        this.tenNhanVienNhan = tenNhanVienNhan;
+    }
+
+    public LocalDateTime getNgayGioNhan() {
+        return ngayGioNhan;
+    }
+
+    public void setNgayGioNhan(LocalDateTime ngayGioNhan) {
+        this.ngayGioNhan = ngayGioNhan;
+    }
+
+    public String getMaNhanVienHuy() {
+        return maNhanVienHuy;
+    }
+
+    public void setMaNhanVienHuy(String maNhanVienHuy) {
+        this.maNhanVienHuy = maNhanVienHuy;
+    }
+
+    public String getTenNhanVienHuy() {
+        return tenNhanVienHuy;
+    }
+
+    public void setTenNhanVienHuy(String tenNhanVienHuy) {
+        this.tenNhanVienHuy = tenNhanVienHuy;
+    }
+
+    public String getLyDoHuy() {
+        return lyDoHuy;
+    }
+
+    public void setLyDoHuy(String lyDoHuy) {
+        this.lyDoHuy = lyDoHuy;
     }
 
     public String getTenNhaCungCap() {
@@ -149,8 +220,12 @@ public class DonNhapHang {
                 ", ngayLap=" + ngayLap +
                 ", gioLap=" + gioLap +
                 ", tongTien=" + tongTien +
+                ", tongTienThucNhan=" + tongTienThucNhan +
                 ", trangThai='" + trangThai + '\'' +
+                ", maNhanVienNhan='" + maNhanVienNhan + '\'' +
+                ", ngayGioNhan=" + ngayGioNhan +
+                ", maNhanVienHuy='" + maNhanVienHuy + '\'' +
+                ", lyDoHuy='" + lyDoHuy + '\'' +
                 '}';
     }
 }
-

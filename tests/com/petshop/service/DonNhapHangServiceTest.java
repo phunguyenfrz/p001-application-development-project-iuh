@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +30,8 @@ class DonNhapHangServiceTest {
 
     @BeforeEach
     void setUp() {
-        SessionManager.dangNhap(new TaiKhoan("NV-01", "banhang", "Nhân viên bán hàng", TaiKhoan.VaiTro.BAN_HANG));
+        // Mặc định đăng nhập tài khoản QUẢN LÝ (có toàn quyền lập đơn, xác nhận, hủy đơn, tìm kiếm)
+        SessionManager.dangNhap(new TaiKhoan("NV-QL01", "quanly", "Quản lý kho", TaiKhoan.VaiTro.QUAN_LY));
         dao = new FakeDonNhapHangDAO();
         service = new DonNhapHangService(dao, new XacThucService());
     }
@@ -51,7 +53,7 @@ class DonNhapHangServiceTest {
         assertTrue(service.lapDonNhapHang(donHang, chiTiet));
 
         assertEquals(MA_DON, donHang.getMaDonHang());
-        assertEquals("NV-01", donHang.getMaNhanVien());
+        assertEquals("NV-QL01", donHang.getMaNhanVien());
         assertEquals(new BigDecimal("400"), donHang.getTongTien());
         assertEquals(DonNhapHang.TRANG_THAI_CHO_NHAN, donHang.getTrangThai());
         assertEquals(MA_DON, chiTiet.get(0).getMaDonHang());
@@ -71,14 +73,83 @@ class DonNhapHangServiceTest {
     }
 
     @Test
+    void xacNhanNhanHangThieuCongDungSoLuongThucNhan() {
+        DonNhapHang donHang = taoDonChoNhan();
+        ChiTietDonNhap ct1 = new ChiTietDonNhap(MA_DON, "SP-01", "Hạt Me-O", "Gói", 10, 7, new BigDecimal("100"));
+        ChiTietDonNhap ct2 = new ChiTietDonNhap(MA_DON, "SP-02", "Pate Royal", "Lon", 5, 0, new BigDecimal("50"));
+        dao.themDonNhapHang(donHang, List.of(ct1, ct2));
+
+        assertTrue(service.xacNhanNhanHang(MA_DON, List.of(ct1, ct2)));
+
+        assertEquals(DonNhapHang.TRANG_THAI_HOAN_TAT, donHang.getTrangThai());
+        // SP-01 thực nhận 7 -> tồn kho tăng 7
+        assertEquals(7, dao.soLuongTon.get("SP-01"));
+        // SP-02 thực nhận 0 -> không cộng tồn kho
+        assertEquals(0, dao.soLuongTon.getOrDefault("SP-02", 0));
+        // Tổng tiền thực nhận = 7 * 100 + 0 * 50 = 700
+        assertEquals(new BigDecimal("700"), donHang.getTongTienThucNhan());
+    }
+
+    @Test
+    void xacNhanNhanHangChanKhiTatCaBangKhong() {
+        DonNhapHang donHang = taoDonChoNhan();
+        ChiTietDonNhap ct1 = new ChiTietDonNhap(MA_DON, "SP-01", "Hạt Me-O", "Gói", 10, 0, new BigDecimal("100"));
+        ChiTietDonNhap ct2 = new ChiTietDonNhap(MA_DON, "SP-02", "Pate Royal", "Lon", 5, 0, new BigDecimal("50"));
+        dao.themDonNhapHang(donHang, List.of(ct1, ct2));
+
+        // Nếu tất cả thực nhận = 0 thì phải chặn và ném ngoại lệ gợi ý dùng chức năng Hủy đơn
+        assertThrows(IllegalArgumentException.class, () -> service.xacNhanNhanHang(MA_DON, List.of(ct1, ct2)));
+    }
+
+    @Test
+    void huyDonBatBuocNhapLyDo() {
+        DonNhapHang donHang = taoDonChoNhan();
+        dao.themDonNhapHang(donHang, List.of());
+
+        // Không nhập lý do hoặc nhập khoảng trắng -> ném ngoại lệ
+        assertThrows(IllegalArgumentException.class, () -> service.huyDonNhapHang(MA_DON, "   "));
+
+        // Nhập lý do hợp lệ -> hủy thành công và lưu lý do
+        assertTrue(service.huyDonNhapHang(MA_DON, "Nhà cung cấp hết hàng"));
+        assertEquals(DonNhapHang.TRANG_THAI_DA_HUY, donHang.getTrangThai());
+        assertEquals("Nhà cung cấp hết hàng", donHang.getLyDoHuy());
+        assertEquals("NV-QL01", donHang.getMaNhanVienHuy());
+    }
+
+    @Test
     void huyDonChiChoPhepKhiDangChoNhan() {
         DonNhapHang donHang = taoDonChoNhan();
         dao.themDonNhapHang(donHang, List.of());
 
-        assertTrue(service.huyDonNhapHang(MA_DON));
+        assertTrue(service.huyDonNhapHang(MA_DON, "Lý do hủy"));
         assertEquals(DonNhapHang.TRANG_THAI_DA_HUY, donHang.getTrangThai());
-        assertThrows(IllegalStateException.class, () -> service.huyDonNhapHang(MA_DON));
+        assertThrows(IllegalStateException.class, () -> service.huyDonNhapHang(MA_DON, "Hủy lại"));
         assertThrows(IllegalStateException.class, () -> service.xacNhanNhanHang(MA_DON));
+    }
+
+    @Test
+    void banHangBiChanKhiXacNhanHoacHuyDon() {
+        // Đăng nhập BÁN HÀNG: được phép lập đơn và tìm kiếm, nhưng BỊ CHẶN nhận hàng & hủy đơn
+        SessionManager.dangNhap(new TaiKhoan("NV-BH01", "banhang", "Nhân viên bán hàng", TaiKhoan.VaiTro.BAN_HANG));
+
+        DonNhapHang donHang = taoDonChoNhan();
+        dao.themDonNhapHang(donHang, List.of(new ChiTietDonNhap(MA_DON, "SP-01", 5, BigDecimal.TEN)));
+
+        // 1. Chặn xác nhận nhận hàng
+        assertThrows(SecurityException.class, () -> service.xacNhanNhanHang(MA_DON));
+
+        // 2. Chặn hủy đơn
+        assertThrows(SecurityException.class, () -> service.huyDonNhapHang(MA_DON, "Lý do"));
+
+        // 3. Nhưng vẫn được tìm kiếm
+        service.timKiemDonHang("PN-", null, null, null, null);
+        assertTrue(dao.daGoiTimKiem);
+
+        // 4. Vẫn được lập đơn nhập mới
+        DonNhapHang donMoi = new DonNhapHang();
+        donMoi.setMaNhaCungCap("NCC-01");
+        List<ChiTietDonNhap> chiTiet = List.of(new ChiTietDonNhap(null, "SP-01", 2, BigDecimal.TEN));
+        assertTrue(service.lapDonNhapHang(donMoi, chiTiet));
     }
 
     @Test
@@ -143,6 +214,11 @@ class DonNhapHangServiceTest {
         }
 
         @Override
+        public List<ChiTietDonNhap> layChiTietTheoMaDonHang(String maDonHang) {
+            return new ArrayList<>(chiTietTheoDon.getOrDefault(maDonHang, List.of()));
+        }
+
+        @Override
         public boolean themDonNhapHang(DonNhapHang donHang, List<ChiTietDonNhap> danhSachChiTiet) {
             donHangDaLuu = true;
             donHangs.put(donHang.getMaDonHang(), donHang);
@@ -151,25 +227,35 @@ class DonNhapHangServiceTest {
         }
 
         @Override
-        public boolean xacNhanNhanHangVaCongTonKho(String maDonHang) {
+        public boolean xacNhanNhanHangVaCongTonKho(String maDonHang, String maNhanVienNhan,
+                                                    LocalDateTime ngayGioNhan, BigDecimal tongTienThucNhan,
+                                                    List<ChiTietDonNhap> chiTietCapNhat) {
             DonNhapHang donHang = donHangs.get(maDonHang);
             if (donHang == null || !DonNhapHang.TRANG_THAI_CHO_NHAN.equals(donHang.getTrangThai())) {
                 return false;
             }
-            for (ChiTietDonNhap chiTiet : chiTietTheoDon.getOrDefault(maDonHang, List.of())) {
-                soLuongTon.merge(chiTiet.getMaSanPham(), chiTiet.getSoLuong(), Integer::sum);
+            for (ChiTietDonNhap chiTiet : chiTietCapNhat) {
+                int tn = chiTiet.getSoLuongThucNhan();
+                if (tn > 0) {
+                    soLuongTon.merge(chiTiet.getMaSanPham(), tn, Integer::sum);
+                }
             }
             donHang.setTrangThai(DonNhapHang.TRANG_THAI_HOAN_TAT);
+            donHang.setMaNhanVienNhan(maNhanVienNhan);
+            donHang.setNgayGioNhan(ngayGioNhan);
+            donHang.setTongTienThucNhan(tongTienThucNhan);
             return true;
         }
 
         @Override
-        public boolean capNhatTrangThai(String maDonHang, String trangThaiHienTai, String trangThaiMoi) {
+        public boolean capNhatTrangThaiHuy(String maDonHang, String maNhanVienHuy, String lyDoHuy) {
             DonNhapHang donHang = donHangs.get(maDonHang);
-            if (donHang == null || !trangThaiHienTai.equals(donHang.getTrangThai())) {
+            if (donHang == null || !DonNhapHang.TRANG_THAI_CHO_NHAN.equals(donHang.getTrangThai())) {
                 return false;
             }
-            donHang.setTrangThai(trangThaiMoi);
+            donHang.setTrangThai(DonNhapHang.TRANG_THAI_DA_HUY);
+            donHang.setMaNhanVienHuy(maNhanVienHuy);
+            donHang.setLyDoHuy(lyDoHuy);
             return true;
         }
 
@@ -185,4 +271,3 @@ class DonNhapHangServiceTest {
         }
     }
 }
-

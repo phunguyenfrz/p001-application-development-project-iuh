@@ -159,7 +159,7 @@ public class DanhMucMenu {
 
                 // Bán hàng: Khách hàng, sản phẩm, đơn nhập, hóa đơn, đổi trả
                 if (nhom.getMaNhom().equals("KHACH_HANG") || nhom.getMaNhom().equals("SAN_PHAM") ||
-                    nhom.getMaNhom().equals("DON_NHAP") || nhom.getMaNhom().equals("PHIEU_DOI_TRA") ||
+                    (nhom.getMaNhom().equals("DON_NHAP") && !chucNang.getMaChucNang().equals("DN_CAP_NHAT")) || nhom.getMaNhom().equals("PHIEU_DOI_TRA") ||
                     (nhom.getMaNhom().equals("HOA_DON") && !chucNang.getMaChucNang().equals("HD_DOANH_THU"))) {
                     dsVaiTro.add(TaiKhoan.VaiTro.BAN_HANG);
                 }

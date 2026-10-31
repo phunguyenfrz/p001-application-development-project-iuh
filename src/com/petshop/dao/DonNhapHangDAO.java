@@ -7,6 +7,7 @@ import com.petshop.util.DatabaseManager;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -14,16 +15,18 @@ import java.util.List;
 
 /**
  * Lớp DAO truy xuất và thao tác dữ liệu bảng DonNhapHang & ChiTietDonNhap.
- * Tuân thủ quy ước mã đơn mới: PN-yyyyMMdd-xxxxxx (vẫn hỗ trợ đọc mã cũ DH-yyyyMMdd-xxxxxx).
+ * Tương thích ngược an toàn cho cả CSDL đã hoặc chưa chạy migration script.
  */
 public class DonNhapHangDAO {
 
     private static final DateTimeFormatter DINH_DANG_NGAY_MA = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    // Cache tên bảng để tương thích ngược nếu DB chưa chạy migration script
+    // Cache kiểm tra schema để tối ưu hiệu năng và tránh lỗi thiếu cột
     private static volatile String tenBangDonNhap = null;
     private static volatile String tenBangChiTiet = null;
     private static volatile Boolean coCotGioLap = null;
+    private static volatile Boolean coCotThucNhan = null;
+    private static volatile Boolean coCotTruyVet = null;
 
     private static String getTenBangDonNhap(Connection conn) {
         if (tenBangDonNhap != null) return tenBangDonNhap;
@@ -70,6 +73,34 @@ public class DonNhapHangDAO {
                 coCotGioLap = false;
             }
             return coCotGioLap;
+        }
+    }
+
+    private static boolean coCotThucNhan(Connection conn) {
+        if (coCotThucNhan != null) return coCotThucNhan;
+        synchronized (DonNhapHangDAO.class) {
+            if (coCotThucNhan != null) return coCotThucNhan;
+            String bang = getTenBangChiTiet(conn);
+            try (ResultSet rs = conn.getMetaData().getColumns(null, null, bang, "soLuongThucNhan")) {
+                coCotThucNhan = rs.next();
+            } catch (SQLException e) {
+                coCotThucNhan = false;
+            }
+            return coCotThucNhan;
+        }
+    }
+
+    private static boolean coCotTruyVet(Connection conn) {
+        if (coCotTruyVet != null) return coCotTruyVet;
+        synchronized (DonNhapHangDAO.class) {
+            if (coCotTruyVet != null) return coCotTruyVet;
+            String bang = getTenBangDonNhap(conn);
+            try (ResultSet rs = conn.getMetaData().getColumns(null, null, bang, "maNhanVienNhan")) {
+                coCotTruyVet = rs.next();
+            } catch (SQLException e) {
+                coCotTruyVet = false;
+            }
+            return coCotTruyVet;
         }
     }
 
@@ -132,12 +163,15 @@ public class DonNhapHangDAO {
             String bangDH = getTenBangDonNhap(conn);
             String bangCT = getTenBangChiTiet(conn);
             boolean coGio = coCotGioLap(conn);
+            boolean coTN = coCotThucNhan(conn);
 
             String sqlDonHang = coGio ?
                     "INSERT INTO " + bangDH + " (maDonHang, maNhaCungCap, maNhanVien, ngayLap, gioLap, tongTien, trangThai) VALUES (?, ?, ?, ?, ?, ?, ?)" :
                     "INSERT INTO " + bangDH + " (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai) VALUES (?, ?, ?, ?, ?, ?)";
 
-            String sqlChiTiet = "INSERT INTO " + bangCT + " (maDonHang, maSanPham, soLuong, donGia) VALUES (?, ?, ?, ?)";
+            String sqlChiTiet = coTN ?
+                    "INSERT INTO " + bangCT + " (maDonHang, maSanPham, soLuong, soLuongThucNhan, donGia) VALUES (?, ?, ?, ?, ?)" :
+                    "INSERT INTO " + bangCT + " (maDonHang, maSanPham, soLuong, donGia) VALUES (?, ?, ?, ?)";
 
             kiemTraNhaCungCapDangHoatDong(conn, donHang.getMaNhaCungCap());
 
@@ -167,7 +201,12 @@ public class DonNhapHangDAO {
                     psCT.setString(1, donHang.getMaDonHang());
                     psCT.setString(2, ct.getMaSanPham());
                     psCT.setInt(3, ct.getSoLuong());
-                    psCT.setBigDecimal(4, ct.getDonGia() != null ? ct.getDonGia() : BigDecimal.ZERO);
+                    if (coTN) {
+                        psCT.setInt(4, ct.getSoLuongThucNhan() != null ? ct.getSoLuongThucNhan() : ct.getSoLuong());
+                        psCT.setBigDecimal(5, ct.getDonGia() != null ? ct.getDonGia() : BigDecimal.ZERO);
+                    } else {
+                        psCT.setBigDecimal(4, ct.getDonGia() != null ? ct.getDonGia() : BigDecimal.ZERO);
+                    }
                     psCT.addBatch();
                 }
                 psCT.executeBatch();
@@ -205,12 +244,15 @@ public class DonNhapHangDAO {
                 String bangDH = getTenBangDonNhap(conn);
                 String bangCT = getTenBangChiTiet(conn);
                 boolean coGio = coCotGioLap(conn);
+                boolean coTN = coCotThucNhan(conn);
 
                 String sqlDonHang = coGio ?
                         "INSERT INTO " + bangDH + " (maDonHang, maNhaCungCap, maNhanVien, ngayLap, gioLap, tongTien, trangThai) VALUES (?, ?, ?, ?, ?, ?, ?)" :
                         "INSERT INTO " + bangDH + " (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai) VALUES (?, ?, ?, ?, ?, ?)";
 
-                String sqlChiTiet = "INSERT INTO " + bangCT + " (maDonHang, maSanPham, soLuong, donGia) VALUES (?, ?, ?, ?)";
+                String sqlChiTiet = coTN ?
+                        "INSERT INTO " + bangCT + " (maDonHang, maSanPham, soLuong, soLuongThucNhan, donGia) VALUES (?, ?, ?, ?, ?)" :
+                        "INSERT INTO " + bangCT + " (maDonHang, maSanPham, soLuong, donGia) VALUES (?, ?, ?, ?)";
 
                 for (DonNhapHang donHang : danhSachDonHang) {
                     kiemTraNhaCungCapDangHoatDong(conn, donHang.getMaNhaCungCap());
@@ -237,7 +279,12 @@ public class DonNhapHangDAO {
                             ps.setString(1, donHang.getMaDonHang());
                             ps.setString(2, chiTiet.getMaSanPham());
                             ps.setInt(3, chiTiet.getSoLuong());
-                            ps.setBigDecimal(4, chiTiet.getDonGia());
+                            if (coTN) {
+                                ps.setInt(4, chiTiet.getSoLuongThucNhan() != null ? chiTiet.getSoLuongThucNhan() : chiTiet.getSoLuong());
+                                ps.setBigDecimal(5, chiTiet.getDonGia());
+                            } else {
+                                ps.setBigDecimal(4, chiTiet.getDonGia());
+                            }
                             ps.addBatch();
                         }
                         ps.executeBatch();
@@ -276,7 +323,15 @@ public class DonNhapHangDAO {
                 ps.setString(1, maDonHang);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
-                        return anhXaDonNhapHang(rs);
+                        DonNhapHang dh = anhXaDonNhapHang(rs);
+                        // Bổ sung tên nhân viên nhận/hủy an toàn nếu có
+                        if (dh.getMaNhanVienNhan() != null) {
+                            dh.setTenNhanVienNhan(layTenNhanVien(conn, dh.getMaNhanVienNhan()));
+                        }
+                        if (dh.getMaNhanVienHuy() != null) {
+                            dh.setTenNhanVienHuy(layTenNhanVien(conn, dh.getMaNhanVienHuy()));
+                        }
+                        return dh;
                     }
                 }
             }
@@ -296,6 +351,8 @@ public class DonNhapHangDAO {
                 throw new IllegalStateException("Lỗi khi lấy chi tiết đơn nhập: không thể kết nối cơ sở dữ liệu");
             }
             String bangCT = getTenBangChiTiet(conn);
+            boolean coTN = coCotThucNhan(conn);
+
             String sql = "SELECT ct.*, sp.tenSanPham, sp.donViTinh " +
                     "FROM " + bangCT + " ct " +
                     "LEFT JOIN SanPham sp ON ct.maSanPham = sp.maSanPham " +
@@ -308,7 +365,14 @@ public class DonNhapHangDAO {
                         ChiTietDonNhap ct = new ChiTietDonNhap();
                         ct.setMaDonHang(rs.getString("maDonHang"));
                         ct.setMaSanPham(rs.getString("maSanPham"));
-                        ct.setSoLuong(rs.getInt("soLuong"));
+                        int soLuong = rs.getInt("soLuong");
+                        ct.setSoLuong(soLuong);
+                        if (coTN) {
+                            int thucNhan = rs.getInt("soLuongThucNhan");
+                            ct.setSoLuongThucNhan(rs.wasNull() ? soLuong : thucNhan);
+                        } else {
+                            ct.setSoLuongThucNhan(soLuong);
+                        }
                         ct.setDonGia(rs.getBigDecimal("donGia"));
                         ct.setTenSanPham(rs.getNString("tenSanPham"));
                         ct.setDonViTinh(rs.getNString("donViTinh"));
@@ -331,6 +395,7 @@ public class DonNhapHangDAO {
 
     /**
      * Tìm kiếm đơn nhập hàng theo bộ lọc đa tiêu chí.
+     * Câu truy vấn độc lập, tương thích 100% không phụ thuộc các cột truy vết mới.
      */
     public List<DonNhapHang> timKiemDonHang(String keyword, String maNhaCungCap, LocalDate tuNgay, LocalDate denNgay, String trangThai) {
         List<DonNhapHang> list = new ArrayList<>();
@@ -396,32 +461,48 @@ public class DonNhapHangDAO {
     }
 
     /**
-     * Cập nhật trạng thái đơn hàng (dùng khi hủy đơn).
+     * Cập nhật trạng thái đơn hàng (dùng khi hủy đơn với lý do và người hủy).
      */
-    public boolean capNhatTrangThai(String maDonHang, String trangThaiHienTai, String trangThaiMoi) {
+    public boolean capNhatTrangThaiHuy(String maDonHang, String maNhanVienHuy, String lyDoHuy) {
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) {
                 throw new IllegalStateException("Lỗi khi cập nhật trạng thái đơn nhập: không thể kết nối cơ sở dữ liệu");
             }
             String bangDH = getTenBangDonNhap(conn);
-            String sql = "UPDATE " + bangDH + " SET trangThai = ? WHERE maDonHang = ? AND trangThai = ?";
+            boolean coTruyVet = coCotTruyVet(conn);
+
+            String sql = coTruyVet ?
+                    "UPDATE " + bangDH + " SET trangThai = ?, maNhanVienHuy = ?, lyDoHuy = ? WHERE maDonHang = ? AND trangThai = ?" :
+                    "UPDATE " + bangDH + " SET trangThai = ? WHERE maDonHang = ? AND trangThai = ?";
+
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setNString(1, trangThaiMoi);
-                ps.setString(2, maDonHang);
-                ps.setNString(3, trangThaiHienTai);
+                ps.setNString(1, DonNhapHang.TRANG_THAI_DA_HUY);
+                if (coTruyVet) {
+                    ps.setString(2, maNhanVienHuy);
+                    ps.setNString(3, lyDoHuy != null ? lyDoHuy.trim() : "");
+                    ps.setString(4, maDonHang);
+                    ps.setNString(5, DonNhapHang.TRANG_THAI_CHO_NHAN);
+                } else {
+                    ps.setString(2, maDonHang);
+                    ps.setNString(3, DonNhapHang.TRANG_THAI_CHO_NHAN);
+                }
                 return ps.executeUpdate() > 0;
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Lỗi khi cập nhật trạng thái đơn nhập: " + e.getMessage(), e);
+            throw new IllegalStateException("Lỗi khi hủy đơn nhập hàng: " + e.getMessage(), e);
         }
     }
 
     /**
      * Xác nhận nhận hàng trong transaction:
      * 1. Cập nhật trạng thái đơn thành 'Hoàn tất' (chỉ thực hiện nếu trạng thái hiện tại là 'Chờ nhận hàng').
-     * 2. Cộng số lượng tồn kho trong bảng SanPham tương ứng từng sản phẩm trong chi tiết đơn.
+     * 2. Ghi nhận người nhận, ngày giờ nhận, tổng tiền thực nhận (nếu schema hỗ trợ).
+     * 3. Cập nhật soLuongThucNhan cho từng dòng chi tiết (nếu schema hỗ trợ).
+     * 4. Cộng số lượng tồn kho theo soLuongThucNhan (dòng có soLuongThucNhan = 0 thì bỏ qua update SanPham, không rollback).
      */
-    public boolean xacNhanNhanHangVaCongTonKho(String maDonHang) {
+    public boolean xacNhanNhanHangVaCongTonKho(String maDonHang, String maNhanVienNhan,
+                                                LocalDateTime ngayGioNhan, BigDecimal tongTienThucNhan,
+                                                List<ChiTietDonNhap> chiTietCapNhat) {
         Connection conn = null;
         try {
             conn = DatabaseManager.getConnection();
@@ -432,48 +513,66 @@ public class DonNhapHangDAO {
 
             String bangDH = getTenBangDonNhap(conn);
             String bangCT = getTenBangChiTiet(conn);
+            boolean coTN = coCotThucNhan(conn);
+            boolean coTruyVet = coCotTruyVet(conn);
 
-            String sqlUpdateDonHang = "UPDATE " + bangDH + " SET trangThai = ? WHERE maDonHang = ? AND trangThai = ?";
-            String sqlGetChiTiet = "SELECT maSanPham, soLuong FROM " + bangCT + " WHERE maDonHang = ?";
-            String sqlUpdateTonKho = "UPDATE SanPham SET soLuongTon = soLuongTon + ? WHERE maSanPham = ?";
-
-            // 1. Lấy chi tiết trước
-            List<ChiTietDonNhap> chiTietList = new ArrayList<>();
-            try (PreparedStatement psCT = conn.prepareStatement(sqlGetChiTiet)) {
-                psCT.setString(1, maDonHang);
-                try (ResultSet rsCT = psCT.executeQuery()) {
-                    while (rsCT.next()) {
-                        ChiTietDonNhap ct = new ChiTietDonNhap();
-                        ct.setMaSanPham(rsCT.getString("maSanPham"));
-                        ct.setSoLuong(rsCT.getInt("soLuong"));
-                        chiTietList.add(ct);
-                    }
-                }
-            }
-            if (chiTietList.isEmpty()) {
+            // 1. Kiểm tra danh sách chi tiết
+            if (chiTietCapNhat == null || chiTietCapNhat.isEmpty()) {
                 conn.rollback();
-                throw new IllegalStateException("Lỗi khi xác nhận nhận hàng: đơn hàng không có chi tiết sản phẩm");
+                throw new IllegalStateException("Đơn hàng không có chi tiết sản phẩm để xác nhận nhận hàng.");
             }
 
             // 2. Chuyển trạng thái có điều kiện (WHERE trangThai = 'Chờ nhận hàng')
+            String sqlUpdateDonHang = coTruyVet ?
+                    "UPDATE " + bangDH + " SET trangThai = ?, maNhanVienNhan = ?, ngayGioNhan = ?, tongTienThucNhan = ? WHERE maDonHang = ? AND trangThai = ?" :
+                    "UPDATE " + bangDH + " SET trangThai = ? WHERE maDonHang = ? AND trangThai = ?";
+
             try (PreparedStatement psUpdate = conn.prepareStatement(sqlUpdateDonHang)) {
                 psUpdate.setNString(1, DonNhapHang.TRANG_THAI_HOAN_TAT);
-                psUpdate.setString(2, maDonHang);
-                psUpdate.setNString(3, DonNhapHang.TRANG_THAI_CHO_NHAN);
+                if (coTruyVet) {
+                    psUpdate.setString(2, maNhanVienNhan);
+                    psUpdate.setTimestamp(3, ngayGioNhan != null ? Timestamp.valueOf(ngayGioNhan) : Timestamp.valueOf(LocalDateTime.now()));
+                    psUpdate.setBigDecimal(4, tongTienThucNhan != null ? tongTienThucNhan : BigDecimal.ZERO);
+                    psUpdate.setString(5, maDonHang);
+                    psUpdate.setNString(6, DonNhapHang.TRANG_THAI_CHO_NHAN);
+                } else {
+                    psUpdate.setString(2, maDonHang);
+                    psUpdate.setNString(3, DonNhapHang.TRANG_THAI_CHO_NHAN);
+                }
+
                 if (psUpdate.executeUpdate() != 1) {
                     conn.rollback();
-                    throw new IllegalStateException("Lỗi khi xác nhận nhận hàng: đơn hàng không ở trạng thái 'Chờ nhận hàng' hoặc đã được xác nhận trước đó");
+                    throw new IllegalStateException("Đơn hàng không ở trạng thái 'Chờ nhận hàng' hoặc đã được xác nhận trước đó.");
                 }
             }
 
-            // 3. Cộng tồn kho
+            // 3. Cập nhật soLuongThucNhan vào ChiTietDonNhap (nếu có cột)
+            if (coTN) {
+                String sqlUpdateCT = "UPDATE " + bangCT + " SET soLuongThucNhan = ? WHERE maDonHang = ? AND maSanPham = ?";
+                try (PreparedStatement psCT = conn.prepareStatement(sqlUpdateCT)) {
+                    for (ChiTietDonNhap ct : chiTietCapNhat) {
+                        psCT.setInt(1, ct.getSoLuongThucNhan());
+                        psCT.setString(2, maDonHang);
+                        psCT.setString(3, ct.getMaSanPham());
+                        psCT.addBatch();
+                    }
+                    psCT.executeBatch();
+                }
+            }
+
+            // 4. Cộng tồn kho SanPham theo soLuongThucNhan
+            // Dòng có soLuongThucNhan = 0 thì BỎ QUA câu UPDATE, KHÔNG rollback
+            String sqlUpdateTonKho = "UPDATE SanPham SET soLuongTon = soLuongTon + ? WHERE maSanPham = ?";
             try (PreparedStatement psTonKho = conn.prepareStatement(sqlUpdateTonKho)) {
-                for (ChiTietDonNhap ct : chiTietList) {
-                    psTonKho.setInt(1, ct.getSoLuong());
-                    psTonKho.setString(2, ct.getMaSanPham());
-                    if (psTonKho.executeUpdate() != 1) {
-                        conn.rollback();
-                        throw new IllegalStateException("Lỗi khi xác nhận nhận hàng: không tìm thấy sản phẩm " + ct.getMaSanPham() + " để cộng tồn kho");
+                for (ChiTietDonNhap ct : chiTietCapNhat) {
+                    int thucNhan = ct.getSoLuongThucNhan();
+                    if (thucNhan > 0) {
+                        psTonKho.setInt(1, thucNhan);
+                        psTonKho.setString(2, ct.getMaSanPham());
+                        if (psTonKho.executeUpdate() != 1) {
+                            conn.rollback();
+                            throw new IllegalStateException("Không tìm thấy sản phẩm " + ct.getMaSanPham() + " để cộng tồn kho.");
+                        }
                     }
                 }
             }
@@ -495,6 +594,20 @@ public class DonNhapHangDAO {
                 } catch (SQLException ignored) {}
             }
         }
+    }
+
+    private String layTenNhanVien(Connection conn, String maNhanVien) {
+        if (maNhanVien == null || maNhanVien.isBlank()) return null;
+        String sql = "SELECT hoTen FROM NhanVien WHERE maNhanVien = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maNhanVien.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getNString("hoTen");
+                }
+            }
+        } catch (SQLException ignored) {}
+        return maNhanVien;
     }
 
     private void kiemTraNhaCungCapDangHoatDong(Connection conn, String maNhaCungCap) throws SQLException {
@@ -531,6 +644,23 @@ public class DonNhapHangDAO {
         dh.setTrangThai(rs.getNString("trangThai"));
 
         try {
+            dh.setTongTienThucNhan(rs.getBigDecimal("tongTienThucNhan"));
+        } catch (SQLException ignored) {}
+
+        try {
+            dh.setMaNhanVienNhan(rs.getString("maNhanVienNhan"));
+            Timestamp tsNhan = rs.getTimestamp("ngayGioNhan");
+            if (tsNhan != null) {
+                dh.setNgayGioNhan(tsNhan.toLocalDateTime());
+            }
+        } catch (SQLException ignored) {}
+
+        try {
+            dh.setMaNhanVienHuy(rs.getString("maNhanVienHuy"));
+            dh.setLyDoHuy(rs.getNString("lyDoHuy"));
+        } catch (SQLException ignored) {}
+
+        try {
             dh.setTenNhaCungCap(rs.getNString("tenNhaCungCap"));
         } catch (SQLException ignored) {}
 
@@ -541,4 +671,3 @@ public class DonNhapHangDAO {
         return dh;
     }
 }
-
