@@ -1,27 +1,27 @@
 package com.petshop.controller;
 
+import com.petshop.model.NhaCungCap;
 import com.petshop.model.SanPham;
 import com.petshop.service.SanPhamService;
 
 import java.util.List;
 
+/**
+ * Điều phối dữ liệu giữa tầng View và Service cho phân hệ Sản phẩm.
+ */
 public class SanPhamController {
 
     private final SanPhamService sanPhamService;
 
     public SanPhamController() {
-        this(new SanPhamService());
+        this.sanPhamService = new SanPhamService();
     }
 
     public SanPhamController(SanPhamService sanPhamService) {
         this.sanPhamService = sanPhamService;
     }
 
-    public List<SanPham.NhaCungCapSimple> layDanhSachNhaCungCap() {
-        return sanPhamService.layDanhSachNhaCungCap();
-    }
-
-    public String themSanPham(SanPham sp) {
+    public boolean themSanPham(SanPham sp) {
         return sanPhamService.themSanPham(sp);
     }
 
@@ -37,23 +37,35 @@ public class SanPhamController {
         return sanPhamService.capNhatTrangThaiSanPham(maSanPham, trangThai);
     }
 
-    public SanPham laySanPhamTheoMa(String maSanPham) {
-        return sanPhamService.laySanPhamTheoMa(maSanPham);
+    public List<SanPham> layDanhSachSanPham() {
+        return sanPhamService.layDanhSachSanPham();
     }
 
-    public List<SanPham> timKiemSanPham(String tuKhoa, String maNhaCungCap, Boolean chiDangKinhDoanh) {
-        return sanPhamService.timKiemSanPham(tuKhoa, maNhaCungCap, chiDangKinhDoanh);
+    public SanPham layTheoMa(String maSanPham) {
+        return sanPhamService.layTheoMa(maSanPham);
     }
 
-    public List<SanPham> layDanhSachTonKho(boolean chiDuoiNguong) {
-        return sanPhamService.layDanhSachTonKho(chiDuoiNguong);
+    public List<SanPham> timKiemSanPham(String tuKhoa, Boolean trangThai) {
+        return sanPhamService.timKiemSanPham(tuKhoa, trangThai);
     }
 
-    public List<SanPham> layBaoCaoSanPham() {
-        return sanPhamService.layBaoCaoSanPham();
+    public List<SanPham> layDanhSachSanPhamSapHet() {
+        return sanPhamService.layDanhSachSanPhamSapHet();
+    }
+
+    public int traCuuTonKho(String maSanPham) {
+        return sanPhamService.traCuuTonKho(maSanPham);
     }
 
     public boolean capNhatSoLuongTon(String maSanPham, int soLuongThayDoi) {
         return sanPhamService.capNhatSoLuongTon(maSanPham, soLuongThayDoi);
+    }
+
+    public String taoMaSanPham() {
+        return sanPhamService.taoMaSanPham();
+    }
+
+    public List<NhaCungCap> layDanhSachNhaCungCap() {
+        return sanPhamService.layDanhSachNhaCungCap();
     }
 }

@@ -7,10 +7,20 @@ import com.petshop.view.dichvu.BangGiaDichVuView;
 import com.petshop.view.dichvu.BaoCaoDichVuView;
 import com.petshop.view.dichvu.CapNhatDichVuView;
 import com.petshop.view.dichvu.TimKiemDichVuView;
+import com.petshop.view.khachhang.CapNhatKhachHangView;
+import com.petshop.view.khachhang.LichSuGiaoDichKhachHangView;
+import com.petshop.view.khachhang.TimKiemKhachHangView;
+import com.petshop.view.khuyenmai.CapNhatKhuyenMaiView;
+import com.petshop.view.khuyenmai.TimKiemKhuyenMaiView;
+import com.petshop.view.nhacungcap.CapNhatNhaCungCapView;
+import com.petshop.view.nhacungcap.TimKiemNhaCungCapView;
+import com.petshop.view.sanpham.BaoCaoSanPhamView;
 import com.petshop.view.sanpham.CapNhatSanPhamView;
-import com.petshop.view.sanpham.ThemSanPhamView;
 import com.petshop.view.sanpham.TheoDoiTonKhoView;
 import com.petshop.view.sanpham.TimKiemSanPhamView;
+import com.petshop.view.thucung.CapNhatThuCungView;
+import com.petshop.view.thucung.LichSuChamSocThuCungView;
+import com.petshop.view.thucung.TimKiemThuCungView;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -431,8 +441,24 @@ public class ManHinhChinhView extends BorderPane {
         xacThucService.kiemTraQuyen(chucNang.getMaChucNang());
 
         Node manHinhDich = switch (nhom.getMaNhom()) {
-            case "KHACH_HANG"          -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
-            case "THU_CUNG"               -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
+            case "KHACH_HANG"          -> {
+                if ("KH_CAP_NHAT".equals(chucNang.getMaChucNang())) {
+                    yield new CapNhatKhachHangView();
+                } else if ("KH_TIM_KIEM".equals(chucNang.getMaChucNang())) {
+                    yield new TimKiemKhachHangView();
+                } else if ("KH_LICH_SU".equals(chucNang.getMaChucNang())) {
+                    yield new LichSuGiaoDichKhachHangView();
+                }
+                yield new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
+            }
+            case "THU_CUNG"               -> {
+                if ("TC_TIM_KIEM".equals(chucNang.getMaChucNang())) {
+                    yield new TimKiemThuCungView();
+                } else if ("TC_CHAM_SOC".equals(chucNang.getMaChucNang())) {
+                    yield new LichSuChamSocThuCungView();
+                }
+                yield new CapNhatThuCungView();
+            }
             case "LICH_HEN"       -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "PHIEU_DICH_VU" -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "NHAN_VIEN"          -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
@@ -447,19 +473,29 @@ public class ManHinhChinhView extends BorderPane {
                 }
                 yield new CapNhatDichVuView();
             }
-            case "NHA_CUNG_CAP"          -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
+            case "NHA_CUNG_CAP"        -> {
+                if ("NCC_TIM_KIEM".equals(chucNang.getMaChucNang())) {
+                    yield new TimKiemNhaCungCapView();
+                }
+                yield new CapNhatNhaCungCapView();
+            }
             case "DON_NHAP"      -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "SAN_PHAM"           -> {
-                if ("PRD_SEARCH".equals(chucNang.getMaChucNang())) {
+                if ("SP_TIM_KIEM".equals(chucNang.getMaChucNang())) {
                     yield new TimKiemSanPhamView();
-                } else if ("PRD_INVENTORY".equals(chucNang.getMaChucNang()) || "PRD_REPORT".equals(chucNang.getMaChucNang())) {
+                } else if ("SP_TON_KHO".equals(chucNang.getMaChucNang())) {
                     yield new TheoDoiTonKhoView();
-                } else if (chucNang.getTenChucNang() != null && chucNang.getTenChucNang().toLowerCase().contains("thêm")) {
-                    yield new ThemSanPhamView();
+                } else if ("SP_BAO_CAO".equals(chucNang.getMaChucNang())) {
+                    yield new BaoCaoSanPhamView();
                 }
                 yield new CapNhatSanPhamView();
             }
-            case "KHUYEN_MAI"         -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
+            case "KHUYEN_MAI"         -> {
+                if ("KM_TIM_KIEM".equals(chucNang.getMaChucNang())) {
+                    yield new TimKiemKhuyenMaiView();
+                }
+                yield new CapNhatKhuyenMaiView();
+            }
             case "HOA_DON"           -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "PHIEU_DOI_TRA"       -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             default                  -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());

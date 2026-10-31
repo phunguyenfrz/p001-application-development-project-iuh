@@ -2,36 +2,39 @@ package com.petshop.model;
 
 import java.math.BigDecimal;
 
+/**
+ * Thực thể Sản phẩm (hàng hóa) trong cửa hàng Happy Tails.
+ * Khớp bảng SanPham trong CSDL SQL Server.
+ */
 public class SanPham {
 
     private String maSanPham;
     private String maNhaCungCap;
-    private String tenNhaCungCap;
     private String tenSanPham;
     private String maVach;
     private BigDecimal giaBan;
     private int soLuongTon;
     private int nguongTonToiThieu;
     private String donViTinh;
-    private boolean trangThai;
+    private boolean trangThai; // true: đang kinh doanh, false: ngừng kinh doanh (xóa mềm)
+
+    // Tên nhà cung cấp hiển thị trên bảng biểu
+    private String tenNhaCungCap;
 
     public SanPham() {
+        this.giaBan = BigDecimal.ZERO;
+        this.soLuongTon = 0;
+        this.nguongTonToiThieu = 10;
+        this.trangThai = true;
     }
 
     public SanPham(String maSanPham, String maNhaCungCap, String tenSanPham, String maVach,
                    BigDecimal giaBan, int soLuongTon, int nguongTonToiThieu, String donViTinh, boolean trangThai) {
-        this(maSanPham, maNhaCungCap, null, tenSanPham, maVach, giaBan, soLuongTon, nguongTonToiThieu, donViTinh, trangThai);
-    }
-
-    public SanPham(String maSanPham, String maNhaCungCap, String tenNhaCungCap, String tenSanPham,
-                   String maVach, BigDecimal giaBan, int soLuongTon, int nguongTonToiThieu,
-                   String donViTinh, boolean trangThai) {
         this.maSanPham = maSanPham;
         this.maNhaCungCap = maNhaCungCap;
-        this.tenNhaCungCap = tenNhaCungCap;
         this.tenSanPham = tenSanPham;
         this.maVach = maVach;
-        this.giaBan = giaBan;
+        this.giaBan = giaBan != null ? giaBan : BigDecimal.ZERO;
         this.soLuongTon = soLuongTon;
         this.nguongTonToiThieu = nguongTonToiThieu;
         this.donViTinh = donViTinh;
@@ -52,14 +55,6 @@ public class SanPham {
 
     public void setMaNhaCungCap(String maNhaCungCap) {
         this.maNhaCungCap = maNhaCungCap;
-    }
-
-    public String getTenNhaCungCap() {
-        return tenNhaCungCap;
-    }
-
-    public void setTenNhaCungCap(String tenNhaCungCap) {
-        this.tenNhaCungCap = tenNhaCungCap;
     }
 
     public String getTenSanPham() {
@@ -83,7 +78,7 @@ public class SanPham {
     }
 
     public void setGiaBan(BigDecimal giaBan) {
-        this.giaBan = giaBan;
+        this.giaBan = giaBan != null ? giaBan : BigDecimal.ZERO;
     }
 
     public int getSoLuongTon() {
@@ -118,14 +113,16 @@ public class SanPham {
         this.trangThai = trangThai;
     }
 
-    public boolean isDuoiNguongAnToan() {
-        return soLuongTon <= nguongTonToiThieu;
+    public String getTenNhaCungCap() {
+        return tenNhaCungCap;
     }
 
-    public static record NhaCungCapSimple(String maNhaCungCap, String tenNhaCungCap) {
-        @Override
-        public String toString() {
-            return tenNhaCungCap + " (" + maNhaCungCap + ")";
-        }
+    public void setTenNhaCungCap(String tenNhaCungCap) {
+        this.tenNhaCungCap = tenNhaCungCap;
+    }
+
+    public boolean isSapHetHang() {
+        return this.soLuongTon <= this.nguongTonToiThieu;
     }
 }
+
