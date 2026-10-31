@@ -3,6 +3,9 @@ package com.petshop.view;
 import com.petshop.model.TaiKhoan;
 import com.petshop.service.DanhMucMenu;
 import com.petshop.service.XacThucService;
+import com.petshop.view.catruc.CapNhatCaTrucView;
+import com.petshop.view.catruc.PhanCaNhanVienView;
+import com.petshop.view.catruc.TimKiemCaTrucView;
 import com.petshop.view.dichvu.BangGiaDichVuView;
 import com.petshop.view.dichvu.BaoCaoDichVuView;
 import com.petshop.view.dichvu.CapNhatDichVuView;
@@ -474,7 +477,14 @@ public class ManHinhChinhView extends BorderPane {
             }
             case "PHIEU_DICH_VU" -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "NHAN_VIEN"          -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
-            case "CA_TRUC"             -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
+            case "CA_TRUC"             -> {
+                if ("CT_PHAN_CONG".equals(chucNang.getMaChucNang())) {
+                    yield new PhanCaNhanVienView();
+                } else if ("CT_XEM".equals(chucNang.getMaChucNang())) {
+                    yield new TimKiemCaTrucView();
+                }
+                yield new CapNhatCaTrucView();
+            }
             case "DICH_VU_CHAM_SOC"      -> {
                 if ("DVCS_TIM_KIEM".equals(chucNang.getMaChucNang())) {
                     yield new TimKiemDichVuView();
