@@ -175,6 +175,15 @@ public class DanhMucMenu {
             }
         }
         BANG_PHAN_QUYEN.put("PRD_LOW_STOCK", Set.of(TaiKhoan.VaiTro.ADMIN, TaiKhoan.VaiTro.QUAN_LY, TaiKhoan.VaiTro.BAN_HANG));
+        // Các service sản phẩm vẫn kiểm tra quyền bằng mã SP_*, song song với mã PRD_* trên menu.
+        Set<TaiKhoan.VaiTro> quyenSanPham = Set.of(
+                TaiKhoan.VaiTro.ADMIN,
+                TaiKhoan.VaiTro.QUAN_LY,
+                TaiKhoan.VaiTro.BAN_HANG
+        );
+        BANG_PHAN_QUYEN.put("SP_CAP_NHAT", quyenSanPham);
+        BANG_PHAN_QUYEN.put("SP_TIM_KIEM", quyenSanPham);
+        BANG_PHAN_QUYEN.put("SP_TON_KHO", quyenSanPham);
     }
 
     public static List<NhomMenu> layTatCaMenu() {

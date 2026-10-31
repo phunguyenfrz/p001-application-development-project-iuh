@@ -481,11 +481,11 @@ public class ManHinhChinhView extends BorderPane {
             }
             case "DON_NHAP"      -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
             case "SAN_PHAM"           -> {
-                if ("SP_TIM_KIEM".equals(chucNang.getMaChucNang())) {
+                if ("PRD_SEARCH".equals(chucNang.getMaChucNang())) {
                     yield new TimKiemSanPhamView();
-                } else if ("SP_TON_KHO".equals(chucNang.getMaChucNang())) {
+                } else if ("PRD_INVENTORY".equals(chucNang.getMaChucNang())) {
                     yield new TheoDoiTonKhoView();
-                } else if ("SP_BAO_CAO".equals(chucNang.getMaChucNang())) {
+                } else if ("PRD_REPORT".equals(chucNang.getMaChucNang())) {
                     yield new BaoCaoSanPhamView();
                 }
                 yield new CapNhatSanPhamView();
