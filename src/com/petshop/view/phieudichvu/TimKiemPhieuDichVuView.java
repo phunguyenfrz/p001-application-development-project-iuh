@@ -230,13 +230,5 @@ public class TimKiemPhieuDichVuView extends VBox {
         alert.setContentText(noiDung);
         alert.showAndWait();
     }
-
-    private void hienThiThongBao(String tieuDe, String noiDung) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Thông báo");
-        alert.setHeaderText(tieuDe);
-        alert.setContentText(noiDung);
-        alert.showAndWait();
-    }
 }
 
