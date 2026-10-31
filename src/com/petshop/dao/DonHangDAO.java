@@ -55,6 +55,25 @@ public class DonHangDAO {
         return tienTo + "000001";
     }
 
+    private static volatile Boolean coCotGioLap = null;
+
+    private static boolean coCotGioLap(Connection conn) {
+        if (coCotGioLap != null) {
+            return coCotGioLap;
+        }
+        synchronized (DonHangDAO.class) {
+            if (coCotGioLap != null) {
+                return coCotGioLap;
+            }
+            try (ResultSet rs = conn.getMetaData().getColumns(null, null, "DonHang", "gioLap")) {
+                coCotGioLap = rs.next();
+            } catch (SQLException e) {
+                coCotGioLap = false;
+            }
+            return coCotGioLap;
+        }
+    }
+
     /** Lưu nhiều đơn nhập theo từng nhà cung cấp trong một transaction. */
     public boolean themNhieuDonHang(List<DonHang> danhSachDonHang) {
         String sqlDonHang = """
@@ -343,7 +362,7 @@ public class DonHangDAO {
             params.add(trangThai.trim());
         }
 
-        sql.append(" ORDER BY dh.ngayLap DESC, dh.gioLap DESC, dh.maDonHang DESC");
+        sql.append(" ORDER BY dh.ngayLap DESC, dh.maDonHang DESC");
 
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) {

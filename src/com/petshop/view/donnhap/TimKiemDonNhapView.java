@@ -282,7 +282,7 @@ public class TimKiemDonNhapView extends VBox {
      */
     private void taiLaiBang() {
         try {
-            List<DonHang> danhSach = controller.layTatCaDonHang();
+            List<DonHang> danhSach = controller.timKiemDonHang(null, null, null, null, null);
             danhSachHienThi.setAll(danhSach);
             tblDanhSach.getSelectionModel().clearSelection();
             tblDanhSach.refresh();
