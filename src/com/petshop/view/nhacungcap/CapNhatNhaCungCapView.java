@@ -12,7 +12,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
@@ -41,6 +40,7 @@ public class CapNhatNhaCungCapView extends VBox {
     private final Button btnThem = new Button("Thêm mới");
     private final Button btnCapNhat = new Button("Cập nhật");
     private final Button btnNgung = new Button("Ngừng hợp tác");
+    private final Button btnXoa = new Button("Xóa");
     private final Button btnLamMoi = new Button("Làm mới");
 
     public CapNhatNhaCungCapView() {
@@ -49,7 +49,7 @@ public class CapNhatNhaCungCapView extends VBox {
 
         Label lblTieuDe = new Label("NHÀ CUNG CẤP - CẬP NHẬT THÔNG TIN");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-        Label lblMoTa = new Label("Chọn một nhà cung cấp trong danh sách để cập nhật hoặc ngừng hợp tác.");
+        Label lblMoTa = new Label("Xóa nhà cung cấp chưa phát sinh dữ liệu; ngừng hợp tác để giữ lịch sử và sản phẩm liên kết.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
 
         getChildren().addAll(lblTieuDe, lblMoTa, taoKhungBang());
@@ -75,15 +75,17 @@ public class CapNhatNhaCungCapView extends VBox {
 
         btnThem.getStyleClass().add("nut-chinh");
         btnCapNhat.getStyleClass().add("nut-phu");
-        btnNgung.getStyleClass().add("nut-xoa");
+        btnNgung.getStyleClass().add("nut-phu");
+        btnXoa.getStyleClass().add("nut-xoa");
         btnLamMoi.getStyleClass().add("nut-phu");
 
         btnThem.setOnAction(e -> moCuaSoThem());
         btnCapNhat.setOnAction(e -> moCuaSoCapNhat());
-        btnNgung.setOnAction(e -> xuLyNgungHopTac());
+        btnNgung.setOnAction(e -> xuLyDoiTrangThaiHopTac());
+        btnXoa.setOnAction(e -> xuLyXoa());
         btnLamMoi.setOnAction(e -> taiLaiBang());
 
-        thanhNut.getChildren().addAll(lblDanhSach, trong, btnThem, btnCapNhat, btnNgung, btnLamMoi);
+        thanhNut.getChildren().addAll(lblDanhSach, trong, btnThem, btnCapNhat, btnNgung, btnXoa, btnLamMoi);
 
         taoCotBang();
         tblDanhSach.getStyleClass().add("bang-du-lieu");
@@ -151,7 +153,12 @@ public class CapNhatNhaCungCapView extends VBox {
 
     private void capNhatTrangThaiNut(NhaCungCap ncc) {
         btnCapNhat.setDisable(ncc == null);
-        btnNgung.setDisable(ncc == null || !ncc.isTrangThai());
+        btnNgung.setDisable(ncc == null);
+        btnNgung.setText(ncc == null || ncc.isTrangThai() ? "Ngừng hợp tác" : "Hợp tác lại");
+        btnNgung.getStyleClass().remove("nut-xoa");
+        btnNgung.getStyleClass().remove("nut-phu");
+        btnNgung.getStyleClass().add(ncc != null && ncc.isTrangThai() ? "nut-xoa" : "nut-phu");
+        btnXoa.setDisable(ncc == null);
     }
 
     public void moCuaSoThem() {
@@ -190,9 +197,6 @@ public class CapNhatNhaCungCapView extends VBox {
         TextField txtSdt = new TextField(chon.getSoDienThoai());
         TextField txtEmail = new TextField(chon.getEmail() != null ? chon.getEmail() : "");
         TextField txtDiaChi = new TextField(chon.getDiaChi() != null ? chon.getDiaChi() : "");
-        ComboBox<String> cboTrangThai = new ComboBox<>(FXCollections.observableArrayList("Đang hoạt động", "Ngừng hợp tác"));
-        cboTrangThai.setValue(chon.isTrangThai() ? "Đang hoạt động" : "Ngừng hợp tác");
-
         txtSdt.textProperty().addListener((obs, cu, moi) -> {
             if (moi == null) return;
             if (!moi.matches("\\d*")) {
@@ -210,14 +214,10 @@ public class CapNhatNhaCungCapView extends VBox {
         luoi.add(txtEmail, 1, 2);
         luoi.add(new Label("Địa chỉ:"), 0, 3);
         luoi.add(txtDiaChi, 1, 3);
-        luoi.add(new Label("Trạng thái:"), 0, 4);
-        luoi.add(cboTrangThai, 1, 4);
-
         GridPane.setHgrow(txtTen, Priority.ALWAYS);
         GridPane.setHgrow(txtSdt, Priority.ALWAYS);
         GridPane.setHgrow(txtEmail, Priority.ALWAYS);
         GridPane.setHgrow(txtDiaChi, Priority.ALWAYS);
-        GridPane.setHgrow(cboTrangThai, Priority.ALWAYS);
 
         HBox nut = new HBox(10);
         nut.setAlignment(Pos.CENTER_RIGHT);
@@ -234,21 +234,19 @@ public class CapNhatNhaCungCapView extends VBox {
         goc.getChildren().addAll(lblTieuDe, khung);
 
         btnDong.setOnAction(e -> ((Stage) btnDong.getScene().getWindow()).close());
-        btnLuu.setOnAction(e -> luuCapNhat(chon, txtTen, txtSdt, txtEmail, txtDiaChi, cboTrangThai));
+        btnLuu.setOnAction(e -> luuCapNhat(chon, txtTen, txtSdt, txtEmail, txtDiaChi));
 
         return goc;
     }
 
     private void luuCapNhat(NhaCungCap chon, TextField txtTen, TextField txtSdt, TextField txtEmail,
-                            TextField txtDiaChi, ComboBox<String> cboTrangThai) {
+                            TextField txtDiaChi) {
         try {
             String ten = txtTen.getText() == null ? "" : txtTen.getText().trim();
             String sdt = txtSdt.getText() == null ? "" : txtSdt.getText().trim();
             String email = txtEmail.getText() == null ? null : txtEmail.getText().trim();
             String diaChi = txtDiaChi.getText() == null ? null : txtDiaChi.getText().trim();
-            boolean trangThai = "Đang hoạt động".equals(cboTrangThai.getValue());
-
-            NhaCungCap moi = new NhaCungCap(chon.getMaNhaCungCap(), ten, sdt, diaChi, email, trangThai);
+            NhaCungCap moi = new NhaCungCap(chon.getMaNhaCungCap(), ten, sdt, diaChi, email, chon.isTrangThai());
 
             if (controller.capNhatNhaCungCap(moi)) {
                 hienThiThongBao("Thành công", "Đã cập nhật nhà cung cấp: " + chon.getMaNhaCungCap());
@@ -263,24 +261,54 @@ public class CapNhatNhaCungCapView extends VBox {
         }
     }
 
-    private void xuLyNgungHopTac() {
+    private void xuLyDoiTrangThaiHopTac() {
         NhaCungCap chon = tblDanhSach.getSelectionModel().getSelectedItem();
         if (chon == null) return;
 
+        boolean trangThaiMoi = !chon.isTrangThai();
         Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION);
-        xacNhan.setTitle("Xác nhận ngừng hợp tác");
+        xacNhan.setTitle(trangThaiMoi ? "Xác nhận hợp tác lại" : "Xác nhận ngừng hợp tác");
         xacNhan.setHeaderText(null);
-        xacNhan.setContentText("Bạn có chắc chắn muốn ngừng hợp tác với nhà cung cấp:\n"
-                + chon.getTenNhaCungCap() + " (" + chon.getMaNhaCungCap() + ")?");
+        String canhBao = trangThaiMoi
+                ? "Bạn có muốn hợp tác lại với nhà cung cấp này không?"
+                : "Bạn có chắc muốn ngừng hợp tác với nhà cung cấp này không? Sản phẩm và lịch sử đơn nhập sẽ được giữ nguyên.";
+        xacNhan.setContentText(canhBao + "\n" + chon.getTenNhaCungCap() + " (" + chon.getMaNhaCungCap() + ")");
 
         Optional<ButtonType> ketQua = xacNhan.showAndWait();
         if (ketQua.isPresent() && ketQua.get() == ButtonType.OK) {
             try {
-                if (controller.xoaMemNhaCungCap(chon.getMaNhaCungCap())) {
-                    hienThiThongBao("Thành công", "Đã ngừng hợp tác với nhà cung cấp: " + chon.getMaNhaCungCap());
+                if (controller.capNhatTrangThaiNhaCungCap(chon.getMaNhaCungCap(), trangThaiMoi)) {
+                    hienThiThongBao("Thành công", trangThaiMoi
+                            ? "Đã hợp tác lại với nhà cung cấp: " + chon.getMaNhaCungCap()
+                            : "Đã ngừng hợp tác với nhà cung cấp: " + chon.getMaNhaCungCap());
                     taiLaiBang();
                 } else {
-                    hienThiLoi("Không thể ngừng hợp tác với nhà cung cấp!");
+                    hienThiLoi("Không thể cập nhật trạng thái nhà cung cấp!");
+                }
+            } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
+                hienThiLoi(ex.getMessage());
+            }
+        }
+    }
+
+    private void xuLyXoa() {
+        NhaCungCap chon = tblDanhSach.getSelectionModel().getSelectedItem();
+        if (chon == null) return;
+
+        Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION);
+        xacNhan.setTitle("Xác nhận xóa nhà cung cấp");
+        xacNhan.setHeaderText(null);
+        xacNhan.setContentText("Xóa hẳn nhà cung cấp \"" + chon.getTenNhaCungCap()
+                + "\"? Chỉ xóa được khi chưa liên kết sản phẩm và chưa có đơn nhập.");
+
+        Optional<ButtonType> ketQua = xacNhan.showAndWait();
+        if (ketQua.isPresent() && ketQua.get() == ButtonType.OK) {
+            try {
+                if (controller.xoaNhaCungCap(chon.getMaNhaCungCap())) {
+                    hienThiThongBao("Thành công", "Đã xóa nhà cung cấp: " + chon.getMaNhaCungCap());
+                    taiLaiBang();
+                } else {
+                    hienThiLoi("Không thể xóa nhà cung cấp.");
                 }
             } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
                 hienThiLoi(ex.getMessage());

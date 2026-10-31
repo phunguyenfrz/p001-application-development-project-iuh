@@ -102,6 +102,17 @@ public class SanPhamService {
     }
 
     /**
+     * Lấy danh sách sản phẩm thuộc nhà cung cấp để hiển thị khi tra cứu NCC.
+     */
+    public List<SanPham> layTheoNhaCungCap(String maNhaCungCap) {
+        xacThucService.kiemTraQuyen("SP_TIM_KIEM");
+        if (maNhaCungCap == null || maNhaCungCap.isBlank()) {
+            throw new IllegalArgumentException("Mã nhà cung cấp không được để trống!");
+        }
+        return sanPhamDAO.layTheoNhaCungCap(maNhaCungCap.trim());
+    }
+
+    /**
      * Lấy thông tin sản phẩm theo mã.
      */
     public SanPham layTheoMa(String maSanPham) {
