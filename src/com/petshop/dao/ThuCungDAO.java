@@ -258,6 +258,25 @@ public class ThuCungDAO {
     }
 
     /**
+     * Cập nhật cân nặng thực tế cho thú cưng khi cân tại quầy tiếp nhận.
+     *
+     * @param maThuCung Mã thú cưng
+     * @param canNang Cân nặng thực tế
+     * @return true nếu cập nhật thành công
+     */
+    public boolean capNhatCanNang(String maThuCung, BigDecimal canNang) {
+        String sql = "UPDATE dbo.ThuCung SET canNang = ? WHERE maThuCung = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setBigDecimal(1, canNang != null ? canNang : BigDecimal.ZERO);
+            ps.setString(2, maThuCung);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi cập nhật cân nặng thú cưng " + maThuCung + ": " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Tự động sinh mã thú cưng mới theo quy tắc: TC-yyyyMMdd-xxxxxx.
      *
      * @return Mã thú cưng mới duy nhất
