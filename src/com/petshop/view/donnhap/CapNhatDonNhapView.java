@@ -4,12 +4,10 @@ import com.petshop.controller.DonNhapHangController;
 import com.petshop.model.ChiTietDonNhap;
 import com.petshop.model.DonNhapHang;
 
-import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
-import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -33,14 +31,12 @@ import java.util.Optional;
 
 /**
  * Giao diện cập nhật đơn nhập hàng.
- * Cho phép xác nhận nhận hàng, hủy đơn, xem chi tiết mặt hàng và tra cứu tên hàng.
+ * Cho phép xác nhận nhận hàng, hủy đơn, xem chi tiết đơn nhập khi double-click hoặc bấm nút.
  */
 public class CapNhatDonNhapView extends VBox {
 
     // === Các thành phần giao diện ===
     private TableView<DonNhapHang> bangDonHang;
-    private TableView<ChiTietDonNhap> bangChiTietMatHang;
-    private Label lblTieuDeChiTiet;
     private Button nutXacNhan;
     private Button nutHuyDon;
     private Button nutXemChiTiet;
@@ -69,8 +65,8 @@ public class CapNhatDonNhapView extends VBox {
      */
     private void khoiTaoGiaoDien() {
         getStyleClass().add("khung-phan-he");
-        setSpacing(12);
-        setPadding(new Insets(16));
+        setSpacing(14);
+        setPadding(new Insets(18));
 
         // --- Phần tiêu đề ---
         VBox hopTieuDe = taoPhanTieuDe();
@@ -80,24 +76,15 @@ public class CapNhatDonNhapView extends VBox {
 
         // --- Bảng đơn nhập hàng chính ---
         bangDonHang = taoBangDonHang();
-
-        // --- Bảng chi tiết mặt hàng phía dưới (Master - Detail) ---
-        VBox hopChiTietMatHang = taoPhanChiTietMatHang();
-
-        // Sử dụng SplitPane để người dùng có thể điều chỉnh độ cao hai bảng
-        SplitPane splitPane = new SplitPane();
-        splitPane.setOrientation(Orientation.VERTICAL);
-        splitPane.getItems().addAll(bangDonHang, hopChiTietMatHang);
-        splitPane.setDividerPositions(0.62);
-        VBox.setVgrow(splitPane, Priority.ALWAYS);
+        VBox.setVgrow(bangDonHang, Priority.ALWAYS);
 
         // --- Phần trạng thái ---
         nhanTrangThai = new Label();
         nhanTrangThai.getStyleClass().add("mo-ta-phan-he");
 
-        getChildren().addAll(hopTieuDe, hopNut, splitPane, nhanTrangThai);
+        getChildren().addAll(hopTieuDe, hopNut, bangDonHang, nhanTrangThai);
 
-        // Lắng nghe sự kiện chọn dòng trên bảng để bật/tắt nút và tải chi tiết mặt hàng
+        // Lắng nghe sự kiện chọn dòng trên bảng để bật/tắt nút
         bangDonHang.getSelectionModel().selectedItemProperty().addListener(
                 (obs, dongCu, dongMoi) -> capNhatTrangThaiNut(dongMoi));
 
@@ -114,7 +101,7 @@ public class CapNhatDonNhapView extends VBox {
         Label tieuDe = new Label("CẬP NHẬT ĐƠN NHẬP HÀNG");
         tieuDe.getStyleClass().add("tieu-de-phan-he");
 
-        Label moTa = new Label("Xác nhận nhận hàng (kiểm đếm số lượng thực nhận), hủy đơn và theo dõi chi tiết mặt hàng.");
+        Label moTa = new Label("Xác nhận nhận hàng hoặc hủy các đơn nhập hàng đang chờ xử lý. Nhấn đúp chuột vào đơn hàng để xem chi tiết.");
         moTa.getStyleClass().add("mo-ta-phan-he");
 
         hop.getChildren().addAll(tieuDe, moTa);
@@ -165,7 +152,7 @@ public class CapNhatDonNhapView extends VBox {
         // Cột mã đơn hàng
         TableColumn<DonNhapHang, String> cotMa = new TableColumn<>("Mã đơn hàng");
         cotMa.setCellValueFactory(new PropertyValueFactory<>("maDonHang"));
-        cotMa.setPrefWidth(125);
+        cotMa.setPrefWidth(130);
 
         // Cột tên nhà cung cấp
         TableColumn<DonNhapHang, String> cotNCC = new TableColumn<>("Nhà cung cấp");
@@ -178,7 +165,7 @@ public class CapNhatDonNhapView extends VBox {
             String tenHang = cellData.getValue().getTenHang();
             return new SimpleStringProperty(tenHang != null ? tenHang : "");
         });
-        cotTenHang.setPrefWidth(240);
+        cotTenHang.setPrefWidth(250);
 
         // Cột tên nhân viên
         TableColumn<DonNhapHang, String> cotNV = new TableColumn<>("Nhân viên");
@@ -209,7 +196,7 @@ public class CapNhatDonNhapView extends VBox {
             String tienStr = (tongTien != null) ? dinhDangTien.format(tongTien) : "0";
             return new SimpleStringProperty(tienStr);
         });
-        cotTongTien.setPrefWidth(120);
+        cotTongTien.setPrefWidth(125);
         cotTongTien.setStyle("-fx-alignment: CENTER-RIGHT;");
 
         // Cột trạng thái (tô màu theo trạng thái)
@@ -254,104 +241,18 @@ public class CapNhatDonNhapView extends VBox {
     }
 
     /**
-     * Tạo phần bảng hiển thị chi tiết các mặt hàng của đơn hàng đang được chọn.
-     */
-    @SuppressWarnings("unchecked")
-    private VBox taoPhanChiTietMatHang() {
-        VBox hop = new VBox(6);
-        hop.setPadding(new Insets(6, 0, 0, 0));
-
-        lblTieuDeChiTiet = new Label("Danh sách mặt hàng của đơn nhập:");
-        lblTieuDeChiTiet.setStyle("-fx-font-weight: bold; -fx-text-fill: #2c3e50;");
-
-        bangChiTietMatHang = new TableView<>();
-        bangChiTietMatHang.getStyleClass().add("bang-du-lieu");
-        bangChiTietMatHang.setPlaceholder(new Label("Chọn một đơn nhập hàng ở bảng trên để xem danh sách mặt hàng."));
-
-        TableColumn<ChiTietDonNhap, Number> cotSTT = new TableColumn<>("STT");
-        cotSTT.setPrefWidth(45);
-        cotSTT.setStyle("-fx-alignment: CENTER;");
-        cotSTT.setCellValueFactory(cellData -> {
-            int idx = bangChiTietMatHang.getItems().indexOf(cellData.getValue()) + 1;
-            return new ReadOnlyObjectWrapper<>(idx);
-        });
-
-        TableColumn<ChiTietDonNhap, String> cotMaSP = new TableColumn<>("Mã SP");
-        cotMaSP.setCellValueFactory(new PropertyValueFactory<>("maSanPham"));
-        cotMaSP.setPrefWidth(120);
-
-        TableColumn<ChiTietDonNhap, String> cotTenSP = new TableColumn<>("Tên hàng");
-        cotTenSP.setCellValueFactory(cellData -> {
-            String ten = cellData.getValue().getTenSanPham();
-            return new SimpleStringProperty(ten != null ? ten : cellData.getValue().getMaSanPham());
-        });
-        cotTenSP.setPrefWidth(220);
-
-        TableColumn<ChiTietDonNhap, String> cotDVT = new TableColumn<>("ĐVT");
-        cotDVT.setCellValueFactory(new PropertyValueFactory<>("donViTinh"));
-        cotDVT.setPrefWidth(70);
-        cotDVT.setStyle("-fx-alignment: CENTER;");
-
-        TableColumn<ChiTietDonNhap, Integer> cotSL = new TableColumn<>("Số lượng đặt");
-        cotSL.setCellValueFactory(new PropertyValueFactory<>("soLuong"));
-        cotSL.setPrefWidth(100);
-        cotSL.setStyle("-fx-alignment: CENTER-RIGHT;");
-
-        TableColumn<ChiTietDonNhap, String> cotSLTN = new TableColumn<>("Thực nhận");
-        cotSLTN.setCellValueFactory(cellData -> {
-            Integer tn = cellData.getValue().getSoLuongThucNhan();
-            return new SimpleStringProperty(tn != null ? String.valueOf(tn) : "-");
-        });
-        cotSLTN.setPrefWidth(90);
-        cotSLTN.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
-
-        TableColumn<ChiTietDonNhap, String> cotDonGia = new TableColumn<>("Đơn giá (đ)");
-        cotDonGia.setCellValueFactory(cellData -> {
-            BigDecimal gia = cellData.getValue().getDonGia();
-            return new SimpleStringProperty(gia != null ? dinhDangTien.format(gia) : "0");
-        });
-        cotDonGia.setPrefWidth(120);
-        cotDonGia.setStyle("-fx-alignment: CENTER-RIGHT;");
-
-        TableColumn<ChiTietDonNhap, String> cotThanhTien = new TableColumn<>("Thành tiền (đ)");
-        cotThanhTien.setCellValueFactory(cellData -> {
-            BigDecimal tt = cellData.getValue().getThanhTien();
-            return new SimpleStringProperty(tt != null ? dinhDangTien.format(tt) : "0");
-        });
-        cotThanhTien.setPrefWidth(130);
-        cotThanhTien.setStyle("-fx-alignment: CENTER-RIGHT;");
-
-        bangChiTietMatHang.getColumns().addAll(cotSTT, cotMaSP, cotTenSP, cotDVT, cotSL, cotSLTN, cotDonGia, cotThanhTien);
-        VBox.setVgrow(bangChiTietMatHang, Priority.ALWAYS);
-
-        hop.getChildren().addAll(lblTieuDeChiTiet, bangChiTietMatHang);
-        return hop;
-    }
-
-    /**
-     * Cập nhật trạng thái bật/tắt các nút và tải bảng chi tiết mặt hàng dựa trên dòng được chọn.
+     * Cập nhật trạng thái bật/tắt các nút dựa trên dòng được chọn.
      */
     private void capNhatTrangThaiNut(DonNhapHang donHang) {
         if (donHang == null) {
             nutXacNhan.setDisable(true);
             nutHuyDon.setDisable(true);
             nutXemChiTiet.setDisable(true);
-            lblTieuDeChiTiet.setText("Danh sách mặt hàng của đơn nhập:");
-            bangChiTietMatHang.getItems().clear();
         } else {
             boolean laChoNhanHang = DonNhapHang.TRANG_THAI_CHO_NHAN.equals(donHang.getTrangThai());
             nutXacNhan.setDisable(!laChoNhanHang);
             nutHuyDon.setDisable(!laChoNhanHang);
             nutXemChiTiet.setDisable(false);
-
-            lblTieuDeChiTiet.setText("Danh sách mặt hàng của đơn nhập #" + donHang.getMaDonHang()
-                    + " (" + (donHang.getTenNhaCungCap() != null ? donHang.getTenNhaCungCap() : donHang.getMaNhaCungCap()) + "):");
-            try {
-                List<ChiTietDonNhap> dsCT = controller.layChiTietTheoMaDonHang(donHang.getMaDonHang());
-                bangChiTietMatHang.setItems(FXCollections.observableArrayList(dsCT));
-            } catch (Exception ex) {
-                bangChiTietMatHang.getItems().clear();
-            }
         }
     }
 
@@ -433,7 +334,7 @@ public class CapNhatDonNhapView extends VBox {
             String ten = cellData.getValue().getTenSanPham();
             return new SimpleStringProperty(ten != null ? ten : cellData.getValue().getMaSanPham());
         });
-        cotTen.setPrefWidth(200);
+        cotTen.setPrefWidth(210);
 
         TableColumn<ChiTietDonNhap, Integer> cotSLDat = new TableColumn<>("SL Đặt");
         cotSLDat.setCellValueFactory(new PropertyValueFactory<>("soLuong"));
@@ -443,14 +344,72 @@ public class CapNhatDonNhapView extends VBox {
         Label lblTongTienThucNhan = new Label();
         lblTongTienThucNhan.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
 
+        // Khung xử lý giao thiếu hàng (Phương án 3)
+        VBox hopXuLyThieu = new VBox(8);
+        hopXuLyThieu.setStyle("-fx-background-color: #fff9e6; -fx-border-color: #f39c12; -fx-border-width: 1px; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 10;");
+
+        Label lblCanhBaoThieu = new Label("⚠️ Phát hiện giao thiếu hàng so với đơn đặt. Vui lòng chọn cách xử lý phần thiếu:");
+        lblCanhBaoThieu.setStyle("-fx-font-weight: bold; -fx-text-fill: #b7791f; -fx-font-size: 13px;");
+
+        ToggleGroup nhomXuLyThieu = new ToggleGroup();
+        RadioButton radTaoDonBu = new RadioButton("Tách đơn nhập bù (Backorder) - Tự động tạo đơn mới cho phần thiếu để nhận đợt sau");
+        radTaoDonBu.setToggleGroup(nhomXuLyThieu);
+        radTaoDonBu.setSelected(true);
+        radTaoDonBu.setStyle("-fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+
+        RadioButton radDongDon = new RadioButton("Đóng đơn (Hủy phần thiếu) - Không nhận tiếp, chốt theo số lượng thực tế");
+        radDongDon.setToggleGroup(nhomXuLyThieu);
+        radDongDon.setStyle("-fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+
+        HBox hopNhapLyDo = new HBox(8);
+        hopNhapLyDo.setAlignment(Pos.CENTER_LEFT);
+        Label lblLyDoThieu = new Label("Lý do thiếu hàng:");
+        lblLyDoThieu.setStyle("-fx-text-fill: #555;");
+        ComboBox<String> cbLyDoThieu = new ComboBox<>();
+        cbLyDoThieu.getItems().addAll(
+                "Nhà cung cấp hết hàng",
+                "Hàng cận date / không đạt chất lượng kiểm định",
+                "Hàng bị bể vỡ / hư hỏng khi vận chuyển",
+                "Cửa hàng hủy phần còn lại theo thỏa thuận"
+        );
+        cbLyDoThieu.setEditable(true);
+        cbLyDoThieu.setPromptText("Chọn hoặc nhập lý do...");
+        cbLyDoThieu.setPrefWidth(350);
+        hopNhapLyDo.getChildren().addAll(lblLyDoThieu, cbLyDoThieu);
+        hopNhapLyDo.setDisable(true);
+
+        radDongDon.selectedProperty().addListener((obs, cu, moi) -> {
+            hopNhapLyDo.setDisable(!moi);
+            if (moi && (cbLyDoThieu.getValue() == null || cbLyDoThieu.getValue().isBlank())) {
+                cbLyDoThieu.setValue("Nhà cung cấp hết hàng");
+            }
+        });
+
+        hopXuLyThieu.getChildren().addAll(lblCanhBaoThieu, radTaoDonBu, radDongDon, hopNhapLyDo);
+        hopXuLyThieu.setVisible(false);
+        hopXuLyThieu.setManaged(false);
+
         Runnable tinhLaiTong = () -> {
             BigDecimal tong = BigDecimal.ZERO;
+            int tongThieu = 0;
             for (ChiTietDonNhap ct : dsObservable) {
+                int slDat = ct.getSoLuong();
                 int slTN = ct.getSoLuongThucNhan() != null ? ct.getSoLuongThucNhan() : 0;
                 BigDecimal gia = ct.getDonGia() != null ? ct.getDonGia() : BigDecimal.ZERO;
                 tong = tong.add(gia.multiply(BigDecimal.valueOf(slTN)));
+                if (slTN < slDat) {
+                    tongThieu += (slDat - slTN);
+                }
             }
             lblTongTienThucNhan.setText("Tổng tiền thực nhận: " + dinhDangTien.format(tong) + " đ");
+            if (tongThieu > 0) {
+                lblCanhBaoThieu.setText("⚠️ Phát hiện giao thiếu " + tongThieu + " sản phẩm so với đơn đặt. Vui lòng chọn cách xử lý phần thiếu:");
+                hopXuLyThieu.setVisible(true);
+                hopXuLyThieu.setManaged(true);
+            } else {
+                hopXuLyThieu.setVisible(false);
+                hopXuLyThieu.setManaged(false);
+            }
         };
 
         TableColumn<ChiTietDonNhap, Void> cotSLThucNhan = new TableColumn<>("SL Thực nhận");
@@ -479,6 +438,17 @@ public class CapNhatDonNhapView extends VBox {
                             tinhLaiTong.run();
                         }
                     });
+                    spinner.getEditor().textProperty().addListener((obs, cu, moi) -> {
+                        try {
+                            if (moi != null && !moi.isBlank()) {
+                                int val = Integer.parseInt(moi.trim());
+                                if (val >= 0 && val <= max) {
+                                    ct.setSoLuongThucNhan(val);
+                                    tinhLaiTong.run();
+                                }
+                            }
+                        } catch (Exception ignored) {}
+                    });
                     setGraphic(spinner);
                 }
             }
@@ -494,7 +464,7 @@ public class CapNhatDonNhapView extends VBox {
 
         bangKiemDem.getColumns().addAll(cotMa, cotTen, cotSLDat, cotSLThucNhan, cotGia);
 
-        // Khởi tạo nhãn tổng tiền
+        // Khởi tạo nhãn tổng tiền và trạng thái thiếu hàng
         tinhLaiTong.run();
 
         // Nút bấm
@@ -515,10 +485,15 @@ public class CapNhatDonNhapView extends VBox {
         btnXacNhanDlg.setOnAction(e -> {
             // Kiểm tra: nếu toàn bộ dòng đều thực nhận = 0 thì chặn
             boolean coItNhatMot = false;
+            int tongThieu = 0;
             for (ChiTietDonNhap ct : dsObservable) {
-                if (ct.getSoLuongThucNhan() != null && ct.getSoLuongThucNhan() > 0) {
+                int slTN = ct.getSoLuongThucNhan() != null ? ct.getSoLuongThucNhan() : 0;
+                int slDat = ct.getSoLuong();
+                if (slTN > 0) {
                     coItNhatMot = true;
-                    break;
+                }
+                if (slTN < slDat) {
+                    tongThieu += (slDat - slTN);
                 }
             }
             if (!coItNhatMot) {
@@ -528,15 +503,39 @@ public class CapNhatDonNhapView extends VBox {
             }
 
             try {
-                boolean ok = controller.xacNhanNhanHang(donHang.getMaDonHang(), new ArrayList<>(dsObservable));
-                if (ok) {
-                    hienThongBaoThanhCong("Thành công",
-                            "Đã xác nhận nhận hàng và cập nhật tồn kho cho đơn: " + donHang.getMaDonHang());
+                if (tongThieu > 0) {
+                    boolean taoDonBu = radTaoDonBu.isSelected();
+                    String lyDo = cbLyDoThieu.getValue();
+                    if (!taoDonBu && (lyDo == null || lyDo.trim().isEmpty())) {
+                        hienThongBaoLoi("Thiếu lý do", "Vui lòng nhập lý do thiếu hàng khi chọn đóng đơn!");
+                        return;
+                    }
+
+                    String res = controller.xacNhanNhanHangThieu(donHang.getMaDonHang(),
+                            new ArrayList<>(dsObservable), taoDonBu, lyDo);
+
+                    if (taoDonBu && res != null && !res.equals(donHang.getMaDonHang())) {
+                        hienThongBaoThanhCong("Xác nhận thành công",
+                                "Đã nhận hàng cho đơn " + donHang.getMaDonHang() + ".\n"
+                                + "Hệ thống đã tự động tạo đơn nhập bù [" + res + "] cho " + tongThieu + " sản phẩm còn thiếu để nhận đợt sau.");
+                    } else {
+                        hienThongBaoThanhCong("Xác nhận thành công",
+                                "Đã nhận hàng và đóng đơn " + donHang.getMaDonHang() + " theo số lượng thực nhận.\n"
+                                + "Lý do thiếu hàng: " + (lyDo != null ? lyDo : ""));
+                    }
                     dialog.close();
                     taiDuLieu();
                 } else {
-                    hienThongBaoLoi("Không thể nhận hàng",
-                            "Trạng thái đơn hàng đã thay đổi hoặc có lỗi trong quá trình cập nhật.");
+                    boolean ok = controller.xacNhanNhanHang(donHang.getMaDonHang(), new ArrayList<>(dsObservable));
+                    if (ok) {
+                        hienThongBaoThanhCong("Thành công",
+                                "Đã xác nhận nhận đủ hàng và cập nhật tồn kho cho đơn: " + donHang.getMaDonHang());
+                        dialog.close();
+                        taiDuLieu();
+                    } else {
+                        hienThongBaoLoi("Không thể nhận hàng",
+                                "Trạng thái đơn hàng đã thay đổi hoặc có lỗi trong quá trình cập nhật.");
+                    }
                 }
             } catch (Exception ex) {
                 hienThongBaoLoi("Lỗi xác nhận nhận hàng", ex.getMessage());
@@ -545,7 +544,7 @@ public class CapNhatDonNhapView extends VBox {
 
         hopNutDlg.getChildren().addAll(lblTongTienThucNhan, khoangCach, btnXacNhanDlg, btnDongDlg);
 
-        hopDialog.getChildren().addAll(lblTieuDeDlg, lblThongTin, bangKiemDem, hopNutDlg);
+        hopDialog.getChildren().addAll(lblTieuDeDlg, lblThongTin, bangKiemDem, hopXuLyThieu, hopNutDlg);
 
         Scene scene = new Scene(hopDialog);
         if (getClass().getResource("/com/petshop/view/css/chung.css") != null) {

@@ -66,6 +66,16 @@ public class DonNhapHangController {
     }
 
     /**
+     * IMP_CONFIRM (Phương án 3): Xác nhận nhận hàng có xử lý giao thiếu:
+     * - Tự động tách đơn nhập bù (Backorder) hoặc
+     * - Đóng đơn theo thực nhận kèm lý do chênh lệch bắt buộc.
+     */
+    public String xacNhanNhanHangThieu(String maDonHang, List<ChiTietDonNhap> chiTietCapNhat,
+                                       boolean taoDonBu, String lyDoChenhLech) {
+        return donNhapHangService.xacNhanNhanHangThieu(maDonHang, chiTietCapNhat, taoDonBu, lyDoChenhLech);
+    }
+
+    /**
      * Xác nhận nhận hàng mặc định nhận đủ.
      */
     public boolean xacNhanNhanHang(String maDonHang) {
@@ -91,6 +101,13 @@ public class DonNhapHangController {
      */
     public List<DonNhapHang> timKiemDonHang(String keyword, String maNhaCungCap, LocalDate tuNgay, LocalDate denNgay, String trangThai) {
         return donNhapHangService.timKiemDonHang(keyword, maNhaCungCap, tuNgay, denNgay, trangThai);
+    }
+
+    /**
+     * IMP_SEARCH: Tìm kiếm đơn nhập hàng hỗ trợ lọc theo tên hàng.
+     */
+    public List<DonNhapHang> timKiemDonHang(String keyword, String maNhaCungCap, LocalDate tuNgay, LocalDate denNgay, String trangThai, String tenHang) {
+        return donNhapHangService.timKiemDonHang(keyword, maNhaCungCap, tuNgay, denNgay, trangThai, tenHang);
     }
 
     /**

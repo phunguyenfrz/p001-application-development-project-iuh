@@ -102,6 +102,50 @@ class DonNhapHangServiceTest {
     }
 
     @Test
+    void xacNhanNhanHangThieu_PhuongAn3_TaoDonBu() {
+        DonNhapHang donHang = taoDonChoNhan();
+        ChiTietDonNhap ct1 = new ChiTietDonNhap(MA_DON, "SP-01", "Hạt Me-O", "Gói", 10, 7, new BigDecimal("100"));
+        ChiTietDonNhap ct2 = new ChiTietDonNhap(MA_DON, "SP-02", "Pate Royal", "Lon", 5, 2, new BigDecimal("50"));
+        dao.themDonNhapHang(donHang, List.of(ct1, ct2));
+
+        // Giao thiếu: SP-01 thiếu 3, SP-02 thiếu 3. Chọn tạo đơn bù (taoDonBu = true)
+        String maDonBu = service.xacNhanNhanHangThieu(MA_DON, List.of(ct1, ct2), true, null);
+
+        // Đơn gốc hoàn tất với số lượng thực nhận và tổng tiền thực nhận = 7*100 + 2*50 = 800
+        assertEquals(DonNhapHang.TRANG_THAI_HOAN_TAT, donHang.getTrangThai());
+        assertEquals(new BigDecimal("800"), donHang.getTongTienThucNhan());
+        assertEquals(7, dao.soLuongTon.get("SP-01"));
+        assertEquals(2, dao.soLuongTon.get("SP-02"));
+
+        // Kiểm tra đơn bù tự động sinh
+        assertEquals("PN-20261030-999999", maDonBu);
+        DonNhapHang donBu = dao.timTheoMa(maDonBu);
+        assertEquals(DonNhapHang.TRANG_THAI_CHO_NHAN, donBu.getTrangThai());
+        assertEquals(new BigDecimal("450"), donBu.getTongTien()); // 3 * 100 + 3 * 50 = 450
+        List<ChiTietDonNhap> ctBu = dao.layChiTietTheoMaDonHang(maDonBu);
+        assertEquals(2, ctBu.size());
+        assertEquals(3, ctBu.get(0).getSoLuong());
+        assertEquals(3, ctBu.get(1).getSoLuong());
+    }
+
+    @Test
+    void xacNhanNhanHangThieu_PhuongAn3_DongDonBatBuocLyDo() {
+        DonNhapHang donHang = taoDonChoNhan();
+        ChiTietDonNhap ct1 = new ChiTietDonNhap(MA_DON, "SP-01", "Hạt Me-O", "Gói", 10, 7, new BigDecimal("100"));
+        dao.themDonNhapHang(donHang, List.of(ct1));
+
+        // Giao thiếu: chọn đóng đơn (taoDonBu = false) nhưng không truyền lý do -> phải chặn
+        assertThrows(IllegalArgumentException.class,
+                () -> service.xacNhanNhanHangThieu(MA_DON, List.of(ct1), false, "   "));
+
+        // Truyền lý do hợp lệ -> thành công
+        String res = service.xacNhanNhanHangThieu(MA_DON, List.of(ct1), false, "Nhà cung cấp hết hàng");
+        assertEquals(MA_DON, res);
+        assertEquals(DonNhapHang.TRANG_THAI_HOAN_TAT, donHang.getTrangThai());
+        assertTrue(donHang.getLyDoHuy().contains("Nhà cung cấp hết hàng"));
+    }
+
+    @Test
     void huyDonBatBuocNhapLyDo() {
         DonNhapHang donHang = taoDonChoNhan();
         dao.themDonNhapHang(donHang, List.of());
@@ -167,7 +211,7 @@ class DonNhapHangServiceTest {
         LocalDate tuNgay = LocalDate.of(2026, 10, 1);
         LocalDate denNgay = LocalDate.of(2026, 10, 30);
 
-        service.timKiemDonHang("PN-", "NCC-01", tuNgay, denNgay, DonNhapHang.TRANG_THAI_CHO_NHAN);
+        service.timKiemDonHang("PN-", "NCC-01", tuNgay, denNgay, DonNhapHang.TRANG_THAI_CHO_NHAN, "Pate");
 
         assertTrue(dao.daGoiTimKiem);
         assertEquals("PN-", dao.tuKhoaTimKiem);
@@ -227,12 +271,14 @@ class DonNhapHangServiceTest {
         }
 
         @Override
-        public boolean xacNhanNhanHangVaCongTonKho(String maDonHang, String maNhanVienNhan,
+        public String xacNhanNhanHangThieuVaTaoDonBu(String maDonHang, String maNhanVienNhan,
                                                     LocalDateTime ngayGioNhan, BigDecimal tongTienThucNhan,
-                                                    List<ChiTietDonNhap> chiTietCapNhat) {
+                                                    String ghiChuChenhLech,
+                                                    List<ChiTietDonNhap> chiTietCapNhat,
+                                                    DonNhapHang donNhapBu) {
             DonNhapHang donHang = donHangs.get(maDonHang);
             if (donHang == null || !DonNhapHang.TRANG_THAI_CHO_NHAN.equals(donHang.getTrangThai())) {
-                return false;
+                return null;
             }
             for (ChiTietDonNhap chiTiet : chiTietCapNhat) {
                 int tn = chiTiet.getSoLuongThucNhan();
@@ -244,7 +290,25 @@ class DonNhapHangServiceTest {
             donHang.setMaNhanVienNhan(maNhanVienNhan);
             donHang.setNgayGioNhan(ngayGioNhan);
             donHang.setTongTienThucNhan(tongTienThucNhan);
-            return true;
+            donHang.setLyDoHuy(ghiChuChenhLech);
+
+            if (donNhapBu != null) {
+                String maBu = "PN-20261030-999999";
+                donNhapBu.setMaDonHang(maBu);
+                donHangs.put(maBu, donNhapBu);
+                chiTietTheoDon.put(maBu, new ArrayList<>(donNhapBu.getDanhSachChiTiet()));
+                return maBu;
+            }
+            return maDonHang;
+        }
+
+        @Override
+        public boolean xacNhanNhanHangVaCongTonKho(String maDonHang, String maNhanVienNhan,
+                                                    LocalDateTime ngayGioNhan, BigDecimal tongTienThucNhan,
+                                                    List<ChiTietDonNhap> chiTietCapNhat) {
+            String res = xacNhanNhanHangThieuVaTaoDonBu(maDonHang, maNhanVienNhan, ngayGioNhan, tongTienThucNhan,
+                    null, chiTietCapNhat, null);
+            return res != null;
         }
 
         @Override
@@ -261,13 +325,19 @@ class DonNhapHangServiceTest {
 
         @Override
         public List<DonNhapHang> timKiemDonHang(String keyword, String maNhaCungCap,
-                                                LocalDate tuNgay, LocalDate denNgay, String trangThai) {
+                                                LocalDate tuNgay, LocalDate denNgay, String trangThai, String tenHang) {
             daGoiTimKiem = true;
             tuKhoaTimKiem = keyword;
             maNhaCungCapTimKiem = maNhaCungCap;
             tuNgayTimKiem = tuNgay;
             denNgayTimKiem = denNgay;
             return List.of();
+        }
+
+        @Override
+        public List<DonNhapHang> timKiemDonHang(String keyword, String maNhaCungCap,
+                                                LocalDate tuNgay, LocalDate denNgay, String trangThai) {
+            return timKiemDonHang(keyword, maNhaCungCap, tuNgay, denNgay, trangThai, null);
         }
     }
 }

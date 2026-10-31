@@ -217,7 +217,32 @@ public class DonNhapHangService {
      * - Nếu toàn bộ dòng đều có soLuongThucNhan = 0 thì chặn, báo lỗi và gợi ý Hủy đơn.
      * - Tính lại tongTienThucNhan.
      */
+    /**
+     * Xác nhận nhận hàng và cộng tồn kho với danh sách thực nhận (IMP_CONFIRM).
+     * Bắt buộc kiểm tra:
+     * - soLuongThucNhan: >= 0 và <= soLuong
+     * - Nếu toàn bộ dòng đều có soLuongThucNhan = 0 thì chặn, báo lỗi và gợi ý Hủy đơn.
+     * - Tính lại tongTienThucNhan.
+     */
     public boolean xacNhanNhanHang(String maDonHang, List<ChiTietDonNhap> chiTietCapNhat) {
+        String ketQua = xacNhanNhanHangThieu(maDonHang, chiTietCapNhat, false, "Đóng đơn theo thực nhận");
+        return ketQua != null;
+    }
+
+    /**
+     * Xác nhận nhận hàng có xử lý giao thiếu (Phương án 3):
+     * - Nếu nhận đủ 100%: hoàn tất đơn bình thường.
+     * - Nếu giao thiếu và taoDonBu = true: hoàn tất đơn hiện tại và tự động tách đơn nhập bù trong cùng một transaction.
+     * - Nếu giao thiếu và taoDonBu = false: đóng đơn theo số thực nhận và bắt buộc lưu lý do chênh lệch.
+     *
+     * @param maDonHang Mã đơn hàng cần xác nhận
+     * @param chiTietCapNhat Danh sách mặt hàng với số lượng thực nhận
+     * @param taoDonBu True để tự động tạo đơn nhập bù cho phần thiếu; False để đóng đơn
+     * @param lyDoChenhLech Lý do chênh lệch khi đóng đơn (bắt buộc nếu đóng đơn)
+     * @return Mã đơn bù (nếu tạo) hoặc mã đơn gốc
+     */
+    public String xacNhanNhanHangThieu(String maDonHang, List<ChiTietDonNhap> chiTietCapNhat,
+                                       boolean taoDonBu, String lyDoChenhLech) {
         xacThucService.kiemTraQuyen("DN_CAP_NHAT");
 
         if (maDonHang == null || maDonHang.trim().isEmpty()) {
@@ -251,9 +276,11 @@ public class DonNhapHangService {
 
         boolean coItNhatMotSanPhamThucNhan = false;
         BigDecimal tongTienThucNhan = BigDecimal.ZERO;
+        List<ChiTietDonNhap> dsHangThieu = new ArrayList<>();
+        int tongSoLuongThieu = 0;
 
         for (ChiTietDonNhap ct : chiTietCapNhat) {
-            int thucNhan = ct.getSoLuongThucNhan();
+            int thucNhan = ct.getSoLuongThucNhan() != null ? ct.getSoLuongThucNhan() : 0;
             if (thucNhan < 0) {
                 throw new IllegalArgumentException("Số lượng thực nhận của sản phẩm " + ct.getTenSanPham() + " không được âm!");
             }
@@ -265,6 +292,14 @@ public class DonNhapHangService {
                 coItNhatMotSanPhamThucNhan = true;
             }
             tongTienThucNhan = tongTienThucNhan.add(ct.getThanhTienThucNhan());
+
+            int thieu = ct.getSoLuong() - thucNhan;
+            if (thieu > 0) {
+                tongSoLuongThieu += thieu;
+                ChiTietDonNhap ctBu = new ChiTietDonNhap(null, ct.getMaSanPham(), ct.getTenSanPham(),
+                        ct.getDonViTinh(), thieu, ct.getDonGia());
+                dsHangThieu.add(ctBu);
+            }
         }
 
         // Chặn nếu toàn bộ dòng đều thực nhận = 0
@@ -276,7 +311,38 @@ public class DonNhapHangService {
         String maNhanVienNhan = (tk != null && tk.getMaNhanVien() != null) ? tk.getMaNhanVien() : dh.getMaNhanVien();
         LocalDateTime ngayGioNhan = LocalDateTime.now();
 
-        return donNhapHangDAO.xacNhanNhanHangVaCongTonKho(maDonHang, maNhanVienNhan, ngayGioNhan, tongTienThucNhan, chiTietCapNhat);
+        DonNhapHang donNhapBu = null;
+        String ghiChuGhiNhan = null;
+
+        if (tongSoLuongThieu > 0) {
+            if (taoDonBu) {
+                donNhapBu = new DonNhapHang();
+                donNhapBu.setMaNhaCungCap(dh.getMaNhaCungCap());
+                String maNV = (dh.getMaNhanVien() != null && !dh.getMaNhanVien().isBlank()) ? dh.getMaNhanVien() : maNhanVienNhan;
+                donNhapBu.setMaNhanVien(maNV);
+                donNhapBu.setNgayLap(LocalDate.now());
+                donNhapBu.setGioLap(LocalTime.now().withNano(0));
+                donNhapBu.setTrangThai(DonNhapHang.TRANG_THAI_CHO_NHAN);
+                donNhapBu.setLyDoHuy("Đơn nhập bù cho " + maDonHang + " (thiếu " + tongSoLuongThieu + " sp)");
+                donNhapBu.setDanhSachChiTiet(dsHangThieu);
+
+                BigDecimal tongTienBu = BigDecimal.ZERO;
+                for (ChiTietDonNhap b : dsHangThieu) {
+                    tongTienBu = tongTienBu.add(b.getThanhTien());
+                }
+                donNhapBu.setTongTien(tongTienBu);
+
+                ghiChuGhiNhan = "Giao thiếu " + tongSoLuongThieu + " sp. Đã tách đơn nhập bù.";
+            } else {
+                if (lyDoChenhLech == null || lyDoChenhLech.trim().isEmpty()) {
+                    throw new IllegalArgumentException("Vui lòng cung cấp lý do thiếu hàng khi đóng đơn!");
+                }
+                ghiChuGhiNhan = "Giao thiếu " + tongSoLuongThieu + " sp. Đóng đơn: " + lyDoChenhLech.trim();
+            }
+        }
+
+        return donNhapHangDAO.xacNhanNhanHangThieuVaTaoDonBu(maDonHang, maNhanVienNhan, ngayGioNhan,
+                tongTienThucNhan, ghiChuGhiNhan, chiTietCapNhat, donNhapBu);
     }
 
     /**
@@ -335,14 +401,21 @@ public class DonNhapHangService {
     }
 
     /**
-     * Tìm kiếm đơn nhập hàng đa tiêu chí (IMP_SEARCH).
+     * Tìm kiếm đơn nhập hàng đa tiêu chí (IMP_SEARCH) - hỗ trợ tìm theo tên hàng.
      */
     public List<DonNhapHang> timKiemDonHang(String keyword, String maNhaCungCap, LocalDate tuNgay, LocalDate denNgay, String trangThai) {
+        return timKiemDonHang(keyword, maNhaCungCap, tuNgay, denNgay, trangThai, null);
+    }
+
+    /**
+     * Tìm kiếm đơn nhập hàng đa tiêu chí (IMP_SEARCH) bao gồm tìm kiếm theo tên hàng.
+     */
+    public List<DonNhapHang> timKiemDonHang(String keyword, String maNhaCungCap, LocalDate tuNgay, LocalDate denNgay, String trangThai, String tenHang) {
         xacThucService.kiemTraQuyen("DN_TIM_KIEM");
         if (tuNgay != null && denNgay != null && tuNgay.isAfter(denNgay)) {
             throw new IllegalArgumentException("Từ ngày không được lớn hơn Đến ngày!");
         }
-        return donNhapHangDAO.timKiemDonHang(keyword, maNhaCungCap, tuNgay, denNgay, trangThai);
+        return donNhapHangDAO.timKiemDonHang(keyword, maNhaCungCap, tuNgay, denNgay, trangThai, tenHang);
     }
 
     /**

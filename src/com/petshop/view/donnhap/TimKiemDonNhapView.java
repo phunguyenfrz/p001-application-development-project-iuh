@@ -57,7 +57,7 @@ public class TimKiemDonNhapView extends VBox {
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
 
         // Mô tả
-        Label lblMoTa = new Label("Tìm kiếm đơn nhập hàng theo mã đơn hàng, tên nhà cung cấp, khoảng ngày và trạng thái.");
+        Label lblMoTa = new Label("Tìm kiếm đơn nhập hàng theo mã đơn hàng, tên nhà cung cấp, tên mặt hàng, khoảng ngày và trạng thái.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
 
         getChildren().addAll(lblTieuDe, lblMoTa, taoKhungChinh());
@@ -78,8 +78,8 @@ public class TimKiemDonNhapView extends VBox {
         HBox congCu1 = new HBox(10);
         congCu1.setAlignment(Pos.CENTER_LEFT);
 
-        txtTuKhoa.setPromptText("Nhập mã đơn hàng hoặc tên nhà cung cấp...");
-        txtTuKhoa.setPrefWidth(300);
+        txtTuKhoa.setPromptText("Mã đơn, tên hàng, NCC, nhân viên...");
+        txtTuKhoa.setPrefWidth(280);
         txtTuKhoa.setOnAction(e -> xuLyTimKiem());
 
         // Danh sách trạng thái
@@ -87,7 +87,7 @@ public class TimKiemDonNhapView extends VBox {
                 "Tất cả", "Chờ nhận hàng", "Hoàn tất", "Đã hủy"
         ));
         cboTrangThai.setValue("Tất cả");
-        cboTrangThai.setPrefWidth(160);
+        cboTrangThai.setPrefWidth(150);
 
         congCu1.getChildren().addAll(
                 new Label("Từ khóa:"), txtTuKhoa,
@@ -272,7 +272,7 @@ public class TimKiemDonNhapView extends VBox {
                 trangThai = null;
             }
 
-            // Gọi controller tìm kiếm (maNhaCungCap truyền null vì từ khóa đã bao gồm tên NCC)
+            // Gọi controller tìm kiếm (từ khóa hỗ trợ tìm cả mã đơn, tên hàng, nhà cung cấp, nhân viên)
             List<DonNhapHang> ketQua = controller.timKiemDonHang(tuKhoa, null, tuNgay, denNgay, trangThai);
             danhSachHienThi.setAll(ketQua);
             tblDanhSach.getSelectionModel().clearSelection();
