@@ -20,7 +20,9 @@ IF OBJECT_ID('HoaDon', 'U') IS NOT NULL DROP TABLE HoaDon;
 IF OBJECT_ID('ChiTietPhieuDichVu', 'U') IS NOT NULL DROP TABLE ChiTietPhieuDichVu;
 IF OBJECT_ID('PhieuDichVu', 'U') IS NOT NULL DROP TABLE PhieuDichVu;
 IF OBJECT_ID('KhuyenMai', 'U') IS NOT NULL DROP TABLE KhuyenMai;
+IF OBJECT_ID('ChiTietDonNhap', 'U') IS NOT NULL DROP TABLE ChiTietDonNhap;
 IF OBJECT_ID('ChiTietDonHang', 'U') IS NOT NULL DROP TABLE ChiTietDonHang;
+IF OBJECT_ID('DonNhapHang', 'U') IS NOT NULL DROP TABLE DonNhapHang;
 IF OBJECT_ID('DonHang', 'U') IS NOT NULL DROP TABLE DonHang;
 IF OBJECT_ID('SanPham', 'U') IS NOT NULL DROP TABLE SanPham;
 IF OBJECT_ID('NhaCungCap', 'U') IS NOT NULL DROP TABLE NhaCungCap;
@@ -246,11 +248,12 @@ CREATE TABLE SanPham (
 GO
 
 -- Đơn nhập hàng
-CREATE TABLE DonHang (
-    maDonHang VARCHAR(20) PRIMARY KEY CHECK (maDonHang LIKE 'DH-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]'),
+CREATE TABLE DonNhapHang (
+    maDonHang VARCHAR(20) PRIMARY KEY CHECK (maDonHang LIKE 'PN-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]' OR maDonHang LIKE 'DH-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]'),
     maNhaCungCap VARCHAR(20) NOT NULL,
     maNhanVien VARCHAR(20) NOT NULL,
     ngayLap DATE NOT NULL,
+    gioLap TIME(0) NOT NULL CONSTRAINT DF_DonHang_gioLap DEFAULT ('00:00:00'),
     tongTien DECIMAL(18,2) NOT NULL DEFAULT 0 CHECK (tongTien >= 0),
     trangThai NVARCHAR(30) NOT NULL DEFAULT N'Chờ nhận hàng' 
         CHECK (trangThai IN (N'Chờ nhận hàng', N'Hoàn tất', N'Đã hủy')),
@@ -260,13 +263,13 @@ CREATE TABLE DonHang (
 GO
 
 -- Chi tiết đơn nhập hàng
-CREATE TABLE ChiTietDonHang (
+CREATE TABLE ChiTietDonNhap (
     maDonHang VARCHAR(20) NOT NULL,
     maSanPham VARCHAR(20) NOT NULL,
     soLuong INT NOT NULL CHECK (soLuong > 0),
     donGia DECIMAL(18,2) NOT NULL CHECK (donGia >= 0),
     PRIMARY KEY (maDonHang, maSanPham),
-    CONSTRAINT FK_CTDonHang_DonHang FOREIGN KEY (maDonHang) REFERENCES DonHang(maDonHang),
+    CONSTRAINT FK_CTDonHang_DonHang FOREIGN KEY (maDonHang) REFERENCES DonNhapHang(maDonHang),
     CONSTRAINT FK_CTDonHang_SanPham FOREIGN KEY (maSanPham) REFERENCES SanPham(maSanPham)
 );
 GO
@@ -463,11 +466,11 @@ VALUES
 ('SP-20261005-000004', 'NCC-20261005-000002', N'Dây dắt kèm yếm ngực size M', '893123456704', 85000,  15, 5,  N'Cái', 1),
 ('SP-20261005-000005', 'NCC-20261005-000002', N'Sữa tắm thú cưng SOS 530ml', '893123456705', 120000, 25, 8,  N'Chai', 1);
 
-INSERT INTO DonHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai)
+INSERT INTO DonNhapHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai)
 VALUES
 ('DH-20261005-000001', 'NCC-20261005-000001', 'NV-20261005-000001', '2026-10-02', 17500000, N'Hoàn tất');
 
-INSERT INTO ChiTietDonHang (maDonHang, maSanPham, soLuong, donGia)
+INSERT INTO ChiTietDonNhap (maDonHang, maSanPham, soLuong, donGia)
 VALUES
 ('DH-20261005-000001', 'SP-20261005-000001', 50, 350000);
 
