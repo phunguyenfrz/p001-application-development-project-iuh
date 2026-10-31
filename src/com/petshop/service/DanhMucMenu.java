@@ -199,6 +199,40 @@ public class DanhMucMenu {
         return ketQua;
     }
 
+    public static List<NhomMenu> layMenuTheoTaiKhoan(TaiKhoan taiKhoan) {
+        if (taiKhoan == null) return Collections.emptyList();
+        if (taiKhoan.getPhanQuyen() == TaiKhoan.VaiTro.ADMIN) return layTatCaMenu();
+
+        Set<String> quyenTuyChinh = PhanQuyenService.layDanhSachQuyen(taiKhoan.getMaNhanVien());
+        if (quyenTuyChinh == null) {
+            return layMenuTheoVaiTro(taiKhoan.getPhanQuyen());
+        }
+
+        List<NhomMenu> ketQua = new ArrayList<>();
+        for (NhomMenu nhom : TAT_CA_MENU) {
+            List<ChucNangMenu> chucNangDuocPhep = new ArrayList<>();
+            for (ChucNangMenu chucNang : nhom.getDanhSachChucNang()) {
+                if (quyenTuyChinh.contains(chucNang.getMaChucNang())) {
+                    chucNangDuocPhep.add(chucNang);
+                }
+            }
+            if (!chucNangDuocPhep.isEmpty()) {
+                ketQua.add(new NhomMenu(nhom.getMaNhom(), nhom.getTieuDe(), nhom.getLoaiIcon(), chucNangDuocPhep));
+            }
+        }
+        return ketQua;
+    }
+
+    public static boolean kiemTraQuyen(TaiKhoan taiKhoan, String maChucNang) {
+        if (taiKhoan == null) return false;
+        if (taiKhoan.getPhanQuyen() == TaiKhoan.VaiTro.ADMIN) return true;
+        Set<String> quyenTuyChinh = PhanQuyenService.layDanhSachQuyen(taiKhoan.getMaNhanVien());
+        if (quyenTuyChinh != null) {
+            return quyenTuyChinh.contains(maChucNang);
+        }
+        return kiemTraQuyen(taiKhoan.getPhanQuyen(), maChucNang);
+    }
+
     public static boolean kiemTraQuyen(TaiKhoan.VaiTro vaiTro, String maChucNang) {
         if (vaiTro == TaiKhoan.VaiTro.ADMIN) return true;
         Set<TaiKhoan.VaiTro> duocPhep = BANG_PHAN_QUYEN.get(maChucNang);

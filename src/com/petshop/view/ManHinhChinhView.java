@@ -3,6 +3,9 @@ package com.petshop.view;
 import com.petshop.model.TaiKhoan;
 import com.petshop.service.DanhMucMenu;
 import com.petshop.service.XacThucService;
+import com.petshop.view.catruc.CapNhatCaTrucView;
+import com.petshop.view.catruc.PhanCaNhanVienView;
+import com.petshop.view.catruc.TimKiemCaTrucView;
 import com.petshop.view.dichvu.BangGiaDichVuView;
 import com.petshop.view.dichvu.BaoCaoDichVuView;
 import com.petshop.view.dichvu.CapNhatDichVuView;
@@ -17,6 +20,10 @@ import com.petshop.view.khuyenmai.CapNhatKhuyenMaiView;
 import com.petshop.view.khuyenmai.TimKiemKhuyenMaiView;
 import com.petshop.view.nhacungcap.CapNhatNhaCungCapView;
 import com.petshop.view.nhacungcap.TimKiemNhaCungCapView;
+import com.petshop.view.nhanvien.CapNhatNhanVienView;
+import com.petshop.view.nhanvien.PhanQuyenNhanVienView;
+import com.petshop.view.nhanvien.TaiKhoanDangNhapView;
+import com.petshop.view.nhanvien.TimKiemNhanVienView;
 import com.petshop.view.phieudichvu.CapNhatPhieuDichVuView;
 import com.petshop.view.phieudichvu.LapPhieuTiepNhanDichVuView;
 import com.petshop.view.phieudichvu.TimKiemPhieuDichVuView;
@@ -180,8 +187,7 @@ public class ManHinhChinhView extends BorderPane {
         pnlDanhSachMenu.getChildren().add(mnuTongQuan);
 
         // Dựng Menu từ DanhMucMenu
-        TaiKhoan.VaiTro vaiTro = (taiKhoan != null) ? taiKhoan.getPhanQuyen() : TaiKhoan.VaiTro.ADMIN;
-        List<DanhMucMenu.NhomMenu> dsNhomMenu = DanhMucMenu.layMenuTheoVaiTro(vaiTro);
+        List<DanhMucMenu.NhomMenu> dsNhomMenu = DanhMucMenu.layMenuTheoTaiKhoan(taiKhoan);
 
         for (DanhMucMenu.NhomMenu nhom : dsNhomMenu) {
             VBox pnlMucMenu = taoMucMenu(nhom);
@@ -324,8 +330,7 @@ public class ManHinhChinhView extends BorderPane {
         mnuTongQuanThuGon.setOnAction(e -> hienThiTongQuan());
         pnlDanhSachMenu.getChildren().add(mnuTongQuanThuGon);
 
-        TaiKhoan.VaiTro vaiTro = (taiKhoan != null) ? taiKhoan.getPhanQuyen() : TaiKhoan.VaiTro.ADMIN;
-        List<DanhMucMenu.NhomMenu> dsNhomMenu = DanhMucMenu.layMenuTheoVaiTro(vaiTro);
+        List<DanhMucMenu.NhomMenu> dsNhomMenu = DanhMucMenu.layMenuTheoTaiKhoan(taiKhoan);
 
         for (DanhMucMenu.NhomMenu nhom : dsNhomMenu) {
             Button mnuNhom = new Button();
@@ -485,8 +490,24 @@ public class ManHinhChinhView extends BorderPane {
                 }
                 yield new CapNhatPhieuDichVuView();
             }
-            case "NHAN_VIEN"          -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
-            case "CA_TRUC"             -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
+            case "NHAN_VIEN"          -> {
+                if ("NV_TIM_KIEM".equals(chucNang.getMaChucNang())) {
+                    yield new TimKiemNhanVienView();
+                } else if ("NV_TAI_KHOAN".equals(chucNang.getMaChucNang())) {
+                    yield new TaiKhoanDangNhapView();
+                } else if ("NV_PHAN_QUYEN".equals(chucNang.getMaChucNang())) {
+                    yield new PhanQuyenNhanVienView();
+                }
+                yield new CapNhatNhanVienView();
+            }
+            case "CA_TRUC"             -> {
+                if ("CT_PHAN_CONG".equals(chucNang.getMaChucNang())) {
+                    yield new PhanCaNhanVienView();
+                } else if ("CT_XEM".equals(chucNang.getMaChucNang())) {
+                    yield new TimKiemCaTrucView();
+                }
+                yield new CapNhatCaTrucView();
+            }
             case "DICH_VU_CHAM_SOC"      -> {
                 if ("DVCS_TIM_KIEM".equals(chucNang.getMaChucNang())) {
                     yield new TimKiemDichVuView();
