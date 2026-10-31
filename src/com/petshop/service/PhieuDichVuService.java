@@ -138,6 +138,15 @@ public class PhieuDichVuService {
         return phieuDichVuDAO.layDanhSachPhieuDichVu();
     }
 
+    // Tìm một phiếu dịch vụ theo mã duy nhất
+    public PhieuDichVu layPhieuDichVuTheoMa(String maPhieuDichVu) {
+        kiemTraQuyenXemPhieu();
+        if (maPhieuDichVu == null || maPhieuDichVu.trim().isEmpty()) {
+            throw new IllegalArgumentException("Mã phiếu dịch vụ không được để trống!");
+        }
+        return phieuDichVuDAO.layPhieuDichVuTheoMa(maPhieuDichVu.trim());
+    }
+
     // Lấy danh sách dịch vụ chi tiết của phiếu
     public List<ChiTietPhieuDichVu> layChiTietPhieuDichVu(String maPhieuDichVu) {
         kiemTraQuyenXemPhieu();
@@ -165,6 +174,29 @@ public class PhieuDichVuService {
     // Tự sinh mã phiếu dịch vụ mới tiếp theo
     public String taoMaPhieuDichVuMoi() {
         return phieuDichVuDAO.taoMaPhieuDichVu();
+    }
+
+    // =========================================================================
+    // HÀM CUNG CẤP CHO PHÂN HỆ HÓA ĐƠN (#71 - Hóa đơn)
+    // =========================================================================
+
+    /**
+     * Lấy phiếu dịch vụ để nạp vào hóa đơn thanh toán tại quầy.
+     * @param maPhieuDichVu Mã phiếu dịch vụ cần thanh toán
+     * @return Phiếu dịch vụ kèm chi tiết các dòng dịch vụ
+     */
+    public PhieuDichVu layPhieuDichVuDeThanhToan(String maPhieuDichVu) {
+        if (maPhieuDichVu == null || maPhieuDichVu.trim().isEmpty()) {
+            throw new IllegalArgumentException("Mã phiếu dịch vụ không được để trống!");
+        }
+        PhieuDichVu phieu = phieuDichVuDAO.layPhieuDichVuTheoMa(maPhieuDichVu.trim());
+        if (phieu == null) {
+            throw new IllegalArgumentException("Không tìm thấy phiếu dịch vụ mã: " + maPhieuDichVu);
+        }
+        if ("Đã hủy".equalsIgnoreCase(phieu.getTrangThai())) {
+            throw new IllegalArgumentException("Phiếu dịch vụ này đã bị hủy, không thể lập hóa đơn thanh toán!");
+        }
+        return phieu;
     }
 
     // =========================================================================
