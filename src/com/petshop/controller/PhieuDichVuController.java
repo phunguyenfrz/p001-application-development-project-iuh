@@ -64,11 +64,6 @@ public class PhieuDichVuController {
         return phieuDichVuService.layDanhSachPhieuDichVu();
     }
 
-    // Lấy một phiếu dịch vụ theo mã
-    public PhieuDichVu layPhieuDichVuTheoMa(String maPhieuDichVu) {
-        return phieuDichVuService.layPhieuDichVuTheoMa(maPhieuDichVu);
-    }
-
     // Lấy danh sách dịch vụ chi tiết của một phiếu
     public List<ChiTietPhieuDichVu> layChiTietPhieuDichVu(String maPhieuDichVu) {
         return phieuDichVuService.layChiTietPhieuDichVu(maPhieuDichVu);
