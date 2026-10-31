@@ -109,7 +109,6 @@ public class DanhMucMenu {
 
         // 9. Sản phẩm
         TAT_CA_MENU.add(new NhomMenu("SAN_PHAM", "Sản phẩm", "SAN_PHAM", List.of(
-                new ChucNangMenu("PRD_CRUD", "Thêm sản phẩm", null),
                 new ChucNangMenu("PRD_CRUD", "Cập nhật sản phẩm", null),
                 new ChucNangMenu("PRD_SEARCH", "Tìm kiếm sản phẩm", "Ctrl+F"),
                 new ChucNangMenu("PRD_INVENTORY", "Tồn kho", null),
