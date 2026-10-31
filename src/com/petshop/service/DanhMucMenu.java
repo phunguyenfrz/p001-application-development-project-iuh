@@ -102,7 +102,6 @@ public class DanhMucMenu {
         // 8. Đơn hàng nhập
         TAT_CA_MENU.add(new NhomMenu("DON_NHAP", "Đơn hàng nhập", "DON_NHAP", List.of(
                 new ChucNangMenu("DN_TAO", "Lập đơn nhập", null),
-                new ChucNangMenu("DN_NHAN_HANG", "Nhận hàng", null),
                 new ChucNangMenu("DN_CAP_NHAT", "Cập nhật đơn nhập", null),
                 new ChucNangMenu("DN_TIM_KIEM", "Tìm kiếm đơn nhập", "Ctrl+F")
         )));
@@ -152,7 +151,7 @@ public class DanhMucMenu {
 
                 // Quản lý: Quản trị nhân sự, ca trực, danh mục dịch vụ, khuyến mãi và báo cáo
                 if (nhom.getMaNhom().equals("NHAN_VIEN") || nhom.getMaNhom().equals("CA_TRUC") ||
-                    nhom.getMaNhom().equals("NHA_CUNG_CAP") || nhom.getMaNhom().equals("DICH_VU_CHAM_SOC") ||
+                    nhom.getMaNhom().equals("NHA_CUNG_CAP") || nhom.getMaNhom().equals("DON_NHAP") || nhom.getMaNhom().equals("DICH_VU_CHAM_SOC") ||
                     nhom.getMaNhom().equals("KHUYEN_MAI") || nhom.getMaNhom().equals("SAN_PHAM") ||
                     chucNang.getMaChucNang().equals("HD_DOANH_THU")) {
                     dsVaiTro.add(TaiKhoan.VaiTro.QUAN_LY);
