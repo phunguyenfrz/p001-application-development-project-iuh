@@ -174,21 +174,10 @@ public class NhaCungCapDAO {
      * Tìm kiếm nhà cung cấp theo từ khóa (khớp mã, tên, SĐT hoặc email), chỉ lấy NCC đang hoạt động (trangThai = 1).
      */
     public List<NhaCungCap> timKiemNhaCungCap(String tuKhoa) {
-        return timKiemNhaCungCap(tuKhoa, true);
-    }
-
-    /**
-     * Tìm kiếm theo từ khóa và trạng thái. Trạng thái null nghĩa là lấy tất cả.
-     */
-    public List<NhaCungCap> timKiemNhaCungCap(String tuKhoa, Boolean trangThai) {
         List<NhaCungCap> danhSach = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
                 "SELECT maNhaCungCap, tenNhaCungCap, soDienThoai, diaChi, email, trangThai "
-                        + "FROM NhaCungCap WHERE 1 = 1");
-
-        if (trangThai != null) {
-            sql.append(" AND trangThai = ?");
-        }
+                        + "FROM NhaCungCap WHERE trangThai = 1");
 
         boolean coTuKhoa = tuKhoa != null && !tuKhoa.trim().isEmpty();
         if (coTuKhoa) {
@@ -200,16 +189,12 @@ public class NhaCungCapDAO {
             if (conn == null) return danhSach;
 
             try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-                int viTri = 1;
-                if (trangThai != null) {
-                    ps.setBoolean(viTri++, trangThai);
-                }
                 if (coTuKhoa) {
                     String pattern = "%" + tuKhoa.trim() + "%";
-                    ps.setString(viTri++, pattern);
-                    ps.setString(viTri++, pattern);
-                    ps.setString(viTri++, pattern);
-                    ps.setString(viTri, pattern);
+                    ps.setString(1, pattern);
+                    ps.setString(2, pattern);
+                    ps.setString(3, pattern);
+                    ps.setString(4, pattern);
                 }
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
