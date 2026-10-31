@@ -7,6 +7,7 @@ import com.petshop.util.DatabaseManager;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -475,9 +476,12 @@ public class DonHangDAO {
         if (ngayLap != null) {
             dh.setNgayLap(ngayLap.toLocalDate());
         }
-        Time gioLap = rs.getTime("gioLap");
-        if (gioLap != null) {
-            dh.setGioLap(gioLap.toLocalTime());
+        try {
+            Time gioLap = rs.getTime("gioLap");
+            dh.setGioLap(gioLap != null ? gioLap.toLocalTime() : LocalTime.MIDNIGHT);
+        } catch (SQLException ex) {
+            // Cho phép mở danh sách đơn cũ khi database chưa chạy migration thêm cột gioLap.
+            dh.setGioLap(LocalTime.MIDNIGHT);
         }
         dh.setTongTien(rs.getBigDecimal("tongTien"));
         dh.setTrangThai(rs.getNString("trangThai"));
