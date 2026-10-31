@@ -43,7 +43,7 @@ public class ThuCung {
     private String soDienThoaiKhachHang;
 
     public ThuCung() {
-        this.canNang = BigDecimal.ZERO;
+        this.canNang = null;
     }
 
     public ThuCung(String maThuCung, String maKhachHang, String tenThuCung, String loaiThuCung,
@@ -53,7 +53,7 @@ public class ThuCung {
         this.tenThuCung = tenThuCung;
         this.loaiThuCung = loaiThuCung;
         this.giongLoai = giongLoai;
-        this.canNang = canNang != null ? canNang : BigDecimal.ZERO;
+        this.canNang = canNang;
         this.ngaySinh = ngaySinh;
         this.diUng = diUng;
         this.gioiTinh = gioiTinh;

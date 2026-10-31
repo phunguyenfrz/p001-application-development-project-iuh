@@ -24,6 +24,9 @@ import com.petshop.view.nhanvien.CapNhatNhanVienView;
 import com.petshop.view.nhanvien.PhanQuyenNhanVienView;
 import com.petshop.view.nhanvien.TaiKhoanDangNhapView;
 import com.petshop.view.nhanvien.TimKiemNhanVienView;
+import com.petshop.view.phieudichvu.CapNhatPhieuDichVuView;
+import com.petshop.view.phieudichvu.LapPhieuTiepNhanDichVuView;
+import com.petshop.view.phieudichvu.TimKiemPhieuDichVuView;
 import com.petshop.view.sanpham.BaoCaoSanPhamView;
 import com.petshop.view.sanpham.CapNhatSanPhamView;
 import com.petshop.view.sanpham.TheoDoiTonKhoView;
@@ -477,7 +480,16 @@ public class ManHinhChinhView extends BorderPane {
                 }
                 yield new CapNhatLichHenView();
             }
-            case "PHIEU_DICH_VU" -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
+            case "PHIEU_DICH_VU" -> {
+                if ("PDV_TAO".equals(chucNang.getMaChucNang())) {
+                    yield new LapPhieuTiepNhanDichVuView();
+                } else if ("PDV_CAP_NHAT".equals(chucNang.getMaChucNang())) {
+                    yield new CapNhatPhieuDichVuView();
+                } else if ("PDV_TIM_KIEM".equals(chucNang.getMaChucNang())) {
+                    yield new TimKiemPhieuDichVuView();
+                }
+                yield new CapNhatPhieuDichVuView();
+            }
             case "NHAN_VIEN"          -> {
                 if ("NV_TIM_KIEM".equals(chucNang.getMaChucNang())) {
                     yield new TimKiemNhanVienView();

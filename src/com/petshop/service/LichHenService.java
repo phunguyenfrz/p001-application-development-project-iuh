@@ -234,9 +234,9 @@ public class LichHenService {
                 if (ct.getMaDichVu() == null || ct.getMaDichVu().trim().isEmpty()) {
                     throw new IllegalArgumentException("Mã dịch vụ trong chi tiết không hợp lệ!");
                 }
-                // Khách đặt trước qua FB/điện thoại có thể chưa rõ cân nặng; gán mức ước tính 3.0 kg để thỏa mãn CSDL CHECK (canNangThuCung > 0)
-                if (ct.getCanNangThuCung() == null || ct.getCanNangThuCung().compareTo(BigDecimal.ZERO) <= 0) {
-                    ct.setCanNangThuCung(BigDecimal.valueOf(3.0));
+                // Khách đặt trước chưa rõ cân nặng sẽ để null để nhân viên cân và nhập bắt buộc khi lập phiếu tiếp nhận
+                if (ct.getCanNangThuCung() != null && ct.getCanNangThuCung().compareTo(BigDecimal.ZERO) <= 0) {
+                    ct.setCanNangThuCung(null);
                 }
                 if (ct.getDonGia() == null || ct.getDonGia().compareTo(BigDecimal.ZERO) < 0) {
                     ct.setDonGia(BigDecimal.ZERO);

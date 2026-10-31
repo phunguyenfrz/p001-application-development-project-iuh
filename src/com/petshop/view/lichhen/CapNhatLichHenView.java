@@ -353,9 +353,13 @@ public class CapNhatLichHenView extends VBox {
                 new Alert(Alert.AlertType.WARNING, "Dịch vụ '" + dv.getTenDichVu() + "' đã có trong lịch hẹn!").showAndWait();
                 return;
             }
-            double cn = 3.0;
-            double gia = ctrl.traGiaDichVuTheoCanNang(dv.getMaDichVu(), cn);
-            dsChiTiet.add(new ChiTietLichHen(lichHen.getMaLichHen(), dv.getMaDichVu(), dv.getTenDichVu(), BigDecimal.valueOf(cn), BigDecimal.valueOf(gia)));
+            BigDecimal cn = dsChiTiet.stream()
+                    .map(ChiTietLichHen::getCanNangThuCung)
+                    .filter(c -> c != null && c.compareTo(BigDecimal.ZERO) > 0)
+                    .findFirst()
+                    .orElse(null);
+            double gia = ctrl.traGiaDichVuTheoCanNang(dv.getMaDichVu(), cn != null ? cn.doubleValue() : 0.0);
+            dsChiTiet.add(new ChiTietLichHen(lichHen.getMaLichHen(), dv.getMaDichVu(), dv.getTenDichVu(), cn, BigDecimal.valueOf(gia)));
             cboDv.setValue(null);
         });
 
@@ -373,9 +377,13 @@ public class CapNhatLichHenView extends VBox {
                 if (cboDv.getValue() != null) {
                     DichVuChamSoc dv = cboDv.getValue();
                     if (dsChiTiet.stream().noneMatch(ct -> ct.getMaDichVu().equals(dv.getMaDichVu()))) {
-                        double cn = 3.0;
-                        double gia = ctrl.traGiaDichVuTheoCanNang(dv.getMaDichVu(), cn);
-                        dsChiTiet.add(new ChiTietLichHen(lichHen.getMaLichHen(), dv.getMaDichVu(), dv.getTenDichVu(), BigDecimal.valueOf(cn), BigDecimal.valueOf(gia)));
+                        BigDecimal cn = dsChiTiet.stream()
+                                .map(ChiTietLichHen::getCanNangThuCung)
+                                .filter(c -> c != null && c.compareTo(BigDecimal.ZERO) > 0)
+                                .findFirst()
+                                .orElse(null);
+                        double gia = ctrl.traGiaDichVuTheoCanNang(dv.getMaDichVu(), cn != null ? cn.doubleValue() : 0.0);
+                        dsChiTiet.add(new ChiTietLichHen(lichHen.getMaLichHen(), dv.getMaDichVu(), dv.getTenDichVu(), cn, BigDecimal.valueOf(gia)));
                     }
                 }
                 LocalDate ngayMoi = dpNgay.getValue();

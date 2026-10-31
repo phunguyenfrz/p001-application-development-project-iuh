@@ -60,7 +60,7 @@ CREATE TABLE ThuCung (
     tenThuCung NVARCHAR(100) NOT NULL CHECK (LEN(LTRIM(RTRIM(tenThuCung))) > 0),
     loaiThuCung NVARCHAR(50),
     giongLoai NVARCHAR(100),
-    canNang DECIMAL(5,2) NOT NULL CHECK (canNang > 0),
+    canNang DECIMAL(5,2) NULL CHECK (canNang IS NULL OR canNang > 0),
     ngaySinh DATE CHECK (ngaySinh IS NULL OR ngaySinh <= CAST(GETDATE() AS DATE)),
     diUng NVARCHAR(255),
     gioiTinh NVARCHAR(10) CHECK (gioiTinh IN (N'Đực', N'Cái')),
@@ -176,7 +176,7 @@ GO
 CREATE TABLE ChiTietLichHen (
     maLichHen VARCHAR(20) NOT NULL,
     maDichVu VARCHAR(20) NOT NULL,
-    canNangThuCung DECIMAL(5,2) NOT NULL CHECK (canNangThuCung > 0),
+    canNangThuCung DECIMAL(5,2) NULL CHECK (canNangThuCung IS NULL OR canNangThuCung > 0),
     donGia DECIMAL(18,2) NOT NULL CHECK (donGia >= 0),
     PRIMARY KEY (maLichHen, maDichVu),
     CONSTRAINT FK_CTLichHen_LichHen FOREIGN KEY (maLichHen) REFERENCES LichHen(maLichHen),

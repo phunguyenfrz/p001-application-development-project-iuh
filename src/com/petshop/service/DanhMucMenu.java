@@ -73,7 +73,7 @@ public class DanhMucMenu {
 
         // 4. Phiếu dịch vụ (Tiếp nhận thú cưng làm dịch vụ tại quầy)
         TAT_CA_MENU.add(new NhomMenu("PHIEU_DICH_VU", "Phiếu dịch vụ", "DICH_VU_CHAM_SOC", List.of(
-                new ChucNangMenu("PDV_TAO", "Tạo phiếu tiếp nhận", null),
+                new ChucNangMenu("PDV_TAO", "Lập phiếu tiếp nhận", null),
                 new ChucNangMenu("PDV_CAP_NHAT", "Cập nhật phiếu dịch vụ", null),
                 new ChucNangMenu("PDV_TIM_KIEM", "Tìm kiếm phiếu dịch vụ", "Ctrl+F")
         )));

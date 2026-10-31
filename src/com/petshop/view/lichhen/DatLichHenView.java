@@ -325,7 +325,7 @@ public class DatLichHenView extends VBox {
         tblDichVu.getColumns().setAll(List.of(colMaDV, colTenDV, colXoa));
         tblDichVu.setItems(danhSachDichVuChon);
 
-        Label lblGhiChuCuoi = new Label("💡 Tiếp nhận danh sách dịch vụ khách hẹn trước. Cân đo thú cưng và tính tiền thanh toán sẽ thực hiện khi lập hóa đơn.");
+        Label lblGhiChuCuoi = new Label("💡 Tiếp nhận danh sách dịch vụ khách hẹn trước. Cân nặng thú cưng và đơn giá chính xác sẽ được xác định khi lập phiếu tiếp nhận tại quầy.");
         lblGhiChuCuoi.setStyle("-fx-font-style: italic; -fx-text-fill: #64748b; -fx-font-size: 11.5px;");
 
         pnlKhung.getChildren().addAll(lblTieuDe, pnlChon, tblDichVu, lblGhiChuCuoi);
@@ -451,11 +451,12 @@ public class DatLichHenView extends VBox {
             return;
         }
 
-        BigDecimal canNang = BigDecimal.valueOf(3.0);
+        BigDecimal canNang = null;
         if (cboThuCung.getValue() != null && cboThuCung.getValue().getCanNang() != null && cboThuCung.getValue().getCanNang().compareTo(BigDecimal.ZERO) > 0) {
             canNang = cboThuCung.getValue().getCanNang();
         }
-        double gia = controller.traGiaDichVuTheoCanNang(dv.getMaDichVu(), canNang.doubleValue());
+        double cnVal = canNang != null ? canNang.doubleValue() : 0.0;
+        double gia = controller.traGiaDichVuTheoCanNang(dv.getMaDichVu(), cnVal);
         danhSachDichVuChon.add(new ChiTietLichHen(txtMaLichHen.getText(), dv.getMaDichVu(), dv.getTenDichVu(), canNang, BigDecimal.valueOf(gia)));
         cboDichVu.setValue(null);
     }
@@ -773,6 +774,11 @@ public class DatLichHenView extends VBox {
 
         TextField txtTenThuCung = new TextField();
         txtTenThuCung.setPromptText("Nhập tên thú cưng (VD: Mochi, Bông, Lu, Corgi...) (*)");
+        txtTenThuCung.textProperty().addListener((obs, cu, moi) -> {
+            if (moi == null) return;
+            String loc = moi.replaceAll("[^\\p{L}0-9\\s]", "");
+            if (!loc.equals(moi)) txtTenThuCung.setText(loc);
+        });
 
         ComboBox<String> cboLoai = new ComboBox<>();
         cboLoai.getItems().addAll("Chó", "Mèo", "Thỏ", "Hamster", "Chim", "Khác");
@@ -802,7 +808,7 @@ public class DatLichHenView extends VBox {
         cboGioiTinh.setMaxWidth(Double.MAX_VALUE);
 
         TextField txtCanNang = new TextField();
-        txtCanNang.setPromptText("Tùy chọn (để trống = 3.0 kg, cập nhật sau tại quầy)");
+        txtCanNang.setPromptText("Tùy chọn (cập nhật sau tại quầy tiếp nhận)");
         txtCanNang.textProperty().addListener((obs, cu, moi) -> {
             if (moi != null && !moi.matches("\\d*(\\.\\d{0,2})?")) {
                 txtCanNang.setText(cu != null ? cu : "");
@@ -865,8 +871,13 @@ public class DatLichHenView extends VBox {
                 txtTenThuCung.requestFocus();
                 return;
             }
+            if (!ten.matches("^[\\p{L}0-9\\s]+$")) {
+                hienThiCanhBao("Tên thú cưng không được chứa ký tự đặc biệt!");
+                txtTenThuCung.requestFocus();
+                return;
+            }
 
-            BigDecimal canNang = BigDecimal.valueOf(3.0);
+            BigDecimal canNang = null;
             String cnStr = txtCanNang.getText() != null ? txtCanNang.getText().trim() : "";
             if (!cnStr.isEmpty()) {
                 try {

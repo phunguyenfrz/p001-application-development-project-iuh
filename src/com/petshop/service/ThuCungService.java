@@ -156,21 +156,26 @@ public class ThuCungService {
             throw new IllegalArgumentException("Vui lòng chọn khách hàng chủ nuôi cho thú cưng!");
         }
 
-        // 3. Kiểm tra tên thú cưng (Bắt buộc, không quá 100 ký tự)
+        // 3. Kiểm tra tên thú cưng (Bắt buộc, không quá 100 ký tự, không chứa ký tự đặc biệt)
         if (thuCung.getTenThuCung() == null || thuCung.getTenThuCung().trim().isEmpty()) {
             throw new IllegalArgumentException("Tên thú cưng không được để trống!");
         }
         if (thuCung.getTenThuCung().trim().length() > 100) {
             throw new IllegalArgumentException("Tên thú cưng không được vượt quá 100 ký tự!");
         }
-
-        // 4. Kiểm tra cân nặng (Bắt buộc > 0)
-        BigDecimal canNang = thuCung.getCanNang();
-        if (canNang == null || canNang.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Cân nặng thú cưng phải lớn hơn 0 kg!");
+        if (!thuCung.getTenThuCung().trim().matches("^[\\p{L}0-9\\s]+$")) {
+            throw new IllegalArgumentException("Tên thú cưng không được chứa ký tự đặc biệt!");
         }
-        if (canNang.compareTo(new BigDecimal("999.99")) > 0) {
-            throw new IllegalArgumentException("Cân nặng thú cưng không được vượt quá 999.99 kg!");
+
+        // 4. Kiểm tra cân nặng (Nếu có nhập thì phải > 0 và <= 999.99 kg; có thể để trống khi đặt lịch trước)
+        BigDecimal canNang = thuCung.getCanNang();
+        if (canNang != null) {
+            if (canNang.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Cân nặng thú cưng phải lớn hơn 0 kg!");
+            }
+            if (canNang.compareTo(new BigDecimal("999.99")) > 0) {
+                throw new IllegalArgumentException("Cân nặng thú cưng không được vượt quá 999.99 kg!");
+            }
         }
 
         // 5. Kiểm tra ngày sinh (Không được ở tương lai)
