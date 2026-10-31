@@ -70,17 +70,23 @@ public class NhaCungCapService {
         return nhaCungCapDAO.capNhatNhaCungCap(nhaCungCap);
     }
 
-    /**
-     * Xóa mềm nhà cung cấp (chuyển sang ngừng hoạt động).
-     * Kiểm tra quyền NCC_CAP_NHAT.
-     */
-    public boolean xoaMemNhaCungCap(String maNhaCungCap) {
+    /** Xóa vật lý nhà cung cấp chưa có sản phẩm liên kết hoặc đơn nhập. */
+    public boolean xoaNhaCungCap(String maNhaCungCap) {
         xacThucService.kiemTraQuyen("NCC_CAP_NHAT");
         if (maNhaCungCap == null || maNhaCungCap.trim().isEmpty()) {
-            throw new IllegalArgumentException("Vui lòng chọn nhà cung cấp cần ngừng hợp tác!");
+            throw new IllegalArgumentException("Vui lòng chọn nhà cung cấp cần xóa!");
         }
 
-        return nhaCungCapDAO.xoaMemNhaCungCap(maNhaCungCap.trim());
+        return nhaCungCapDAO.xoaNhaCungCap(maNhaCungCap.trim());
+    }
+
+    /** Ngừng hợp tác hoặc hợp tác lại; không tự thay đổi trạng thái sản phẩm. */
+    public boolean capNhatTrangThaiNhaCungCap(String maNhaCungCap, boolean trangThai) {
+        xacThucService.kiemTraQuyen("NCC_CAP_NHAT");
+        if (maNhaCungCap == null || maNhaCungCap.isBlank()) {
+            throw new IllegalArgumentException("Mã nhà cung cấp không được để trống!");
+        }
+        return nhaCungCapDAO.capNhatTrangThaiNhaCungCap(maNhaCungCap.trim(), trangThai);
     }
 
     /**

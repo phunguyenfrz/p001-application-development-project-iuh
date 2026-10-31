@@ -35,11 +35,12 @@ public class NhaCungCapController {
         return nhaCungCapService.capNhatNhaCungCap(nhaCungCap);
     }
 
-    /**
-     * Xóa mềm nhà cung cấp.
-     */
-    public boolean xoaMemNhaCungCap(String maNhaCungCap) {
-        return nhaCungCapService.xoaMemNhaCungCap(maNhaCungCap);
+    public boolean xoaNhaCungCap(String maNhaCungCap) {
+        return nhaCungCapService.xoaNhaCungCap(maNhaCungCap);
+    }
+
+    public boolean capNhatTrangThaiNhaCungCap(String maNhaCungCap, boolean trangThai) {
+        return nhaCungCapService.capNhatTrangThaiNhaCungCap(maNhaCungCap, trangThai);
     }
 
     /**
