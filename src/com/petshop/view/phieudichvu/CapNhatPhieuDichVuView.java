@@ -44,7 +44,7 @@ public class CapNhatPhieuDichVuView extends VBox {
     // Các điều khiển thanh tác vụ
     private final ComboBox<String> cboLocTrangThai = new ComboBox<>();
     private final Button btnChuyenTienDo = new Button("Chuyển tiến độ");
-    private final Button btnSuaChiTiet = new Button("Sửa chi tiết phiếu");
+    private final Button btnSuaChiTiet = new Button("Cập nhật phiếu");
     private final Button btnHuyPhieu = new Button("Hủy phiếu");
     private final Button btnLamMoi = new Button("Làm mới");
 
@@ -205,10 +205,10 @@ public class CapNhatPhieuDichVuView extends VBox {
 
         if ("Đang chờ".equalsIgnoreCase(trangThai)) {
             btnChuyenTienDo.setDisable(false);
-            btnChuyenTienDo.setText("▶ Bắt đầu (Đang thực hiện)");
+            btnChuyenTienDo.setText("Bắt đầu");
         } else if ("Đang thực hiện".equalsIgnoreCase(trangThai)) {
             btnChuyenTienDo.setDisable(false);
-            btnChuyenTienDo.setText("✔ Hoàn thành dịch vụ");
+            btnChuyenTienDo.setText("Hoàn thành");
         } else {
             btnChuyenTienDo.setDisable(true);
             btnChuyenTienDo.setText("Đã chốt tiến độ");
@@ -385,7 +385,7 @@ public class CapNhatPhieuDichVuView extends VBox {
         }
 
         Label lblTongTienPopup = new Label();
-        lblTongTienPopup.setStyle("-fx-font-weight: bold; -fx-text-fill: #0284c7;");
+        lblTongTienPopup.setStyle("-fx-font-weight: bold;");
         Runnable capNhatTong = () -> {
             BigDecimal tong = BigDecimal.ZERO;
             for (ChiTietPhieuDichVu ct : dsChiTiet) {
@@ -468,7 +468,7 @@ public class CapNhatPhieuDichVuView extends VBox {
         pnlDichVu.getChildren().addAll(pnlThem, tblChiTiet, lblTongTienPopup);
 
         // 4. Thanh nút bấm xác nhận
-        Button btnLuu = new Button("✔ Lưu thay đổi");
+        Button btnLuu = new Button("Lưu thay đổi");
         btnLuu.getStyleClass().add("nut-chinh");
         Button btnDong = new Button("Đóng");
         btnDong.getStyleClass().add("nut-phu");

@@ -122,5 +122,35 @@ public class PhieuDichVuController {
     public List<String[]> layDanhSachNhanVien() {
         return lichHenDAO.layDanhSachNhanVienChamSoc();
     }
+
+    // Cập nhật cân nặng thực tế cho thú cưng khi cân tại quầy tiếp nhận
+    public boolean capNhatCanNangThuCung(String maThuCung, java.math.BigDecimal canNang) {
+        return thuCungDAO.capNhatCanNang(maThuCung, canNang);
+    }
+
+    // Thêm khách hàng nhanh tại quầy
+    public boolean themKhachHang(KhachHang kh) {
+        return khachHangDAO.themKhachHang(kh);
+    }
+
+    // Tự sinh mã khách hàng mới
+    public String taoMaKhachHang() {
+        return khachHangDAO.taoMaKhachHang();
+    }
+
+    // Kiểm tra trùng số điện thoại khách hàng
+    public boolean kiemTraTrungSoDienThoai(String soDienThoai) {
+        return khachHangDAO.kiemTraTrungSoDienThoai(soDienThoai, null);
+    }
+
+    // Thêm nhanh hồ sơ thú cưng tại quầy
+    public boolean themThuCung(ThuCung tc) {
+        return thuCungDAO.themThuCung(tc);
+    }
+
+    // Tự sinh mã thú cưng mới
+    public String taoMaThuCungMoi() {
+        return thuCungDAO.taoMaThuCung();
+    }
 }
 
