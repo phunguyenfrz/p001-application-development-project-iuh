@@ -48,6 +48,7 @@ public class DonNhapHang {
     // Các trường hiển thị bổ trợ (JOIN view)
     private String tenNhaCungCap;
     private String tenNhanVien;
+    private String tenHang;
     private List<ChiTietDonNhap> danhSachChiTiet = new ArrayList<>();
 
     public DonNhapHang() {
@@ -209,6 +210,14 @@ public class DonNhapHang {
 
     public void setDanhSachChiTiet(List<ChiTietDonNhap> danhSachChiTiet) {
         this.danhSachChiTiet = danhSachChiTiet != null ? danhSachChiTiet : new ArrayList<>();
+    }
+
+    public String getTenHang() {
+        return tenHang;
+    }
+
+    public void setTenHang(String tenHang) {
+        this.tenHang = tenHang;
     }
 
     @Override

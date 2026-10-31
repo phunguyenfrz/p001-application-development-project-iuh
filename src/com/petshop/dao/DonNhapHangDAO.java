@@ -11,7 +11,10 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Lớp DAO truy xuất và thao tác dữ liệu bảng DonNhapHang & ChiTietDonNhap.
@@ -28,18 +31,30 @@ public class DonNhapHangDAO {
     private static volatile Boolean coCotThucNhan = null;
     private static volatile Boolean coCotTruyVet = null;
 
+    private static boolean kiemTraBangTonTai(Connection conn, String tenBang) {
+        String sql = "SELECT OBJECT_ID(?, 'U')";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tenBang);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getObject(1) != null;
+                }
+            }
+        } catch (SQLException ignored) {}
+        try (ResultSet rs = conn.getMetaData().getTables(null, null, tenBang, null)) {
+            return rs.next();
+        } catch (SQLException ignored) {}
+        return false;
+    }
+
     private static String getTenBangDonNhap(Connection conn) {
         if (tenBangDonNhap != null) return tenBangDonNhap;
         synchronized (DonNhapHangDAO.class) {
             if (tenBangDonNhap != null) return tenBangDonNhap;
-            try (ResultSet rs = conn.getMetaData().getTables(null, null, "DonNhapHang", null)) {
-                if (rs.next()) {
-                    tenBangDonNhap = "DonNhapHang";
-                } else {
-                    tenBangDonNhap = "DonHang";
-                }
-            } catch (SQLException e) {
+            if (kiemTraBangTonTai(conn, "DonNhapHang")) {
                 tenBangDonNhap = "DonNhapHang";
+            } else {
+                tenBangDonNhap = "DonHang";
             }
             return tenBangDonNhap;
         }
@@ -49,17 +64,31 @@ public class DonNhapHangDAO {
         if (tenBangChiTiet != null) return tenBangChiTiet;
         synchronized (DonNhapHangDAO.class) {
             if (tenBangChiTiet != null) return tenBangChiTiet;
-            try (ResultSet rs = conn.getMetaData().getTables(null, null, "ChiTietDonNhap", null)) {
-                if (rs.next()) {
-                    tenBangChiTiet = "ChiTietDonNhap";
-                } else {
-                    tenBangChiTiet = "ChiTietDonHang";
-                }
-            } catch (SQLException e) {
+            if (kiemTraBangTonTai(conn, "ChiTietDonNhap")) {
                 tenBangChiTiet = "ChiTietDonNhap";
+            } else {
+                tenBangChiTiet = "ChiTietDonHang";
             }
             return tenBangChiTiet;
         }
+    }
+
+    private static boolean kiemTraCotTonTai(Connection conn, String tenBang, String tenCot) {
+        String sql = "SELECT COL_LENGTH(?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tenBang);
+            ps.setString(2, tenCot);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getObject(1) != null;
+                }
+            }
+        } catch (SQLException ignored) {}
+        // Fallback kiểm tra qua metadata nếu câu lệnh trên không khả dụng
+        try (ResultSet rs = conn.getMetaData().getColumns(null, null, tenBang, tenCot)) {
+            return rs.next();
+        } catch (SQLException ignored) {}
+        return false;
     }
 
     private static boolean coCotGioLap(Connection conn) {
@@ -67,11 +96,7 @@ public class DonNhapHangDAO {
         synchronized (DonNhapHangDAO.class) {
             if (coCotGioLap != null) return coCotGioLap;
             String bang = getTenBangDonNhap(conn);
-            try (ResultSet rs = conn.getMetaData().getColumns(null, null, bang, "gioLap")) {
-                coCotGioLap = rs.next();
-            } catch (SQLException e) {
-                coCotGioLap = false;
-            }
+            coCotGioLap = kiemTraCotTonTai(conn, bang, "gioLap");
             return coCotGioLap;
         }
     }
@@ -81,11 +106,7 @@ public class DonNhapHangDAO {
         synchronized (DonNhapHangDAO.class) {
             if (coCotThucNhan != null) return coCotThucNhan;
             String bang = getTenBangChiTiet(conn);
-            try (ResultSet rs = conn.getMetaData().getColumns(null, null, bang, "soLuongThucNhan")) {
-                coCotThucNhan = rs.next();
-            } catch (SQLException e) {
-                coCotThucNhan = false;
-            }
+            coCotThucNhan = kiemTraCotTonTai(conn, bang, "soLuongThucNhan");
             return coCotThucNhan;
         }
     }
@@ -95,11 +116,7 @@ public class DonNhapHangDAO {
         synchronized (DonNhapHangDAO.class) {
             if (coCotTruyVet != null) return coCotTruyVet;
             String bang = getTenBangDonNhap(conn);
-            try (ResultSet rs = conn.getMetaData().getColumns(null, null, bang, "maNhanVienNhan")) {
-                coCotTruyVet = rs.next();
-            } catch (SQLException e) {
-                coCotTruyVet = false;
-            }
+            coCotTruyVet = kiemTraCotTonTai(conn, bang, "maNhanVienNhan");
             return coCotTruyVet;
         }
     }
@@ -119,14 +136,27 @@ public class DonNhapHangDAO {
         }
     }
 
+    private static boolean choPhepMaPN(Connection conn, String bang) {
+        if ("DonNhapHang".equalsIgnoreCase(bang)) return true;
+        String sql = "SELECT definition FROM sys.check_constraints WHERE parent_object_id = OBJECT_ID(?) AND definition LIKE '%PN-%'";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, bang);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ignored) {}
+        return false;
+    }
+
     /**
      * Tự động sinh mã đơn nhập hàng trong một connection sẵn có.
      */
     public String taoMaDonNhapHang(Connection conn) throws SQLException {
         String ngay = LocalDate.now().format(DINH_DANG_NGAY_MA);
-        String tienToMoi = "PN-" + ngay + "-";
-        String tienToCu = "DH-" + ngay + "-";
         String bang = getTenBangDonNhap(conn);
+        boolean dungPN = choPhepMaPN(conn, bang);
+        String tienToMoi = (dungPN ? "PN-" : "DH-") + ngay + "-";
+        String tienToCu = "DH-" + ngay + "-";
         String sql = "SELECT TOP 1 maDonHang FROM " + bang + " WHERE maDonHang LIKE ? OR maDonHang LIKE ? ORDER BY maDonHang DESC";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -331,6 +361,7 @@ public class DonNhapHangDAO {
                         if (dh.getMaNhanVienHuy() != null) {
                             dh.setTenNhanVienHuy(layTenNhanVien(conn, dh.getMaNhanVienHuy()));
                         }
+                        napTenHangChoDanhSach(conn, List.of(dh));
                         return dh;
                     }
                 }
@@ -454,6 +485,7 @@ public class DonNhapHangDAO {
                     }
                 }
             }
+            napTenHangChoDanhSach(conn, list);
         } catch (SQLException e) {
             throw new IllegalStateException("Lỗi khi tìm kiếm đơn nhập hàng: " + e.getMessage(), e);
         }
@@ -621,6 +653,42 @@ public class DonNhapHangDAO {
                 if (!rs.getBoolean("trangThai")) {
                     throw new IllegalStateException("Nhà cung cấp " + maNhaCungCap + " đã ngừng hợp tác.");
                 }
+            }
+        }
+    }
+
+    private void napTenHangChoDanhSach(Connection conn, List<DonNhapHang> list) {
+        if (list == null || list.isEmpty()) return;
+        String bangCT = getTenBangChiTiet(conn);
+        Map<String, List<String>> mapTenHang = new HashMap<>();
+        for (int i = 0; i < list.size(); i += 50) {
+            List<DonNhapHang> sub = list.subList(i, Math.min(i + 50, list.size()));
+            String placeholders = String.join(",", Collections.nCopies(sub.size(), "?"));
+            String sql = "SELECT ct.maDonHang, sp.tenSanPham, ct.soLuong " +
+                    "FROM " + bangCT + " ct " +
+                    "LEFT JOIN SanPham sp ON ct.maSanPham = sp.maSanPham " +
+                    "WHERE ct.maDonHang IN (" + placeholders + ")";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                for (int j = 0; j < sub.size(); j++) {
+                    ps.setString(j + 1, sub.get(j).getMaDonHang());
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String maDH = rs.getString("maDonHang");
+                        String tenSP = rs.getNString("tenSanPham");
+                        int sl = rs.getInt("soLuong");
+                        String hienThi = (tenSP != null ? tenSP : "SP") + " (x" + sl + ")";
+                        mapTenHang.computeIfAbsent(maDH, k -> new ArrayList<>()).add(hienThi);
+                    }
+                }
+            } catch (SQLException ignored) {}
+        }
+        for (DonNhapHang dh : list) {
+            List<String> ds = mapTenHang.get(dh.getMaDonHang());
+            if (ds != null && !ds.isEmpty()) {
+                dh.setTenHang(String.join(", ", ds));
+            } else {
+                dh.setTenHang("");
             }
         }
     }

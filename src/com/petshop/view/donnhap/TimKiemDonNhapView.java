@@ -163,41 +163,48 @@ public class TimKiemDonNhapView extends VBox {
     private void taoCotBang() {
         // Cột mã đơn hàng
         TableColumn<DonNhapHang, String> colMaDon = new TableColumn<>("Mã đơn hàng");
-        colMaDon.setPrefWidth(160);
+        colMaDon.setPrefWidth(140);
         colMaDon.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getMaDonHang()));
 
         // Cột tên nhà cung cấp
         TableColumn<DonNhapHang, String> colNCC = new TableColumn<>("Nhà cung cấp");
-        colNCC.setPrefWidth(200);
+        colNCC.setPrefWidth(170);
         colNCC.setCellValueFactory(d -> new SimpleStringProperty(
                 d.getValue().getTenNhaCungCap() != null ? d.getValue().getTenNhaCungCap() : ""
         ));
 
+        // Cột tên hàng (các sản phẩm trong đơn)
+        TableColumn<DonNhapHang, String> colTenHang = new TableColumn<>("Tên hàng");
+        colTenHang.setPrefWidth(240);
+        colTenHang.setCellValueFactory(d -> new SimpleStringProperty(
+                d.getValue().getTenHang() != null ? d.getValue().getTenHang() : ""
+        ));
+
         // Cột tên nhân viên
         TableColumn<DonNhapHang, String> colNhanVien = new TableColumn<>("Nhân viên");
-        colNhanVien.setPrefWidth(160);
+        colNhanVien.setPrefWidth(140);
         colNhanVien.setCellValueFactory(d -> new SimpleStringProperty(
                 d.getValue().getTenNhanVien() != null ? d.getValue().getTenNhanVien() : ""
         ));
 
         // Cột ngày lập (dd/MM/yyyy)
         TableColumn<DonNhapHang, String> colNgayLap = new TableColumn<>("Ngày lập");
-        colNgayLap.setPrefWidth(110);
-
-        TableColumn<DonNhapHang, String> colGioLap = new TableColumn<>("Thời gian");
-        colGioLap.setPrefWidth(100);
-        colGioLap.setCellValueFactory(d -> {
-            LocalTime gio = d.getValue().getGioLap();
-            return new SimpleStringProperty(gio != null ? gio.format(DINH_DANG_GIO) : "");
-        });
+        colNgayLap.setPrefWidth(105);
         colNgayLap.setCellValueFactory(d -> {
             LocalDate ngay = d.getValue().getNgayLap();
             return new SimpleStringProperty(ngay != null ? ngay.format(DINH_DANG_NGAY) : "");
         });
 
+        TableColumn<DonNhapHang, String> colGioLap = new TableColumn<>("Thời gian");
+        colGioLap.setPrefWidth(90);
+        colGioLap.setCellValueFactory(d -> {
+            LocalTime gio = d.getValue().getGioLap();
+            return new SimpleStringProperty(gio != null ? gio.format(DINH_DANG_GIO) : "");
+        });
+
         // Cột tổng tiền (định dạng #,##0)
-        TableColumn<DonNhapHang, String> colTongTien = new TableColumn<>("Tổng tiền");
-        colTongTien.setPrefWidth(130);
+        TableColumn<DonNhapHang, String> colTongTien = new TableColumn<>("Tổng tiền (đ)");
+        colTongTien.setPrefWidth(120);
         colTongTien.setStyle("-fx-alignment: CENTER-RIGHT;");
         colTongTien.setCellValueFactory(d -> {
             BigDecimal tien = d.getValue().getTongTien();
@@ -206,7 +213,7 @@ public class TimKiemDonNhapView extends VBox {
 
         // Cột trạng thái (có tô màu)
         TableColumn<DonNhapHang, String> colTrangThai = new TableColumn<>("Trạng thái");
-        colTrangThai.setPrefWidth(130);
+        colTrangThai.setPrefWidth(125);
         colTrangThai.setCellValueFactory(d -> new SimpleStringProperty(
                 d.getValue().getTrangThai() != null ? d.getValue().getTrangThai() : ""
         ));
@@ -239,7 +246,7 @@ public class TimKiemDonNhapView extends VBox {
         });
 
         tblDanhSach.getColumns().setAll(List.of(
-                colMaDon, colNCC, colNhanVien, colNgayLap, colGioLap, colTongTien, colTrangThai
+                colMaDon, colNCC, colTenHang, colNhanVien, colNgayLap, colGioLap, colTongTien, colTrangThai
         ));
     }
 
