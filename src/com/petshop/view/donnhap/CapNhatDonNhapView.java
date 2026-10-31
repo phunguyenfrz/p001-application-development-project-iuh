@@ -18,6 +18,7 @@ import javafx.scene.paint.Color;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +43,7 @@ public class CapNhatDonNhapView extends VBox {
     // === Định dạng ===
     private final DecimalFormat dinhDangTien = new DecimalFormat("#,##0");
     private final DateTimeFormatter dinhDangNgay = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private final DateTimeFormatter dinhDangGio = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     /**
      * Khởi tạo giao diện cập nhật đơn nhập hàng.
@@ -165,6 +167,13 @@ public class CapNhatDonNhapView extends VBox {
         });
         cotNgayLap.setPrefWidth(120);
 
+        TableColumn<DonHang, String> cotGioLap = new TableColumn<>("Thời gian");
+        cotGioLap.setCellValueFactory(cellData -> {
+            LocalTime gio = cellData.getValue().getGioLap();
+            return new SimpleStringProperty(gio != null ? gio.format(dinhDangGio) : "");
+        });
+        cotGioLap.setPrefWidth(100);
+
         // Cột tổng tiền (định dạng #,##0)
         TableColumn<DonHang, String> cotTongTien = new TableColumn<>("Tổng tiền");
         cotTongTien.setCellValueFactory(cellData -> {
@@ -202,7 +211,7 @@ public class CapNhatDonNhapView extends VBox {
             }
         });
 
-        bang.getColumns().addAll(cotMa, cotNCC, cotNV, cotNgayLap, cotTongTien, cotTrangThai);
+        bang.getColumns().addAll(cotMa, cotNCC, cotNV, cotNgayLap, cotGioLap, cotTongTien, cotTrangThai);
         bang.setRowFactory(tv -> {
             TableRow<DonHang> row = new TableRow<>();
             row.setOnMouseClicked(event -> {

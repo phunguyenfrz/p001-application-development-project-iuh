@@ -16,6 +16,7 @@ import javafx.scene.layout.VBox;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -30,6 +31,7 @@ public class TimKiemDonNhapView extends VBox {
     // Định dạng số tiền và ngày tháng
     private static final DecimalFormat DINH_DANG_TIEN = new DecimalFormat("#,##0");
     private static final DateTimeFormatter DINH_DANG_NGAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter DINH_DANG_GIO = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final DonHangController controller = new DonHangController();
     private final ObservableList<DonHang> danhSachHienThi = FXCollections.observableArrayList();
@@ -181,6 +183,13 @@ public class TimKiemDonNhapView extends VBox {
         // Cột ngày lập (dd/MM/yyyy)
         TableColumn<DonHang, String> colNgayLap = new TableColumn<>("Ngày lập");
         colNgayLap.setPrefWidth(110);
+
+        TableColumn<DonHang, String> colGioLap = new TableColumn<>("Thời gian");
+        colGioLap.setPrefWidth(100);
+        colGioLap.setCellValueFactory(d -> {
+            LocalTime gio = d.getValue().getGioLap();
+            return new SimpleStringProperty(gio != null ? gio.format(DINH_DANG_GIO) : "");
+        });
         colNgayLap.setCellValueFactory(d -> {
             LocalDate ngay = d.getValue().getNgayLap();
             return new SimpleStringProperty(ngay != null ? ngay.format(DINH_DANG_NGAY) : "");
@@ -230,7 +239,7 @@ public class TimKiemDonNhapView extends VBox {
         });
 
         tblDanhSach.getColumns().setAll(List.of(
-                colMaDon, colNCC, colNhanVien, colNgayLap, colTongTien, colTrangThai
+                colMaDon, colNCC, colNhanVien, colNgayLap, colGioLap, colTongTien, colTrangThai
         ));
     }
 

@@ -7,6 +7,7 @@ import com.petshop.model.TaiKhoan;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -102,6 +103,9 @@ public class DonHangService {
         if (donHang.getNgayLap() == null) {
             donHang.setNgayLap(LocalDate.now());
         }
+        if (donHang.getGioLap() == null) {
+            donHang.setGioLap(LocalTime.now().withNano(0));
+        }
 
         return donHangDAO.themDonHang(donHang, danhSachChiTiet);
     }
@@ -134,6 +138,7 @@ public class DonHangService {
                 donHang.setMaNhanVien(tk.getMaNhanVien());
             }
             if (donHang.getNgayLap() == null) donHang.setNgayLap(LocalDate.now());
+            if (donHang.getGioLap() == null) donHang.setGioLap(LocalTime.now().withNano(0));
 
             BigDecimal tongTien = BigDecimal.ZERO;
             for (ChiTietDonHang ct : donHang.getDanhSachChiTiet()) {

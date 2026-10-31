@@ -20,10 +20,12 @@ import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.util.StringConverter;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -49,6 +51,9 @@ public class LapDonNhapView extends VBox {
     // --- Phần thông tin đơn hàng ---
     private final TextField txtMaDon = new TextField();
     private final DatePicker dpNgayLap = new DatePicker(LocalDate.now());
+    private final Spinner<Integer> spGio = new Spinner<>(0, 23, LocalTime.now().getHour());
+    private final Spinner<Integer> spPhut = new Spinner<>(0, 59, LocalTime.now().getMinute());
+    private final Spinner<Integer> spGiay = new Spinner<>(0, 59, LocalTime.now().getSecond());
     private final TextField txtNhaCungCap = new TextField();
     private final TextField txtNhanVien = new TextField();
 
@@ -164,7 +169,28 @@ public class LapDonNhapView extends VBox {
 
         hang2.getChildren().addAll(hopNCC, hopNhanVien);
 
-        hopThongTin.getChildren().addAll(hang1, hang2);
+        Label lblThoiGian = new Label("Thời gian lập (giờ : phút : giây):");
+        lblThoiGian.setStyle("-fx-font-weight: bold;");
+        HBox hangThoiGian = new HBox(6, spGio, new Label(":"), spPhut, new Label(":"), spGiay);
+        hangThoiGian.setAlignment(Pos.CENTER_LEFT);
+        for (Spinner<Integer> spinner : List.of(spGio, spPhut, spGiay)) {
+            spinner.setEditable(false);
+            spinner.setPrefWidth(78);
+            spinner.getValueFactory().setConverter(new StringConverter<>() {
+                @Override
+                public String toString(Integer value) {
+                    return value == null ? "00" : String.format("%02d", value);
+                }
+
+                @Override
+                public Integer fromString(String value) {
+                    return Integer.parseInt(value.trim());
+                }
+            });
+        }
+        VBox hopThoiGian = new VBox(5, lblThoiGian, hangThoiGian);
+
+        hopThongTin.getChildren().addAll(hang1, hang2, hopThoiGian);
         return hopThongTin;
     }
 
@@ -436,6 +462,10 @@ public class LapDonNhapView extends VBox {
 
         // Ngày lập mặc định hôm nay
         dpNgayLap.setValue(LocalDate.now());
+        LocalTime gioHienTai = LocalTime.now();
+        spGio.getValueFactory().setValue(gioHienTai.getHour());
+        spPhut.getValueFactory().setValue(gioHienTai.getMinute());
+        spGiay.getValueFactory().setValue(gioHienTai.getSecond());
     }
 
     // ========================= XỬ LÝ SỰ KIỆN =========================
@@ -564,6 +594,7 @@ public class LapDonNhapView extends VBox {
             donHang.setMaNhaCungCap(entry.getKey());
             donHang.setMaNhanVien(taiKhoan.getMaNhanVien());
             donHang.setNgayLap(dpNgayLap.getValue());
+            donHang.setGioLap(LocalTime.of(spGio.getValue(), spPhut.getValue(), spGiay.getValue()));
             List<ChiTietDonHang> dsBanSao = entry.getValue().stream()
                     .map(ct -> new ChiTietDonHang(null, ct.getMaSanPham(), ct.getTenSanPham(),
                             ct.getDonViTinh(), ct.getSoLuong(), ct.getDonGia()))
@@ -618,6 +649,10 @@ public class LapDonNhapView extends VBox {
         tenNhaCungCapTheoSanPham.clear();
         txtNhaCungCap.clear();
         dpNgayLap.setValue(LocalDate.now());
+        LocalTime gioHienTai = LocalTime.now();
+        spGio.getValueFactory().setValue(gioHienTai.getHour());
+        spPhut.getValueFactory().setValue(gioHienTai.getMinute());
+        spGiay.getValueFactory().setValue(gioHienTai.getSecond());
         capNhatTongTien();
         bangChiTiet.refresh();
 

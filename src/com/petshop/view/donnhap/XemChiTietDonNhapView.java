@@ -18,6 +18,7 @@ import javafx.stage.Window;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -30,6 +31,7 @@ public class XemChiTietDonNhapView extends Stage {
     // Định dạng số tiền và ngày tháng
     private static final DecimalFormat DINH_DANG_TIEN = new DecimalFormat("#,##0");
     private static final DateTimeFormatter DINH_DANG_NGAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter DINH_DANG_GIO = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final DonHang donHang;
     private final DonHangController donHangController;
@@ -105,7 +107,9 @@ public class XemChiTietDonNhapView extends Stage {
         hang1.getChildren().addAll(
                 taoNhan("Mã đơn hàng:", donHang.getMaDonHang()),
                 taoNhan("Ngày lập:", donHang.getNgayLap() != null
-                        ? donHang.getNgayLap().format(DINH_DANG_NGAY) : "")
+                        ? donHang.getNgayLap().format(DINH_DANG_NGAY) : ""),
+                taoNhan("Thời gian:", donHang.getGioLap() != null
+                        ? donHang.getGioLap().format(DINH_DANG_GIO) : "")
         );
 
         // Hàng 2: Nhà cung cấp và nhân viên

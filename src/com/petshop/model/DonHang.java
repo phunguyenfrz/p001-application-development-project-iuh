@@ -2,6 +2,7 @@ package com.petshop.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,7 +12,7 @@ import java.util.List;
  * - maDonHang VARCHAR(20) PRIMARY KEY (DH-YYYYMMDD-XXXXXX)
  * - maNhaCungCap VARCHAR(20) NOT NULL
  * - maNhanVien VARCHAR(20) NOT NULL
- * - ngayLap DATE NOT NULL
+ * - ngayLap DATE NOT NULL, gioLap TIME NOT NULL
  * - tongTien DECIMAL(18,2) NOT NULL DEFAULT 0
  * - trangThai NVARCHAR(30) NOT NULL (Chờ nhận hàng, Hoàn tất, Đã hủy)
  */
@@ -25,6 +26,7 @@ public class DonHang {
     private String maNhaCungCap;
     private String maNhanVien;
     private LocalDate ngayLap;
+    private LocalTime gioLap;
     private BigDecimal tongTien;
     private String trangThai;
 
@@ -35,6 +37,7 @@ public class DonHang {
 
     public DonHang() {
         this.ngayLap = LocalDate.now();
+        this.gioLap = LocalTime.now().withNano(0);
         this.tongTien = BigDecimal.ZERO;
         this.trangThai = TRANG_THAI_CHO_NHAN;
     }
@@ -44,6 +47,7 @@ public class DonHang {
         this.maNhaCungCap = maNhaCungCap;
         this.maNhanVien = maNhanVien;
         this.ngayLap = ngayLap != null ? ngayLap : LocalDate.now();
+        this.gioLap = LocalTime.now().withNano(0);
         this.tongTien = tongTien != null ? tongTien : BigDecimal.ZERO;
         this.trangThai = trangThai != null ? trangThai : TRANG_THAI_CHO_NHAN;
     }
@@ -78,6 +82,14 @@ public class DonHang {
 
     public void setNgayLap(LocalDate ngayLap) {
         this.ngayLap = ngayLap;
+    }
+
+    public LocalTime getGioLap() {
+        return gioLap;
+    }
+
+    public void setGioLap(LocalTime gioLap) {
+        this.gioLap = gioLap;
     }
 
     public BigDecimal getTongTien() {
@@ -127,6 +139,7 @@ public class DonHang {
                 ", maNhaCungCap='" + maNhaCungCap + '\'' +
                 ", maNhanVien='" + maNhanVien + '\'' +
                 ", ngayLap=" + ngayLap +
+                ", gioLap=" + gioLap +
                 ", tongTien=" + tongTien +
                 ", trangThai='" + trangThai + '\'' +
                 '}';

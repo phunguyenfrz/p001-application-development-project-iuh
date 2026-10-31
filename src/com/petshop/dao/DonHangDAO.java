@@ -57,8 +57,8 @@ public class DonHangDAO {
     /** Lưu nhiều đơn nhập theo từng nhà cung cấp trong một transaction. */
     public boolean themNhieuDonHang(List<DonHang> danhSachDonHang) {
         String sqlDonHang = """
-                INSERT INTO DonHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO DonHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, gioLap, tongTien, trangThai)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """;
         String sqlChiTiet = """
                 INSERT INTO ChiTietDonHang (maDonHang, maSanPham, soLuong, donGia)
@@ -80,8 +80,9 @@ public class DonHangDAO {
                         ps.setString(2, donHang.getMaNhaCungCap());
                         ps.setString(3, donHang.getMaNhanVien());
                         ps.setDate(4, Date.valueOf(donHang.getNgayLap()));
-                        ps.setBigDecimal(5, donHang.getTongTien());
-                        ps.setNString(6, donHang.getTrangThai());
+                        ps.setTime(5, Time.valueOf(donHang.getGioLap()));
+                        ps.setBigDecimal(6, donHang.getTongTien());
+                        ps.setNString(7, donHang.getTrangThai());
                         ps.executeUpdate();
                     }
 
@@ -157,8 +158,8 @@ public class DonHangDAO {
      */
     public boolean themDonHang(DonHang donHang, List<ChiTietDonHang> danhSachChiTiet) {
         String sqlDonHang = """
-                INSERT INTO DonHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO DonHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, gioLap, tongTien, trangThai)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """;
 
         String sqlChiTiet = """
@@ -179,8 +180,9 @@ public class DonHangDAO {
                 psDH.setString(2, donHang.getMaNhaCungCap());
                 psDH.setString(3, donHang.getMaNhanVien());
                 psDH.setDate(4, Date.valueOf(donHang.getNgayLap()));
-                psDH.setBigDecimal(5, donHang.getTongTien() != null ? donHang.getTongTien() : BigDecimal.ZERO);
-                psDH.setNString(6, donHang.getTrangThai() != null ? donHang.getTrangThai() : DonHang.TRANG_THAI_CHO_NHAN);
+                psDH.setTime(5, Time.valueOf(donHang.getGioLap()));
+                psDH.setBigDecimal(6, donHang.getTongTien() != null ? donHang.getTongTien() : BigDecimal.ZERO);
+                psDH.setNString(7, donHang.getTrangThai() != null ? donHang.getTrangThai() : DonHang.TRANG_THAI_CHO_NHAN);
 
                 int rowsDH = psDH.executeUpdate();
                 if (rowsDH <= 0) {
@@ -340,7 +342,7 @@ public class DonHangDAO {
             params.add(trangThai.trim());
         }
 
-        sql.append(" ORDER BY dh.ngayLap DESC, dh.maDonHang DESC");
+        sql.append(" ORDER BY dh.ngayLap DESC, dh.gioLap DESC, dh.maDonHang DESC");
 
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) {
@@ -472,6 +474,10 @@ public class DonHangDAO {
         Date ngayLap = rs.getDate("ngayLap");
         if (ngayLap != null) {
             dh.setNgayLap(ngayLap.toLocalDate());
+        }
+        Time gioLap = rs.getTime("gioLap");
+        if (gioLap != null) {
+            dh.setGioLap(gioLap.toLocalTime());
         }
         dh.setTongTien(rs.getBigDecimal("tongTien"));
         dh.setTrangThai(rs.getNString("trangThai"));

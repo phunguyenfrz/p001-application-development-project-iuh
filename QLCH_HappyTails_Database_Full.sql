@@ -251,6 +251,7 @@ CREATE TABLE DonHang (
     maNhaCungCap VARCHAR(20) NOT NULL,
     maNhanVien VARCHAR(20) NOT NULL,
     ngayLap DATE NOT NULL,
+    gioLap TIME(0) NOT NULL CONSTRAINT DF_DonHang_gioLap DEFAULT ('00:00:00'),
     tongTien DECIMAL(18,2) NOT NULL DEFAULT 0 CHECK (tongTien >= 0),
     trangThai NVARCHAR(30) NOT NULL DEFAULT N'Chờ nhận hàng' 
         CHECK (trangThai IN (N'Chờ nhận hàng', N'Hoàn tất', N'Đã hủy')),
