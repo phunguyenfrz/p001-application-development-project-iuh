@@ -203,6 +203,16 @@ public class CapNhatDonNhapView extends VBox {
         });
 
         bang.getColumns().addAll(cotMa, cotNCC, cotNV, cotNgayLap, cotTongTien, cotTrangThai);
+        bang.setRowFactory(tv -> {
+            TableRow<DonHang> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    bang.getSelectionModel().select(row.getIndex());
+                    xuLyXemChiTiet();
+                }
+            });
+            return row;
+        });
         return bang;
     }
 

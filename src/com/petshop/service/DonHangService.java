@@ -7,7 +7,9 @@ import com.petshop.model.TaiKhoan;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Xử lý nghiệp vụ, kiểm tra tính hợp lệ dữ liệu và phân quyền cho Đơn nhập hàng.
@@ -102,6 +104,57 @@ public class DonHangService {
         }
 
         return donHangDAO.themDonHang(donHang, danhSachChiTiet);
+    }
+
+    /** Tạo nhiều đơn nhập, mỗi đơn ứng với một nhà cung cấp; lưu tất cả trong một transaction. */
+    public boolean lapNhieuDonNhapHang(List<DonHang> danhSachDonHang) {
+        xacThucService.kiemTraQuyen("DN_TAO");
+        if (danhSachDonHang == null || danhSachDonHang.isEmpty()) {
+            throw new IllegalArgumentException("Không có đơn nhập nào để lưu.");
+        }
+
+        TaiKhoan tk = xacThucService.getTaiKhoanHienTai();
+        Set<String> nhaCungCapDaGap = new HashSet<>();
+        Set<String> sanPhamDaGap = new HashSet<>();
+        for (DonHang donHang : danhSachDonHang) {
+            if (donHang == null || donHang.getMaNhaCungCap() == null || donHang.getMaNhaCungCap().isBlank()) {
+                throw new IllegalArgumentException("Không xác định được nhà cung cấp của một đơn nhập.");
+            }
+            donHang.setMaNhaCungCap(donHang.getMaNhaCungCap().trim());
+            if (!nhaCungCapDaGap.add(donHang.getMaNhaCungCap())) {
+                throw new IllegalArgumentException("Mỗi nhà cung cấp chỉ được xuất hiện một lần trong danh sách đơn.");
+            }
+            if (donHang.getDanhSachChiTiet() == null || donHang.getDanhSachChiTiet().isEmpty()) {
+                throw new IllegalArgumentException("Đơn của nhà cung cấp " + donHang.getMaNhaCungCap() + " không có sản phẩm.");
+            }
+            if (donHang.getMaNhanVien() == null || donHang.getMaNhanVien().isBlank()) {
+                if (tk == null || tk.getMaNhanVien() == null || tk.getMaNhanVien().isBlank()) {
+                    throw new IllegalArgumentException("Không xác định được nhân viên lập đơn.");
+                }
+                donHang.setMaNhanVien(tk.getMaNhanVien());
+            }
+            if (donHang.getNgayLap() == null) donHang.setNgayLap(LocalDate.now());
+
+            BigDecimal tongTien = BigDecimal.ZERO;
+            for (ChiTietDonHang ct : donHang.getDanhSachChiTiet()) {
+                if (ct == null || ct.getMaSanPham() == null || ct.getMaSanPham().isBlank()) {
+                    throw new IllegalArgumentException("Sản phẩm trong đơn nhập không hợp lệ.");
+                }
+                if (!sanPhamDaGap.add(ct.getMaSanPham())) {
+                    throw new IllegalArgumentException("Sản phẩm " + ct.getMaSanPham() + " bị lặp trong các đơn nhập.");
+                }
+                if (ct.getSoLuong() <= 0) {
+                    throw new IllegalArgumentException("Số lượng sản phẩm " + ct.getMaSanPham() + " phải lớn hơn 0.");
+                }
+                if (ct.getDonGia() == null || ct.getDonGia().compareTo(BigDecimal.ZERO) < 0) {
+                    throw new IllegalArgumentException("Đơn giá sản phẩm " + ct.getMaSanPham() + " không hợp lệ.");
+                }
+                tongTien = tongTien.add(ct.getThanhTien());
+            }
+            donHang.setTongTien(tongTien);
+            donHang.setTrangThai(DonHang.TRANG_THAI_CHO_NHAN);
+        }
+        return donHangDAO.themNhieuDonHang(danhSachDonHang);
     }
 
     /**

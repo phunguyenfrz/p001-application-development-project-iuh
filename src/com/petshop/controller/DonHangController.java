@@ -37,6 +37,11 @@ public class DonHangController {
         return donHangService.lapDonNhapHang(donHang, danhSachChiTiet);
     }
 
+    /** Lưu các đơn nhập đã được tách theo nhà cung cấp. */
+    public boolean lapNhieuDonNhapHang(List<DonHang> danhSachDonHang) {
+        return donHangService.lapNhieuDonNhapHang(danhSachDonHang);
+    }
+
     /**
      * IMP_CONFIRM: Xác nhận nhận hàng và cộng tồn kho.
      */

@@ -23,34 +23,133 @@ public class DonHangDAO {
      * Tự động sinh mã đơn nhập hàng theo định dạng DH-yyyyMMdd-xxxxxx.
      */
     public String taoMaDonHang() {
-        String ngay = LocalDate.now().format(DINH_DANG_NGAY_MA);
-        String tienTo = "DH-" + ngay + "-";
-        String sql = "SELECT TOP 1 maDonHang FROM DonHang WHERE maDonHang LIKE ? ORDER BY maDonHang DESC";
-
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) {
+                String tienTo = "DH-" + LocalDate.now().format(DINH_DANG_NGAY_MA) + "-";
                 return tienTo + "000001";
             }
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, tienTo + "%");
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        String maCu = rs.getString("maDonHang");
-                        String[] phan = maCu.split("-");
-                        if (phan.length == 3) {
-                            int stt = Integer.parseInt(phan[2]) + 1;
-                            return tienTo + String.format("%06d", stt);
-                        }
-                    }
-                }
-            }
+            return taoMaDonHang(conn);
         } catch (SQLException e) {
             throw new IllegalStateException("Lỗi khi sinh mã đơn hàng: " + e.getMessage(), e);
         } catch (NumberFormatException e) {
             throw new IllegalStateException("Mã đơn hàng trong cơ sở dữ liệu không đúng định dạng", e);
         }
 
+    }
+
+    private String taoMaDonHang(Connection conn) throws SQLException {
+        String tienTo = "DH-" + LocalDate.now().format(DINH_DANG_NGAY_MA) + "-";
+        String sql = "SELECT TOP 1 maDonHang FROM DonHang WHERE maDonHang LIKE ? ORDER BY maDonHang DESC";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tienTo + "%");
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String[] phan = rs.getString("maDonHang").split("-");
+                    if (phan.length == 3) {
+                        return tienTo + String.format("%06d", Integer.parseInt(phan[2]) + 1);
+                    }
+                }
+            }
+        }
         return tienTo + "000001";
+    }
+
+    /** Lưu nhiều đơn nhập theo từng nhà cung cấp trong một transaction. */
+    public boolean themNhieuDonHang(List<DonHang> danhSachDonHang) {
+        String sqlDonHang = """
+                INSERT INTO DonHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """;
+        String sqlChiTiet = """
+                INSERT INTO ChiTietDonHang (maDonHang, maSanPham, soLuong, donGia)
+                VALUES (?, ?, ?, ?)
+                """;
+
+        try (Connection conn = DatabaseManager.getConnection()) {
+            if (conn == null) {
+                throw new IllegalStateException("Không thể kết nối cơ sở dữ liệu.");
+            }
+            conn.setAutoCommit(false);
+            try {
+                for (DonHang donHang : danhSachDonHang) {
+                    kiemTraNhaCungCapDangHoatDong(conn, donHang.getMaNhaCungCap());
+                    donHang.setMaDonHang(taoMaDonHang(conn));
+
+                    try (PreparedStatement ps = conn.prepareStatement(sqlDonHang)) {
+                        ps.setString(1, donHang.getMaDonHang());
+                        ps.setString(2, donHang.getMaNhaCungCap());
+                        ps.setString(3, donHang.getMaNhanVien());
+                        ps.setDate(4, Date.valueOf(donHang.getNgayLap()));
+                        ps.setBigDecimal(5, donHang.getTongTien());
+                        ps.setNString(6, donHang.getTrangThai());
+                        ps.executeUpdate();
+                    }
+
+                    try (PreparedStatement ps = conn.prepareStatement(sqlChiTiet)) {
+                        for (ChiTietDonHang chiTiet : donHang.getDanhSachChiTiet()) {
+                            kiemTraSanPhamCuaNhaCungCap(conn, donHang.getMaNhaCungCap(), chiTiet.getMaSanPham());
+                            ps.setString(1, donHang.getMaDonHang());
+                            ps.setString(2, chiTiet.getMaSanPham());
+                            ps.setInt(3, chiTiet.getSoLuong());
+                            ps.setBigDecimal(4, chiTiet.getDonGia());
+                            ps.addBatch();
+                        }
+                        ps.executeBatch();
+                    }
+                }
+                conn.commit();
+                return true;
+            } catch (Exception ex) {
+                conn.rollback();
+                if (ex instanceof IllegalStateException ise) throw ise;
+                throw new IllegalStateException("Không thể lưu các đơn nhập: " + ex.getMessage(), ex);
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Không thể lưu các đơn nhập: " + e.getMessage(), e);
+        }
+    }
+
+    private void kiemTraNhaCungCapDangHoatDong(Connection conn, String maNhaCungCap) throws SQLException {
+        String sql = "SELECT trangThai FROM NhaCungCap WHERE maNhaCungCap = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maNhaCungCap);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    throw new IllegalStateException("Nhà cung cấp " + maNhaCungCap + " không còn tồn tại.");
+                }
+                if (!rs.getBoolean("trangThai")) {
+                    throw new IllegalStateException("Nhà cung cấp " + maNhaCungCap + " đã ngừng hợp tác.");
+                }
+            }
+        }
+    }
+
+    private void kiemTraSanPhamCuaNhaCungCap(Connection conn, String maNhaCungCap, String maSanPham) throws SQLException {
+        String sql = """
+                SELECT sp.maNhaCungCap, sp.trangThai AS trangThaiSanPham, ncc.trangThai AS trangThaiNhaCungCap
+                FROM SanPham sp
+                LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
+                WHERE sp.maSanPham = ?
+                """;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maSanPham);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    throw new IllegalStateException("Sản phẩm " + maSanPham + " không còn tồn tại.");
+                }
+                if (!rs.getBoolean("trangThaiSanPham")) {
+                    throw new IllegalStateException("Sản phẩm " + maSanPham + " đã ngừng kinh doanh.");
+                }
+                if (!maNhaCungCap.equals(rs.getString("maNhaCungCap"))) {
+                    throw new IllegalStateException("Sản phẩm " + maSanPham + " không còn thuộc nhà cung cấp đã chọn.");
+                }
+                if (!rs.getBoolean("trangThaiNhaCungCap")) {
+                    throw new IllegalStateException("Nhà cung cấp của sản phẩm " + maSanPham + " đã ngừng hợp tác.");
+                }
+            }
+        }
     }
 
     /**
