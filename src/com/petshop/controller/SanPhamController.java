@@ -41,10 +41,6 @@ public class SanPhamController {
         return sanPhamService.layDanhSachSanPham();
     }
 
-    public List<SanPham> layTheoNhaCungCap(String maNhaCungCap) {
-        return sanPhamService.layTheoNhaCungCap(maNhaCungCap);
-    }
-
     public SanPham layTheoMa(String maSanPham) {
         return sanPhamService.layTheoMa(maSanPham);
     }
@@ -71,5 +67,9 @@ public class SanPhamController {
 
     public List<NhaCungCap> layDanhSachNhaCungCap() {
         return sanPhamService.layDanhSachNhaCungCap();
+    }
+
+    public List<SanPham> layTheoNhaCungCap(String maNhaCungCap) {
+        return sanPhamService.layTheoNhaCungCap(maNhaCungCap);
     }
 }

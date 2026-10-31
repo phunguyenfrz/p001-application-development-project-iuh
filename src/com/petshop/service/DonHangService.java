@@ -109,7 +109,7 @@ public class DonHangService {
      * Bắt buộc kiểm tra để không cộng đôi tồn kho.
      */
     public boolean xacNhanNhanHang(String maDonHang) {
-        xacThucService.kiemTraQuyen("DN_CAP_NHAT");
+        xacThucService.kiemTraQuyen("DN_NHAN_HANG");
 
         if (maDonHang == null || maDonHang.trim().isEmpty()) {
             throw new IllegalArgumentException("Mã đơn hàng không được để trống!");

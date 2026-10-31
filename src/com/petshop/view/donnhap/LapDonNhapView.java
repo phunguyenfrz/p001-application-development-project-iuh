@@ -27,6 +27,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -807,10 +808,15 @@ public class LapDonNhapView extends VBox {
         private void taiDuLieu() {
             try {
                 SanPhamController sanPhamController = new SanPhamController();
-                // Lấy tất cả sản phẩm và lọc chỉ lấy đang kinh doanh (trangThai = true)
+                Set<String> maNhaCungCapDangHoatDong = sanPhamController.layDanhSachNhaCungCap().stream()
+                        .map(ncc -> ncc.getMaNhaCungCap())
+                        .collect(Collectors.toSet());
+                // Chỉ cho chọn sản phẩm đang kinh doanh và còn nhà cung cấp hoạt động.
                 tatCaSanPham = sanPhamController.layDanhSachSanPham()
                         .stream()
                         .filter(SanPham::isTrangThai)
+                        .filter(sp -> sp.getMaNhaCungCap() != null
+                                && maNhaCungCapDangHoatDong.contains(sp.getMaNhaCungCap()))
                         .collect(Collectors.toList());
                 tblSanPham.setItems(FXCollections.observableArrayList(tatCaSanPham));
             } catch (Exception ex) {
