@@ -109,22 +109,32 @@ public class CapNhatSanPhamView extends VBox {
         colLoai.setPrefWidth(90);
         colLoai.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDonViTinh()));
 
+        TableColumn<SanPham, String> colTonKho = new TableColumn<>("Số lượng tồn");
+        colTonKho.setPrefWidth(110);
+        colTonKho.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
+        colTonKho.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getSoLuongTon())));
+
+        TableColumn<SanPham, String> colNguong = new TableColumn<>("Ngưỡng an toàn");
+        colNguong.setPrefWidth(120);
+        colNguong.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colNguong.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getNguongTonToiThieu())));
+
+        TableColumn<SanPham, String> colTinhTrang = new TableColumn<>("Tình trạng");
+        colTinhTrang.setPrefWidth(140);
+        colTinhTrang.setCellValueFactory(cell -> {
+            if (cell.getValue().getSoLuongTon() == 0) {
+                return new SimpleStringProperty("✖ HẾT HÀNG");
+            }
+            boolean sapHet = cell.getValue().isSapHetHang();
+            return new SimpleStringProperty(sapHet ? "⚠ SẮP HẾT HÀNG" : "Ổn định");
+        });
+
         TableColumn<SanPham, String> colGiaBan = new TableColumn<>("Giá bán");
         colGiaBan.setPrefWidth(120);
         colGiaBan.setStyle("-fx-alignment: CENTER-RIGHT;");
         colGiaBan.setCellValueFactory(cell -> new SimpleStringProperty(
                 ThemSanPhamView.dinhDangTien(cell.getValue().getGiaBan().doubleValue())
         ));
-
-        TableColumn<SanPham, String> colTonKho = new TableColumn<>("Tồn kho");
-        colTonKho.setPrefWidth(90);
-        colTonKho.setStyle("-fx-alignment: CENTER-RIGHT;");
-        colTonKho.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getSoLuongTon())));
-
-        TableColumn<SanPham, String> colNguong = new TableColumn<>("Ngưỡng an toàn");
-        colNguong.setPrefWidth(110);
-        colNguong.setStyle("-fx-alignment: CENTER-RIGHT;");
-        colNguong.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getNguongTonToiThieu())));
 
         TableColumn<SanPham, String> colNhaCungCap = new TableColumn<>("Nhà cung cấp");
         colNhaCungCap.setPrefWidth(180);
@@ -139,10 +149,10 @@ public class CapNhatSanPhamView extends VBox {
         ));
 
         tblDanhSach.getColumns().setAll(List.of(
-                colMa, colTen, colLoai, colGiaBan, colTonKho, colNguong, colNhaCungCap, colTrangThai
+                colMa, colTen, colLoai, colTonKho, colNguong, colTinhTrang, colGiaBan, colNhaCungCap, colTrangThai
         ));
 
-        // Làm mờ các dòng đã Ngừng kinh doanh và cho phép nhấp đúp để mở màn nhỏ Cập nhật
+        // Hết hàng và sắp hết hàng đổi màu nền dòng giống bên Theo dõi tồn kho
         tblDanhSach.setRowFactory(tv -> {
             TableRow<SanPham> row = new TableRow<>() {
                 @Override
@@ -150,12 +160,23 @@ public class CapNhatSanPhamView extends VBox {
                     super.updateItem(item, empty);
                     if (empty || item == null) {
                         setOpacity(1.0);
+                        setStyle("");
+                    } else if (!item.isTrangThai()) {
+                        setOpacity(0.5);
+                        setStyle("-fx-background-color: #f1f5f9;");
+                    } else if (item.getSoLuongTon() == 0) {
+                        setOpacity(1.0);
+                        setStyle("-fx-background-color: #fee2e2;");
+                    } else if (item.isSapHetHang()) {
+                        setOpacity(1.0);
+                        setStyle("-fx-background-color: #fef2f2;");
                     } else {
-                        setOpacity(item.isTrangThai() ? 1.0 : 0.5);
+                        setOpacity(1.0);
+                        setStyle("");
                     }
                 }
             };
-            row.setOnMouseClicked(event -> {
+row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
                     moCuaSoCapNhat();
                 }
