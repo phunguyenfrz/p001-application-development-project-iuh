@@ -485,7 +485,7 @@ public class ManHinhChinhView extends BorderPane {
             case "DON_NHAP"            -> {
                 if ("DN_TIM_KIEM".equals(chucNang.getMaChucNang())) {
                     yield new TimKiemDonNhapView();
-                } else if ("DN_NHAN_HANG".equals(chucNang.getMaChucNang()) || "DN_CAP_NHAT".equals(chucNang.getMaChucNang())) {
+                } else if ("DN_CAP_NHAT".equals(chucNang.getMaChucNang())) {
                     yield new CapNhatDonNhapView();
                 }
                 yield new LapDonNhapView();
