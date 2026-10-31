@@ -461,7 +461,12 @@ VALUES
 ('SP-20261005-000002', 'NCC-20261005-000001', N'Pate mèo MiuMeal cá ngừ 85g',     '893123456702', 20000,  120, 20, N'Gói', 1),
 ('SP-20261005-000003', 'NCC-20261005-000002', N'Cát vệ sinh PetCare gỗ thông 6L', '893123456703', 140000, 30, 10, N'Túi', 1),
 ('SP-20261005-000004', 'NCC-20261005-000002', N'Dây dắt PetCare kèm yếm size M',  '893123456704', 85000,  15, 5,  N'Cái', 1),
-('SP-20261005-000005', 'NCC-20261005-000002', N'Sữa tắm PetCare dịu nhẹ 530ml',   '893123456705', 120000, 25, 8,  N'Chai', 1);
+('SP-20261005-000005', 'NCC-20261005-000002', N'Sữa tắm PetCare dịu nhẹ 530ml',   '893123456705', 120000, 25, 8,  N'Chai', 1),
+('SP-20261005-000006', 'NCC-20261005-000001', N'Hạt chó MiuMeal vị gà 3kg',       '893123456706', 480000, 22, 6,  N'Gói', 1),
+('SP-20261005-000007', 'NCC-20261005-000001', N'Snack thưởng MiuMeal gà sấy 100g', '893123456707', 75000,  40, 10, N'Gói', 1),
+('SP-20261005-000008', 'NCC-20261005-000002', N'Bát ăn inox PetCare chống trượt M', '893123456708', 95000,  18, 5,  N'Cái', 1),
+('SP-20261005-000009', 'NCC-20261005-000002', N'Bóng cao su PetCare cho chó',      '893123456709', 55000,  32, 8,  N'Cái', 1),
+('SP-20261005-000010', 'NCC-20261005-000002', N'Lược chải lông PetCare hai mặt',   '893123456710', 78000,  14, 4,  N'Cái', 1);
 
 INSERT INTO DonHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai)
 VALUES
