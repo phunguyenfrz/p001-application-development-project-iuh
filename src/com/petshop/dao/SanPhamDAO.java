@@ -276,6 +276,10 @@ public class SanPhamDAO {
     }
 
     private SanPham mapResultSetToSanPham(ResultSet rs) throws SQLException {
+        String donViTinh = rs.getString("donViTinh");
+        if ("CÃ¡i".equals(donViTinh)) {
+            donViTinh = "Cái";
+        }
         return new SanPham(
                 rs.getString("maSanPham"),
                 rs.getString("maNhaCungCap"),
@@ -285,7 +289,7 @@ public class SanPhamDAO {
                 rs.getBigDecimal("giaBan"),
                 rs.getInt("soLuongTon"),
                 rs.getInt("nguongTonToiThieu"),
-                rs.getString("donViTinh"),
+                donViTinh,
                 rs.getBoolean("trangThai")
         );
     }
