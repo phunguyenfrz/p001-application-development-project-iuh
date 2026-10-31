@@ -1,7 +1,7 @@
 package com.petshop.view.donnhap;
 
 import com.petshop.controller.DonHangController;
-import com.petshop.dao.SanPhamDAO;
+import com.petshop.controller.SanPhamController;
 import com.petshop.model.ChiTietDonHang;
 import com.petshop.model.DonHang;
 import com.petshop.model.NhaCungCap;
@@ -798,9 +798,9 @@ public class LapDonNhapView extends VBox {
          */
         private void taiDuLieu() {
             try {
-                SanPhamDAO sanPhamDAO = new SanPhamDAO();
+                SanPhamController sanPhamController = new SanPhamController();
                 // Lấy tất cả sản phẩm và lọc chỉ lấy đang kinh doanh (trangThai = true)
-                tatCaSanPham = sanPhamDAO.layDanhSachSanPham()
+                tatCaSanPham = sanPhamController.layDanhSachSanPham()
                         .stream()
                         .filter(SanPham::isTrangThai)
                         .collect(Collectors.toList());

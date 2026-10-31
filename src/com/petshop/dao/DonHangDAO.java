@@ -71,7 +71,7 @@ public class DonHangDAO {
         try {
             conn = DatabaseManager.getConnection();
             if (conn == null) {
-                return false;
+                throw new IllegalStateException("Lỗi khi thêm đơn hàng: không thể kết nối cơ sở dữ liệu");
             }
             conn.setAutoCommit(false);
 
@@ -86,7 +86,7 @@ public class DonHangDAO {
                 int rowsDH = psDH.executeUpdate();
                 if (rowsDH <= 0) {
                     conn.rollback();
-                    return false;
+                    throw new IllegalStateException("Lỗi khi thêm đơn hàng: không thể chèn dữ liệu đơn hàng");
                 }
             }
 
@@ -108,18 +108,17 @@ public class DonHangDAO {
                 try {
                     conn.rollback();
                 } catch (SQLException ex) {
-                    ex.printStackTrace();
+                    // Lỗi rollback được bao gồm trong thông báo chính
                 }
             }
-            e.printStackTrace();
-            return false;
+            throw new IllegalStateException("Lỗi khi thêm đơn hàng: " + e.getMessage(), e);
         } finally {
             if (conn != null) {
                 try {
                     conn.setAutoCommit(true);
                     conn.close();
                 } catch (SQLException e) {
-                    e.printStackTrace();
+                    // Lỗi đóng kết nối không ảnh hưởng kết quả
                 }
             }
         }
@@ -138,7 +137,9 @@ public class DonHangDAO {
                 """;
 
         try (Connection conn = DatabaseManager.getConnection()) {
-            if (conn == null) return null;
+            if (conn == null) {
+                throw new IllegalStateException("Lỗi khi tìm đơn hàng: không thể kết nối cơ sở dữ liệu");
+            }
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, maDonHang);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -148,7 +149,7 @@ public class DonHangDAO {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Lỗi khi tìm đơn hàng theo mã: " + e.getMessage(), e);
         }
         return null;
     }
@@ -166,7 +167,9 @@ public class DonHangDAO {
                 """;
 
         try (Connection conn = DatabaseManager.getConnection()) {
-            if (conn == null) return list;
+            if (conn == null) {
+                throw new IllegalStateException("Lỗi khi lấy chi tiết đơn hàng: không thể kết nối cơ sở dữ liệu");
+            }
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, maDonHang);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -183,7 +186,7 @@ public class DonHangDAO {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Lỗi khi lấy chi tiết đơn hàng: " + e.getMessage(), e);
         }
         return list;
     }
@@ -241,7 +244,9 @@ public class DonHangDAO {
         sql.append(" ORDER BY dh.ngayLap DESC, dh.maDonHang DESC");
 
         try (Connection conn = DatabaseManager.getConnection()) {
-            if (conn == null) return list;
+            if (conn == null) {
+                throw new IllegalStateException("Lỗi khi tìm kiếm đơn hàng: không thể kết nối cơ sở dữ liệu");
+            }
             try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
                 for (int i = 0; i < params.size(); i++) {
                     ps.setObject(i + 1, params.get(i));
@@ -253,7 +258,7 @@ public class DonHangDAO {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Lỗi khi tìm kiếm đơn hàng: " + e.getMessage(), e);
         }
         return list;
     }
@@ -264,7 +269,9 @@ public class DonHangDAO {
     public boolean capNhatTrangThai(String maDonHang, String trangThaiHienTai, String trangThaiMoi) {
         String sql = "UPDATE DonHang SET trangThai = ? WHERE maDonHang = ? AND trangThai = ?";
         try (Connection conn = DatabaseManager.getConnection()) {
-            if (conn == null) return false;
+            if (conn == null) {
+                throw new IllegalStateException("Lỗi khi cập nhật trạng thái đơn hàng: không thể kết nối cơ sở dữ liệu");
+            }
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setNString(1, trangThaiMoi);
                 ps.setString(2, maDonHang);
@@ -272,8 +279,7 @@ public class DonHangDAO {
                 return ps.executeUpdate() > 0;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new IllegalStateException("Lỗi khi cập nhật trạng thái đơn hàng: " + e.getMessage(), e);
         }
     }
 
@@ -290,7 +296,9 @@ public class DonHangDAO {
         Connection conn = null;
         try {
             conn = DatabaseManager.getConnection();
-            if (conn == null) return false;
+            if (conn == null) {
+                throw new IllegalStateException("Lỗi khi xác nhận nhận hàng: không thể kết nối cơ sở dữ liệu");
+            }
             conn.setAutoCommit(false);
 
             // 1. Lấy chi tiết trước để đơn rỗng không thể chuyển sang hoàn tất.
@@ -308,7 +316,7 @@ public class DonHangDAO {
             }
             if (chiTietList.isEmpty()) {
                 conn.rollback();
-                return false;
+                throw new IllegalStateException("Lỗi khi xác nhận nhận hàng: đơn hàng không có chi tiết sản phẩm");
             }
 
             // 2. Chuyển trạng thái có điều kiện để chỉ một lần xác nhận thành công.
@@ -318,7 +326,7 @@ public class DonHangDAO {
                 psUpdate.setNString(3, DonHang.TRANG_THAI_CHO_NHAN);
                 if (psUpdate.executeUpdate() != 1) {
                     conn.rollback();
-                    return false;
+                    throw new IllegalStateException("Lỗi khi xác nhận nhận hàng: đơn hàng không ở trạng thái 'Chờ nhận hàng' hoặc đã được xác nhận trước đó");
                 }
             }
 
@@ -329,7 +337,7 @@ public class DonHangDAO {
                     psTonKho.setString(2, ct.getMaSanPham());
                     if (psTonKho.executeUpdate() != 1) {
                         conn.rollback();
-                        return false;
+                        throw new IllegalStateException("Lỗi khi xác nhận nhận hàng: không tìm thấy sản phẩm " + ct.getMaSanPham() + " để cộng tồn kho");
                     }
                 }
             }
@@ -341,18 +349,17 @@ public class DonHangDAO {
                 try {
                     conn.rollback();
                 } catch (SQLException ex) {
-                    ex.printStackTrace();
+                    // Lỗi rollback được bao gồm trong thông báo chính
                 }
             }
-            e.printStackTrace();
-            return false;
+            throw new IllegalStateException("Lỗi khi xác nhận nhận hàng: " + e.getMessage(), e);
         } finally {
             if (conn != null) {
                 try {
                     conn.setAutoCommit(true);
                     conn.close();
                 } catch (SQLException e) {
-                    e.printStackTrace();
+                    // Lỗi đóng kết nối không ảnh hưởng kết quả
                 }
             }
         }
@@ -381,4 +388,3 @@ public class DonHangDAO {
         return dh;
     }
 }
-
