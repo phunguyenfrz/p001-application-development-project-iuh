@@ -63,7 +63,7 @@ public class PhieuDichVuDAO {
                 INSERT INTO ChiTietPhieuDichVu (maPhieuDichVu, maThuCung, maDichVu, donGia)
                 VALUES (?, ?, ?, ?)
                 """;
-        String sqlCapNhatLichHen = "UPDATE LichHen SET trangThai = N'Đang thực hiện' WHERE maLichHen = ? AND trangThai != N'Đã hủy'";
+        String sqlCapNhatLichHen = "UPDATE LichHen SET trangThai = N'Hoàn thành' WHERE maLichHen = ? AND trangThai != N'Đã hủy'";
 
         try (Connection conn = DatabaseManager.getConnection()) {
             conn.setAutoCommit(false);

@@ -207,7 +207,7 @@ public class ThuCungDAO {
             ps.setString(3, tc.getTenThuCung());
             ps.setString(4, tc.getLoaiThuCung());
             ps.setString(5, tc.getGiongLoai());
-            ps.setBigDecimal(6, tc.getCanNang() != null ? tc.getCanNang() : BigDecimal.ZERO);
+            ps.setBigDecimal(6, tc.getCanNang());
             ps.setDate(7, tc.getNgaySinh() != null ? Date.valueOf(tc.getNgaySinh()) : null);
             ps.setString(8, tc.getDiUng());
             ps.setString(9, tc.getGioiTinh());
@@ -245,7 +245,7 @@ public class ThuCungDAO {
             ps.setString(2, tc.getTenThuCung());
             ps.setString(3, tc.getLoaiThuCung());
             ps.setString(4, tc.getGiongLoai());
-            ps.setBigDecimal(5, tc.getCanNang() != null ? tc.getCanNang() : BigDecimal.ZERO);
+            ps.setBigDecimal(5, tc.getCanNang());
             ps.setDate(6, tc.getNgaySinh() != null ? Date.valueOf(tc.getNgaySinh()) : null);
             ps.setString(7, tc.getDiUng());
             ps.setString(8, tc.getGioiTinh());
@@ -268,7 +268,7 @@ public class ThuCungDAO {
         String sql = "UPDATE dbo.ThuCung SET canNang = ? WHERE maThuCung = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setBigDecimal(1, canNang != null ? canNang : BigDecimal.ZERO);
+            ps.setBigDecimal(1, canNang);
             ps.setString(2, maThuCung);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
