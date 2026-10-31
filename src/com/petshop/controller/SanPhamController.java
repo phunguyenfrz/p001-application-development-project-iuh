@@ -29,8 +29,12 @@ public class SanPhamController {
         return sanPhamService.capNhatSanPham(sp);
     }
 
-    public boolean xoaMemSanPham(String maSanPham) {
-        return sanPhamService.xoaMemSanPham(maSanPham);
+    public boolean xoaSanPham(String maSanPham) {
+        return sanPhamService.xoaSanPham(maSanPham);
+    }
+
+    public boolean capNhatTrangThaiSanPham(String maSanPham, boolean trangThai) {
+        return sanPhamService.capNhatTrangThaiSanPham(maSanPham, trangThai);
     }
 
     public List<SanPham> layDanhSachSanPham() {

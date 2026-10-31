@@ -122,7 +122,30 @@ public class SanPham {
     }
 
     public boolean isSapHetHang() {
-        return this.soLuongTon <= this.nguongTonToiThieu;
+        return this.soLuongTon > 0 && this.soLuongTon <= this.nguongTonToiThieu;
+    }
+
+    public boolean isHetHang() {
+        return this.soLuongTon <= 0;
+    }
+
+    /**
+     * Trạng thái hiển thị sản phẩm:
+     * - Nếu trangThai == false: "Ngừng kinh doanh"
+     * - Nếu trangThai == true và soLuongTon <= 0: "Hết hàng"
+     * - Nếu trangThai == true và soLuongTon > 0: "Đang kinh doanh"
+     */
+    public String getTrangThaiHienThi() {
+        if (!this.trangThai) {
+            return "Ngừng kinh doanh";
+        }
+        if (this.soLuongTon <= 0) {
+            return "Hết hàng";
+        }
+        if (isSapHetHang()) {
+            return "Sắp hết hàng";
+        }
+        return "Đang kinh doanh";
     }
 }
 

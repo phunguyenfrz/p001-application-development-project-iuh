@@ -63,7 +63,7 @@ public class TimKiemSanPhamView extends VBox {
 
         Label lblTrangThai = new Label("Trạng thái:");
         cboLocTrangThai.setItems(FXCollections.observableArrayList(
-                "Tất cả", "Đang kinh doanh", "Ngừng kinh doanh"
+                "Tất cả", "Đang kinh doanh", "Sắp hết hàng", "Hết hàng", "Ngừng kinh doanh"
         ));
         cboLocTrangThai.setValue("Tất cả");
         cboLocTrangThai.setPrefWidth(150);
@@ -112,22 +112,32 @@ public class TimKiemSanPhamView extends VBox {
         colLoai.setPrefWidth(90);
         colLoai.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDonViTinh()));
 
+        TableColumn<SanPham, String> colTon = new TableColumn<>("Số lượng tồn");
+        colTon.setPrefWidth(110);
+        colTon.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
+        colTon.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getSoLuongTon())));
+
+        TableColumn<SanPham, String> colNguong = new TableColumn<>("Ngưỡng an toàn");
+        colNguong.setPrefWidth(120);
+        colNguong.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colNguong.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getNguongTonToiThieu())));
+
+        TableColumn<SanPham, String> colTinhTrang = new TableColumn<>("Tình trạng");
+        colTinhTrang.setPrefWidth(140);
+        colTinhTrang.setCellValueFactory(cell -> {
+            if (cell.getValue().getSoLuongTon() == 0) {
+                return new SimpleStringProperty("✖ HẾT HÀNG");
+            }
+            boolean sapHet = cell.getValue().isSapHetHang();
+            return new SimpleStringProperty(sapHet ? "⚠ SẮP HẾT HÀNG" : "Ổn định");
+        });
+
         TableColumn<SanPham, String> colGiaBan = new TableColumn<>("Giá bán");
         colGiaBan.setPrefWidth(120);
         colGiaBan.setStyle("-fx-alignment: CENTER-RIGHT;");
         colGiaBan.setCellValueFactory(cell -> new SimpleStringProperty(
                 ThemSanPhamView.dinhDangTien(cell.getValue().getGiaBan().doubleValue())
         ));
-
-        TableColumn<SanPham, String> colTon = new TableColumn<>("Tồn kho");
-        colTon.setPrefWidth(90);
-        colTon.setStyle("-fx-alignment: CENTER-RIGHT;");
-        colTon.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getSoLuongTon())));
-
-        TableColumn<SanPham, String> colNguong = new TableColumn<>("Ngưỡng an toàn");
-        colNguong.setPrefWidth(110);
-        colNguong.setStyle("-fx-alignment: CENTER-RIGHT;");
-        colNguong.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getNguongTonToiThieu())));
 
         TableColumn<SanPham, String> colNcc = new TableColumn<>("Nhà cung cấp");
         colNcc.setPrefWidth(180);
@@ -142,23 +152,34 @@ public class TimKiemSanPhamView extends VBox {
         ));
 
         tblDanhSach.getColumns().setAll(List.of(
-                colMa, colTen, colLoai, colGiaBan, colTon, colNguong, colNcc, colTrangThai
+                colMa, colTen, colLoai, colTon, colNguong, colTinhTrang, colGiaBan, colNcc, colTrangThai
         ));
 
-        // Làm mờ các dòng đã Ngừng kinh doanh
+        // Hết hàng và sắp hết hàng đổi màu nền dòng giống bên Theo dõi tồn kho
         tblDanhSach.setRowFactory(tv -> new TableRow<>() {
             @Override
             protected void updateItem(SanPham item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setOpacity(1.0);
+                    setStyle("");
+                } else if (!item.isTrangThai()) {
+                    setOpacity(0.5);
+                    setStyle("-fx-background-color: #f1f5f9;");
+                } else if (item.getSoLuongTon() == 0) {
+                    setOpacity(1.0);
+                    setStyle("-fx-background-color: #fee2e2;");
+                } else if (item.isSapHetHang()) {
+                    setOpacity(1.0);
+                    setStyle("-fx-background-color: #fef2f2;");
                 } else {
-                    setOpacity(item.isTrangThai() ? 1.0 : 0.5);
+                    setOpacity(1.0);
+                    setStyle("");
                 }
             }
         });
 
-        pnlBang.getChildren().add(tblDanhSach);
+pnlBang.getChildren().add(tblDanhSach);
         VBox.setVgrow(tblDanhSach, Priority.ALWAYS);
         return pnlBang;
     }
@@ -168,13 +189,18 @@ public class TimKiemSanPhamView extends VBox {
             String tuKhoa = txtTuKhoa.getText().trim();
             String trangThaiChon = cboLocTrangThai.getValue();
             Boolean trangThai = null;
-            if ("Đang kinh doanh".equals(trangThaiChon)) {
+            if ("Đang kinh doanh".equals(trangThaiChon) || "Hết hàng".equals(trangThaiChon)) {
                 trangThai = true;
             } else if ("Ngừng kinh doanh".equals(trangThaiChon)) {
                 trangThai = false;
             }
 
             List<SanPham> ds = sanPhamController.timKiemSanPham(tuKhoa, trangThai);
+            if ("Hết hàng".equals(trangThaiChon)) {
+                ds = ds.stream().filter(sp -> sp.getSoLuongTon() <= 0).toList();
+            } else if ("Đang kinh doanh".equals(trangThaiChon)) {
+                ds = ds.stream().filter(sp -> sp.getSoLuongTon() > 0).toList();
+            }
             tblDanhSach.setItems(FXCollections.observableArrayList(ds));
             lblKetQua.setText("Tổng số: " + ds.size() + " sản phẩm");
         } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {

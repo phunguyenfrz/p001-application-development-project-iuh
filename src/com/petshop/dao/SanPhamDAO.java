@@ -113,17 +113,51 @@ public class SanPhamDAO {
         }
     }
 
-    /**
-     * Xóa mềm sản phẩm (chuyển trạng thái = false - ngừng kinh doanh).
-     */
-    public boolean xoaMemSanPham(String maSanPham) {
-        String sql = "UPDATE SanPham SET trangThai = 0 WHERE maSanPham = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, maSanPham);
-            return ps.executeUpdate() > 0;
+    /** Cập nhật trạng thái kinh doanh riêng, không xóa sản phẩm hay lịch sử. */
+    public boolean capNhatTrangThaiSanPham(String maSanPham, boolean trangThai) {
+        String sql = "UPDATE SanPham SET trangThai = ? WHERE maSanPham = ?";
+        try (Connection conn = DatabaseManager.getConnection()) {
+            if (conn == null) return false;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setBoolean(1, trangThai);
+                ps.setString(2, maSanPham);
+                return ps.executeUpdate() > 0;
+            }
         } catch (SQLException e) {
-            throw new IllegalStateException("Lỗi khi xóa mềm sản phẩm: " + e.getMessage(), e);
+            throw new IllegalStateException("Lỗi khi cập nhật trạng thái sản phẩm: " + e.getMessage(), e);
+        }
+    }
+
+    /** Chỉ xóa vật lý khi hàng tồn bằng 0 và chưa có giao dịch tham chiếu. */
+    public boolean xoaSanPham(String maSanPham) {
+        String sql = """
+                DELETE FROM SanPham
+                WHERE maSanPham = ? AND soLuongTon = 0
+                  AND NOT EXISTS (SELECT 1 FROM ChiTietDonHang WHERE maSanPham = ?)
+                  AND NOT EXISTS (SELECT 1 FROM ChiTietHoaDon_SanPham WHERE maSanPham = ?)
+                """;
+        try (Connection conn = DatabaseManager.getConnection()) {
+            if (conn == null) return false;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, maSanPham);
+                ps.setString(2, maSanPham);
+                ps.setString(3, maSanPham);
+                int affected = ps.executeUpdate();
+                if (affected > 0) return true;
+
+                try (PreparedStatement check = conn.prepareStatement("SELECT 1 FROM SanPham WHERE maSanPham = ?")) {
+                    check.setString(1, maSanPham);
+                    try (ResultSet rs = check.executeQuery()) {
+                        if (!rs.next()) return false;
+                    }
+                }
+                throw new IllegalStateException("Không thể xóa sản phẩm còn tồn kho hoặc đã phát sinh đơn nhập/hóa đơn. Hãy dùng chức năng Ngừng kinh doanh.");
+            }
+        } catch (SQLException e) {
+            if (e.getErrorCode() == 547) {
+                throw new IllegalStateException("Không thể xóa sản phẩm đã được dùng trong giao dịch. Hãy dùng chức năng Ngừng kinh doanh.", e);
+            }
+            throw new IllegalStateException("Lỗi khi xóa sản phẩm: " + e.getMessage(), e);
         }
     }
 
@@ -348,6 +382,10 @@ public class SanPhamDAO {
     }
 
     private SanPham docDongSanPham(ResultSet rs) throws SQLException {
+        String donViTinh = rs.getString("donViTinh");
+        if ("CÃ¡i".equals(donViTinh)) {
+            donViTinh = "Cái";
+        }
         SanPham sp = new SanPham(
                 rs.getString("maSanPham"),
                 rs.getString("maNhaCungCap"),
@@ -356,7 +394,7 @@ public class SanPhamDAO {
                 rs.getBigDecimal("giaBan"),
                 rs.getInt("soLuongTon"),
                 rs.getInt("nguongTonToiThieu"),
-                rs.getString("donViTinh"),
+                donViTinh,
                 rs.getBoolean("trangThai")
         );
         sp.setTenNhaCungCap(rs.getString("tenNhaCungCap"));
