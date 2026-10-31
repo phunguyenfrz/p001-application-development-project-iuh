@@ -58,6 +58,15 @@ public class TimKiemNhaCungCapView extends VBox {
                 (obs, cu, moi) -> btnXemChiTiet.setDisable(moi == null));
         tblDanhSach.setRowFactory(tv -> {
             TableRow<NhaCungCap> row = new TableRow<>();
+            row.itemProperty().addListener((obs, cu, moi) -> {
+                if (moi == null) {
+                    row.setStyle("");
+                } else if (!moi.isTrangThai()) {
+                    row.setStyle("-fx-opacity: 0.55;");
+                } else {
+                    row.setStyle("");
+                }
+            });
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
                     moXemChiTiet();
