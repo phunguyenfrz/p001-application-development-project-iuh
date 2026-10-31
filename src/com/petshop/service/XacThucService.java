@@ -62,7 +62,7 @@ public class XacThucService {
             return;
         }
 
-        if (!DanhMucMenu.kiemTraQuyen(tk.getPhanQuyen(), maChucNang)) {
+        if (!DanhMucMenu.kiemTraQuyen(tk, maChucNang)) {
             throw new SecurityException("Tài khoản của bạn không có quyền thực hiện chức năng này!");
         }
     }
