@@ -39,12 +39,20 @@ public class SanPhamService {
         return sanPhamDAO.capNhatSanPham(sp);
     }
 
-    public boolean xoaMemSanPham(String maSanPham) {
-        xacThucService.kiemTraQuyen("PRD_SEARCH");
+    public boolean xoaSanPham(String maSanPham) {
+        xacThucService.kiemTraQuyen("PRD_CRUD");
         if (maSanPham == null || maSanPham.isBlank()) {
             throw new IllegalArgumentException("Vui lòng chọn sản phẩm cần xóa.");
         }
-        return sanPhamDAO.xoaMemSanPham(maSanPham.trim());
+        return sanPhamDAO.xoaSanPham(maSanPham.trim());
+    }
+
+    public boolean capNhatTrangThaiSanPham(String maSanPham, boolean trangThai) {
+        xacThucService.kiemTraQuyen("PRD_CRUD");
+        if (maSanPham == null || maSanPham.isBlank()) {
+            throw new IllegalArgumentException("Mã sản phẩm không được để trống.");
+        }
+        return sanPhamDAO.capNhatTrangThaiSanPham(maSanPham.trim(), trangThai);
     }
 
     public SanPham laySanPhamTheoMa(String maSanPham) {

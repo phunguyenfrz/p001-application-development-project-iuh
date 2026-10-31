@@ -25,7 +25,6 @@ public class TimKiemSanPhamView extends VBox {
     private final ComboBox<String> cboTrangThai = new ComboBox<>();
     private final Button btnTimKiem = new Button("Tìm kiếm");
     private final Button btnLamMoi = new Button("Làm mới");
-    private final Button btnXoaMem = new Button("Ngừng kinh doanh (Xóa)");
     private final Label lblKetQua = new Label("Tổng số: 0 sản phẩm");
 
     private final TableView<SanPham> tblDanhSach = new TableView<>();
@@ -42,9 +41,9 @@ public class TimKiemSanPhamView extends VBox {
         getStyleClass().add("khung-phan-he");
 
         VBox pnlTieuDe = new VBox(4);
-        Label lblTieuDe = new Label("TÌM KIẾM & QUẢN LÝ TRẠNG THÁI SẢN PHẨM");
+        Label lblTieuDe = new Label("TÌM KIẾM SẢN PHẨM");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-        Label lblMoTa = new Label("Tra cứu sản phẩm theo mã, tên, nhà cung cấp và thực hiện xóa mềm (ngừng kinh doanh).");
+        Label lblMoTa = new Label("Tra cứu sản phẩm theo mã, tên, mã vạch, nhà cung cấp và trạng thái kinh doanh.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
         pnlTieuDe.getChildren().addAll(lblTieuDe, lblMoTa);
 
@@ -110,11 +109,7 @@ public class TimKiemSanPhamView extends VBox {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        btnXoaMem.getStyleClass().add("nut-xoa");
-        btnXoaMem.disableProperty().bind(tblDanhSach.getSelectionModel().selectedItemProperty().isNull());
-        btnXoaMem.setOnAction(e -> xuLyXoaMem());
-
-        pnlTacVuDuoi.getChildren().addAll(lblKetQua, spacer, btnXoaMem);
+        pnlTacVuDuoi.getChildren().addAll(lblKetQua, spacer);
 
         tblDanhSach.getStyleClass().add("bang-du-lieu");
         tblDanhSach.setPlaceholder(new Label("Không tìm thấy sản phẩm nào"));
@@ -208,41 +203,6 @@ public class TimKiemSanPhamView extends VBox {
             lblKetQua.setText("Tổng số: " + ketQua.size() + " sản phẩm");
         } catch (Exception e) {
             hienThiLoi("Lỗi tìm kiếm sản phẩm: " + e.getMessage());
-        }
-    }
-
-    private void xuLyXoaMem() {
-        SanPham chon = tblDanhSach.getSelectionModel().getSelectedItem();
-        if (chon == null) {
-            return;
-        }
-
-        if (!chon.isTrangThai()) {
-            hienThiLoi("Sản phẩm này đã ở trạng thái ngừng kinh doanh.");
-            return;
-        }
-
-        Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION);
-        xacNhan.setTitle("Xác nhận ngừng kinh doanh");
-        xacNhan.setHeaderText("Ngừng kinh doanh sản phẩm [" + chon.getMaSanPham() + "]?");
-        xacNhan.setContentText("Sản phẩm: " + chon.getTenSanPham() + "\nThao tác này sẽ đánh dấu ngừng bán sản phẩm trong hệ thống.");
-        ganChuDialog(xacNhan);
-
-        if (xacNhan.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
-            return;
-        }
-
-        try {
-            if (sanPhamController.xoaMemSanPham(chon.getMaSanPham())) {
-                Alert tb = new Alert(Alert.AlertType.INFORMATION, "Đã cập nhật trạng thái ngừng kinh doanh cho sản phẩm.");
-                ganChuDialog(tb);
-                tb.showAndWait();
-                taiDanhSach();
-            } else {
-                hienThiLoi("Không thể cập nhật sản phẩm. Hãy làm mới lại danh sách.");
-            }
-        } catch (Exception e) {
-            hienThiLoi("Lỗi khi ngừng kinh doanh: " + e.getMessage());
         }
     }
 

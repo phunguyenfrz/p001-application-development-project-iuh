@@ -54,7 +54,7 @@ public class TheoDoiTonKhoView extends VBox {
         VBox pnlTieuDe = new VBox(4);
         Label lblTieuDe = new Label("THEO DÕI TỒN KHO & BÁO CÁO SẢN PHẨM");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-        Label lblMoTa = new Label("Giám sát mức độ tồn kho, cảnh báo các mặt hàng dưới ngưỡng an toàn và thống kê tổng hợp.");
+        Label lblMoTa = new Label("Giám sát tồn kho; phân biệt mặt hàng hết hàng và mặt hàng sắp chạm ngưỡng an toàn.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
         pnlTieuDe.getChildren().addAll(lblTieuDe, lblMoTa);
 
@@ -187,8 +187,11 @@ public class TheoDoiTonKhoView extends VBox {
         colTrangThaiTon.setPrefWidth(150);
         colTrangThaiTon.setStyle("-fx-alignment: CENTER;");
         colTrangThaiTon.setCellValueFactory(c -> {
+            if (c.getValue().getSoLuongTon() == 0) {
+                return new SimpleStringProperty("HẾT HÀNG");
+            }
             boolean duoiNguong = c.getValue().isDuoiNguongAnToan();
-            return new SimpleStringProperty(duoiNguong ? "Cảnh báo thiếu hàng" : "An toàn");
+            return new SimpleStringProperty(duoiNguong ? "SẮP HẾT HÀNG" : "An toàn");
         });
 
         tblTonKho.getColumns().addAll(List.of(colMa, colTen, colNcc, colDvt, colGiaBan, colTon, colNguong, colThanhTien, colTrangThaiTon));
@@ -199,8 +202,10 @@ public class TheoDoiTonKhoView extends VBox {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setStyle("");
+                } else if (item.getSoLuongTon() == 0) {
+                    setStyle("-fx-background-color: #fee2e2; -fx-font-weight: bold;");
                 } else if (item.isDuoiNguongAnToan()) {
-                    setStyle("-fx-background-color: #ffebee; -fx-font-weight: bold;");
+                    setStyle("-fx-background-color: #fff7ed;");
                 } else {
                     setStyle("");
                 }

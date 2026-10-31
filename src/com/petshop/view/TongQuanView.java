@@ -121,17 +121,17 @@ public class TongQuanView extends ScrollPane {
 
         pnlTheLichHen.getChildren().addAll(lblLichHenTieuDe, lblLichHenGiaTri, lblLichHenMoTa);
 
-        // Thẻ 3: Sản phẩm sắp hết hàng
+        // Thẻ 3: Sản phẩm hết hàng hoặc cần nhập thêm
         VBox pnlTheTonKho = new VBox(6);
         pnlTheTonKho.getStyleClass().add("the-thong-ke");
         HBox.setHgrow(pnlTheTonKho, Priority.ALWAYS);
 
-        Label lblTonKhoTieuDe = new Label("⚠️  Sản phẩm sắp hết hàng");
+        Label lblTonKhoTieuDe = new Label("⚠️  Sản phẩm cần nhập thêm");
         lblTonKhoTieuDe.getStyleClass().add("tieu-de-thong-ke");
 
         lblTonKhoGiaTri.getStyleClass().add("gia-tri-thong-ke");
 
-        Label lblTonKhoMoTa = new Label("Tồn kho dưới ngưỡng an toàn");
+        Label lblTonKhoMoTa = new Label("Hết hàng hoặc tồn dưới ngưỡng an toàn");
         lblTonKhoMoTa.getStyleClass().add("mo-ta-thong-ke");
 
         pnlTheTonKho.getChildren().addAll(lblTonKhoTieuDe, lblTonKhoGiaTri, lblTonKhoMoTa);

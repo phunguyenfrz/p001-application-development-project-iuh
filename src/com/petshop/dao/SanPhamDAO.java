@@ -106,14 +106,47 @@ public class SanPhamDAO {
         }
     }
 
-    public boolean xoaMemSanPham(String maSanPham) {
-        String sql = "UPDATE SanPham SET trangThai = 0 WHERE maSanPham = ?";
+    public boolean capNhatTrangThaiSanPham(String maSanPham, boolean trangThai) {
+        String sql = "UPDATE SanPham SET trangThai = ? WHERE maSanPham = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, maSanPham);
+            stmt.setBoolean(1, trangThai);
+            stmt.setString(2, maSanPham);
             return stmt.executeUpdate() == 1;
         } catch (SQLException e) {
-            throw new IllegalStateException("Lỗi ngừng kinh doanh sản phẩm: " + e.getMessage(), e);
+            throw new IllegalStateException("Lỗi cập nhật trạng thái kinh doanh sản phẩm: " + e.getMessage(), e);
+        }
+    }
+
+    public boolean xoaSanPham(String maSanPham) {
+        String sql = """
+                DELETE FROM SanPham
+                WHERE maSanPham = ? AND soLuongTon = 0
+                  AND NOT EXISTS (SELECT 1 FROM ChiTietDonHang WHERE maSanPham = ?)
+                  AND NOT EXISTS (SELECT 1 FROM ChiTietHoaDon_SanPham WHERE maSanPham = ?)
+                """;
+        try (Connection conn = DatabaseManager.getConnection()) {
+            if (conn == null) return false;
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, maSanPham);
+                stmt.setString(2, maSanPham);
+                stmt.setString(3, maSanPham);
+                int affected = stmt.executeUpdate();
+                if (affected == 1) return true;
+
+                try (PreparedStatement check = conn.prepareStatement("SELECT 1 FROM SanPham WHERE maSanPham = ?")) {
+                    check.setString(1, maSanPham);
+                    try (ResultSet rs = check.executeQuery()) {
+                        if (!rs.next()) return false;
+                    }
+                }
+                throw new IllegalStateException("Không thể xóa sản phẩm còn tồn kho hoặc đã phát sinh đơn nhập/hóa đơn. Hãy dùng chức năng Ngừng kinh doanh.");
+            }
+        } catch (SQLException e) {
+            if (e.getErrorCode() == 547) {
+                throw new IllegalStateException("Không thể xóa sản phẩm đã được sử dụng trong giao dịch. Hãy dùng chức năng Ngừng kinh doanh.", e);
+            }
+            throw new IllegalStateException("Lỗi xóa sản phẩm: " + e.getMessage(), e);
         }
     }
 

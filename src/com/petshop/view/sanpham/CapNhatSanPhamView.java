@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 public class CapNhatSanPhamView extends VBox {
 
@@ -26,6 +27,8 @@ public class CapNhatSanPhamView extends VBox {
     private final TextField txtTimKiemNhanh = new TextField();
     private final Button btnThemMoi = new Button("Thêm sản phẩm mới");
     private final Button btnSua = new Button("Chỉnh sửa");
+    private final Button btnTrangThai = new Button("Ngừng kinh doanh");
+    private final Button btnXoa = new Button("Xóa");
     private final Button btnLamMoi = new Button("Làm mới");
 
     private final TableView<SanPham> tblDanhSach = new TableView<>();
@@ -78,13 +81,21 @@ public class CapNhatSanPhamView extends VBox {
         btnSua.disableProperty().bind(tblDanhSach.getSelectionModel().selectedItemProperty().isNull());
         btnSua.setOnAction(e -> moCuaSoCapNhat());
 
+        btnTrangThai.getStyleClass().add("nut-phu");
+        btnTrangThai.disableProperty().bind(tblDanhSach.getSelectionModel().selectedItemProperty().isNull());
+        btnTrangThai.setOnAction(e -> xuLyDoiTrangThai());
+
+        btnXoa.getStyleClass().add("nut-xoa");
+        btnXoa.disableProperty().bind(tblDanhSach.getSelectionModel().selectedItemProperty().isNull());
+        btnXoa.setOnAction(e -> xuLyXoa());
+
         btnLamMoi.getStyleClass().add("nut-phu");
         btnLamMoi.setOnAction(e -> {
             txtTimKiemNhanh.clear();
             taiDanhSach();
         });
 
-        pnlTacVu.getChildren().addAll(txtTimKiemNhanh, spacer, btnThemMoi, btnSua, btnLamMoi);
+        pnlTacVu.getChildren().addAll(txtTimKiemNhanh, spacer, btnThemMoi, btnSua, btnTrangThai, btnXoa, btnLamMoi);
 
         tblDanhSach.getStyleClass().add("bang-du-lieu");
         tblDanhSach.setPlaceholder(new Label("Không tìm thấy sản phẩm nào"));
@@ -143,6 +154,8 @@ public class CapNhatSanPhamView extends VBox {
             });
             return row;
         });
+        tblDanhSach.getSelectionModel().selectedItemProperty().addListener((obs, oldItem, item) ->
+                btnTrangThai.setText(item != null && !item.isTrangThai() ? "Kinh doanh lại" : "Ngừng kinh doanh"));
 
         pnlKhung.getChildren().addAll(pnlTacVu, tblDanhSach);
         return pnlKhung;
@@ -308,6 +321,56 @@ public class CapNhatSanPhamView extends VBox {
                 }
             }
         });
+    }
+
+    private void xuLyDoiTrangThai() {
+        SanPham sp = tblDanhSach.getSelectionModel().getSelectedItem();
+        if (sp == null) return;
+
+        boolean trangThaiMoi = !sp.isTrangThai();
+        String hanhDong = trangThaiMoi ? "kinh doanh lại" : "ngừng kinh doanh";
+        Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION);
+        xacNhan.setTitle(trangThaiMoi ? "Xác nhận kinh doanh lại" : "Xác nhận ngừng kinh doanh");
+        xacNhan.setHeaderText(null);
+        xacNhan.setContentText("Bạn có chắc muốn " + hanhDong + " sản phẩm \"" + sp.getTenSanPham()
+                + "\" không? Lịch sử giao dịch được giữ nguyên.");
+
+        Optional<ButtonType> ketQua = xacNhan.showAndWait();
+        if (ketQua.isPresent() && ketQua.get() == ButtonType.OK) {
+            try {
+                if (sanPhamController.capNhatTrangThaiSanPham(sp.getMaSanPham(), trangThaiMoi)) {
+                    taiDanhSach();
+                } else {
+                    hienThiLoi("Không thể cập nhật trạng thái sản phẩm.");
+                }
+            } catch (Exception ex) {
+                hienThiLoi("Lỗi cập nhật trạng thái: " + ex.getMessage());
+            }
+        }
+    }
+
+    private void xuLyXoa() {
+        SanPham sp = tblDanhSach.getSelectionModel().getSelectedItem();
+        if (sp == null) return;
+
+        Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION);
+        xacNhan.setTitle("Xác nhận xóa sản phẩm");
+        xacNhan.setHeaderText(null);
+        xacNhan.setContentText("Xóa hẳn sản phẩm \"" + sp.getTenSanPham()
+                + "\"? Chỉ xóa được khi tồn kho bằng 0 và chưa phát sinh giao dịch.");
+
+        Optional<ButtonType> ketQua = xacNhan.showAndWait();
+        if (ketQua.isPresent() && ketQua.get() == ButtonType.OK) {
+            try {
+                if (sanPhamController.xoaSanPham(sp.getMaSanPham())) {
+                    taiDanhSach();
+                } else {
+                    hienThiLoi("Không thể xóa sản phẩm.");
+                }
+            } catch (Exception ex) {
+                hienThiLoi("Không thể xóa sản phẩm: " + ex.getMessage());
+            }
+        }
     }
 
     private String dinhDangTien(BigDecimal soTien) {
