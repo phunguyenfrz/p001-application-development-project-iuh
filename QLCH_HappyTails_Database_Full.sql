@@ -452,16 +452,16 @@ VALUES
 -- 4. Hàng hóa, Nhập kho & Bán lẻ
 INSERT INTO NhaCungCap (maNhaCungCap, tenNhaCungCap, soDienThoai, diaChi)
 VALUES 
-('NCC-20261005-000001', N'Công ty CP Thức Ăn Thú Cưng Royal Canin VN', '0283812345', N'KCN Tân Bình, TP.HCM'),
-('NCC-20261005-000002', N'Nhà phân phối Phụ kiện thú cưng PetCare',     '0283898765', N'Quận 10, TP.HCM');
+('NCC-20261005-000001', N'Công ty Thức ăn thú cưng MiuMeal', '0283812345', N'KCN Tân Bình, TP.HCM'),
+('NCC-20261005-000002', N'Nhà phân phối phụ kiện PetCare',   '0283898765', N'Quận 10, TP.HCM');
 
 INSERT INTO SanPham (maSanPham, maNhaCungCap, tenSanPham, maVach, giaBan, soLuongTon, nguongTonToiThieu, donViTinh, trangThai)
 VALUES 
-('SP-20261005-000001', 'NCC-20261005-000001', N'Hạt Royal Canin Indoor 2kg', '893123456701', 350000, 45, 10, N'Gói', 1),
-('SP-20261005-000002', 'NCC-20261005-000001', N'Pate Whiskas Cá Biển 85g',   '893123456702', 20000,  120, 20, N'Gói', 1),
-('SP-20261005-000003', 'NCC-20261005-000002', N'Cát vệ sinh Cature gỗ 6L',   '893123456703', 140000, 30, 10, N'Túi', 1),
-('SP-20261005-000004', 'NCC-20261005-000002', N'Dây dắt kèm yếm ngực size M', '893123456704', 85000,  15, 5,  N'Cái', 1),
-('SP-20261005-000005', 'NCC-20261005-000002', N'Sữa tắm thú cưng SOS 530ml', '893123456705', 120000, 25, 8,  N'Chai', 1);
+('SP-20261005-000001', 'NCC-20261005-000001', N'Hạt mèo MiuMeal vị cá hồi 2kg', '893123456701', 350000, 45, 10, N'Gói', 1),
+('SP-20261005-000002', 'NCC-20261005-000001', N'Pate mèo MiuMeal cá ngừ 85g',     '893123456702', 20000,  120, 20, N'Gói', 1),
+('SP-20261005-000003', 'NCC-20261005-000002', N'Cát vệ sinh PetCare gỗ thông 6L', '893123456703', 140000, 30, 10, N'Túi', 1),
+('SP-20261005-000004', 'NCC-20261005-000002', N'Dây dắt PetCare kèm yếm size M',  '893123456704', 85000,  15, 5,  N'Cái', 1),
+('SP-20261005-000005', 'NCC-20261005-000002', N'Sữa tắm PetCare dịu nhẹ 530ml',   '893123456705', 120000, 25, 8,  N'Chai', 1);
 
 INSERT INTO DonHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai)
 VALUES
