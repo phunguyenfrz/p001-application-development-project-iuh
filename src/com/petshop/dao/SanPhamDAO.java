@@ -158,7 +158,7 @@ public class SanPhamDAO {
     }
 
     /**
-     * Lấy tất cả sản phẩm đã gán cho một nhà cung cấp, gồm cả sản phẩm ngừng kinh doanh.
+     * Lấy các sản phẩm đang kinh doanh của nhà cung cấp để hiển thị danh mục hiện tại.
      */
     public List<SanPham> layTheoNhaCungCap(String maNhaCungCap) {
         List<SanPham> danhSach = new ArrayList<>();
@@ -168,7 +168,7 @@ public class SanPhamDAO {
                        ncc.tenNhaCungCap
                 FROM SanPham sp
                 LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
-                WHERE sp.maNhaCungCap = ?
+                WHERE sp.maNhaCungCap = ? AND sp.trangThai = 1
                 ORDER BY sp.trangThai DESC, sp.tenSanPham ASC
                 """;
 
