@@ -128,6 +128,14 @@ public class NhaCungCapService {
         return nhaCungCapDAO.timKiemNhaCungCap(tuKhoa);
     }
 
+    /**
+     * Tìm kiếm nhà cung cấp theo từ khóa và trạng thái (null để lấy tất cả).
+     */
+    public List<NhaCungCap> timKiemNhaCungCap(String tuKhoa, Boolean trangThai) {
+        xacThucService.kiemTraQuyen("NCC_TIM_KIEM");
+        return nhaCungCapDAO.timKiemNhaCungCap(tuKhoa, trangThai);
+    }
+
     // =========================================================================
     // CÁC HÀM RIÊNG CHO DIALOG CHỌN NHÀ CUNG CẤP (Hỗ trợ Lập đơn nhập #67)
     // Cho phép ADMIN, QUAN_LY, BAN_HANG sử dụng (không dùng mã quyền NCC_TIM_KIEM)

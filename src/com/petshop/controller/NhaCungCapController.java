@@ -71,6 +71,13 @@ public class NhaCungCapController {
         return nhaCungCapService.timKiemNhaCungCap(tuKhoa);
     }
 
+    /**
+     * Tìm kiếm theo từ khóa và trạng thái (null để lấy tất cả).
+     */
+    public List<NhaCungCap> timKiemNhaCungCap(String tuKhoa, Boolean trangThai) {
+        return nhaCungCapService.timKiemNhaCungCap(tuKhoa, trangThai);
+    }
+
     // =========================================================================
     // CÁC HÀM CHO DIALOG CHỌN NHÀ CUNG CẤP (QUAN_LY, BAN_HANG, ADMIN)
     // =========================================================================
