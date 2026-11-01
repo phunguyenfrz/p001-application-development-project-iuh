@@ -78,14 +78,25 @@ public class DangNhapView extends StackPane {
         pnlLuoiNhap.setVgap(6);
         pnlLuoiNhap.setAlignment(Pos.CENTER);
 
+        ColumnConstraints colNhan = new ColumnConstraints();
+        colNhan.setMinWidth(115);
+        colNhan.setPrefWidth(120);
+        ColumnConstraints colNhap = new ColumnConstraints();
+        colNhap.setHgrow(Priority.ALWAYS);
+        pnlLuoiNhap.getColumnConstraints().addAll(colNhan, colNhap);
+
         lblTenDangNhap.getStyleClass().add("nhan-nhap-lieu");
+        lblTenDangNhap.setMinWidth(Region.USE_PREF_SIZE);
         lblMatKhau.getStyleClass().add("nhan-nhap-lieu");
+        lblMatKhau.setMinWidth(Region.USE_PREF_SIZE);
 
         txtTenDangNhap.setPromptText("Nhập tên đăng nhập");
-        txtTenDangNhap.setPrefWidth(300);
+        txtTenDangNhap.setPrefWidth(260);
+        txtTenDangNhap.setMaxWidth(Double.MAX_VALUE);
 
         pwdMatKhau.setPromptText("Nhập mật khẩu");
-        pwdMatKhau.setPrefWidth(300);
+        pwdMatKhau.setPrefWidth(260);
+        pwdMatKhau.setMaxWidth(Double.MAX_VALUE);
 
         txtTenDangNhap.textProperty().addListener((obs, o, n) -> {
             xoaLoiTenDangNhap();

@@ -370,6 +370,80 @@ public class ThuCungDAO {
      * @param trangThai Trạng thái (hoặc null / "Tất cả")
      * @return Danh sách lịch sử chăm sóc
      */
+    /**
+     * Lấy danh sách những thú cưng đã có ít nhất một lần hoàn thành dịch vụ chăm sóc.
+     * Dùng cho chức năng Xem Lịch sử chăm sóc thú cưng (chỉ thú cưng đã hoàn thành dịch vụ mới có lịch sử).
+     */
+    public List<ThuCung> layDanhSachThuCungCoLichSuChamSoc() {
+        List<ThuCung> danhSach = new ArrayList<>();
+        String sql = """
+                SELECT DISTINCT tc.maThuCung, tc.maKhachHang, tc.tenThuCung, tc.loaiThuCung, tc.giongLoai,
+                       tc.canNang, tc.ngaySinh, tc.diUng, tc.gioiTinh,
+                       kh.hoTen AS tenKhachHang, kh.soDienThoai AS soDienThoaiKhachHang
+                FROM dbo.ThuCung tc
+                LEFT JOIN dbo.KhachHang kh ON tc.maKhachHang = kh.maKhachHang
+                INNER JOIN dbo.LichHen lh ON tc.maThuCung = lh.maThuCung
+                WHERE lh.trangThai = N'Hoàn thành'
+                ORDER BY tc.maThuCung DESC
+                """;
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                danhSach.add(anhXaDongThuCung(rs));
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi truy vấn danh sách thú cưng có lịch sử chăm sóc: " + e.getMessage(), e);
+        }
+
+        return danhSach;
+    }
+
+    /**
+     * Tìm kiếm thú cưng có lịch sử chăm sóc hoàn thành theo từ khóa.
+     */
+    public List<ThuCung> timKiemThuCungCoLichSuChamSoc(String tuKhoa) {
+        List<ThuCung> danhSach = new ArrayList<>();
+        String sql = """
+                SELECT DISTINCT tc.maThuCung, tc.maKhachHang, tc.tenThuCung, tc.loaiThuCung, tc.giongLoai,
+                       tc.canNang, tc.ngaySinh, tc.diUng, tc.gioiTinh,
+                       kh.hoTen AS tenKhachHang, kh.soDienThoai AS soDienThoaiKhachHang
+                FROM dbo.ThuCung tc
+                LEFT JOIN dbo.KhachHang kh ON tc.maKhachHang = kh.maKhachHang
+                INNER JOIN dbo.LichHen lh ON tc.maThuCung = lh.maThuCung
+                WHERE lh.trangThai = N'Hoàn thành'
+                  AND (
+                      LOWER(tc.maThuCung) LIKE LOWER(?) OR
+                      LOWER(tc.tenThuCung) LIKE LOWER(?) OR
+                      LOWER(kh.hoTen) LIKE LOWER(?) OR
+                      kh.soDienThoai LIKE ?
+                  )
+                ORDER BY tc.maThuCung DESC
+                """;
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            String p = "%" + (tuKhoa != null ? tuKhoa.trim() : "") + "%";
+            ps.setString(1, p);
+            ps.setString(2, p);
+            ps.setString(3, p);
+            ps.setString(4, p);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    danhSach.add(anhXaDongThuCung(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi tìm kiếm thú cưng có lịch sử chăm sóc: " + e.getMessage(), e);
+        }
+
+        return danhSach;
+    }
+
     public List<LichSuChamSoc> layDanhSachLichHenChamSoc(String maThuCung, LocalDate tuNgay, LocalDate denNgay, String trangThai) {
         List<LichSuChamSoc> danhSach = new ArrayList<>();
         StringBuilder sql = new StringBuilder("""
@@ -397,10 +471,8 @@ public class ThuCungDAO {
             thamSo.add(Date.valueOf(denNgay));
         }
 
-        if (trangThai != null && !trangThai.trim().isEmpty() && !"Tất cả".equalsIgnoreCase(trangThai.trim())) {
-            sql.append(" AND lh.trangThai = ?");
-            thamSo.add(trangThai.trim());
-        }
+        // Lịch sử chăm sóc chỉ hiển thị các lần hẹn dịch vụ đã hoàn thành
+        sql.append(" AND lh.trangThai = N'Hoàn thành'");
 
         sql.append(" ORDER BY lh.ngayHen DESC, lh.gioHen DESC");
 

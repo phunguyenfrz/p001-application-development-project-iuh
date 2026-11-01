@@ -599,7 +599,7 @@ public class ManHinhChinhView extends BorderPane {
     public void dangXuat() {
         xacThucService.dangXuat();
         stage.setTitle("Happy Tails - Đăng nhập");
-        Scene scene = new Scene(new DangNhapView(stage), 520, 400);
+        Scene scene = new Scene(new DangNhapView(stage), 540, 420);
         scene.getStylesheets().addAll(
                 getClass().getResource("/com/petshop/view/css/chung.css").toExternalForm(),
                 getClass().getResource("/com/petshop/view/css/dangnhap.css").toExternalForm()

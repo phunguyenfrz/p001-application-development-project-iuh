@@ -84,6 +84,20 @@ public class ThuCungController {
     /**
      * Lấy danh sách lịch hẹn chăm sóc dịch vụ của thú cưng.
      */
+    /**
+     * Lấy danh sách thú cưng đã có ít nhất một lần hoàn thành dịch vụ chăm sóc.
+     */
+    public List<ThuCung> layDanhSachThuCungCoLichSuChamSoc() {
+        return thuCungService.layDanhSachThuCungCoLichSuChamSoc();
+    }
+
+    /**
+     * Tìm kiếm thú cưng có lịch sử chăm sóc hoàn thành theo từ khóa.
+     */
+    public List<ThuCung> timKiemThuCungCoLichSuChamSoc(String tuKhoa) {
+        return thuCungService.timKiemThuCungCoLichSuChamSoc(tuKhoa);
+    }
+
     public List<LichSuChamSoc> layDanhSachLichHenChamSoc(String maThuCung, LocalDate tuNgay, LocalDate denNgay, String trangThai) {
         return thuCungService.layDanhSachLichHenChamSoc(maThuCung, tuNgay, denNgay, trangThai);
     }

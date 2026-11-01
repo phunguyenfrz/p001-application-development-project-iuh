@@ -114,6 +114,22 @@ public class ThuCungService {
      * Lấy danh sách lịch hẹn chăm sóc của thú cưng theo bộ lọc thời gian và trạng thái.
      * Quyền yêu cầu: TC_CHAM_SOC hoặc TC_TIM_KIEM hoặc TC_CAP_NHAT.
      */
+    /**
+     * Lấy danh sách thú cưng đã có ít nhất một lần hoàn thành dịch vụ chăm sóc.
+     */
+    public List<ThuCung> layDanhSachThuCungCoLichSuChamSoc() {
+        xacThucService.kiemTraQuyen("TC_CHAM_SOC");
+        return thuCungDAO.layDanhSachThuCungCoLichSuChamSoc();
+    }
+
+    /**
+     * Tìm kiếm thú cưng có lịch sử chăm sóc hoàn thành theo từ khóa.
+     */
+    public List<ThuCung> timKiemThuCungCoLichSuChamSoc(String tuKhoa) {
+        xacThucService.kiemTraQuyen("TC_CHAM_SOC");
+        return thuCungDAO.timKiemThuCungCoLichSuChamSoc(tuKhoa);
+    }
+
     public List<LichSuChamSoc> layDanhSachLichHenChamSoc(String maThuCung, LocalDate tuNgay, LocalDate denNgay, String trangThai) {
         if (maThuCung == null || maThuCung.trim().isEmpty()) {
             throw new IllegalArgumentException("Mã thú cưng không được để trống!");
