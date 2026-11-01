@@ -162,6 +162,11 @@ public class KhachHangService {
     /**
      * Tự động sinh mã khách hàng mới tiếp theo.
      */
+    public boolean capNhatDiemTichLuy(String maKhachHang, int diemThayDoi) {
+        if (maKhachHang == null || maKhachHang.trim().isEmpty()) return false;
+        return khachHangDAO.capNhatDiemTichLuy(maKhachHang.trim(), diemThayDoi);
+    }
+
     public String taoMaKhachHangMoi() {
         return khachHangDAO.taoMaKhachHang();
     }

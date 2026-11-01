@@ -519,6 +519,28 @@ public class KhachHangDAO {
     /**
      * Ánh xạ một dòng dữ liệu từ ResultSet sang đối tượng KhachHang.
      */
+    public boolean capNhatDiemTichLuy(Connection conn, String maKhachHang, int diemThayDoi) throws SQLException {
+        String sql = """
+                UPDATE dbo.KhachHang
+                SET diemTichLuy = CASE WHEN diemTichLuy + ? < 0 THEN 0 ELSE diemTichLuy + ? END
+                WHERE maKhachHang = ?
+                """;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, diemThayDoi);
+            ps.setInt(2, diemThayDoi);
+            ps.setString(3, maKhachHang);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    public boolean capNhatDiemTichLuy(String maKhachHang, int diemThayDoi) {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return capNhatDiemTichLuy(conn, maKhachHang, diemThayDoi);
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi cập nhật điểm tích lũy của khách hàng " + maKhachHang + ": " + e.getMessage(), e);
+        }
+    }
+
     private KhachHang anhXaDongKhachHang(ResultSet rs) throws SQLException {
         KhachHang kh = new KhachHang();
         kh.setMaKhachHang(rs.getString("maKhachHang"));
