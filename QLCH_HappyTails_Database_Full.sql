@@ -7,7 +7,32 @@ BEGIN
 END
 GO
 
+-- Tự động khởi tạo tài khoản đăng nhập ứng dụng (petshop / Petshop@123) nếu máy chưa có
+IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = N'petshop')
+BEGIN
+    BEGIN TRY
+        CREATE LOGIN [petshop] WITH PASSWORD = N'Petshop@123', CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF;
+    END TRY
+    BEGIN CATCH
+    END CATCH
+END
+GO
+
 USE QLCH_HappyTails;
+GO
+
+SET QUOTED_IDENTIFIER ON;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'petshop')
+BEGIN
+    BEGIN TRY
+        CREATE USER [petshop] FOR LOGIN [petshop];
+        ALTER ROLE [db_owner] ADD MEMBER [petshop];
+    END TRY
+    BEGIN CATCH
+    END CATCH
+END
 GO
 
 -- Xóa bảng cũ nếu đã tồn tại (theo thứ tự khóa ngoại)
@@ -49,7 +74,8 @@ CREATE TABLE KhachHang (
     email VARCHAR(100) CHECK (email IS NULL OR (email LIKE '%_@__%.__%')),
     diemTichLuy INT NOT NULL DEFAULT 0 CHECK (diemTichLuy >= 0),
     diaChi NVARCHAR(255),
-    ghiChu NVARCHAR(255)
+    ghiChu NVARCHAR(255),
+    trangThai BIT NOT NULL DEFAULT 1
 );
 GO
 
@@ -368,11 +394,11 @@ GO
 -- =======================================================
 
 -- 1. Khách hàng & Thú cưng
-INSERT INTO KhachHang (maKhachHang, hoTen, soDienThoai, email, diemTichLuy, diaChi, ghiChu)
+INSERT INTO KhachHang (maKhachHang, hoTen, soDienThoai, email, diemTichLuy, diaChi, ghiChu, trangThai)
 VALUES 
-('KH-20261005-000001', N'Nguyễn Thu Trang', '0912345678', 'trang.nguyen@gmail.com', 120, N'12 Nguyễn Văn Bảo, Gò Vấp', N'Khách quen, hay đặt lịch cuối tuần'),
-('KH-20261005-000002', N'Lê Hoàng Nam',     '0923456789', 'nam.le@gmail.com', 50, N'45 Lê Đức Thọ, Gò Vấp', N'Nuôi 2 bé chó Poodle'),
-('KH-20261005-000003', N'Võ Thị Mai',       '0934567890', 'mai.vo@gmail.com', 0, N'78 Quang Trung, Gò Vấp', N'Khách mới');
+('KH-20261005-000001', N'Nguyễn Thu Trang', '0912345678', 'trang.nguyen@gmail.com', 120, N'12 Nguyễn Văn Bảo, Gò Vấp', N'Khách quen, hay đặt lịch cuối tuần', 1),
+('KH-20261005-000002', N'Lê Hoàng Nam',     '0923456789', 'nam.le@gmail.com', 50, N'45 Lê Đức Thọ, Gò Vấp', N'Nuôi 2 bé chó Poodle', 1),
+('KH-20261005-000003', N'Võ Thị Mai',       '0934567890', 'mai.vo@gmail.com', 0, N'78 Quang Trung, Gò Vấp', N'Khách mới', 1);
 
 INSERT INTO ThuCung (maThuCung, maKhachHang, tenThuCung, loaiThuCung, giongLoai, canNang, ngaySinh, diUng, gioiTinh)
 VALUES 
@@ -450,10 +476,10 @@ VALUES
 ('PDV-20261005-000001', 'TC-20261005-000001', 'DV-20261005-000001', 80000);
 
 -- 4. Hàng hóa, Nhập kho & Bán lẻ
-INSERT INTO NhaCungCap (maNhaCungCap, tenNhaCungCap, soDienThoai, diaChi)
+INSERT INTO NhaCungCap (maNhaCungCap, tenNhaCungCap, soDienThoai, diaChi, email, trangThai)
 VALUES 
-('NCC-20261005-000001', N'Công ty CP Thức Ăn Thú Cưng Royal Canin VN', '0283812345', N'KCN Tân Bình, TP.HCM'),
-('NCC-20261005-000002', N'Nhà phân phối Phụ kiện thú cưng PetCare',     '0283898765', N'Quận 10, TP.HCM');
+('NCC-20261005-000001', N'Công ty CP Thức Ăn Thú Cưng Royal Canin VN', '0283812345', N'KCN Tân Bình, TP.HCM', 'contact@royalcanin.vn', 1),
+('NCC-20261005-000002', N'Nhà phân phối Phụ kiện thú cưng PetCare',     '0283898765', N'Quận 10, TP.HCM',      'support@petcare.vn',    1);
 
 INSERT INTO SanPham (maSanPham, maNhaCungCap, tenSanPham, maVach, giaBan, soLuongTon, nguongTonToiThieu, donViTinh, trangThai)
 VALUES 

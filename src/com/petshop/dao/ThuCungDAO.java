@@ -321,7 +321,7 @@ public class ThuCungDAO {
         List<String[]> lichSu = new ArrayList<>();
         String sql = """
                 SELECT ct.maPhieuDichVu,
-                       pdv.ngayTao,
+                       pdv.ngayTiepNhan,
                        dv.tenDichVu,
                        ct.donGia,
                        nv.hoTen AS tenNhanVien,
@@ -331,7 +331,7 @@ public class ThuCungDAO {
                 JOIN dbo.DichVuChamSoc dv ON ct.maDichVu = dv.maDichVu
                 LEFT JOIN dbo.NhanVien nv ON pdv.maNhanVien = nv.maNhanVien
                 WHERE ct.maThuCung = ?
-                ORDER BY pdv.ngayTao DESC
+                ORDER BY pdv.ngayTiepNhan DESC
                 """;
 
         try (Connection conn = DatabaseManager.getConnection();
@@ -340,11 +340,11 @@ public class ThuCungDAO {
             ps.setString(1, maThuCung);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    Date sqlDate = rs.getDate("ngayTao");
-                    String ngayTao = sqlDate != null ? sqlDate.toLocalDate().toString() : "-";
+                    Date sqlDate = rs.getDate("ngayTiepNhan");
+                    String ngayTiepNhan = sqlDate != null ? sqlDate.toLocalDate().toString() : "-";
                     lichSu.add(new String[]{
                             rs.getString("maPhieuDichVu"),
-                            ngayTao,
+                            ngayTiepNhan,
                             rs.getString("tenDichVu"),
                             String.format("%,.0f đ", rs.getDouble("donGia")),
                             rs.getString("tenNhanVien") != null ? rs.getString("tenNhanVien") : "-",
