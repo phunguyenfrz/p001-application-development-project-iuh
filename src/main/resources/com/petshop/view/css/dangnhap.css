@@ -12,11 +12,11 @@
     -fx-background-color: #ffffff;
     -fx-border-color: #cbd5e1;
     -fx-border-width: 1px;
-    -fx-border-radius: 6px;
-    -fx-background-radius: 6px;
-    -fx-padding: 24px 30px;
-    -fx-pref-width: 440px;
-    -fx-max-width: 440px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 24px 32px;
+    -fx-pref-width: 460px;
+    -fx-max-width: 460px;
 }
 
 .tieu-de-chinh {

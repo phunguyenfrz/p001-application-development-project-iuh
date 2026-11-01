@@ -111,7 +111,7 @@ public class LichSuChamSocThuCungView extends VBox {
         HBox pnlNhap = new HBox(10);
         pnlNhap.setAlignment(Pos.CENTER_LEFT);
 
-        txtTimThuCung.setPromptText("Tìm theo mã, tên thú cưng hoặc chủ nuôi...");
+        txtTimThuCung.setPromptText("Tìm theo mã, tên thú cưng hoặc chủ nuôi (đã hoàn thành dịch vụ)...");
         txtTimThuCung.setPrefWidth(420);
         HBox.setHgrow(txtTimThuCung, Priority.ALWAYS);
 
@@ -240,7 +240,7 @@ public class LichSuChamSocThuCungView extends VBox {
 
     private void capNhatDanhSachGoiY(String tuKhoa) {
         try {
-            List<ThuCung> ketQua = thuCungController.timKiemThuCung(tuKhoa, null);
+            List<ThuCung> ketQua = thuCungController.timKiemThuCungCoLichSuChamSoc(tuKhoa);
             if (ketQua.isEmpty()) {
                 popupGoiY.hide();
                 return;
@@ -344,12 +344,8 @@ public class LichSuChamSocThuCungView extends VBox {
         Label lblDenNgay = new Label("Đến ngày:");
         dpDenNgay.setPrefWidth(140);
 
-        Label lblTrangThai = new Label("Trạng thái lịch hẹn:");
-        cboTrangThai.setItems(FXCollections.observableArrayList(
-                "Tất cả", "Hoàn thành", "Đang thực hiện", "Đã xác nhận", "Đã đặt", "Đã hủy"
-        ));
-        cboTrangThai.setValue("Hoàn thành");
-        cboTrangThai.setPrefWidth(150);
+        Label lblTrangThaiBadge = new Label("Trạng thái: Hoàn thành");
+        lblTrangThaiBadge.setStyle("-fx-padding: 5 12; -fx-background-radius: 4; -fx-font-weight: bold; -fx-font-size: 12.5px; -fx-border-color: #eef1ef; -fx-border-width: 1; -fx-border-radius: 4;");
 
         btnApDung.getStyleClass().add("nut-chinh");
         btnApDung.setOnAction(e -> taiDuLieuLichHen());
@@ -360,7 +356,7 @@ public class LichSuChamSocThuCungView extends VBox {
         pnlBoLoc.getChildren().addAll(
                 lblTuNgay, dpTuNgay,
                 lblDenNgay, dpDenNgay,
-                lblTrangThai, cboTrangThai,
+                lblTrangThaiBadge,
                 btnApDung, btnXoaBoLoc
         );
 
@@ -458,7 +454,7 @@ public class LichSuChamSocThuCungView extends VBox {
      */
     private void napThuCungMacDinh() {
         try {
-            List<ThuCung> ds = thuCungController.layDanhSachThuCung();
+            List<ThuCung> ds = thuCungController.layDanhSachThuCungCoLichSuChamSoc();
             if (!ds.isEmpty()) {
                 chonThuCung(ds.get(0));
             }
@@ -510,16 +506,13 @@ public class LichSuChamSocThuCungView extends VBox {
 
         LocalDate tuNgay = dpTuNgay.getValue();
         LocalDate denNgay = dpDenNgay.getValue();
-        String trangThai = cboTrangThai.getValue();
 
         try {
             List<LichSuChamSoc> ketQua = thuCungController.layDanhSachLichHenChamSoc(
-                    thuCungHienTai.getMaThuCung(), tuNgay, denNgay, trangThai
+                    thuCungHienTai.getMaThuCung(), tuNgay, denNgay, "Hoàn thành"
             );
             danhSachLichHen.setAll(ketQua);
-            String ttStr = (trangThai != null && !"Tất cả".equalsIgnoreCase(trangThai))
-                    ? " " + trangThai.toLowerCase() : "";
-            lblSoLuongHienThi.setText("Trong kết quả đang hiển thị: " + ketQua.size() + " lịch hẹn" + ttStr);
+            lblSoLuongHienThi.setText("Trong kết quả đang hiển thị: " + ketQua.size() + " lần chăm sóc hoàn thành");
             btnXemChiTiet.setDisable(true);
         } catch (Exception e) {
             danhSachLichHen.clear();
@@ -534,7 +527,7 @@ public class LichSuChamSocThuCungView extends VBox {
         }
 
         try {
-            List<ThuCung> ketQua = thuCungController.timKiemThuCung(tuKhoa, null);
+            List<ThuCung> ketQua = thuCungController.timKiemThuCungCoLichSuChamSoc(tuKhoa);
             if (!ketQua.isEmpty()) {
                 chonThuCung(ketQua.get(0));
                 popupGoiY.hide();
@@ -559,7 +552,6 @@ public class LichSuChamSocThuCungView extends VBox {
     private void xoaBoLoc() {
         dpTuNgay.setValue(null);
         dpDenNgay.setValue(null);
-        cboTrangThai.setValue("Hoàn thành");
         taiDuLieuLichHen();
     }
 
