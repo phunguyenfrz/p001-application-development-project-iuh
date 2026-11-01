@@ -145,7 +145,7 @@ public class XemChiTietDonNhapView extends Stage {
         // Nếu trạng thái là "Đã hủy" -> hiển thị Người hủy và Lý do hủy nổi bật
         if (DonNhapHang.TRANG_THAI_DA_HUY.equals(donHang.getTrangThai())) {
             HBox hangHuy = new HBox(20);
-            hangHuy.setStyle("-fx-background-color: #fde8e8; -fx-padding: 10; -fx-background-radius: 6; -fx-border-color: #f8b4b4; -fx-border-radius: 6;");
+            hangHuy.setStyle("-fx-padding: 10; -fx-background-radius: 6; -fx-border-color: #e2e8f0; -fx-border-radius: 6;");
 
             String nguoiHuy = donHang.getTenNhanVienHuy() != null ? donHang.getTenNhanVienHuy()
                     : (donHang.getMaNhanVienHuy() != null ? donHang.getMaNhanVienHuy() : "Không xác định");
@@ -153,10 +153,10 @@ public class XemChiTietDonNhapView extends Stage {
                     ? donHang.getLyDoHuy() : "Chưa cập nhật lý do hủy";
 
             Label lblLyDoTieuDe = new Label("Lý do hủy:");
-            lblLyDoTieuDe.setStyle("-fx-font-weight: bold; -fx-text-fill: #c81e1e;");
+            lblLyDoTieuDe.setStyle("-fx-font-weight: bold; -fx-text-fill: #333;");
 
             Label lblLyDoNoiDung = new Label(lyDo);
-            lblLyDoNoiDung.setStyle("-fx-font-weight: bold; -fx-text-fill: #c81e1e;");
+            lblLyDoNoiDung.setStyle("-fx-font-weight: bold; -fx-text-fill: #333;");
             lblLyDoNoiDung.setWrapText(true);
 
             HBox hopLyDo = new HBox(6, lblLyDoTieuDe, lblLyDoNoiDung);
@@ -172,7 +172,7 @@ public class XemChiTietDonNhapView extends Stage {
         // Nếu trạng thái là "Hoàn tất" -> hiển thị Người nhận, Thời gian nhận, Tổng tiền thực nhận
         if (DonNhapHang.TRANG_THAI_HOAN_TAT.equals(donHang.getTrangThai())) {
             HBox hangNhan = new HBox(20);
-            hangNhan.setStyle("-fx-background-color: #def7ec; -fx-padding: 10; -fx-background-radius: 6; -fx-border-color: #bcf0da; -fx-border-radius: 6;");
+            hangNhan.setStyle("-fx-padding: 10; -fx-background-radius: 6; -fx-border-color: #e2e8f0; -fx-border-radius: 6;");
 
             String nguoiNhan = donHang.getTenNhanVienNhan() != null ? donHang.getTenNhanVienNhan()
                     : (donHang.getMaNhanVienNhan() != null ? donHang.getMaNhanVienNhan() : "Không xác định");
@@ -189,9 +189,9 @@ public class XemChiTietDonNhapView extends Stage {
             // Nếu có ghi chú xử lý thiếu hàng (lưu trong lyDoHuy)
             if (donHang.getLyDoHuy() != null && !donHang.getLyDoHuy().isBlank()) {
                 HBox hangGhiChu = new HBox(10);
-                hangGhiChu.setStyle("-fx-background-color: #fef9e7; -fx-padding: 8; -fx-background-radius: 6; -fx-border-color: #fce7b2; -fx-border-radius: 6;");
+                hangGhiChu.setStyle("-fx-padding: 8; -fx-background-radius: 6; -fx-border-color: #e2e8f0; -fx-border-radius: 6;");
                 Label lblGhiChu = new Label("Ghi chú / Xử lý thiếu: " + donHang.getLyDoHuy());
-                lblGhiChu.setStyle("-fx-font-weight: bold; -fx-text-fill: #b7791f;");
+                lblGhiChu.setStyle("-fx-font-weight: bold; -fx-text-fill: #333;");
                 hangGhiChu.getChildren().add(lblGhiChu);
                 hopThongTin.getChildren().add(hangGhiChu);
             }
@@ -232,14 +232,13 @@ public class XemChiTietDonNhapView extends Stage {
         nhanTieuDe.setMinWidth(Region.USE_PREF_SIZE);
 
         Label nhanGiaTri = new Label(trangThai != null ? trangThai : "");
-        nhanGiaTri.setStyle("-fx-font-weight: bold;");
-        if (DonNhapHang.TRANG_THAI_CHO_NHAN.equals(trangThai)) {
-            nhanGiaTri.setTextFill(Color.ORANGE);
-        } else if (DonNhapHang.TRANG_THAI_HOAN_TAT.equals(trangThai)) {
-            nhanGiaTri.setTextFill(Color.GREEN);
-        } else if (DonNhapHang.TRANG_THAI_DA_HUY.equals(trangThai)) {
-            nhanGiaTri.setTextFill(Color.RED);
-        }
+        String mauTrangThai = switch (trangThai != null ? trangThai : "") {
+            case "Chờ nhận hàng" -> "#D2691E";
+            case "Hoàn tất" -> "#228B22";
+            case "Đã hủy" -> "#DC143C";
+            default -> "#2c3e50";
+        };
+        nhanGiaTri.setStyle("-fx-font-weight: bold; -fx-text-fill: " + mauTrangThai + ";");
 
         hop.getChildren().addAll(nhanTieuDe, nhanGiaTri);
         return hop;
@@ -321,23 +320,7 @@ public class XemChiTietDonNhapView extends Stage {
             }
             return new SimpleStringProperty("0");
         });
-        cotChenhLech.setCellFactory(col -> new TableCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(item);
-                    if (item.contains("Thiếu")) {
-                        setStyle("-fx-text-fill: #e67e22; -fx-font-weight: bold; -fx-alignment: CENTER-RIGHT;");
-                    } else {
-                        setStyle("-fx-text-fill: #27ae60; -fx-alignment: CENTER-RIGHT;");
-                    }
-                }
-            }
-        });
+        cotChenhLech.setStyle("-fx-alignment: CENTER-RIGHT;");
 
         // Cột đơn giá
         TableColumn<ChiTietDonNhap, String> cotDonGia = new TableColumn<>("Đơn giá (đ)");

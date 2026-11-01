@@ -49,10 +49,10 @@ public class CapNhatNhaCungCapView extends VBox {
 
         Label lblTieuDe = new Label("NHÀ CUNG CẤP - CẬP NHẬT THÔNG TIN");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-        Label lblMoTa = new Label("Xóa nhà cung cấp chưa phát sinh dữ liệu; ngừng hợp tác để giữ lịch sử và sản phẩm liên kết.");
-        lblMoTa.getStyleClass().add("mo-ta-phan-he");
 
-        getChildren().addAll(lblTieuDe, lblMoTa, taoKhungBang());
+
+
+        getChildren().addAll(lblTieuDe, taoKhungBang());
         tblDanhSach.setItems(danhSachHienThi);
         capNhatTrangThaiNut(null);
         taiLaiBang();

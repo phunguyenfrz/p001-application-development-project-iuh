@@ -115,15 +115,16 @@ public class CapNhatDonNhapView extends VBox {
         HBox hop = new HBox(10);
         hop.setAlignment(Pos.CENTER_LEFT);
 
-        // Nút xác nhận nhận hàng
+        // Nút xác nhận nhận hàng (có màu)
         nutXacNhan = new Button("Xác nhận nhận hàng");
         nutXacNhan.getStyleClass().add("nut-chinh");
+        nutXacNhan.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;");
         nutXacNhan.setOnAction(e -> xuLyXacNhanNhanHang());
 
         // Nút hủy đơn (màu đỏ)
         nutHuyDon = new Button("Hủy đơn");
         nutHuyDon.getStyleClass().add("nut-phu");
-        nutHuyDon.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
+        nutHuyDon.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
         nutHuyDon.setOnAction(e -> xuLyHuyDon());
 
         // Nút xem chi tiết
@@ -205,26 +206,31 @@ public class CapNhatDonNhapView extends VBox {
         cotTrangThai.setPrefWidth(130);
         cotTrangThai.setCellFactory(col -> new TableCell<DonNhapHang, String>() {
             @Override
-            protected void updateItem(String trangThai, boolean empty) {
-                super.updateItem(trangThai, empty);
-                if (empty || trangThai == null) {
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
                     setText(null);
                     setStyle("");
                 } else {
-                    setText(trangThai);
-                    setStyle("-fx-font-weight: bold;");
-                    if (DonNhapHang.TRANG_THAI_CHO_NHAN.equals(trangThai)) {
-                        setTextFill(Color.ORANGE);
-                    } else if (DonNhapHang.TRANG_THAI_HOAN_TAT.equals(trangThai)) {
-                        setTextFill(Color.GREEN);
-                    } else if (DonNhapHang.TRANG_THAI_DA_HUY.equals(trangThai)) {
-                        setTextFill(Color.RED);
-                    } else {
-                        setTextFill(Color.BLACK);
+                    setText(item);
+                    switch (item) {
+                        case "Chờ nhận hàng":
+                            setStyle("-fx-text-fill: #D2691E; -fx-font-weight: bold;");
+                            break;
+                        case "Hoàn tất":
+                            setStyle("-fx-text-fill: #228B22; -fx-font-weight: bold;");
+                            break;
+                        case "Đã hủy":
+                            setStyle("-fx-text-fill: #DC143C; -fx-font-weight: bold;");
+                            break;
+                        default:
+                            setStyle("");
+                            break;
                     }
                 }
             }
         });
+
 
         bang.getColumns().addAll(cotMa, cotNCC, cotTenHang, cotNV, cotNgayLap, cotGioLap, cotTongTien, cotTrangThai);
         bang.setRowFactory(tv -> {
@@ -312,7 +318,7 @@ public class CapNhatDonNhapView extends VBox {
         hopDialog.getStyleClass().add("khung-phan-he");
 
         Label lblTieuDeDlg = new Label("XÁC NHẬN NHẬN HÀNG");
-        lblTieuDeDlg.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #27ae60;");
+        lblTieuDeDlg.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
         Label lblThongTin = new Label("Đơn hàng: " + donHang.getMaDonHang()
                 + " | Nhà cung cấp: " + (donHang.getTenNhaCungCap() != null ? donHang.getTenNhaCungCap() : donHang.getMaNhaCungCap())
@@ -346,10 +352,10 @@ public class CapNhatDonNhapView extends VBox {
 
         // Khung xử lý giao thiếu hàng (Phương án 3)
         VBox hopXuLyThieu = new VBox(8);
-        hopXuLyThieu.setStyle("-fx-background-color: #fff9e6; -fx-border-color: #f39c12; -fx-border-width: 1px; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 10;");
+        hopXuLyThieu.setStyle("-fx-padding: 10; -fx-border-color: #cbd5e1; -fx-border-width: 1px; -fx-border-radius: 6; -fx-background-radius: 6;");
 
-        Label lblCanhBaoThieu = new Label("⚠️ Phát hiện giao thiếu hàng so với đơn đặt. Vui lòng chọn cách xử lý phần thiếu:");
-        lblCanhBaoThieu.setStyle("-fx-font-weight: bold; -fx-text-fill: #b7791f; -fx-font-size: 13px;");
+        Label lblCanhBaoThieu = new Label("Phát hiện giao thiếu hàng so với đơn đặt. Vui lòng chọn cách xử lý phần thiếu:");
+        lblCanhBaoThieu.setStyle("-fx-font-weight: bold; -fx-font-size: 13px;");
 
         ToggleGroup nhomXuLyThieu = new ToggleGroup();
         RadioButton radTaoDonBu = new RadioButton("Tách đơn nhập bù (Backorder) - Tự động tạo đơn mới cho phần thiếu để nhận đợt sau");
@@ -403,7 +409,7 @@ public class CapNhatDonNhapView extends VBox {
             }
             lblTongTienThucNhan.setText("Tổng tiền thực nhận: " + dinhDangTien.format(tong) + " đ");
             if (tongThieu > 0) {
-                lblCanhBaoThieu.setText("⚠️ Phát hiện giao thiếu " + tongThieu + " sản phẩm so với đơn đặt. Vui lòng chọn cách xử lý phần thiếu:");
+                lblCanhBaoThieu.setText("Phát hiện giao thiếu " + tongThieu + " sản phẩm so với đơn đặt. Vui lòng chọn cách xử lý phần thiếu:");
                 hopXuLyThieu.setVisible(true);
                 hopXuLyThieu.setManaged(true);
             } else {
