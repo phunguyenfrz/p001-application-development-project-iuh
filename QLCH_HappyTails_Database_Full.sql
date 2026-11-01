@@ -322,6 +322,9 @@ CREATE TABLE HoaDon (
         CHECK (trangThaiThanhToan IN (N'Chưa thanh toán', N'Đã thanh toán', N'Đã hủy')),
     maKhuyenMai VARCHAR(20),
     tongTien DECIMAL(18,2) NOT NULL DEFAULT 0 CHECK (tongTien >= 0),
+    tienHoanLai DECIMAL(18,2) NOT NULL DEFAULT 0 CHECK (tienHoanLai >= 0),
+    tienThanhToanThem DECIMAL(18,2) NOT NULL DEFAULT 0 CHECK (tienThanhToanThem >= 0),
+    ghiChu NVARCHAR(255) NULL,
     CONSTRAINT FK_HoaDon_LichHen FOREIGN KEY (maLichHen) REFERENCES LichHen(maLichHen),
     CONSTRAINT FK_HoaDon_PhieuDichVu FOREIGN KEY (maPhieuDichVu) REFERENCES PhieuDichVu(maPhieuDichVu),
     CONSTRAINT FK_HoaDon_NhanVien FOREIGN KEY (maNhanVien) REFERENCES NhanVien(maNhanVien),
@@ -367,8 +370,13 @@ CREATE TABLE PhieuDoiTra (
     ngayLap DATE NOT NULL,
     lyDo NVARCHAR(255) NOT NULL CHECK (LEN(LTRIM(RTRIM(lyDo))) > 0),
     soLuong INT NOT NULL CHECK (soLuong > 0),
+    loaiXuLy NVARCHAR(30) NOT NULL DEFAULT N'Trả hàng, hoàn tiền' 
+        CHECK (loaiXuLy IN (N'Trả hàng, hoàn tiền', N'Đổi sang sản phẩm khác')),
+    tienHoan DECIMAL(18,2) NOT NULL DEFAULT 0 CHECK (tienHoan >= 0),
+    tienBu DECIMAL(18,2) NOT NULL DEFAULT 0 CHECK (tienBu >= 0),
     trangThai NVARCHAR(30) NOT NULL DEFAULT N'Chờ xử lý' 
-        CHECK (trangThai IN (N'Chờ xử lý', N'Đã hoàn tiền', N'Từ chối')),
+        CHECK (trangThai IN (N'Chờ xử lý', N'Đã duyệt', N'Từ chối')),
+    ghiChu NVARCHAR(255) NULL,
     CONSTRAINT FK_PhieuDoiTra_HoaDon FOREIGN KEY (maHoaDon) REFERENCES HoaDon(maHoaDon),
     CONSTRAINT FK_PhieuDoiTra_NhanVien FOREIGN KEY (maNhanVien) REFERENCES NhanVien(maNhanVien),
     CONSTRAINT FK_PhieuDoiTra_KhachHang FOREIGN KEY (maKhachHang) REFERENCES KhachHang(maKhachHang)
@@ -382,9 +390,16 @@ CREATE TABLE ChiTietPhieuDoiTra (
     maSanPham VARCHAR(20) NOT NULL,
     soLuong INT NOT NULL CHECK (soLuong > 0),
     donGia DECIMAL(18,2) NOT NULL CHECK (donGia >= 0),
+    lyDo NVARCHAR(100) NULL,
+    tinhTrang NVARCHAR(50) NULL,
+    huongXuLy NVARCHAR(50) NULL,
+    ghiChu NVARCHAR(255) NULL,
+    maSanPhamDoi VARCHAR(20) NULL,
+    soLuongDoi INT NULL,
     PRIMARY KEY (maPhieuDoiTra, maSanPham),
-    CONSTRAINT FK_CTPhieuDoiTra_PhieuDoiTra FOREIGN KEY (maPhieuDoiTra) REFERENCES PhieuDoiTra(maPhieuDoiTra),
-    CONSTRAINT FK_CTPhieuDoiTra_ChiTietHDSanPham FOREIGN KEY (maHoaDon, maSanPham) REFERENCES ChiTietHoaDon_SanPham(maHoaDon, maSanPham)
+    CONSTRAINT FK_CTPhieuDoiTra_PhieuDoiTra FOREIGN KEY (maPhieuDoiTra) REFERENCES PhieuDoiTra(maPhieuDoiTra) ON DELETE CASCADE,
+    CONSTRAINT FK_CTPhieuDoiTra_ChiTietHDSanPham FOREIGN KEY (maHoaDon, maSanPham) REFERENCES ChiTietHoaDon_SanPham(maHoaDon, maSanPham),
+    CONSTRAINT FK_CTPhieuDoiTra_SanPhamDoi FOREIGN KEY (maSanPhamDoi) REFERENCES SanPham(maSanPham)
 );
 GO
 
@@ -509,4 +524,14 @@ VALUES
 INSERT INTO ChiTietHoaDon_SanPham (maHoaDon, maSanPham, soLuong, donGia)
 VALUES 
 ('HD-20261005-000001', 'SP-20261005-000001', 1, 350000);
+
+-- 5. Phiếu đổi trả mẫu & Chi tiết đổi trả
+INSERT INTO PhieuDoiTra (maPhieuDoiTra, maHoaDon, maNhanVien, maKhachHang, ngayLap, lyDo, soLuong, loaiXuLy, tienHoan, tienBu, trangThai, ghiChu)
+VALUES
+('PDT-20261006-000001', 'HD-20261005-000001', 'NV-20261005-000001', 'KH-20261005-000001', '2026-10-06', N'Lỗi sản phẩm', 1, N'Trả hàng, hoàn tiền', 350000, 0, N'Đã duyệt', N'Hạt bị ẩm mốc');
+
+INSERT INTO ChiTietPhieuDoiTra (maPhieuDoiTra, maHoaDon, maSanPham, soLuong, donGia, lyDo, tinhTrang, huongXuLy, ghiChu, maSanPhamDoi, soLuongDoi)
+VALUES
+('PDT-20261006-000001', 'HD-20261005-000001', 'SP-20261005-000001', 1, 350000, N'Lỗi sản phẩm', N'Đã mở', N'Trả nhà cung cấp', N'Bao bì rách, ẩm hạt', NULL, NULL);
+
 GO
