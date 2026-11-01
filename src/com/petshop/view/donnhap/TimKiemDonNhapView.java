@@ -1,7 +1,7 @@
 package com.petshop.view.donnhap;
 
-import com.petshop.controller.DonHangController;
-import com.petshop.model.DonHang;
+import com.petshop.controller.DonNhapHangController;
+import com.petshop.model.DonNhapHang;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -16,6 +16,7 @@ import javafx.scene.layout.VBox;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -30,9 +31,10 @@ public class TimKiemDonNhapView extends VBox {
     // Định dạng số tiền và ngày tháng
     private static final DecimalFormat DINH_DANG_TIEN = new DecimalFormat("#,##0");
     private static final DateTimeFormatter DINH_DANG_NGAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter DINH_DANG_GIO = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    private final DonHangController controller = new DonHangController();
-    private final ObservableList<DonHang> danhSachHienThi = FXCollections.observableArrayList();
+    private final DonNhapHangController controller = new DonNhapHangController();
+    private final ObservableList<DonNhapHang> danhSachHienThi = FXCollections.observableArrayList();
 
     // Các thành phần bộ lọc tìm kiếm
     private final TextField txtTuKhoa = new TextField();
@@ -41,7 +43,7 @@ public class TimKiemDonNhapView extends VBox {
     private final ComboBox<String> cboTrangThai = new ComboBox<>();
 
     // Bảng kết quả và nhãn số lượng
-    private final TableView<DonHang> tblDanhSach = new TableView<>();
+    private final TableView<DonNhapHang> tblDanhSach = new TableView<>();
     private final Button btnTim = new Button("Tìm kiếm");
     private final Button btnXemChiTiet = new Button("Xem chi tiết");
     private final Label lblKetQua = new Label("Tổng số: 0 đơn nhập hàng");
@@ -55,7 +57,7 @@ public class TimKiemDonNhapView extends VBox {
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
 
         // Mô tả
-        Label lblMoTa = new Label("Tìm kiếm đơn nhập hàng theo mã đơn hàng, tên nhà cung cấp, khoảng ngày và trạng thái.");
+        Label lblMoTa = new Label("Tìm kiếm đơn nhập hàng theo mã đơn hàng, tên nhà cung cấp, tên mặt hàng, khoảng ngày và trạng thái.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
 
         getChildren().addAll(lblTieuDe, lblMoTa, taoKhungChinh());
@@ -76,8 +78,8 @@ public class TimKiemDonNhapView extends VBox {
         HBox congCu1 = new HBox(10);
         congCu1.setAlignment(Pos.CENTER_LEFT);
 
-        txtTuKhoa.setPromptText("Nhập mã đơn hàng hoặc tên nhà cung cấp...");
-        txtTuKhoa.setPrefWidth(300);
+        txtTuKhoa.setPromptText("Mã đơn, tên hàng, NCC, nhân viên...");
+        txtTuKhoa.setPrefWidth(280);
         txtTuKhoa.setOnAction(e -> xuLyTimKiem());
 
         // Danh sách trạng thái
@@ -85,7 +87,7 @@ public class TimKiemDonNhapView extends VBox {
                 "Tất cả", "Chờ nhận hàng", "Hoàn tất", "Đã hủy"
         ));
         cboTrangThai.setValue("Tất cả");
-        cboTrangThai.setPrefWidth(160);
+        cboTrangThai.setPrefWidth(150);
 
         congCu1.getChildren().addAll(
                 new Label("Từ khóa:"), txtTuKhoa,
@@ -119,7 +121,7 @@ public class TimKiemDonNhapView extends VBox {
         HBox.setHgrow(khoangTrong, Priority.ALWAYS);
 
         btnXemChiTiet.getStyleClass().add("nut-phu");
-        btnXemChiTiet.setOnAction(e -> moChiTietDonHang());
+        btnXemChiTiet.setOnAction(e -> moChiTietDonNhap());
 
         congCu2.getChildren().addAll(
                 new Label("Từ ngày:"), dpTuNgay,
@@ -141,10 +143,10 @@ public class TimKiemDonNhapView extends VBox {
 
         // Nhấn đúp mở chi tiết
         tblDanhSach.setRowFactory(tv -> {
-            TableRow<DonHang> dong = new TableRow<>();
+            TableRow<DonNhapHang> dong = new TableRow<>();
             dong.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !dong.isEmpty()) {
-                    moChiTietDonHang();
+                    moChiTietDonNhap();
                 }
             });
             return dong;
@@ -160,35 +162,49 @@ public class TimKiemDonNhapView extends VBox {
     @SuppressWarnings("unchecked")
     private void taoCotBang() {
         // Cột mã đơn hàng
-        TableColumn<DonHang, String> colMaDon = new TableColumn<>("Mã đơn hàng");
-        colMaDon.setPrefWidth(160);
+        TableColumn<DonNhapHang, String> colMaDon = new TableColumn<>("Mã đơn hàng");
+        colMaDon.setPrefWidth(140);
         colMaDon.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getMaDonHang()));
 
         // Cột tên nhà cung cấp
-        TableColumn<DonHang, String> colNCC = new TableColumn<>("Nhà cung cấp");
-        colNCC.setPrefWidth(200);
+        TableColumn<DonNhapHang, String> colNCC = new TableColumn<>("Nhà cung cấp");
+        colNCC.setPrefWidth(170);
         colNCC.setCellValueFactory(d -> new SimpleStringProperty(
                 d.getValue().getTenNhaCungCap() != null ? d.getValue().getTenNhaCungCap() : ""
         ));
 
+        // Cột tên hàng (các sản phẩm trong đơn)
+        TableColumn<DonNhapHang, String> colTenHang = new TableColumn<>("Tên hàng");
+        colTenHang.setPrefWidth(240);
+        colTenHang.setCellValueFactory(d -> new SimpleStringProperty(
+                d.getValue().getTenHang() != null ? d.getValue().getTenHang() : ""
+        ));
+
         // Cột tên nhân viên
-        TableColumn<DonHang, String> colNhanVien = new TableColumn<>("Nhân viên");
-        colNhanVien.setPrefWidth(160);
+        TableColumn<DonNhapHang, String> colNhanVien = new TableColumn<>("Nhân viên");
+        colNhanVien.setPrefWidth(140);
         colNhanVien.setCellValueFactory(d -> new SimpleStringProperty(
                 d.getValue().getTenNhanVien() != null ? d.getValue().getTenNhanVien() : ""
         ));
 
         // Cột ngày lập (dd/MM/yyyy)
-        TableColumn<DonHang, String> colNgayLap = new TableColumn<>("Ngày lập");
-        colNgayLap.setPrefWidth(110);
+        TableColumn<DonNhapHang, String> colNgayLap = new TableColumn<>("Ngày lập");
+        colNgayLap.setPrefWidth(105);
         colNgayLap.setCellValueFactory(d -> {
             LocalDate ngay = d.getValue().getNgayLap();
             return new SimpleStringProperty(ngay != null ? ngay.format(DINH_DANG_NGAY) : "");
         });
 
+        TableColumn<DonNhapHang, String> colGioLap = new TableColumn<>("Thời gian");
+        colGioLap.setPrefWidth(90);
+        colGioLap.setCellValueFactory(d -> {
+            LocalTime gio = d.getValue().getGioLap();
+            return new SimpleStringProperty(gio != null ? gio.format(DINH_DANG_GIO) : "");
+        });
+
         // Cột tổng tiền (định dạng #,##0)
-        TableColumn<DonHang, String> colTongTien = new TableColumn<>("Tổng tiền");
-        colTongTien.setPrefWidth(130);
+        TableColumn<DonNhapHang, String> colTongTien = new TableColumn<>("Tổng tiền (đ)");
+        colTongTien.setPrefWidth(120);
         colTongTien.setStyle("-fx-alignment: CENTER-RIGHT;");
         colTongTien.setCellValueFactory(d -> {
             BigDecimal tien = d.getValue().getTongTien();
@@ -196,12 +212,12 @@ public class TimKiemDonNhapView extends VBox {
         });
 
         // Cột trạng thái (có tô màu)
-        TableColumn<DonHang, String> colTrangThai = new TableColumn<>("Trạng thái");
-        colTrangThai.setPrefWidth(130);
+        TableColumn<DonNhapHang, String> colTrangThai = new TableColumn<>("Trạng thái");
+        colTrangThai.setPrefWidth(125);
         colTrangThai.setCellValueFactory(d -> new SimpleStringProperty(
                 d.getValue().getTrangThai() != null ? d.getValue().getTrangThai() : ""
         ));
-        colTrangThai.setCellFactory(col -> new TableCell<DonHang, String>() {
+        colTrangThai.setCellFactory(col -> new TableCell<DonNhapHang, String>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -230,14 +246,14 @@ public class TimKiemDonNhapView extends VBox {
         });
 
         tblDanhSach.getColumns().setAll(List.of(
-                colMaDon, colNCC, colNhanVien, colNgayLap, colTongTien, colTrangThai
+                colMaDon, colNCC, colTenHang, colNhanVien, colNgayLap, colGioLap, colTongTien, colTrangThai
         ));
     }
 
     /**
      * Cập nhật trạng thái nút "Xem chi tiết" theo dòng được chọn.
      */
-    private void capNhatTrangThaiNut(DonHang donHang) {
+    private void capNhatTrangThaiNut(DonNhapHang donHang) {
         btnXemChiTiet.setDisable(donHang == null);
     }
 
@@ -256,8 +272,8 @@ public class TimKiemDonNhapView extends VBox {
                 trangThai = null;
             }
 
-            // Gọi controller tìm kiếm (maNhaCungCap truyền null vì từ khóa đã bao gồm tên NCC)
-            List<DonHang> ketQua = controller.timKiemDonHang(tuKhoa, null, tuNgay, denNgay, trangThai);
+            // Gọi controller tìm kiếm (từ khóa hỗ trợ tìm cả mã đơn, tên hàng, nhà cung cấp, nhân viên)
+            List<DonNhapHang> ketQua = controller.timKiemDonHang(tuKhoa, null, tuNgay, denNgay, trangThai);
             danhSachHienThi.setAll(ketQua);
             tblDanhSach.getSelectionModel().clearSelection();
             tblDanhSach.refresh();
@@ -273,7 +289,7 @@ public class TimKiemDonNhapView extends VBox {
      */
     private void taiLaiBang() {
         try {
-            List<DonHang> danhSach = controller.layTatCaDonHang();
+            List<DonNhapHang> danhSach = controller.timKiemDonHang(null, null, null, null, null);
             danhSachHienThi.setAll(danhSach);
             tblDanhSach.getSelectionModel().clearSelection();
             tblDanhSach.refresh();
@@ -287,8 +303,8 @@ public class TimKiemDonNhapView extends VBox {
     /**
      * Mở dialog xem chi tiết đơn nhập hàng đang được chọn.
      */
-    private void moChiTietDonHang() {
-        DonHang chon = tblDanhSach.getSelectionModel().getSelectedItem();
+    private void moChiTietDonNhap() {
+        DonNhapHang chon = tblDanhSach.getSelectionModel().getSelectedItem();
         if (chon == null) {
             hienThiLoi("Vui lòng chọn đơn nhập hàng cần xem chi tiết!");
             return;
