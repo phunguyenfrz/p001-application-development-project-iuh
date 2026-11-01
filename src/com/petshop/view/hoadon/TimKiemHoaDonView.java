@@ -230,6 +230,11 @@ public class TimKiemHoaDonView extends VBox {
         colHt.setPrefWidth(110);
         colHt.setStyle("-fx-alignment: center;");
 
+        TableColumn<HoaDon, String> colGiaGoc = new TableColumn<>("Giá gốc");
+        colGiaGoc.setCellValueFactory(h -> new SimpleStringProperty(DINH_DANG_TIEN.format(h.getValue().getTongTienGoc())));
+        colGiaGoc.setPrefWidth(120);
+        colGiaGoc.setStyle("-fx-alignment: center-right; -fx-text-fill: #475569;");
+
         TableColumn<HoaDon, String> colGiamGia = new TableColumn<>("Ưu đãi / Giảm giá");
         colGiamGia.setCellValueFactory(h -> new SimpleStringProperty(h.getValue().getMoTaGiamGia()));
         colGiamGia.setPrefWidth(200);
@@ -245,7 +250,7 @@ public class TimKiemHoaDonView extends VBox {
         colTrangThai.setPrefWidth(120);
         colTrangThai.setStyle("-fx-alignment: center;");
 
-        bangHoaDon.getColumns().addAll(colStt, colMa, colNgay, colKhach, colSdt, colNv, colHt, colGiamGia, colTongTien, colTrangThai);
+        bangHoaDon.getColumns().addAll(colStt, colMa, colNgay, colKhach, colSdt, colNv, colHt, colGiaGoc, colGiamGia, colTongTien, colTrangThai);
 
         // Bật / tắt nút xem chi tiết khi chọn dòng
         bangHoaDon.getSelectionModel().selectedItemProperty().addListener((obs, cu, moi) -> {
