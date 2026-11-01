@@ -70,6 +70,13 @@ public class PhieuDoiTraController {
     }
 
     /**
+     * Phe duyet phieu doi tra kem huong xu ly san pham khi hoan ("Thu lại vào kho" hoac "Hủy bỏ").
+     */
+    public boolean duyetPhieuDoiTra(String maPhieuDoiTra, String huongXuLySanPham) {
+        return phieuDoiTraService.duyetPhieuDoiTra(maPhieuDoiTra, huongXuLySanPham);
+    }
+
+    /**
      * Tu choi phieu doi tra kem ly do tu choi.
      */
     public boolean tuChoiPhieuDoiTra(String maPhieuDoiTra, String lyDoTuChoi) {

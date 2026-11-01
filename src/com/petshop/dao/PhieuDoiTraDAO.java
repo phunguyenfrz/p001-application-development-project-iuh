@@ -288,22 +288,41 @@ public class PhieuDoiTraDAO {
 
     /**
      * Cập nhật số lượng tồn kho sản phẩm khi hoàn thành phiếu đổi trả:
-     * - Sản phẩm trả lại được cộng thêm vào tồn kho (nếu còn nguyên vẹn / nhập lại kho bán).
+     * - Sản phẩm trả lại được cộng thêm vào tồn kho nếu hướng xử lý là "Thu lại vào kho" / "Nhập lại kho bán".
+     * - Nếu hướng xử lý là "Hủy bỏ" / "Tiêu hủy" / "Trả nhà cung cấp" thì không cộng lại tồn kho.
      * - Sản phẩm đổi mới bị trừ tồn kho tương ứng.
      */
     public boolean capNhatTonKhoKhiHoanTat(PhieuDoiTra phieu) {
         String sqlCongTon = "UPDATE dbo.SanPham SET soLuongTon = soLuongTon + ? WHERE maSanPham = ?";
         String sqlTruTon = "UPDATE dbo.SanPham SET soLuongTon = soLuongTon - ? WHERE maSanPham = ? AND soLuongTon >= ?";
+        String sqlCapNhatHuong = "UPDATE dbo.ChiTietPhieuDoiTra SET huongXuLy = ? WHERE maPhieuDoiTra = ? AND maSanPham = ?";
 
         try (Connection conn = DatabaseManager.getConnection()) {
             conn.setAutoCommit(false);
 
             try (PreparedStatement psCong = conn.prepareStatement(sqlCongTon);
-                 PreparedStatement psTru = conn.prepareStatement(sqlTruTon)) {
+                 PreparedStatement psTru = conn.prepareStatement(sqlTruTon);
+                 PreparedStatement psHuong = conn.prepareStatement(sqlCapNhatHuong)) {
 
                 for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
-                    // Cộng lại tồn cho sản phẩm trả nếu còn nguyên vẹn hoặc hướng xử lý là Nhập lại kho bán
-                    if ("Nguyên vẹn".equalsIgnoreCase(ct.getTinhTrang()) || "Nhập lại kho bán".equalsIgnoreCase(ct.getHuongXuLy())) {
+                    String huong = ct.getHuongXuLy() != null ? ct.getHuongXuLy().trim() : "";
+
+                    if (!huong.isEmpty()) {
+                        psHuong.setString(1, huong);
+                        psHuong.setString(2, phieu.getMaPhieuDoiTra());
+                        psHuong.setString(3, ct.getMaSanPham());
+                        psHuong.executeUpdate();
+                    }
+
+                    boolean thuLaiVaoKho;
+                    if (!huong.isEmpty()) {
+                        thuLaiVaoKho = "Thu lại vào kho".equalsIgnoreCase(huong)
+                                || "Nhập lại kho bán".equalsIgnoreCase(huong);
+                    } else {
+                        thuLaiVaoKho = "Nguyên vẹn".equalsIgnoreCase(ct.getTinhTrang());
+                    }
+
+                    if (thuLaiVaoKho) {
                         psCong.setInt(1, ct.getSoLuong());
                         psCong.setString(2, ct.getMaSanPham());
                         psCong.executeUpdate();

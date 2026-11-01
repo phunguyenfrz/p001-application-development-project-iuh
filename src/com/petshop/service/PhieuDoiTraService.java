@@ -351,6 +351,13 @@ public class PhieuDoiTraService {
      * Phiếu giá trị lớn (> 2.000.000 VNĐ) bắt buộc vai trò Quản lý / ADMIN duyệt.
      */
     public boolean duyetPhieuDoiTra(String maPhieuDoiTra) {
+        return duyetPhieuDoiTra(maPhieuDoiTra, null);
+    }
+
+    /**
+     * Duyệt phiếu đổi trả kèm tùy chọn xử lý sản phẩm khi hoàn ("Thu lại vào kho" hoặc "Hủy bỏ").
+     */
+    public boolean duyetPhieuDoiTra(String maPhieuDoiTra, String huongXuLySanPham) {
         kiemTraQuyenDoiTra("RET_CONFIRM");
 
         PhieuDoiTra phieu = phieuDoiTraDAO.layPhieuDoiTraTheoMa(maPhieuDoiTra);
@@ -369,6 +376,12 @@ public class PhieuDoiTraService {
             TaiKhoan tk = xacThucService.getTaiKhoanHienTai();
             if (tk != null && tk.getPhanQuyen() == TaiKhoan.VaiTro.BAN_HANG) {
                 throw new SecurityException("Phiếu đổi trả có giá trị trên 2.000.000 VNĐ cần Quản lý duyệt!");
+            }
+        }
+
+        if (huongXuLySanPham != null && !huongXuLySanPham.trim().isEmpty() && phieu.getDanhSachSanPham() != null) {
+            for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
+                ct.setHuongXuLy(huongXuLySanPham.trim());
             }
         }
 

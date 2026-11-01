@@ -11,12 +11,10 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
+import javafx.util.StringConverter;
 
 import java.io.File;
 import java.math.BigDecimal;
@@ -28,8 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Man hinh 1: Lap phieu doi tra (RET_CREATE / DT_TAO).
- * Bo cuc 3 vung, thanh tien trinh, ma tran QL5, 2 the hinh thuc xu ly, thanh tom tat co dinh.
+ * Màn hình 1: Lập phiếu đổi trả (RET_CREATE / DT_TAO).
+ * Sử dụng bộ màu mặc định chuẩn chung.css đồng bộ với các phân hệ Dịch vụ, Hóa đơn.
  */
 public class LapPhieuDoiTraView extends VBox {
 
@@ -38,12 +36,12 @@ public class LapPhieuDoiTraView extends VBox {
 
     private final PhieuDoiTraController controller;
 
-    // Thanh tien trinh
+    // Thanh tiến trình
     private final Label lblStep1 = new Label("1. Tìm hóa đơn gốc");
     private final Label lblStep2 = new Label("2. Chọn sản phẩm đổi trả");
     private final Label lblStep3 = new Label("3. Xác nhận & lưu");
 
-    // Vung A - Tim hoa don
+    // Vùng A - Tìm hóa đơn
     private final TextField txtTimKiemHoaDon = new TextField();
     private final Button btnTimHoaDon = new Button("Tìm hóa đơn");
     private final Label lblBannerLoiHoaDon = new Label();
@@ -51,11 +49,11 @@ public class LapPhieuDoiTraView extends VBox {
     private final ObservableList<HoaDon> dsHoaDonTimKiem = FXCollections.observableArrayList();
     private final VBox pnlThongTinHoaDonChon = new VBox(8);
 
-    // Hoa don dang chon
+    // Hóa đơn đang chọn
     private HoaDon hoaDonDangChon = null;
     private boolean hoaDonHopLe = false;
 
-    // Vung B - Bang san pham doi tra
+    // Vùng B - Bảng sản phẩm đổi trả
     public static class DongTraHang {
         private final BooleanProperty chon = new SimpleBooleanProperty(false);
         private final String maSanPham;
@@ -103,10 +101,11 @@ public class LapPhieuDoiTraView extends VBox {
             this.txtGhiChu.setPrefWidth(160);
 
             this.btnDinhKem = new Button("Ảnh minh chứng");
+            this.btnDinhKem.getStyleClass().add("nut-phu");
             this.btnDinhKem.setStyle("-fx-font-size: 11px; -fx-padding: 3 8;");
 
             this.lblThanhTien = new Label("0 VNĐ");
-            this.lblThanhTien.setStyle("-fx-font-weight: bold; -fx-text-fill: #1570ef;");
+            this.lblThanhTien.setStyle("-fx-font-weight: bold;");
 
             if (laDichVu || soLuongToiDa <= 0) {
                 this.chon.set(false);
@@ -146,17 +145,17 @@ public class LapPhieuDoiTraView extends VBox {
     private final TableView<DongTraHang> tblSanPhamDoiTra = new TableView<>();
     private final ObservableList<DongTraHang> dsSanPhamDoiTra = FXCollections.observableArrayList();
 
-    // Vung C - Hinh thuc xu ly
+    // Vùng C - Hình thức xử lý
     private final RadioButton rdoTraHang = new RadioButton("Trả hàng, hoàn tiền");
     private final RadioButton rdoDoiHang = new RadioButton("Đổi sang sản phẩm khác");
     private final ToggleGroup grpHinhThuc = new ToggleGroup();
 
-    // The hoan tien
+    // Thẻ hoàn tiền
     private final VBox pnlTheHoanTien = new VBox(10);
     private final ComboBox<String> cboHinhThucHoan = new ComboBox<>(FXCollections.observableArrayList("Tiền mặt", "Chuyển khoản", "Voucher"));
     private final Label lblTienHoanDuKien = new Label("0 VNĐ");
 
-    // The doi hang
+    // Thẻ đổi hàng
     private final VBox pnlTheDoiHang = new VBox(10);
     private final TextField txtTimSanPhamDoi = new TextField();
     private final ComboBox<SanPham> cboSanPhamDoi = new ComboBox<>();
@@ -188,13 +187,13 @@ public class LapPhieuDoiTraView extends VBox {
     private final ObservableList<DongDoiHang> dsSanPhamDoiMoi = FXCollections.observableArrayList();
     private final Label lblDongChenhLech = new Label("Không phát sinh chênh lệch (0 VNĐ)");
 
-    // Vung D - Thanh tom tat co dinh
+    // Vùng D - Thanh tóm tắt cố định
     private final Label lblTongTienTra = new Label("0 VNĐ");
     private final Label lblTongTienDoi = new Label("0 VNĐ");
     private final Label lblChenhLechCuoi = new Label("0 VNĐ");
-    private final Button btnHuy = new Button("Hủy / Làm mới");
+    private final Button btnHuy = new Button("Làm mới");
     private final Button btnXemLai = new Button("Xem lại");
-    private final Button btnLuuPhiu = new Button("✔ Lưu phiếu đổi trả");
+    private final Button btnLuuPhiu = new Button("Lưu phiếu đổi trả");
 
     public LapPhieuDoiTraView() {
         this.controller = new PhieuDoiTraController();
@@ -204,55 +203,60 @@ public class LapPhieuDoiTraView extends VBox {
 
     private void khoiTaoGiaoDien() {
         this.setSpacing(14);
-        this.setPadding(new Insets(16));
-        this.setStyle("-fx-background-color: #f8fafc;");
+        this.getStyleClass().add("khung-phan-he");
 
-        // 1. Thanh tien trinh
+        VBox pnlTieuDeMan = new VBox(4);
+        Label lblTieuDe = new Label("PHIẾU ĐỔI TRẢ - LẬP PHIẾU ĐỔI TRẢ");
+        lblTieuDe.getStyleClass().add("tieu-de-phan-he");
+        Label lblMoTa = new Label("Tra cứu hóa đơn gốc, chọn sản phẩm cần đổi trả và xác nhận hình thức hoàn tiền hoặc đổi sản phẩm mới.");
+        lblMoTa.getStyleClass().add("mo-ta-phan-he");
+        pnlTieuDeMan.getChildren().addAll(lblTieuDe, lblMoTa);
+
+        // 1. Thanh tiến trình
         HBox pnlTienTrinh = taoThanhTienTrinh();
 
-        // 2. Vung A - Tim hoa don goc
+        // 2. Vùng A - Tìm hóa đơn gốc
         VBox vungA = taoVungATimHoaDon();
 
-        // 3. Vung B - Chon san pham doi tra
+        // 3. Vùng B - Chọn sản phẩm đổi trả
         VBox vungB = taoVungBChonSanPham();
 
-        // 4. Vung C - Hinh thuc xu ly
+        // 4. Vùng C - Hình thức xử lý
         VBox vungC = taoVungCHinhThucXuLy();
 
-        // 5. Vung D - Thanh tom tat co dinh
+        // 5. Vùng D - Thanh tóm tắt cố định
         HBox vungD = taoVungDTomTatCoDinh();
 
         ScrollPane scroll = new ScrollPane();
         VBox noiDungCuon = new VBox(14, pnlTienTrinh, vungA, vungB, vungC);
-        noiDungCuon.setPadding(new Insets(0, 8, 14, 0));
+        noiDungCuon.setPadding(new Insets(0, 4, 10, 0));
         scroll.setContent(noiDungCuon);
         scroll.setFitToWidth(true);
-        scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+        scroll.setStyle("-fx-background-color: transparent; -fx-background: #f4f6f8;");
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
-        this.getChildren().addAll(scroll, vungD);
+        this.getChildren().addAll(pnlTieuDeMan, scroll, vungD);
     }
 
     private HBox taoThanhTienTrinh() {
         HBox box = new HBox(12);
         box.setAlignment(Pos.CENTER);
-        box.setPadding(new Insets(10, 16, 10, 16));
-        box.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: #e2e8f0; -fx-border-radius: 8px;");
+        box.getStyleClass().add("hop-noi-dung");
 
         capNhatMauTienTrinh(1);
 
         Label muiTen1 = new Label(" ➔ ");
-        muiTen1.setStyle("-fx-text-fill: #94a3b8; -fx-font-weight: bold;");
+        muiTen1.setStyle("-fx-text-fill: #64748b; -fx-font-weight: bold;");
         Label muiTen2 = new Label(" ➔ ");
-        muiTen2.setStyle("-fx-text-fill: #94a3b8; -fx-font-weight: bold;");
+        muiTen2.setStyle("-fx-text-fill: #64748b; -fx-font-weight: bold;");
 
         box.getChildren().addAll(lblStep1, muiTen1, lblStep2, muiTen2, lblStep3);
         return box;
     }
 
     private void capNhatMauTienTrinh(int stepHienTai) {
-        String styleActive = "-fx-font-weight: bold; -fx-text-fill: white; -fx-background-color: #2563eb; -fx-padding: 6 14; -fx-background-radius: 16px;";
-        String styleInActive = "-fx-font-weight: normal; -fx-text-fill: #64748b; -fx-background-color: #f1f5f9; -fx-padding: 6 14; -fx-background-radius: 16px;";
+        String styleActive = "-fx-font-weight: bold; -fx-text-fill: #0f172a; -fx-background-color: #e2e8f0; -fx-padding: 5 14; -fx-background-radius: 4px;";
+        String styleInActive = "-fx-font-weight: normal; -fx-text-fill: #64748b; -fx-background-color: transparent; -fx-padding: 5 14;";
 
         lblStep1.setStyle(stepHienTai == 1 ? styleActive : styleInActive);
         lblStep2.setStyle(stepHienTai == 2 ? styleActive : styleInActive);
@@ -261,26 +265,24 @@ public class LapPhieuDoiTraView extends VBox {
 
     private VBox taoVungATimHoaDon() {
         VBox card = new VBox(10);
-        card.setPadding(new Insets(14));
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: #e2e8f0; -fx-border-radius: 8px;");
+        card.getStyleClass().add("hop-noi-dung");
 
         Label lblTieuDe = new Label("VÙNG A - TÌM HÓA ĐƠN GỐC CẦN ĐỔI TRẢ");
-        lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1e293b;");
+        lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px;");
 
         HBox hangTim = new HBox(10);
         hangTim.setAlignment(Pos.CENTER_LEFT);
         txtTimKiemHoaDon.setPromptText("Nhập Mã hóa đơn / Số điện thoại / Mã khách hàng...");
         txtTimKiemHoaDon.setPrefWidth(380);
-        txtTimKiemHoaDon.setStyle("-fx-padding: 6 10;");
 
-        btnTimHoaDon.setStyle("-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 6 16; -fx-cursor: hand;");
+        btnTimHoaDon.getStyleClass().add("nut-chinh");
         hangTim.getChildren().addAll(new Label("Tìm kiếm:"), txtTimKiemHoaDon, btnTimHoaDon);
 
         lblBannerLoiHoaDon.setManaged(false);
         lblBannerLoiHoaDon.setVisible(false);
-        lblBannerLoiHoaDon.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #b91c1c; -fx-padding: 8 12; -fx-background-radius: 6px; -fx-font-weight: bold;");
+        lblBannerLoiHoaDon.setStyle("-fx-font-weight: bold;");
 
-        // Bang ket qua hoa don tim thay
+        tblKetQuaHoaDon.getStyleClass().add("bang-du-lieu");
         tblKetQuaHoaDon.setPrefHeight(130);
         tblKetQuaHoaDon.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
@@ -314,11 +316,10 @@ public class LapPhieuDoiTraView extends VBox {
         tblKetQuaHoaDon.getColumns().addAll(colMaHD, colNgayLap, colKhach, colTongTien, colTrangThai, colChiNhanh);
         tblKetQuaHoaDon.setItems(dsHoaDonTimKiem);
 
-        // Khoi thong tin chi tiet hoa don duoc chon
         pnlThongTinHoaDonChon.setManaged(false);
         pnlThongTinHoaDonChon.setVisible(false);
         pnlThongTinHoaDonChon.setPadding(new Insets(10));
-        pnlThongTinHoaDonChon.setStyle("-fx-background-color: #f8fafc; -fx-background-radius: 6px; -fx-border-color: #cbd5e1; -fx-border-radius: 6px;");
+        pnlThongTinHoaDonChon.setStyle("-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 4px; -fx-background-radius: 4px;");
 
         card.getChildren().addAll(lblTieuDe, hangTim, lblBannerLoiHoaDon, tblKetQuaHoaDon, pnlThongTinHoaDonChon);
         return card;
@@ -326,17 +327,17 @@ public class LapPhieuDoiTraView extends VBox {
 
     private VBox taoVungBChonSanPham() {
         VBox card = new VBox(10);
-        card.setPadding(new Insets(14));
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: #e2e8f0; -fx-border-radius: 8px;");
+        card.getStyleClass().add("hop-noi-dung");
 
         Label lblTieuDe = new Label("VÙNG B - CHỌN SẢN PHẨM ĐỔI TRẢ & TÌNH TRẠNG HÀNG (Ma trận QL5)");
-        lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1e293b;");
+        lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px;");
 
         Label lblGhiChuMaTran = new Label("(*) Lưu ý: 'Không phù hợp' và 'Khác' chỉ chấp nhận khi sản phẩm 'Nguyên vẹn'. Dịch vụ chăm sóc không được đổi trả.");
-        lblGhiChuMaTran.setStyle("-fx-font-size: 11px; -fx-text-fill: #e11d48; -fx-font-style: italic;");
+        lblGhiChuMaTran.getStyleClass().add("mo-ta-phan-he");
 
+        tblSanPhamDoiTra.getStyleClass().add("bang-du-lieu");
         tblSanPhamDoiTra.setPrefHeight(200);
-        tblSanPhamDoiTra.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
+        tblSanPhamDoiTra.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         TableColumn<DongTraHang, Boolean> colChon = new TableColumn<>("Chọn");
         colChon.setCellValueFactory(d -> d.getValue().chonProperty());
@@ -420,38 +421,37 @@ public class LapPhieuDoiTraView extends VBox {
 
     private VBox taoVungCHinhThucXuLy() {
         VBox card = new VBox(12);
-        card.setPadding(new Insets(14));
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: #e2e8f0; -fx-border-radius: 8px;");
+        card.getStyleClass().add("hop-noi-dung");
 
         Label lblTieuDe = new Label("VÙNG C - HÌNH THỨC XỬ LÝ ĐỔI TRẢ");
-        lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1e293b;");
+        lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px;");
 
         rdoTraHang.setToggleGroup(grpHinhThuc);
         rdoDoiHang.setToggleGroup(grpHinhThuc);
         rdoTraHang.setSelected(true);
 
-        rdoTraHang.setStyle("-fx-font-weight: bold; -fx-font-size: 13px;");
-        rdoDoiHang.setStyle("-fx-font-weight: bold; -fx-font-size: 13px;");
+        rdoTraHang.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1f2937;");
+        rdoDoiHang.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1f2937;");
 
         HBox hangChon = new HBox(30, rdoTraHang, rdoDoiHang);
         hangChon.setAlignment(Pos.CENTER_LEFT);
 
-        // The 1: Hoan tien
+        // Thẻ 1: Hoàn tiền (Màu mặc định trung tính)
         pnlTheHoanTien.setPadding(new Insets(10));
-        pnlTheHoanTien.setStyle("-fx-background-color: #f0fdf4; -fx-border-color: #bbf7d0; -fx-border-radius: 6px; -fx-background-radius: 6px;");
+        pnlTheHoanTien.setStyle("-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 4px; -fx-background-radius: 4px;");
         cboHinhThucHoan.setValue("Tiền mặt");
         HBox hangHoan = new HBox(16);
         hangHoan.setAlignment(Pos.CENTER_LEFT);
-        lblTienHoanDuKien.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #16a34a;");
+        lblTienHoanDuKien.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
         hangHoan.getChildren().addAll(
                 new Label("Hình thức hoàn:"), cboHinhThucHoan,
                 new Label("Số tiền hoàn trả khách:"), lblTienHoanDuKien
         );
         pnlTheHoanTien.getChildren().add(hangHoan);
 
-        // The 2: Doi hang
+        // Thẻ 2: Đổi hàng (Màu mặc định trung tính)
         pnlTheDoiHang.setPadding(new Insets(10));
-        pnlTheDoiHang.setStyle("-fx-background-color: #eff6ff; -fx-border-color: #bfdbfe; -fx-border-radius: 6px; -fx-background-radius: 6px;");
+        pnlTheDoiHang.setStyle("-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 4px; -fx-background-radius: 4px;");
         pnlTheDoiHang.setManaged(false);
         pnlTheDoiHang.setVisible(false);
 
@@ -461,12 +461,13 @@ public class LapPhieuDoiTraView extends VBox {
         txtTimSanPhamDoi.setPrefWidth(160);
 
         cboSanPhamDoi.setPromptText("-- Chọn sản phẩm đổi mới --");
-        cboSanPhamDoi.setPrefWidth(260);
+        cboSanPhamDoi.setPrefWidth(320);
+        cauHinhHienThiComboBoxSanPham(cboSanPhamDoi);
 
         spnSoLuongDoi.setPrefWidth(70);
-        btnThemSanPhamDoi.setStyle("-fx-background-color: #0284c7; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 5 12;");
+        btnThemSanPhamDoi.getStyleClass().add("nut-chinh");
 
-        lblCanhBaoTonKho.setStyle("-fx-text-fill: #dc2626; -fx-font-size: 11px;");
+        lblCanhBaoTonKho.setStyle("-fx-font-size: 11.5px; -fx-font-weight: bold;");
 
         hangThemDoi.getChildren().addAll(
                 new Label("Tìm SP:"), txtTimSanPhamDoi,
@@ -475,6 +476,7 @@ public class LapPhieuDoiTraView extends VBox {
                 btnThemSanPhamDoi, lblCanhBaoTonKho
         );
 
+        tblSanPhamDoiMoi.getStyleClass().add("bang-du-lieu");
         tblSanPhamDoiMoi.setPrefHeight(120);
         tblSanPhamDoiMoi.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
@@ -494,7 +496,8 @@ public class LapPhieuDoiTraView extends VBox {
         colXoaDoi.setCellFactory(c -> new TableCell<>() {
             private final Button btnXoa = new Button("Xóa");
             {
-                btnXoa.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #dc2626; -fx-font-size: 11px;");
+                btnXoa.getStyleClass().add("nut-xoa");
+                btnXoa.setStyle("-fx-font-size: 11px; -fx-padding: 2 10;");
                 btnXoa.setOnAction(e -> {
                     DongDoiHang d = getTableView().getItems().get(getIndex());
                     dsSanPhamDoiMoi.remove(d);
@@ -519,15 +522,44 @@ public class LapPhieuDoiTraView extends VBox {
         return card;
     }
 
-    private HBox taoVungDTomTatCoDinh() {
-        HBox bar = new HBox(20);
-        bar.setAlignment(Pos.CENTER_LEFT);
-        bar.setPadding(new Insets(12, 16, 12, 16));
-        bar.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: #cbd5e1; -fx-border-radius: 8px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 8, 0, 0, -2);");
+    private void cauHinhHienThiComboBoxSanPham(ComboBox<SanPham> combo) {
+        StringConverter<SanPham> converter = new StringConverter<>() {
+            @Override
+            public String toString(SanPham sp) {
+                if (sp == null) return "";
+                return sp.getTenSanPham() + " - " + DINH_DANG_TIEN.format(sp.getGiaBan()) + " (Tồn: " + sp.getSoLuongTon() + ")";
+            }
 
-        lblTongTienTra.setStyle("-fx-font-weight: bold; -fx-text-fill: #dc2626; -fx-font-size: 13px;");
-        lblTongTienDoi.setStyle("-fx-font-weight: bold; -fx-text-fill: #2563eb; -fx-font-size: 13px;");
-        lblChenhLechCuoi.setStyle("-fx-font-weight: bold; -fx-text-fill: #16a34a; -fx-font-size: 15px;");
+            @Override
+            public SanPham fromString(String s) {
+                return null;
+            }
+        };
+        combo.setConverter(converter);
+        combo.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(SanPham item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : converter.toString(item));
+            }
+        });
+        combo.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(SanPham item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "-- Chọn sản phẩm đổi mới --" : converter.toString(item));
+            }
+        });
+    }
+
+    private HBox taoVungDTomTatCoDinh() {
+        HBox bar = new HBox(16);
+        bar.setAlignment(Pos.CENTER_LEFT);
+        bar.getStyleClass().add("hop-noi-dung");
+
+        lblTongTienTra.setStyle("-fx-font-weight: bold; -fx-font-size: 13px;");
+        lblTongTienDoi.setStyle("-fx-font-weight: bold; -fx-font-size: 13px;");
+        lblChenhLechCuoi.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
 
         HBox pnlThongKe = new HBox(18);
         pnlThongKe.setAlignment(Pos.CENTER_LEFT);
@@ -538,9 +570,9 @@ public class LapPhieuDoiTraView extends VBox {
         );
         HBox.setHgrow(pnlThongKe, Priority.ALWAYS);
 
-        btnHuy.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #475569; -fx-padding: 8 16; -fx-font-weight: bold; -fx-cursor: hand;");
-        btnXemLai.setStyle("-fx-background-color: #e0f2fe; -fx-text-fill: #0284c7; -fx-padding: 8 16; -fx-font-weight: bold; -fx-cursor: hand;");
-        btnLuuPhiu.setStyle("-fx-background-color: #16a34a; -fx-text-fill: white; -fx-padding: 8 20; -fx-font-weight: bold; -fx-cursor: hand;");
+        btnHuy.getStyleClass().add("nut-phu");
+        btnXemLai.getStyleClass().add("nut-phu");
+        btnLuuPhiu.getStyleClass().add("nut-chinh");
 
         bar.getChildren().addAll(pnlThongKe, btnHuy, btnXemLai, btnLuuPhiu);
         return bar;
@@ -565,7 +597,6 @@ public class LapPhieuDoiTraView extends VBox {
             tinhToanLaiTaiChinh();
         });
 
-        // Chon san pham de doi moi
         napDanhSachSanPhamDoi();
 
         txtTimSanPhamDoi.textProperty().addListener((obs, oldVal, newVal) -> {
@@ -621,7 +652,7 @@ public class LapPhieuDoiTraView extends VBox {
     }
 
     private void hienBannerLoi(String thongBao) {
-        lblBannerLoiHoaDon.setText("✖ " + thongBao);
+        lblBannerLoiHoaDon.setText("Lưu ý: " + thongBao);
         lblBannerLoiHoaDon.setVisible(true);
         lblBannerLoiHoaDon.setManaged(true);
     }
@@ -637,7 +668,6 @@ public class LapPhieuDoiTraView extends VBox {
 
         this.hoaDonHopLe = daThanhToan && conHan;
 
-        // Header info
         HBox hangKhach = new HBox(20);
         hangKhach.setAlignment(Pos.CENTER_LEFT);
         String tenKhach = hd.getTenKhachHang() != null ? hd.getTenKhachHang() : "Khách vãng lai";
@@ -646,29 +676,16 @@ public class LapPhieuDoiTraView extends VBox {
         lblKhach.setStyle("-fx-font-weight: bold;");
 
         Label lblNgayMua = new Label("Ngày mua: " + (hd.getNgayLap() != null ? hd.getNgayLap().format(DINH_DANG_NGAY) : ""));
-        hangKhach.getChildren().addAll(lblKhach, lblNgayMua);
+        Label lblTrangThai = new Label("Trạng thái: " + (daThanhToan ? "Đã thanh toán" : "Chưa thanh toán"));
+        Label lblHan = new Label(conHan ? ("Thời hạn: Còn " + soNgayConLai + " ngày đổi trả") : ("Thời hạn: Quá hạn (" + soNgay + " ngày)"));
+        lblHan.setStyle("-fx-font-weight: bold;");
 
-        // Badge kiem tra
-        HBox hangBadge = new HBox(12);
-        hangBadge.setAlignment(Pos.CENTER_LEFT);
+        hangKhach.getChildren().addAll(lblKhach, lblNgayMua, lblTrangThai, lblHan);
 
-        Label badgeThanhToan = new Label(daThanhToan ? "✔ Đã thanh toán" : "✖ Chưa thanh toán");
-        badgeThanhToan.setStyle(daThanhToan
-                ? "-fx-background-color: #dcfce7; -fx-text-fill: #15803d; -fx-padding: 4 10; -fx-background-radius: 12px; -fx-font-weight: bold;"
-                : "-fx-background-color: #fee2e2; -fx-text-fill: #b91c1c; -fx-padding: 4 10; -fx-background-radius: 12px; -fx-font-weight: bold;");
-
-        Label badgeHan = new Label(conHan ? ("✔ Còn hạn đổi trả (còn " + soNgayConLai + " ngày)") : ("✖ Quá hạn đổi trả (" + soNgay + " ngày > 7 ngày)"));
-        badgeHan.setStyle(conHan
-                ? "-fx-background-color: #dcfce7; -fx-text-fill: #15803d; -fx-padding: 4 10; -fx-background-radius: 12px; -fx-font-weight: bold;"
-                : "-fx-background-color: #fee2e2; -fx-text-fill: #b91c1c; -fx-padding: 4 10; -fx-background-radius: 12px; -fx-font-weight: bold;");
-
-        hangBadge.getChildren().addAll(badgeThanhToan, badgeHan);
-
-        pnlThongTinHoaDonChon.getChildren().addAll(hangKhach, hangBadge);
+        pnlThongTinHoaDonChon.getChildren().add(hangKhach);
         pnlThongTinHoaDonChon.setVisible(true);
         pnlThongTinHoaDonChon.setManaged(true);
 
-        // Tai danh sach chi tiet mat hang vao Vung B
         napDanhSachSanPhamTuHoaDon(hd);
     }
 
@@ -676,7 +693,6 @@ public class LapPhieuDoiTraView extends VBox {
         dsSanPhamDoiTra.clear();
         if (hd == null) return;
 
-        // 1. Mat hang san pham
         if (hd.getDanhSachSanPham() != null) {
             for (ChiTietHoaDonSanPham ct : hd.getDanhSachSanPham()) {
                 String maHang = ct.getMaSanPham();
@@ -704,8 +720,7 @@ public class LapPhieuDoiTraView extends VBox {
                     File f = fc.showOpenDialog(getScene().getWindow());
                     if (f != null) {
                         dong.setFileBangChung(f);
-                        dong.getBtnDinhKem().setText("✔ " + f.getName());
-                        dong.getBtnDinhKem().setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #15803d; -fx-font-size: 11px;");
+                        dong.getBtnDinhKem().setText(f.getName());
                     }
                 });
 
@@ -713,10 +728,9 @@ public class LapPhieuDoiTraView extends VBox {
             }
         }
 
-        // 2. Mat hang dich vu (lam mo, khong cho doi tra)
         if (hd.getDanhSachDichVu() != null) {
             for (ChiTietHoaDonDichVu ct : hd.getDanhSachDichVu()) {
-                DongTraHang dong = new DongTraHang(ct.getMaDichVu(), ct.getTenDichVu() + " (Dịch vụ - QL4 không đổi trả)",
+                DongTraHang dong = new DongTraHang(ct.getMaDichVu(), ct.getTenDichVu() + " (Dịch vụ - không đổi trả)",
                         ct.getDonGia(), ct.getSoLuong(), 0, true);
                 dsSanPhamDoiTra.add(dong);
             }
@@ -743,7 +757,6 @@ public class LapPhieuDoiTraView extends VBox {
             dong.getCboTinhTrang().setStyle("");
             dong.getLblThanhTien().setText(DINH_DANG_TIEN.format(dong.tinhThanhTien()));
         } catch (IllegalArgumentException ex) {
-            dong.getCboTinhTrang().setStyle("-fx-border-color: #dc2626;");
             hienThongBaoCanhBao("Quy tắc QL5 không hợp lệ:\n" + ex.getMessage());
         }
     }
@@ -788,7 +801,6 @@ public class LapPhieuDoiTraView extends VBox {
             return;
         }
 
-        // Kiem tra da co trong bang doi chua
         for (DongDoiHang d : dsSanPhamDoiMoi) {
             if (d.getSanPham().getMaSanPham().equals(sp.getMaSanPham())) {
                 d.setSoLuong(d.getSoLuong() + sl);
@@ -824,24 +836,17 @@ public class LapPhieuDoiTraView extends VBox {
         BigDecimal chenhLech = tongDoi.subtract(tongTra);
         if (rdoTraHang.isSelected()) {
             lblChenhLechCuoi.setText("Hoàn trả: " + DINH_DANG_TIEN.format(tongTra));
-            lblChenhLechCuoi.setStyle("-fx-font-weight: bold; -fx-text-fill: #16a34a; -fx-font-size: 14px;");
         } else {
             if (chenhLech.compareTo(BigDecimal.ZERO) > 0) {
                 lblDongChenhLech.setText("Khách cần bù: " + DINH_DANG_TIEN.format(chenhLech));
-                lblDongChenhLech.setStyle("-fx-font-weight: bold; -fx-text-fill: #dc2626; -fx-font-size: 13px;");
                 lblChenhLechCuoi.setText("Khách bù: " + DINH_DANG_TIEN.format(chenhLech));
-                lblChenhLechCuoi.setStyle("-fx-font-weight: bold; -fx-text-fill: #dc2626; -fx-font-size: 14px;");
             } else if (chenhLech.compareTo(BigDecimal.ZERO) < 0) {
                 BigDecimal hoan = chenhLech.abs();
                 lblDongChenhLech.setText("Hoàn lại khách: " + DINH_DANG_TIEN.format(hoan));
-                lblDongChenhLech.setStyle("-fx-font-weight: bold; -fx-text-fill: #16a34a; -fx-font-size: 13px;");
                 lblChenhLechCuoi.setText("Hoàn khách: " + DINH_DANG_TIEN.format(hoan));
-                lblChenhLechCuoi.setStyle("-fx-font-weight: bold; -fx-text-fill: #16a34a; -fx-font-size: 14px;");
             } else {
                 lblDongChenhLech.setText("Không phát sinh chênh lệch (0 VNĐ)");
-                lblDongChenhLech.setStyle("-fx-font-weight: bold; -fx-text-fill: #475569; -fx-font-size: 13px;");
                 lblChenhLechCuoi.setText("0 VNĐ");
-                lblChenhLechCuoi.setStyle("-fx-font-weight: bold; -fx-text-fill: #475569; -fx-font-size: 14px;");
             }
         }
     }
@@ -939,6 +944,7 @@ public class LapPhieuDoiTraView extends VBox {
                 ct.setLyDo(d.getCboLyDo().getValue());
                 ct.setTinhTrang(d.getCboTinhTrang().getValue());
                 ct.setGhiChu(d.getTxtGhiChu().getText());
+                ct.setHuongXuLy("Nguyên vẹn".equalsIgnoreCase(ct.getTinhTrang()) ? "Thu lại vào kho" : "Hủy bỏ");
 
                 try {
                     controller.kiemTraHopLeChiTiet(ct);
@@ -961,7 +967,6 @@ public class LapPhieuDoiTraView extends VBox {
             return;
         }
 
-        // Tinh toan tien hang tra & tong so luong tra
         int tongSoLuongTra = 0;
         BigDecimal tongTra = BigDecimal.ZERO;
         for (DongTraHang d : dsSanPhamDoiTra) {
@@ -976,7 +981,6 @@ public class LapPhieuDoiTraView extends VBox {
             for (DongDoiHang d : dsSanPhamDoiMoi) {
                 tongDoi = tongDoi.add(d.getThanhTien());
             }
-            // Gan thong tin san pham doi vao dong chi tiet dau tien hoac cac dong tuong ung
             if (!dsSanPhamDoiMoi.isEmpty() && !dsChiTiet.isEmpty()) {
                 DongDoiHang doiDau = dsSanPhamDoiMoi.get(0);
                 ChiTietPhieuDoiTra ctDau = dsChiTiet.get(0);
@@ -987,7 +991,6 @@ public class LapPhieuDoiTraView extends VBox {
             }
         }
 
-        // Tao doi tuong PhieuDoiTra
         PhieuDoiTra phieu = new PhieuDoiTra();
         phieu.setMaPhieuDoiTra(controller.sinhMaPhieu());
         phieu.setMaHoaDon(hoaDonDangChon.getMaHoaDon());
@@ -997,7 +1000,6 @@ public class LapPhieuDoiTraView extends VBox {
         phieu.setSoDienThoaiKhachHang(hoaDonDangChon.getSoDienThoaiKhachHang());
         phieu.setSoLuong(tongSoLuongTra);
 
-        // Nhan vien dang nhap hien tai
         TaiKhoan tkHienTai = SessionManager.getTaiKhoanHienTai();
         phieu.setMaNhanVien(tkHienTai != null ? tkHienTai.getMaNhanVien() : "NV-20261001-000001");
 
@@ -1022,7 +1024,6 @@ public class LapPhieuDoiTraView extends VBox {
         phieu.setTrangThai("Chờ xử lý");
         phieu.setDanhSachSanPham(dsChiTiet);
 
-        // Hop thoai xac nhan cuoi cung
         Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION);
         xacNhan.setTitle("Xác nhận lưu phiếu đổi trả");
         xacNhan.setHeaderText("Xác nhận lưu phiếu đổi trả với khách hàng?");

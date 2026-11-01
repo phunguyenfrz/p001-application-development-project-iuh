@@ -18,10 +18,12 @@ import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Hop thoai Modal: Xem chi tiet phieu doi tra (chi doc).
+ * Hộp thoại Modal: Xem chi tiết phiếu đổi trả (chỉ đọc).
+ * Sử dụng bộ màu mặc định chuẩn chung.css.
  */
 public class XemChiTietPhieuDoiTraView extends Stage {
 
+    private static final String CSS_CHUNG = "/com/petshop/view/css/chung.css";
     private static final DecimalFormat DINH_DANG_TIEN = new DecimalFormat("#,##0 VNĐ");
     private static final DateTimeFormatter DINH_DANG_NGAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -47,7 +49,7 @@ public class XemChiTietPhieuDoiTraView extends Stage {
 
         VBox root = new VBox(14);
         root.setPadding(new Insets(18));
-        root.setStyle("-fx-background-color: #f8fafc;");
+        root.getStyleClass().add("khung-phan-he");
 
         if (phieu == null) {
             root.getChildren().add(new Label("Không có dữ liệu phiếu đổi trả!"));
@@ -57,19 +59,15 @@ public class XemChiTietPhieuDoiTraView extends Stage {
 
         // 1. Header card
         VBox cardHeader = new VBox(8);
-        cardHeader.setPadding(new Insets(12));
-        cardHeader.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: #e2e8f0; -fx-border-radius: 8px;");
+        cardHeader.getStyleClass().add("hop-noi-dung");
 
         HBox hangMa = new HBox(14);
         hangMa.setAlignment(Pos.CENTER_LEFT);
         Label lblMa = new Label("MÃ PHIẾU: " + phieu.getMaPhieuDoiTra());
-        lblMa.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1e293b;");
+        lblMa.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
         Label lblTrangThai = new Label(phieu.getTrangThai());
-        lblTrangThai.setStyle("-fx-padding: 4 12; -fx-background-radius: 12px; -fx-font-weight: bold; -fx-text-fill: white; -fx-background-color: #2563eb;");
-        if ("Hoàn thành".equalsIgnoreCase(phieu.getTrangThai())) lblTrangThai.setStyle("-fx-padding: 4 12; -fx-background-radius: 12px; -fx-font-weight: bold; -fx-text-fill: white; -fx-background-color: #16a34a;");
-        else if ("Từ chối".equalsIgnoreCase(phieu.getTrangThai())) lblTrangThai.setStyle("-fx-padding: 4 12; -fx-background-radius: 12px; -fx-font-weight: bold; -fx-text-fill: white; -fx-background-color: #dc2626;");
-        else if ("Chờ xử lý".equalsIgnoreCase(phieu.getTrangThai())) lblTrangThai.setStyle("-fx-padding: 4 12; -fx-background-radius: 12px; -fx-font-weight: bold; -fx-text-fill: white; -fx-background-color: #d97706;");
+        lblTrangThai.setStyle("-fx-padding: 3 10; -fx-background-color: #e2e8f0; -fx-background-radius: 4px; -fx-font-weight: bold;");
 
         hangMa.getChildren().addAll(lblMa, lblTrangThai);
 
@@ -85,15 +83,15 @@ public class XemChiTietPhieuDoiTraView extends Stage {
 
         cardHeader.getChildren().addAll(hangMa, gridInfo);
 
-        // 2. Bang chi tiet hang tra
+        // 2. Bảng chi tiết hàng trả
         VBox cardBang = new VBox(8);
-        cardBang.setPadding(new Insets(12));
-        cardBang.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: #e2e8f0; -fx-border-radius: 8px;");
+        cardBang.getStyleClass().add("hop-noi-dung");
 
-        Label lblTieuDeBang = new Label("CHI TIẾT MẶT HÀNG ĐỔI TRẢ & HƯỚNG XỬ LÝ (QL26)");
-        lblTieuDeBang.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #334155;");
+        Label lblTieuDeBang = new Label("CHI TIẾT MẶT HÀNG ĐỔI TRẢ & XỬ LÝ SẢN PHẨM HOÀN");
+        lblTieuDeBang.setStyle("-fx-font-weight: bold; -fx-font-size: 13px;");
 
         TableView<ChiTietPhieuDoiTra> tbl = new TableView<>();
+        tbl.getStyleClass().add("bang-du-lieu");
         tbl.setPrefHeight(200);
         tbl.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
@@ -113,8 +111,10 @@ public class XemChiTietPhieuDoiTraView extends Stage {
         TableColumn<ChiTietPhieuDoiTra, String> colTinhTrang = new TableColumn<>("Tình trạng");
         colTinhTrang.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTinhTrang()));
 
-        TableColumn<ChiTietPhieuDoiTra, String> colHuongXuLy = new TableColumn<>("Hướng xử lý");
-        colHuongXuLy.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getHuongXuLy()));
+        TableColumn<ChiTietPhieuDoiTra, String> colHuongXuLy = new TableColumn<>("Xử lý SP hoàn");
+        colHuongXuLy.setCellValueFactory(d -> new SimpleStringProperty(
+                XuLyPhieuDoiTraView.chuanHoaHuongXuLyHienThi(d.getValue().getHuongXuLy(), d.getValue().getTinhTrang())
+        ));
 
         TableColumn<ChiTietPhieuDoiTra, String> colThanhTien = new TableColumn<>("Thành tiền hoàn");
         colThanhTien.setCellValueFactory(d -> new SimpleStringProperty(DINH_DANG_TIEN.format(d.getValue().tinhThanhTienTra())));
@@ -127,7 +127,6 @@ public class XemChiTietPhieuDoiTraView extends Stage {
             tbl.setItems(FXCollections.observableArrayList(phieu.getDanhSachSanPham()));
         }
 
-        // Tong tien
         HBox hangTongTien = new HBox(12);
         hangTongTien.setAlignment(Pos.CENTER_RIGHT);
         BigDecimal tongTienTra = phieu.tinhTongTienHangTra();
@@ -135,17 +134,17 @@ public class XemChiTietPhieuDoiTraView extends Stage {
             tongTienTra = phieu.getTienHoan();
         }
         Label lblTongTien = new Label("Tổng tiền hàng trả: " + DINH_DANG_TIEN.format(tongTienTra));
-        lblTongTien.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #dc2626;");
+        lblTongTien.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
         hangTongTien.getChildren().add(lblTongTien);
 
         cardBang.getChildren().addAll(lblTieuDeBang, tbl, hangTongTien);
 
         // 3. Footer buttons
-        HBox footer = new HBox(12);
+        HBox footer = new HBox(10);
         footer.setAlignment(Pos.CENTER_RIGHT);
 
-        Button btnIn = new Button("🖨 In lại phiếu");
-        btnIn.setStyle("-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 18; -fx-cursor: hand;");
+        Button btnIn = new Button("In lại phiếu");
+        btnIn.getStyleClass().add("nut-chinh");
         btnIn.setOnAction(e -> {
             Alert al = new Alert(Alert.AlertType.INFORMATION);
             al.setTitle("In phiếu");
@@ -155,7 +154,7 @@ public class XemChiTietPhieuDoiTraView extends Stage {
         });
 
         Button btnDong = new Button("Đóng");
-        btnDong.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #475569; -fx-font-weight: bold; -fx-padding: 8 18; -fx-cursor: hand;");
+        btnDong.getStyleClass().add("nut-phu");
         btnDong.setOnAction(e -> this.close());
 
         footer.getChildren().addAll(btnIn, btnDong);
@@ -163,7 +162,9 @@ public class XemChiTietPhieuDoiTraView extends Stage {
         root.getChildren().addAll(cardHeader, cardBang, footer);
 
         Scene scene = new Scene(root, 780, 520);
+        if (getClass().getResource(CSS_CHUNG) != null) {
+            scene.getStylesheets().add(getClass().getResource(CSS_CHUNG).toExternalForm());
+        }
         this.setScene(scene);
     }
 }
-

@@ -2,7 +2,6 @@ package com.petshop.view.doitra;
 
 import com.petshop.controller.PhieuDoiTraController;
 import com.petshop.model.PhieuDoiTra;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -23,8 +22,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
- * Man hinh 3: Tim kiem & Tra cuu phieu doi tra (RET_SEARCH / DT_TIM_KIEM).
- * Bo loc luoi, the KPI thong ke nhanh, bang ket qua, xem chi tiet modal va xuat Excel.
+ * Màn hình 3: Tìm kiếm & Tra cứu phiếu đổi trả (RET_SEARCH / DT_TIM_KIEM).
+ * Sử dụng bộ màu mặc định chuẩn chung.css đồng bộ với các phân hệ Dịch vụ, Hóa đơn.
  */
 public class TimKiemPhieuDoiTraView extends VBox {
 
@@ -33,7 +32,7 @@ public class TimKiemPhieuDoiTraView extends VBox {
 
     private final PhieuDoiTraController controller;
 
-    // 1. Bo loc luoi 4 cot
+    // 1. Bộ lọc
     private final TextField txtTuKhoa = new TextField();
     private final DatePicker dpTuNgay = new DatePicker();
     private final DatePicker dpDenNgay = new DatePicker();
@@ -43,17 +42,17 @@ public class TimKiemPhieuDoiTraView extends VBox {
     private final ComboBox<String> cboLoaiXuLy = new ComboBox<>(FXCollections.observableArrayList(
             "Tất cả loại", "Hoàn tiền", "Đổi hàng"
     ));
-    private final Button btnTimKiem = new Button("🔍 Tìm kiếm");
-    private final Button btnDatLai = new Button("↺ Đặt lại");
-    private final Button btnXuatExcel = new Button("📥 Xuất file");
+    private final Button btnTimKiem = new Button("Tìm kiếm");
+    private final Button btnDatLai = new Button("Đặt lại");
+    private final Button btnXuatExcel = new Button("Xuất file");
 
-    // 2. The KPI thong ke nhanh
+    // 2. Thẻ KPI thống kê nhanh
     private final Label lblKpiTongSoPhieu = new Label("0");
     private final Label lblKpiTongTienHoan = new Label("0 VNĐ");
     private final Label lblKpiTongTienBu = new Label("0 VNĐ");
     private final Label lblKpiTyLeHoanThanh = new Label("0%");
 
-    // 3. Bang ket qua
+    // 3. Bảng kết quả
     private final TableView<PhieuDoiTra> tblKetQua = new TableView<>();
     private final ObservableList<PhieuDoiTra> dsKetQua = FXCollections.observableArrayList();
 
@@ -66,29 +65,34 @@ public class TimKiemPhieuDoiTraView extends VBox {
 
     private void khoiTaoGiaoDien() {
         this.setSpacing(14);
-        this.setPadding(new Insets(16));
-        this.setStyle("-fx-background-color: #f8fafc;");
+        this.getStyleClass().add("khung-phan-he");
 
-        // 1. Bo loc
+        VBox pnlTieuDe = new VBox(4);
+        Label lblTieuDe = new Label("PHIẾU ĐỔI TRẢ - TÌM KIẾM PHIẾU ĐỔI TRẢ");
+        lblTieuDe.getStyleClass().add("tieu-de-phan-he");
+        Label lblMoTa = new Label("Tra cứu phiếu đổi trả theo mã phiếu, hóa đơn gốc, khách hàng, thời gian và trạng thái xử lý.");
+        lblMoTa.getStyleClass().add("mo-ta-phan-he");
+        pnlTieuDe.getChildren().addAll(lblTieuDe, lblMoTa);
+
+        // 1. Bộ lọc
         VBox cardBoLoc = taoCardBoLoc();
 
-        // 2. KPI thong ke nhanh
+        // 2. KPI thống kê nhanh
         HBox pnlKpi = taoPnlKpi();
 
-        // 3. Bang ket qua
+        // 3. Bảng kết quả
         VBox cardBang = taoCardBangKetQua();
         VBox.setVgrow(cardBang, Priority.ALWAYS);
 
-        this.getChildren().addAll(cardBoLoc, pnlKpi, cardBang);
+        this.getChildren().addAll(pnlTieuDe, cardBoLoc, pnlKpi, cardBang);
     }
 
     private VBox taoCardBoLoc() {
         VBox card = new VBox(10);
-        card.setPadding(new Insets(14));
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: #e2e8f0; -fx-border-radius: 8px;");
+        card.getStyleClass().add("hop-noi-dung");
 
         Label lblTieuDe = new Label("BỘ LỌC TRA CỨU PHIẾU ĐỔI TRẢ");
-        lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1e293b;");
+        lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px;");
 
         GridPane grid = new GridPane();
         grid.setHgap(16);
@@ -122,9 +126,9 @@ public class TimKiemPhieuDoiTraView extends VBox {
 
         HBox hangNut = new HBox(10);
         hangNut.setAlignment(Pos.CENTER_LEFT);
-        btnTimKiem.setStyle("-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 6 16; -fx-cursor: hand;");
-        btnDatLai.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #475569; -fx-font-weight: bold; -fx-padding: 6 14; -fx-cursor: hand;");
-        btnXuatExcel.setStyle("-fx-background-color: #059669; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 6 14; -fx-cursor: hand;");
+        btnTimKiem.getStyleClass().add("nut-chinh");
+        btnDatLai.getStyleClass().add("nut-phu");
+        btnXuatExcel.getStyleClass().add("nut-phu");
         hangNut.getChildren().addAll(btnTimKiem, btnDatLai, btnXuatExcel);
 
         grid.add(hangNut, 4, 1, 2, 1);
@@ -137,10 +141,10 @@ public class TimKiemPhieuDoiTraView extends VBox {
         HBox bar = new HBox(14);
         bar.setAlignment(Pos.CENTER);
 
-        VBox kpi1 = taoTheKpi("TỔNG PHIẾU ĐỔI TRẢ", lblKpiTongSoPhieu, "#2563eb");
-        VBox kpi2 = taoTheKpi("TỔNG TIỀN ĐÃ HOÀN", lblKpiTongTienHoan, "#dc2626");
-        VBox kpi3 = taoTheKpi("TỔNG TIỀN KHÁCH BÙ", lblKpiTongTienBu, "#d97706");
-        VBox kpi4 = taoTheKpi("TỶ LỆ ĐÃ DUYỆT", lblKpiTyLeHoanThanh, "#16a34a");
+        VBox kpi1 = taoTheKpi("TỔNG PHIẾU ĐỔI TRẢ", lblKpiTongSoPhieu);
+        VBox kpi2 = taoTheKpi("TỔNG TIỀN ĐÃ HOÀN", lblKpiTongTienHoan);
+        VBox kpi3 = taoTheKpi("TỔNG TIỀN KHÁCH BÙ", lblKpiTongTienBu);
+        VBox kpi4 = taoTheKpi("TỶ LỆ ĐÃ DUYỆT", lblKpiTyLeHoanThanh);
 
         HBox.setHgrow(kpi1, Priority.ALWAYS);
         HBox.setHgrow(kpi2, Priority.ALWAYS);
@@ -151,16 +155,15 @@ public class TimKiemPhieuDoiTraView extends VBox {
         return bar;
     }
 
-    private VBox taoTheKpi(String tieuDe, Label lblGiaTri, String mau) {
+    private VBox taoTheKpi(String tieuDe, Label lblGiaTri) {
         VBox box = new VBox(6);
-        box.setPadding(new Insets(12));
-        box.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: #e2e8f0; -fx-border-radius: 8px;");
+        box.getStyleClass().add("hop-noi-dung");
         box.setAlignment(Pos.CENTER);
 
         Label lblT = new Label(tieuDe);
         lblT.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
 
-        lblGiaTri.setStyle("-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: " + mau + ";");
+        lblGiaTri.setStyle("-fx-font-size: 17px; -fx-font-weight: bold;");
 
         box.getChildren().addAll(lblT, lblGiaTri);
         return box;
@@ -168,12 +171,12 @@ public class TimKiemPhieuDoiTraView extends VBox {
 
     private VBox taoCardBangKetQua() {
         VBox card = new VBox(10);
-        card.setPadding(new Insets(14));
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: #e2e8f0; -fx-border-radius: 8px;");
+        card.getStyleClass().add("hop-noi-dung");
 
         Label lblTieuDe = new Label("KẾT QUẢ TRA CỨU");
-        lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1e293b;");
+        lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px;");
 
+        tblKetQua.getStyleClass().add("bang-du-lieu");
         tblKetQua.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         VBox.setVgrow(tblKetQua, Priority.ALWAYS);
 
@@ -210,32 +213,15 @@ public class TimKiemPhieuDoiTraView extends VBox {
 
         TableColumn<PhieuDoiTra, String> colTrangThai = new TableColumn<>("Trạng thái");
         colTrangThai.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTrangThai()));
-        colTrangThai.setCellFactory(col -> new TableCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(item);
-                    switch (item) {
-                        case "Hoàn thành" -> setStyle("-fx-text-fill: #16a34a; -fx-font-weight: bold;");
-                        case "Đã duyệt" -> setStyle("-fx-text-fill: #2563eb; -fx-font-weight: bold;");
-                        case "Từ chối" -> setStyle("-fx-text-fill: #dc2626; -fx-font-weight: bold;");
-                        case "Chờ xử lý" -> setStyle("-fx-text-fill: #d97706; -fx-font-weight: bold;");
-                        default -> setStyle("");
-                    }
-                }
-            }
-        });
         colTrangThai.setPrefWidth(95);
+        colTrangThai.setStyle("-fx-alignment: center; -fx-font-weight: bold;");
 
         TableColumn<PhieuDoiTra, Void> colThaoTac = new TableColumn<>("Thao tác");
         colThaoTac.setCellFactory(col -> new TableCell<>() {
             private final Button btnXem = new Button("Xem");
             {
-                btnXem.setStyle("-fx-background-color: #eff6ff; -fx-text-fill: #2563eb; -fx-font-size: 11px; -fx-cursor: hand;");
+                btnXem.getStyleClass().add("nut-phu");
+                btnXem.setStyle("-fx-font-size: 11px; -fx-padding: 2 10;");
                 btnXem.setOnAction(e -> {
                     PhieuDoiTra p = getTableView().getItems().get(getIndex());
                     moHopThoaiXemChiTiet(p);
@@ -378,7 +364,6 @@ public class TimKiemPhieuDoiTraView extends VBox {
         File file = fc.showSaveDialog(getScene().getWindow());
         if (file != null) {
             try (PrintWriter pw = new PrintWriter(file, StandardCharsets.UTF_8)) {
-                // BOM cho Excel doc tieng Viet dung
                 pw.write('\ufeff');
                 pw.println("Mã phiếu,Mã hóa đơn,Ngày lập,Khách hàng,Số điện thoại,Loại xử lý,Tổng tiền hàng trả,Trạng thái");
                 for (PhieuDoiTra p : dsKetQua) {
@@ -407,4 +392,3 @@ public class TimKiemPhieuDoiTraView extends VBox {
         }
     }
 }
-
