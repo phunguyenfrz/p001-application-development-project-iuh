@@ -580,6 +580,8 @@ public class CapNhatHoaDonView extends VBox {
         luoiTmThem.setVgap(4);
         txtTienKhachDua.setPromptText("Nhập tiền khách đưa...");
         txtTienKhachDua.setPrefWidth(140);
+        txtTienKhachDua.setTextFormatter(new javafx.scene.control.TextFormatter<String>(change ->
+                change.getControlNewText().matches("\\d*") ? change : null));
         btnDuTien.getStyleClass().add("nut-phu");
         HBox hangDua = new HBox(4, txtTienKhachDua, btnDuTien);
         lblTienThoiLai.setStyle("-fx-font-weight: bold; -fx-text-fill: #15803d;");
@@ -1007,6 +1009,31 @@ public class CapNhatHoaDonView extends VBox {
             return;
         }
 
+        BigDecimal tienKhachDua = BigDecimal.ZERO;
+        if (tienChenhLech.compareTo(BigDecimal.ZERO) > 0 && radTienMat.isSelected()) {
+            String strTienKhachDua = txtTienKhachDua.getText() != null
+                    ? txtTienKhachDua.getText().trim()
+                    : "";
+            if (strTienKhachDua.isEmpty()) {
+                hienThiCanhBao("Vui lòng nhập số tiền khách đưa!");
+                txtTienKhachDua.requestFocus();
+                return;
+            }
+
+            try {
+                tienKhachDua = new BigDecimal(strTienKhachDua);
+                if (tienKhachDua.compareTo(tienChenhLech) < 0) {
+                    hienThiCanhBao("Số tiền khách đưa không đủ để thanh toán phần chênh lệch!");
+                    txtTienKhachDua.requestFocus();
+                    return;
+                }
+            } catch (NumberFormatException ex) {
+                hienThiCanhBao("Số tiền khách đưa không hợp lệ!");
+                txtTienKhachDua.requestFocus();
+                return;
+            }
+        }
+
         // Tạo đối tượng HoaDon mới từ dữ liệu trên bảng
         HoaDon hdMoi = new HoaDon();
         hdMoi.setMaHoaDon(hoaDonGoc.getMaHoaDon());
@@ -1029,6 +1056,10 @@ public class CapNhatHoaDonView extends VBox {
             hdMoi.setHinhThucThanhToan(radChuyenKhoan.isSelected() ? "Chuyển khoản" : "Tiền mặt");
             hdMoi.setTienThanhToanThem(tienChenhLech);
             hdMoi.setTienHoanLai(BigDecimal.ZERO);
+            if (radTienMat.isSelected()) {
+                hdMoi.setTienKhachDua(tienKhachDua);
+                hdMoi.setTienThoiLai(tienKhachDua.subtract(tienChenhLech));
+            }
         } else if (tienChenhLech.compareTo(BigDecimal.ZERO) < 0) {
             hdMoi.setHinhThucThanhToan(hoaDonGoc.getHinhThucThanhToan());
             hdMoi.setTienThanhToanThem(BigDecimal.ZERO);

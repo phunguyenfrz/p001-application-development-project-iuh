@@ -200,8 +200,24 @@ public class InHoaDonDialog extends Stage {
         luoiTongKet.add(new Label(ht), 1, row++);
 
         if ("Tiền mặt".equalsIgnoreCase(ht)) {
+            BigDecimal tienThanhToanThem = hd.getTienThanhToanThem();
+            BigDecimal tienHoanLai = hd.getTienHoanLai();
+            boolean coThanhToanThem = tienThanhToanThem.compareTo(BigDecimal.ZERO) > 0;
+            boolean coHoanTien = tienHoanLai.compareTo(BigDecimal.ZERO) > 0;
+
             BigDecimal tienDua = hd.getTienKhachDua() != null ? hd.getTienKhachDua() : hd.getTongTien();
-            BigDecimal tienThoi = hd.getTienThoiLai() != null ? hd.getTienThoiLai() : tienDua.subtract(hd.getTongTien()).max(BigDecimal.ZERO);
+            BigDecimal tienThoi;
+            if (coThanhToanThem) {
+                tienThoi = hd.getTienThoiLai() != null
+                        ? hd.getTienThoiLai()
+                        : tienDua.subtract(tienThanhToanThem).max(BigDecimal.ZERO);
+            } else {
+                BigDecimal tongSoSanh = coHoanTien ? hd.getTongTien().add(tienHoanLai) : hd.getTongTien();
+                tienDua = coHoanTien ? tongSoSanh : tienDua;
+                tienThoi = hd.getTienThoiLai() != null
+                        ? hd.getTienThoiLai()
+                        : tienDua.subtract(tongSoSanh).max(BigDecimal.ZERO);
+            }
 
             luoiTongKet.add(taoLabelNhe("Tiền khách đưa:"), 0, row);
             luoiTongKet.add(new Label(DINH_DANG_TIEN.format(tienDua)), 1, row++);
@@ -220,12 +236,18 @@ public class InHoaDonDialog extends Stage {
         }
 
         if (hd.getTienThanhToanThem().compareTo(BigDecimal.ZERO) > 0) {
-            luoiTongKet.add(taoLabelNhe("Thanh toán thêm:"), 0, row);
+            BigDecimal tongHoaDonGoc = hd.getTongTien().subtract(hd.getTienThanhToanThem());
+            luoiTongKet.add(taoLabelNhe("Đã thanh toán hóa đơn gốc:"), 0, row);
+            luoiTongKet.add(new Label(DINH_DANG_TIEN.format(tongHoaDonGoc)), 1, row++);
+            luoiTongKet.add(taoLabelNhe("Khách cần bù thêm:"), 0, row);
             Label lblThem = new Label("+" + DINH_DANG_TIEN.format(hd.getTienThanhToanThem()));
             lblThem.setStyle("-fx-font-weight: bold; -fx-text-fill: #0369a1;");
             luoiTongKet.add(lblThem, 1, row++);
         } else if (hd.getTienHoanLai().compareTo(BigDecimal.ZERO) > 0) {
-            luoiTongKet.add(taoLabelNhe("Hoàn tiền mặt lại cho khách:"), 0, row);
+            BigDecimal tongHoaDonGoc = hd.getTongTien().add(hd.getTienHoanLai());
+            luoiTongKet.add(taoLabelNhe("Đã thanh toán hóa đơn gốc:"), 0, row);
+            luoiTongKet.add(new Label(DINH_DANG_TIEN.format(tongHoaDonGoc)), 1, row++);
+            luoiTongKet.add(taoLabelNhe("Tiền thừa, cửa hàng hoàn lại:"), 0, row);
             Label lblHoan = new Label("-" + DINH_DANG_TIEN.format(hd.getTienHoanLai()));
             lblHoan.setStyle("-fx-font-weight: bold; -fx-text-fill: #dc2626;");
             luoiTongKet.add(lblHoan, 1, row++);
@@ -292,4 +314,3 @@ public class InHoaDonDialog extends Stage {
         return lbl;
     }
 }
-
