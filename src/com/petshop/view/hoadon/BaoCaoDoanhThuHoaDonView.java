@@ -28,7 +28,7 @@ import java.util.Map;
  * Usecase riêng: Báo cáo thống kê toàn diện (TK_DOANH_THU).
  * Tối giản màu sắc (phong cách chuyên nghiệp, thanh lịch), tích hợp:
  * - Thẻ KPI: Doanh thu thực thu, Doanh thu SP, Doanh thu DV, Giảm giá, Tiền hoàn đổi trả, Tiền khách bù, Đơn hoàn tất, Đơn hủy, AOV
- * - Tab 1: Hóa đơn thanh toán
+ * - Tab 1: Hóa đơn thanh toán (bổ sung cột Giá gốc & Giảm giá)
  * - Tab 2: Sản phẩm bán ra trong ngày/tuần/tháng
  * - Tab 3: Dịch vụ chăm sóc thực hiện trong ngày/tuần/tháng
  * - Tab 4: Báo cáo sản phẩm đổi trả & Tổng tiền hoàn
@@ -282,11 +282,21 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
         colHt.setCellValueFactory(h -> new SimpleStringProperty(h.getValue().getHinhThucThanhToan()));
         colHt.setPrefWidth(95);
 
+        TableColumn<HoaDon, String> colGiaGoc = new TableColumn<>("Giá gốc");
+        colGiaGoc.setCellValueFactory(h -> {
+            BigDecimal giaGoc = h.getValue().getTongTienGoc();
+            return new SimpleStringProperty(DINH_DANG_TIEN.format(giaGoc != null ? giaGoc : BigDecimal.ZERO));
+        });
+        colGiaGoc.setPrefWidth(110);
+        colGiaGoc.setStyle("-fx-alignment: center-right; -fx-text-fill: #475569;");
+
         TableColumn<HoaDon, String> colGiamGia = new TableColumn<>("Giảm giá");
         colGiamGia.setCellValueFactory(h -> {
-            BigDecimal tienKm = h.getValue().getTienGiam() != null ? h.getValue().getTienGiam() : BigDecimal.ZERO;
-            BigDecimal tienDiem = h.getValue().getTienGiamTuDiem() != null ? h.getValue().getTienGiamTuDiem() : BigDecimal.ZERO;
-            return new SimpleStringProperty(DINH_DANG_TIEN.format(tienKm.add(tienDiem)));
+            if ("Đã hủy".equalsIgnoreCase(h.getValue().getTrangThaiThanhToan())) {
+                return new SimpleStringProperty("0 VNĐ");
+            }
+            BigDecimal tongGiam = h.getValue().getTongTienGiam();
+            return new SimpleStringProperty(DINH_DANG_TIEN.format(tongGiam != null ? tongGiam : BigDecimal.ZERO));
         });
         colGiamGia.setPrefWidth(100);
         colGiamGia.setStyle("-fx-alignment: center-right;");
@@ -324,7 +334,7 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
             }
         });
 
-        bangHoaDon.getColumns().addAll(colStt, colMa, colNgay, colGio, colKhach, colNv, colHt, colGiamGia, colTongTien, colTrangThai);
+        bangHoaDon.getColumns().addAll(colStt, colMa, colNgay, colGio, colKhach, colNv, colHt, colGiaGoc, colGiamGia, colTongTien, colTrangThai);
     }
 
     private void taoBangSanPham() {
@@ -621,8 +631,9 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
 
             long demThanhCong = ds.stream().filter(h -> "Đã thanh toán".equalsIgnoreCase(h.getTrangThaiThanhToan())).count();
             long demHuy = ds.stream().filter(h -> "Đã hủy".equalsIgnoreCase(h.getTrangThaiThanhToan())).count();
-            lblThongKeChanBang.setText(String.format("Hiển thị: %d hóa đơn (%d hoàn tất, %d đã hủy) | %d mặt hàng SP bán ra | %d dịch vụ thực hiện | %d lượt đổi trả | Tổng doanh thu ròng: %s",
-                    ds.size(), demThanhCong, demHuy, dsSp.size(), dsDv.size(), dsHangDoiTra.size(), DINH_DANG_TIEN.format(tongDt)));
+            BigDecimal tongGocThuc = dtSp.add(dtDv);
+            lblThongKeChanBang.setText(String.format("Hiển thị: %d hóa đơn (%d hoàn tất, %d đã hủy) | %d SP bán ra | %d dịch vụ | %d lượt đổi trả | Tổng giá gốc: %s | Tổng thực thu: %s",
+                    ds.size(), demThanhCong, demHuy, dsSp.size(), dsDv.size(), dsHangDoiTra.size(), DINH_DANG_TIEN.format(tongGocThuc), DINH_DANG_TIEN.format(tongDt)));
 
         } catch (Exception ex) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Lỗi khi tải báo cáo doanh thu: " + ex.getMessage());
@@ -681,8 +692,8 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
             this.soLuong = soLuong;
             this.lyDo = lyDo;
             this.huongXuLy = huongXuLy;
-            this.tienHoan = tienHoan;
-            this.tienBu = tienBu;
+            this.tienHoan = tienHoan != null ? tienHoan : BigDecimal.ZERO;
+            this.tienBu = tienBu != null ? tienBu : BigDecimal.ZERO;
             this.trangThai = trangThai;
         }
     }

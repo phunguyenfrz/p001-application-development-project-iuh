@@ -4,7 +4,9 @@ import com.petshop.model.HoaDon;
 import com.petshop.util.SessionManager;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.print.PageLayout;
 import javafx.print.PrinterJob;
+import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -12,6 +14,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.*;
+import javafx.scene.transform.Scale;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -23,15 +26,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Hộp thoại hiển thị và in báo cáo thống kê doanh thu toàn diện.
- * Cập nhật theo giao diện mới:
- * - Khối chỉ số KPI đồng bộ (Doanh thu thực, SP, DV, Giảm giá, Tiền hoàn đổi trả, Tiền khách bù, v.v.)
- * - 4 bảng kê chi tiết xếp dọc xuống:
- *   1. Danh sách Hóa đơn
- *   2. Sản phẩm bán ra
- *   3. Dịch vụ chăm sóc thực hiện
- *   4. Mặt hàng đổi trả & hoàn tiền
- * - Chữ ký người lập báo cáo và quản lý.
+ * Hộp thoại hiển thị và in / xuất PDF báo cáo thống kê doanh thu toàn diện.
+ * Kết hợp:
+ * - Bố cục 4 bảng kê chi tiết xếp dọc (I. Hóa đơn, II. Sản phẩm bán ra, III. Dịch vụ chăm sóc, IV. Đổi trả & Tiền hoàn)
+ * - Khối chỉ số KPI đồng bộ và chữ ký người lập / quản lý
+ * - Thuật toán tự động co giãn tỷ lệ (Scale transform + Group) vừa khít khổ giấy A4 khi in hoặc xuất PDF.
  */
 public class InBaoCaoDoanhThuDialog extends Stage {
 
@@ -39,6 +38,26 @@ public class InBaoCaoDoanhThuDialog extends Stage {
     private static final DateTimeFormatter DINH_DANG_NGAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter DINH_DANG_GIO = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter DINH_DANG_FULL = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+    private static final double RONG_BAO_CAO = 880;
+
+    private final String khoangThoiGian;
+    private final String trangThaiLoc;
+    private final String tongDoanhThu;
+    private final String doanhThuSanPham;
+    private final String doanhThuDichVu;
+    private final String tongGiamGia;
+    private final String tongHoanDoiTra;
+    private final String tongBuDoiTra;
+    private final String tienMat;
+    private final String chuyenKhoan;
+    private final String hoaDonHoanTat;
+    private final String hoaDonHuy;
+    private final String giaTriTrungBinh;
+    private final List<HoaDon> dsHoaDon;
+    private final List<Map<String, Object>> dsSanPham;
+    private final List<Map<String, Object>> dsDichVu;
+    private final List<BaoCaoDoanhThuHoaDonView.DongHangDoiTraBaoCao> dsDoiTra;
 
     public InBaoCaoDoanhThuDialog(
             String khoangThoiGian,
@@ -60,23 +79,42 @@ public class InBaoCaoDoanhThuDialog extends Stage {
             List<BaoCaoDoanhThuHoaDonView.DongHangDoiTraBaoCao> dsDoiTra,
             Stage chuSoHuu) {
 
+        this.khoangThoiGian = khoangThoiGian;
+        this.trangThaiLoc = trangThaiLoc;
+        this.tongDoanhThu = tongDoanhThu;
+        this.doanhThuSanPham = doanhThuSanPham;
+        this.doanhThuDichVu = doanhThuDichVu;
+        this.tongGiamGia = tongGiamGia;
+        this.tongHoanDoiTra = tongHoanDoiTra;
+        this.tongBuDoiTra = tongBuDoiTra;
+        this.tienMat = tienMat;
+        this.chuyenKhoan = chuyenKhoan;
+        this.hoaDonHoanTat = hoaDonHoanTat;
+        this.hoaDonHuy = hoaDonHuy;
+        this.giaTriTrungBinh = giaTriTrungBinh;
+        this.dsHoaDon = dsHoaDon;
+        this.dsSanPham = dsSanPham;
+        this.dsDichVu = dsDichVu;
+        this.dsDoiTra = dsDoiTra;
+
         initModality(Modality.APPLICATION_MODAL);
         if (chuSoHuu != null) initOwner(chuSoHuu);
         setTitle("Xuất & In báo cáo doanh thu & hoạt động");
 
-        VBox noiDungBaoCao = taoNoiDungBaoCao(
-                khoangThoiGian, trangThaiLoc, tongDoanhThu, doanhThuSanPham, doanhThuDichVu,
-                tongGiamGia, tongHoanDoiTra, tongBuDoiTra, tienMat, chuyenKhoan,
-                hoaDonHoanTat, hoaDonHuy, giaTriTrungBinh, dsHoaDon, dsSanPham, dsDichVu, dsDoiTra
-        );
+        VBox noiDungBaoCao = taoNoiDungBaoCao();
 
-        ScrollPane cuon = new ScrollPane(noiDungBaoCao);
+        StackPane khungToGiay = new StackPane(noiDungBaoCao);
+        khungToGiay.setPadding(new Insets(16));
+        khungToGiay.setAlignment(Pos.TOP_CENTER);
+        khungToGiay.setStyle("-fx-background-color: #cbd5e1;");
+
+        ScrollPane cuon = new ScrollPane(khungToGiay);
         cuon.setFitToWidth(true);
-        cuon.setStyle("-fx-background: #f1f5f9; -fx-background-color: #f1f5f9;");
+        cuon.setStyle("-fx-background: #cbd5e1; -fx-background-color: #cbd5e1;");
 
-        Button btnIn = new Button("🖨 In báo cáo");
+        Button btnIn = new Button("🖨 In / Xuất PDF");
         btnIn.setStyle("-fx-background-color: #0284c7; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20; -fx-cursor: hand; -fx-background-radius: 6;");
-        btnIn.setOnAction(e -> inBaoCao(noiDungBaoCao));
+        btnIn.setOnAction(e -> inBaoCao());
 
         Button btnDong = new Button("Đóng");
         btnDong.setStyle("-fx-background-color: #f8fafc; -fx-text-fill: #334155; -fx-border-color: #cbd5e1; -fx-border-radius: 6; -fx-padding: 8 18; -fx-cursor: hand;");
@@ -96,28 +134,11 @@ public class InBaoCaoDoanhThuDialog extends Stage {
         setMinHeight(600);
     }
 
-    private VBox taoNoiDungBaoCao(
-            String khoangThoiGian,
-            String trangThaiLoc,
-            String tongDoanhThu,
-            String doanhThuSanPham,
-            String doanhThuDichVu,
-            String tongGiamGia,
-            String tongHoanDoiTra,
-            String tongBuDoiTra,
-            String tienMat,
-            String chuyenKhoan,
-            String hoaDonHoanTat,
-            String hoaDonHuy,
-            String giaTriTrungBinh,
-            List<HoaDon> dsHoaDon,
-            List<Map<String, Object>> dsSanPham,
-            List<Map<String, Object>> dsDichVu,
-            List<BaoCaoDoanhThuHoaDonView.DongHangDoiTraBaoCao> dsDoiTra) {
-
+    private VBox taoNoiDungBaoCao() {
         VBox baoCao = new VBox(16);
         baoCao.setPadding(new Insets(28, 36, 36, 36));
-        baoCao.setMaxWidth(880);
+        baoCao.setPrefWidth(RONG_BAO_CAO);
+        baoCao.setMaxWidth(RONG_BAO_CAO);
         baoCao.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cbd5e1; -fx-border-width: 1;");
         baoCao.setAlignment(Pos.TOP_CENTER);
 
@@ -126,7 +147,10 @@ public class InBaoCaoDoanhThuDialog extends Stage {
         pnlHeader.setAlignment(Pos.CENTER);
 
         Label lblThuongHieu = new Label("CỬA HÀNG THÚ CƯNG HAPPY TAILS");
-        lblThuongHieu.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #64748b;");
+        lblThuongHieu.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #0369a1;");
+
+        Label lblDiaChi = new Label("12 Nguyễn Văn Bảo, Phường 4, Gò Vấp, TP.HCM  |  Hotline: 0909.000.000");
+        lblDiaChi.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
 
         Label lblTieuDe = new Label("BÁO CÁO THỐNG KÊ DOANH THU & HOẠT ĐỘNG");
         lblTieuDe.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
@@ -142,7 +166,7 @@ public class InBaoCaoDoanhThuDialog extends Stage {
         Label lblNgayXuat = new Label("Ngày xuất: " + LocalDateTime.now().format(DINH_DANG_FULL) + "  |  Người lập: " + nguoiLap);
         lblNgayXuat.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
 
-        pnlHeader.getChildren().addAll(lblThuongHieu, lblTieuDe, lblThoiGian, lblNgayXuat);
+        pnlHeader.getChildren().addAll(lblThuongHieu, lblDiaChi, lblTieuDe, lblThoiGian, lblNgayXuat);
 
         // 2. Thẻ chỉ số tổng quan (KPI)
         GridPane pnlChiSo = taoBangChiSo(
@@ -522,18 +546,49 @@ public class InBaoCaoDoanhThuDialog extends Stage {
         return box;
     }
 
-    private void inBaoCao(VBox noiDungBaoCao) {
+    /**
+     * Thực hiện in hoặc xuất sang file PDF qua PrinterJob.
+     * Sử dụng bản in độc lập trong Group kết hợp Scale transform để co giãn vừa khít 100% khổ giấy A4.
+     */
+    private void inBaoCao() {
         PrinterJob job = PrinterJob.createPrinterJob();
         if (job != null && job.showPrintDialog(this)) {
-            noiDungBaoCao.setMaxWidth(Region.USE_PREF_SIZE);
-            if (job.printPage(noiDungBaoCao)) {
-                job.endJob();
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Đã gửi lệnh in báo cáo thành công!");
+            PageLayout pageLayout = job.getJobSettings().getPageLayout();
+            double printableWidth = pageLayout.getPrintableWidth();
+
+            VBox banIn = taoNoiDungBaoCao();
+            banIn.setStyle("-fx-background-color: #ffffff; -fx-border-width: 0;");
+            banIn.setEffect(null);
+
+            Group printRoot = new Group(banIn);
+
+            Scale scaleTransform = null;
+            if (printableWidth < RONG_BAO_CAO) {
+                double scale = printableWidth / RONG_BAO_CAO;
+                scaleTransform = new Scale(scale, scale, 0, 0);
+                printRoot.getTransforms().add(scaleTransform);
+            }
+
+            try {
+                boolean thanhCong = job.printPage(pageLayout, printRoot);
+                if (thanhCong) {
+                    job.endJob();
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Đã gửi lệnh in / xuất PDF báo cáo thành công!");
+                    alert.setHeaderText(null);
+                    alert.showAndWait();
+                    close();
+                } else {
+                    job.cancelJob();
+                }
+            } catch (Exception ex) {
+                job.cancelJob();
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Lỗi khi in báo cáo: " + ex.getMessage());
                 alert.setHeaderText(null);
                 alert.showAndWait();
-                close();
-            } else {
-                job.cancelJob();
+            } finally {
+                if (scaleTransform != null) {
+                    printRoot.getTransforms().remove(scaleTransform);
+                }
             }
         }
     }

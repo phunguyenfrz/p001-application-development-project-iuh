@@ -452,7 +452,10 @@ public class HoaDonDAO {
                        hd.ngayLap, hd.hinhThucThanhToan, hd.trangThaiThanhToan, hd.maKhuyenMai, hd.tongTien,
                        nv.hoTen AS tenNhanVien,
                        kh.hoTen AS tenKhachHang, kh.soDienThoai AS soDienThoaiKhachHang,
-                       km.tenChuongTrinh AS tenKhuyenMai, km.phanTramGiam
+                       km.tenChuongTrinh AS tenKhuyenMai, km.phanTramGiam,
+                       (ISNULL((SELECT SUM(sp.soLuong * sp.donGia) FROM dbo.ChiTietHoaDon_SanPham sp WHERE sp.maHoaDon = hd.maHoaDon), 0)
+                        + ISNULL((SELECT SUM(dv.soLuong * dv.donGia) FROM dbo.ChiTietHoaDon_DichVu dv WHERE dv.maHoaDon = hd.maHoaDon), 0)
+                       ) AS tongTienGoc
                 FROM dbo.HoaDon hd
                 LEFT JOIN dbo.NhanVien nv ON hd.maNhanVien = nv.maNhanVien
                 LEFT JOIN dbo.KhachHang kh ON hd.maKhachHang = kh.maKhachHang
@@ -573,7 +576,10 @@ public class HoaDonDAO {
                        hd.ngayLap, hd.hinhThucThanhToan, hd.trangThaiThanhToan, hd.maKhuyenMai, hd.tongTien,
                        nv.hoTen AS tenNhanVien,
                        kh.hoTen AS tenKhachHang, kh.soDienThoai AS soDienThoaiKhachHang,
-                       km.tenChuongTrinh AS tenKhuyenMai, km.phanTramGiam
+                       km.tenChuongTrinh AS tenKhuyenMai, km.phanTramGiam,
+                       (ISNULL((SELECT SUM(sp.soLuong * sp.donGia) FROM dbo.ChiTietHoaDon_SanPham sp WHERE sp.maHoaDon = hd.maHoaDon), 0)
+                        + ISNULL((SELECT SUM(dv.soLuong * dv.donGia) FROM dbo.ChiTietHoaDon_DichVu dv WHERE dv.maHoaDon = hd.maHoaDon), 0)
+                       ) AS tongTienGoc
                 FROM dbo.HoaDon hd
                 LEFT JOIN dbo.NhanVien nv ON hd.maNhanVien = nv.maNhanVien
                 LEFT JOIN dbo.KhachHang kh ON hd.maKhachHang = kh.maKhachHang
@@ -913,6 +919,40 @@ public class HoaDonDAO {
             hd.setDiemTichLuyCong(cached.getDiemTichLuyCong());
             hd.setTienKhachDua(cached.getTienKhachDua());
             hd.setTienThoiLai(cached.getTienThoiLai());
+        }
+
+        try {
+            BigDecimal tongGoc = rs.getBigDecimal("tongTienGoc");
+            if (tongGoc != null) {
+                hd.setTongTienGoc(tongGoc);
+                // Nếu chưa có tiền giảm (hoặc bằng 0), khôi phục từ tổng tiền gốc và tổng tiền thực tế
+                if (hd.getTongTienGiam().compareTo(BigDecimal.ZERO) == 0) {
+                    BigDecimal tongTien = hd.getTongTien() != null ? hd.getTongTien() : BigDecimal.ZERO;
+                    BigDecimal tongChenhLech = tongGoc.subtract(tongTien).max(BigDecimal.ZERO);
+                    if (tongChenhLech.compareTo(BigDecimal.ZERO) > 0) {
+                        BigDecimal tienGiamKm = BigDecimal.ZERO;
+                        if (hd.getMaKhuyenMai() != null) {
+                            try {
+                                BigDecimal phanTram = rs.getBigDecimal("phanTramGiam");
+                                if (phanTram != null && phanTram.compareTo(BigDecimal.ZERO) > 0) {
+                                    tienGiamKm = tongGoc.multiply(phanTram).divide(BigDecimal.valueOf(100), 0, java.math.RoundingMode.HALF_UP);
+                                    if (tienGiamKm.compareTo(tongChenhLech) > 0) {
+                                        tienGiamKm = tongChenhLech;
+                                    }
+                                }
+                            } catch (SQLException ignored) {}
+                        }
+                        BigDecimal tienGiamDiem = tongChenhLech.subtract(tienGiamKm);
+                        hd.setTienGiam(tienGiamKm);
+                        if (tienGiamDiem.compareTo(BigDecimal.ZERO) > 0) {
+                            int diemDung = (int) Math.ceil(tienGiamDiem.doubleValue() / 1000.0);
+                            hd.setDiemTichLuySuDung(diemDung);
+                            hd.setTienGiamTuDiem(tienGiamDiem);
+                        }
+                    }
+                }
+            }
+        } catch (SQLException ignored) {
         }
 
         return hd;
