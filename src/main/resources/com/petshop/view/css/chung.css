@@ -9,8 +9,8 @@
     -fx-background-color: #f4f6f8;
 }
 
-/* Nhãn thông tin mặc định (Label) */
-.label {
+/* Nhãn thông tin mặc định (Label, RadioButton, CheckBox) */
+.label, .radio-button, .check-box {
     -fx-text-fill: #1f2937;
 }
 

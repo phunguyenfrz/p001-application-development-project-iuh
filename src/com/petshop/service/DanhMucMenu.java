@@ -132,8 +132,7 @@ public class DanhMucMenu {
         TAT_CA_MENU.add(new NhomMenu("HOA_DON", "Hóa đơn", "HOA_DON", List.of(
                 new ChucNangMenu("HD_TAO", "Lập hóa đơn", null),
                 new ChucNangMenu("HD_TIM_KIEM", "Tìm kiếm hóa đơn", "Ctrl+F"),
-                new ChucNangMenu("HD_CAP_NHAT", "Cập nhật hóa đơn", null),
-                new ChucNangMenu("HD_DOANH_THU", "Báo cáo doanh thu", null)
+                new ChucNangMenu("HD_CAP_NHAT", "Cập nhật hóa đơn", null)
         )));
 
         // 13. Phiếu đổi trả
@@ -141,6 +140,11 @@ public class DanhMucMenu {
                 new ChucNangMenu("DT_TAO", "Lập phiếu đổi trả", null),
                 new ChucNangMenu("DT_XU_LY", "Xử lý đổi trả", null),
                 new ChucNangMenu("DT_TIM_KIEM", "Tìm kiếm phiếu đổi trả", "Ctrl+F")
+        )));
+
+        // 14. Báo cáo thống kê (Usecase độc lập)
+        TAT_CA_MENU.add(new NhomMenu("THONG_KE", "Báo cáo thống kê", "TONG_QUAN", List.of(
+                new ChucNangMenu("TK_DOANH_THU", "Báo cáo doanh thu & Dịch vụ", null)
         )));
 
         // Khởi tạo bảng ma trận phân quyền theo vai trò
@@ -153,6 +157,7 @@ public class DanhMucMenu {
                 if (nhom.getMaNhom().equals("NHAN_VIEN") || nhom.getMaNhom().equals("CA_TRUC") ||
                     nhom.getMaNhom().equals("NHA_CUNG_CAP") || nhom.getMaNhom().equals("DON_NHAP") || nhom.getMaNhom().equals("DICH_VU_CHAM_SOC") ||
                     nhom.getMaNhom().equals("KHUYEN_MAI") || nhom.getMaNhom().equals("SAN_PHAM") ||
+                    nhom.getMaNhom().equals("THONG_KE") || chucNang.getMaChucNang().equals("TK_DOANH_THU") ||
                     chucNang.getMaChucNang().equals("HD_DOANH_THU")) {
                     dsVaiTro.add(TaiKhoan.VaiTro.QUAN_LY);
                 }

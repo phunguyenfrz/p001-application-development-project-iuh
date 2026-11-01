@@ -169,4 +169,12 @@ public class HoaDonController {
     public Map<String, Object> layBaoCaoDoanhThu(LocalDate tuNgay, LocalDate denNgay, String trangThai) {
         return hoaDonService.layBaoCaoDoanhThu(tuNgay, denNgay, trangThai);
     }
+
+    public List<Map<String, Object>> layBaoCaoSanPhamBanRa(LocalDate tuNgay, LocalDate denNgay) {
+        return hoaDonService.layBaoCaoSanPhamBanRa(tuNgay, denNgay);
+    }
+
+    public List<Map<String, Object>> layBaoCaoDichVuThucHien(LocalDate tuNgay, LocalDate denNgay) {
+        return hoaDonService.layBaoCaoDichVuThucHien(tuNgay, denNgay);
+    }
 }

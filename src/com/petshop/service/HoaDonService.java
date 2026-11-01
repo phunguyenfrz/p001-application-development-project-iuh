@@ -244,6 +244,16 @@ public class HoaDonService {
         return hoaDonDAO.layBaoCaoDoanhThu(tuNgay, denNgay, trangThai);
     }
 
+    public List<Map<String, Object>> layBaoCaoSanPhamBanRa(LocalDate tuNgay, LocalDate denNgay) {
+        kiemTraQuyenHoaDon("TK_DOANH_THU");
+        return hoaDonDAO.layBaoCaoSanPhamBanRa(tuNgay, denNgay);
+    }
+
+    public List<Map<String, Object>> layBaoCaoDichVuThucHien(LocalDate tuNgay, LocalDate denNgay) {
+        kiemTraQuyenHoaDon("TK_DOANH_THU");
+        return hoaDonDAO.layBaoCaoDichVuThucHien(tuNgay, denNgay);
+    }
+
     // =========================================================================
     // HÀM KIỂM TRA RÀNG BUỘC (VALIDATION)
     // =========================================================================
@@ -319,12 +329,18 @@ public class HoaDonService {
                 case "HD_TAO" -> "INV_CREATE";
                 case "HD_TIM_KIEM" -> "INV_SEARCH";
                 case "HD_CAP_NHAT" -> "INV_CANCEL";
-                case "HD_DOANH_THU" -> "INV_REVENUE";
+                case "HD_DOANH_THU", "TK_DOANH_THU" -> "INV_REVENUE";
                 default -> null;
             };
             if (alias != null) {
                 try {
                     xacThucService.kiemTraQuyen(alias);
+                    return;
+                } catch (SecurityException ignored) {}
+            }
+            if ("TK_DOANH_THU".equals(maQuyenChinh)) {
+                try {
+                    xacThucService.kiemTraQuyen("HD_DOANH_THU");
                     return;
                 } catch (SecurityException ignored) {}
             }

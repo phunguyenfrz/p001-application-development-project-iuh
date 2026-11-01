@@ -457,7 +457,7 @@ public class HoaDonDAO {
                         + ISNULL((SELECT SUM(dv.soLuong * dv.donGia) FROM dbo.ChiTietHoaDon_DichVu dv WHERE dv.maHoaDon = hd.maHoaDon), 0)
                        ) AS tongTienGoc
                 FROM dbo.HoaDon hd
-                JOIN dbo.NhanVien nv ON hd.maNhanVien = nv.maNhanVien
+                LEFT JOIN dbo.NhanVien nv ON hd.maNhanVien = nv.maNhanVien
                 LEFT JOIN dbo.KhachHang kh ON hd.maKhachHang = kh.maKhachHang
                 LEFT JOIN dbo.KhuyenMai km ON hd.maKhuyenMai = km.maKhuyenMai
                 WHERE hd.maHoaDon = ?
@@ -581,7 +581,7 @@ public class HoaDonDAO {
                         + ISNULL((SELECT SUM(dv.soLuong * dv.donGia) FROM dbo.ChiTietHoaDon_DichVu dv WHERE dv.maHoaDon = hd.maHoaDon), 0)
                        ) AS tongTienGoc
                 FROM dbo.HoaDon hd
-                JOIN dbo.NhanVien nv ON hd.maNhanVien = nv.maNhanVien
+                LEFT JOIN dbo.NhanVien nv ON hd.maNhanVien = nv.maNhanVien
                 LEFT JOIN dbo.KhachHang kh ON hd.maKhachHang = kh.maKhachHang
                 LEFT JOIN dbo.KhuyenMai km ON hd.maKhuyenMai = km.maKhuyenMai
                 WHERE 1=1
@@ -611,12 +611,20 @@ public class HoaDonDAO {
             thamSo.add(Date.valueOf(denNgay));
         }
 
-        if (hinhThucThanhToan != null && !hinhThucThanhToan.trim().isEmpty() && !"Tất cả".equalsIgnoreCase(hinhThucThanhToan.trim())) {
+        if (hinhThucThanhToan != null && !hinhThucThanhToan.trim().isEmpty()
+                && !"Tất cả".equalsIgnoreCase(hinhThucThanhToan.trim())
+                && !"Tất cả hình thức".equalsIgnoreCase(hinhThucThanhToan.trim())
+                && !hinhThucThanhToan.toLowerCase().contains("tất cả")
+                && !hinhThucThanhToan.toLowerCase().contains("tat ca")) {
             sql.append(" AND hd.hinhThucThanhToan = ?");
             thamSo.add(hinhThucThanhToan.trim());
         }
 
-        if (trangThai != null && !trangThai.trim().isEmpty() && !"Tất cả".equalsIgnoreCase(trangThai.trim())) {
+        if (trangThai != null && !trangThai.trim().isEmpty()
+                && !"Tất cả".equalsIgnoreCase(trangThai.trim())
+                && !"Tất cả trạng thái".equalsIgnoreCase(trangThai.trim())
+                && !trangThai.toLowerCase().contains("tất cả")
+                && !trangThai.toLowerCase().contains("tat ca")) {
             sql.append(" AND hd.trangThaiThanhToan = ?");
             thamSo.add(trangThai.trim());
         }
@@ -765,7 +773,10 @@ public class HoaDonDAO {
         Map<String, Object> baoCao = new HashMap<>();
         boolean locTheoTrangThai = trangThaiLoc != null
                 && !trangThaiLoc.isBlank()
-                && !"Tất cả".equalsIgnoreCase(trangThaiLoc);
+                && !"Tất cả".equalsIgnoreCase(trangThaiLoc.trim())
+                && !"Tất cả trạng thái".equalsIgnoreCase(trangThaiLoc.trim())
+                && !trangThaiLoc.toLowerCase().contains("tất cả")
+                && !trangThaiLoc.toLowerCase().contains("tat ca");
         String dieuKienTrangThai = locTheoTrangThai ? " AND hd.trangThaiThanhToan = ?" : "";
         String sql = """
                 SELECT COUNT(*) AS tongSoHoaDon,
@@ -838,8 +849,30 @@ public class HoaDonDAO {
                             ? tongDt.divide(BigDecimal.valueOf(soTc), 0, java.math.RoundingMode.HALF_UP)
                             : BigDecimal.ZERO;
 
+                    // Tính tổng tiền hoàn đổi trả và bù đổi trả để đồng bộ doanh thu thực thu
+                    BigDecimal tongHoanDt = BigDecimal.ZERO;
+                    BigDecimal tongBuDt = BigDecimal.ZERO;
+                    try (Statement stDt = conn.createStatement();
+                         ResultSet rsDt = stDt.executeQuery("SELECT ISNULL(SUM(tienHoan), 0) AS tongHoan, ISNULL(SUM(tienBu), 0) AS tongBu " +
+                                 "FROM dbo.PhieuDoiTra WHERE trangThai IN (N'Đã duyệt', N'Hoàn thành') " +
+                                 "AND ngayLap >= '" + dTu + "' AND ngayLap <= '" + dDen + "'")) {
+                        if (rsDt.next()) {
+                            tongHoanDt = rsDt.getBigDecimal("tongHoan");
+                            tongBuDt = rsDt.getBigDecimal("tongBu");
+                        }
+                    } catch (Exception ignored) {}
+
+                    // Doanh thu thực thu sau khi đã trừ tiền hoàn lại cho khách
+                    BigDecimal dtThucThuSauDoiTra = tongDt.subtract(tongHoanDt).add(tongBuDt);
+                    if (dtThucThuSauDoiTra.compareTo(BigDecimal.ZERO) < 0) {
+                        dtThucThuSauDoiTra = BigDecimal.ZERO;
+                    }
+
                     baoCao.put("tongSoHoaDon", tongSoHd);
-                    baoCao.put("tongDoanhThu", tongDt);
+                    baoCao.put("tongDoanhThu", dtThucThuSauDoiTra);
+                    baoCao.put("tongDoanhThuGoc", tongDt);
+                    baoCao.put("tongTienHoanDoiTra", tongHoanDt);
+                    baoCao.put("tongTienBuDoiTra", tongBuDt);
                     baoCao.put("doanhThuTienMat", dtTm);
                     baoCao.put("doanhThuChuyenKhoan", dtCk);
                     baoCao.put("doanhThuPos", dtPos);
@@ -923,5 +956,88 @@ public class HoaDonDAO {
         }
 
         return hd;
+    }
+
+    /**
+     * Lấy báo cáo thống kê các sản phẩm đã bán trong khoảng thời gian.
+     */
+    public List<Map<String, Object>> layBaoCaoSanPhamBanRa(LocalDate tuNgay, LocalDate denNgay) {
+        List<Map<String, Object>> danhSach = new ArrayList<>();
+        String sql = """
+                SELECT ct.maSanPham, sp.tenSanPham, sp.donViTinh,
+                       SUM(ct.soLuong) AS tongSoLuong,
+                       SUM(ct.soLuong * ct.donGia) AS tongDoanhThu
+                FROM dbo.ChiTietHoaDon_SanPham ct
+                JOIN dbo.HoaDon hd ON ct.maHoaDon = hd.maHoaDon
+                JOIN dbo.SanPham sp ON ct.maSanPham = sp.maSanPham
+                WHERE hd.ngayLap >= ? AND hd.ngayLap <= ? AND hd.trangThaiThanhToan = N'Đã thanh toán'
+                GROUP BY ct.maSanPham, sp.tenSanPham, sp.donViTinh
+                ORDER BY tongSoLuong DESC
+                """;
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            Date dTu = Date.valueOf(tuNgay != null ? tuNgay : LocalDate.now().minusMonths(1));
+            Date dDen = Date.valueOf(denNgay != null ? denNgay : LocalDate.now());
+            ps.setDate(1, dTu);
+            ps.setDate(2, dDen);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("maSanPham", rs.getString("maSanPham"));
+                    map.put("tenSanPham", rs.getString("tenSanPham"));
+                    map.put("donViTinh", rs.getString("donViTinh"));
+                    map.put("soLuong", rs.getInt("tongSoLuong"));
+                    map.put("doanhThu", rs.getBigDecimal("tongDoanhThu"));
+                    danhSach.add(map);
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi lấy báo cáo sản phẩm bán ra: " + e.getMessage(), e);
+        }
+        return danhSach;
+    }
+
+    /**
+     * Lấy báo cáo thống kê các dịch vụ đã thực hiện trong khoảng thời gian.
+     */
+    public List<Map<String, Object>> layBaoCaoDichVuThucHien(LocalDate tuNgay, LocalDate denNgay) {
+        List<Map<String, Object>> danhSach = new ArrayList<>();
+        String sql = """
+                SELECT dv.maDichVu, d.tenDichVu,
+                       COUNT(dv.maDichVu) AS tongLuot,
+                       SUM(dv.soLuong * dv.donGia) AS tongDoanhThu
+                FROM dbo.ChiTietHoaDon_DichVu dv
+                JOIN dbo.HoaDon hd ON dv.maHoaDon = hd.maHoaDon
+                JOIN dbo.DichVuChamSoc d ON dv.maDichVu = d.maDichVu
+                WHERE hd.ngayLap >= ? AND hd.ngayLap <= ? AND hd.trangThaiThanhToan = N'Đã thanh toán'
+                GROUP BY dv.maDichVu, d.tenDichVu
+                ORDER BY tongLuot DESC
+                """;
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            Date dTu = Date.valueOf(tuNgay != null ? tuNgay : LocalDate.now().minusMonths(1));
+            Date dDen = Date.valueOf(denNgay != null ? denNgay : LocalDate.now());
+            ps.setDate(1, dTu);
+            ps.setDate(2, dDen);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("maDichVu", rs.getString("maDichVu"));
+                    map.put("tenDichVu", rs.getString("tenDichVu"));
+                    map.put("soLuong", rs.getInt("tongLuot"));
+                    map.put("doanhThu", rs.getBigDecimal("tongDoanhThu"));
+                    danhSach.add(map);
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi lấy báo cáo dịch vụ thực hiện: " + e.getMessage(), e);
+        }
+        return danhSach;
     }
 }

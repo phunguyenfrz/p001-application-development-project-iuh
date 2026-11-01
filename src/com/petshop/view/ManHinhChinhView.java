@@ -41,6 +41,9 @@ import com.petshop.view.sanpham.TimKiemSanPhamView;
 import com.petshop.view.thucung.CapNhatThuCungView;
 import com.petshop.view.thucung.LichSuChamSocThuCungView;
 import com.petshop.view.thucung.TimKiemThuCungView;
+import com.petshop.view.doitra.LapPhieuDoiTraView;
+import com.petshop.view.doitra.TimKiemPhieuDoiTraView;
+import com.petshop.view.doitra.XuLyPhieuDoiTraView;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -203,6 +206,7 @@ public class ManHinhChinhView extends BorderPane {
 
         ScrollPane scrMenu = new ScrollPane(pnlDanhSachMenu);
         scrMenu.setFitToWidth(true);
+        scrMenu.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrMenu.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
         VBox.setVgrow(scrMenu, Priority.ALWAYS);
 
@@ -358,6 +362,7 @@ public class ManHinhChinhView extends BorderPane {
 
         ScrollPane scrMenu = new ScrollPane(pnlDanhSachMenu);
         scrMenu.setFitToWidth(true);
+        scrMenu.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrMenu.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
         VBox.setVgrow(scrMenu, Priority.ALWAYS);
 
@@ -565,7 +570,17 @@ public class ManHinhChinhView extends BorderPane {
                 }
                 yield new LapHoaDonThanhToanView();
             }
-            case "PHIEU_DOI_TRA"       -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
+            case "PHIEU_DOI_TRA" -> {
+                if ("DT_XU_LY".equals(chucNang.getMaChucNang()) || "RET_CONFIRM".equals(chucNang.getMaChucNang())) {
+                    yield new XuLyPhieuDoiTraView();
+                } else if ("DT_TIM_KIEM".equals(chucNang.getMaChucNang()) || "RET_SEARCH".equals(chucNang.getMaChucNang())) {
+                    yield new TimKiemPhieuDoiTraView();
+                }
+                yield new LapPhieuDoiTraView();
+            }
+            case "THONG_KE"          -> {
+                yield new BaoCaoDoanhThuHoaDonView();
+            }
             default                  -> new DanhSachChucNangView(nhom.getTieuDe(), chucNang.getTenChucNang(), chucNang.getPhimTat());
         };
 
@@ -621,7 +636,8 @@ public class ManHinhChinhView extends BorderPane {
             case "DICH_VU_CHAM_SOC" -> "M6 3a3 3 0 0 0 0 6h2l10 12a2 2 0 0 0 3-3L11 8 M8 9l3-3 M18 5l-6 6";
             case "KHUYEN_MAI" -> "M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z M7.5 7.5h.01";
             case "HOA_DON" -> "M6 2h12v20l-3-2-3 2-3-2-3 2V2z M9 7h6 M9 11h6 M9 15h3";
-            case "PHIEU_DOI_TRA" -> "M3 3v18h18 M8 16v-5 M13 16V6 M18 16v-8";
+            case "PHIEU_DOI_TRA" -> "M1 4v6h6 M23 20v-6h-6 M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15";
+            case "THONG_KE" -> "M3 3v18h18 M8 16v-5 M13 16V6 M18 16v-8";
             default -> "M4 4h16v16H4z M8 8h8v8H8z";
         };
 
