@@ -34,6 +34,7 @@ public class HoaDon {
     private BigDecimal tienThoiLai;
     private BigDecimal tienThanhToanThem = BigDecimal.ZERO;
     private BigDecimal tienHoanLai = BigDecimal.ZERO;
+    private BigDecimal tongTienGoc; // Giá gốc trước giảm giá
     private BigDecimal tongTien; // Thực thu sau giảm giá
     private String ghiChu;
 
@@ -164,6 +165,29 @@ public class HoaDon {
 
     public BigDecimal getTienGiam() { return tienGiam != null ? tienGiam : BigDecimal.ZERO; }
     public void setTienGiam(BigDecimal tienGiam) { this.tienGiam = tienGiam; }
+
+    public BigDecimal getTongTienGiam() {
+        BigDecimal km = tienGiam != null ? tienGiam : BigDecimal.ZERO;
+        BigDecimal diem = tienGiamTuDiem != null ? tienGiamTuDiem : BigDecimal.ZERO;
+        return km.add(diem);
+    }
+
+    public BigDecimal getTongTienGoc() {
+        if (tongTienGoc != null && tongTienGoc.compareTo(BigDecimal.ZERO) > 0) {
+            return tongTienGoc;
+        }
+        BigDecimal tuChiTiet = tinhTongTienGoc();
+        if (tuChiTiet.compareTo(BigDecimal.ZERO) > 0) {
+            return tuChiTiet;
+        }
+        BigDecimal tt = getTongTien();
+        BigDecimal tg = getTongTienGiam();
+        return tt.add(tg);
+    }
+
+    public void setTongTienGoc(BigDecimal tongTienGoc) {
+        this.tongTienGoc = tongTienGoc;
+    }
 
     public BigDecimal getTongTien() { return tongTien != null ? tongTien : BigDecimal.ZERO; }
     public void setTongTien(BigDecimal tongTien) { this.tongTien = tongTien; }

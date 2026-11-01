@@ -252,12 +252,21 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
         colHt.setPrefWidth(100);
         colHt.setStyle("-fx-alignment: center;");
 
+        TableColumn<HoaDon, String> colGiaGoc = new TableColumn<>("Giá gốc");
+        colGiaGoc.setCellValueFactory(h -> {
+            BigDecimal giaGoc = h.getValue().getTongTienGoc();
+            return new SimpleStringProperty(DINH_DANG_TIEN.format(giaGoc != null ? giaGoc : BigDecimal.ZERO));
+        });
+        colGiaGoc.setPrefWidth(110);
+        colGiaGoc.setStyle("-fx-alignment: center-right; -fx-text-fill: #475569;");
+
         TableColumn<HoaDon, String> colGiamGia = new TableColumn<>("Giảm giá");
         colGiamGia.setCellValueFactory(h -> {
-            BigDecimal tienKm = h.getValue().getTienGiam() != null ? h.getValue().getTienGiam() : BigDecimal.ZERO;
-            BigDecimal tienDiem = h.getValue().getTienGiamTuDiem() != null ? h.getValue().getTienGiamTuDiem() : BigDecimal.ZERO;
-            BigDecimal tongGiam = tienKm.add(tienDiem);
-            return new SimpleStringProperty(DINH_DANG_TIEN.format(tongGiam));
+            if ("Đã hủy".equalsIgnoreCase(h.getValue().getTrangThaiThanhToan())) {
+                return new SimpleStringProperty("0 VNĐ");
+            }
+            BigDecimal tongGiam = h.getValue().getTongTienGiam();
+            return new SimpleStringProperty(DINH_DANG_TIEN.format(tongGiam != null ? tongGiam : BigDecimal.ZERO));
         });
         colGiamGia.setPrefWidth(110);
         colGiamGia.setStyle("-fx-alignment: center-right; -fx-text-fill: #ea580c;");
@@ -297,7 +306,7 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
             }
         });
 
-        bangHoaDon.getColumns().addAll(colStt, colMa, colNgay, colGio, colKhach, colNv, colHt, colGiamGia, colTongTien, colTrangThai);
+        bangHoaDon.getColumns().addAll(colStt, colMa, colNgay, colGio, colKhach, colNv, colHt, colGiaGoc, colGiamGia, colTongTien, colTrangThai);
     }
 
     private HBox taoChanTrang() {
@@ -430,7 +439,8 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
             long demThanhCong = ds.stream().filter(h -> "Đã thanh toán".equalsIgnoreCase(h.getTrangThaiThanhToan())).count();
             long demHuy = ds.stream().filter(h -> "Đã hủy".equalsIgnoreCase(h.getTrangThaiThanhToan())).count();
 
-            lblThongKeChanBang.setText("Hiển thị: " + ds.size() + " hóa đơn (" + demThanhCong + " hoàn tất, " + demHuy + " đã hủy) | Tổng doanh thu thực: " + DINH_DANG_TIEN.format(tongDt));
+            BigDecimal tongGocThuc = dtSp.add(dtDv);
+            lblThongKeChanBang.setText("Hiển thị: " + ds.size() + " hóa đơn (" + demThanhCong + " hoàn tất, " + demHuy + " đã hủy) | Tổng giá gốc: " + DINH_DANG_TIEN.format(tongGocThuc) + " | Tổng giảm giá: " + DINH_DANG_TIEN.format(tongGiam) + " | Tổng thực thu: " + DINH_DANG_TIEN.format(tongDt));
         } catch (Exception ex) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Lỗi khi tải báo cáo doanh thu: " + ex.getMessage());
             alert.setHeaderText(null);
