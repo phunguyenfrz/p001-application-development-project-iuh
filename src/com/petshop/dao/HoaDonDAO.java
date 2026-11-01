@@ -683,35 +683,166 @@ public class HoaDonDAO {
     }
 
     /**
+     * Lấy danh sách phiếu dịch vụ trong ngày của khách hàng mà chưa được thanh toán.
+     * Tự động xuất thông tin phiếu dịch vụ khi nhân viên nhập số điện thoại khách hàng.
+     */
+    public List<PhieuDichVu> layPhieuDichVuTrongNgayCuaKhachHang(String maKhachHang, LocalDate ngay) {
+        List<PhieuDichVu> danhSach = new ArrayList<>();
+        String sql = """
+                SELECT pdv.maPhieuDichVu, pdv.maKhachHang, pdv.maNhanVien, pdv.maLichHen,
+                       pdv.ngayTiepNhan, pdv.gioTiepNhan, pdv.trangThai, pdv.ghiChu,
+                       kh.hoTen AS tenKhachHang, kh.soDienThoai
+                FROM dbo.PhieuDichVu pdv
+                JOIN dbo.KhachHang kh ON pdv.maKhachHang = kh.maKhachHang
+                WHERE pdv.maKhachHang = ?
+                  AND pdv.trangThai != N'Đã hủy'
+                  AND (? IS NULL OR pdv.ngayTiepNhan = ?)
+                  AND pdv.maPhieuDichVu NOT IN (
+                      SELECT maPhieuDichVu FROM dbo.HoaDon
+                      WHERE maPhieuDichVu IS NOT NULL AND trangThaiThanhToan != N'Đã hủy'
+                  )
+                ORDER BY pdv.ngayTiepNhan DESC, pdv.gioTiepNhan DESC
+                """;
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, maKhachHang);
+            if (ngay != null) {
+                ps.setDate(2, Date.valueOf(ngay));
+                ps.setDate(3, Date.valueOf(ngay));
+            } else {
+                ps.setNull(2, Types.DATE);
+                ps.setNull(3, Types.DATE);
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    PhieuDichVu pdv = new PhieuDichVu();
+                    pdv.setMaPhieuDichVu(rs.getString("maPhieuDichVu"));
+                    pdv.setMaKhachHang(rs.getString("maKhachHang"));
+                    pdv.setMaNhanVien(rs.getString("maNhanVien"));
+                    pdv.setMaLichHen(rs.getString("maLichHen"));
+                    Date d = rs.getDate("ngayTiepNhan");
+                    if (d != null) pdv.setNgayTiepNhan(d.toLocalDate());
+                    Time gio = rs.getTime("gioTiepNhan");
+                    if (gio != null) pdv.setGioTiepNhan(gio.toLocalTime());
+                    pdv.setTrangThai(rs.getString("trangThai"));
+                    pdv.setGhiChu(rs.getString("ghiChu"));
+                    pdv.setTenKhachHang(rs.getString("tenKhachHang"));
+                    pdv.setSoDienThoai(rs.getString("soDienThoai"));
+                    danhSach.add(pdv);
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi tìm phiếu dịch vụ của khách hàng: " + e.getMessage(), e);
+        }
+
+        return danhSach;
+    }
+
+    /**
+     * Lấy tất cả hóa đơn hiện có trong cơ sở dữ liệu.
+     */
+    public List<HoaDon> layTatCaHoaDon() {
+        return timKiemHoaDon("", null, null, "Tất cả", "Tất cả");
+    }
+
+    /**
      * Lấy báo cáo thống kê doanh thu theo khoảng thời gian.
      */
     public Map<String, Object> layBaoCaoDoanhThu(LocalDate tuNgay, LocalDate denNgay) {
+        return layBaoCaoDoanhThu(tuNgay, denNgay, null);
+    }
+
+    public Map<String, Object> layBaoCaoDoanhThu(LocalDate tuNgay, LocalDate denNgay, String trangThaiLoc) {
         Map<String, Object> baoCao = new HashMap<>();
+        boolean locTheoTrangThai = trangThaiLoc != null
+                && !trangThaiLoc.isBlank()
+                && !"Tất cả".equalsIgnoreCase(trangThaiLoc);
+        String dieuKienTrangThai = locTheoTrangThai ? " AND hd.trangThaiThanhToan = ?" : "";
         String sql = """
                 SELECT COUNT(*) AS tongSoHoaDon,
                        ISNULL(SUM(CASE WHEN trangThaiThanhToan = N'Đã thanh toán' THEN tongTien ELSE 0 END), 0) AS tongDoanhThu,
                        ISNULL(SUM(CASE WHEN trangThaiThanhToan = N'Đã thanh toán' AND hinhThucThanhToan = N'Tiền mặt' THEN tongTien ELSE 0 END), 0) AS doanhThuTienMat,
                        ISNULL(SUM(CASE WHEN trangThaiThanhToan = N'Đã thanh toán' AND hinhThucThanhToan = N'Chuyển khoản' THEN tongTien ELSE 0 END), 0) AS doanhThuChuyenKhoan,
                        ISNULL(SUM(CASE WHEN trangThaiThanhToan = N'Đã thanh toán' AND hinhThucThanhToan = N'POS' THEN tongTien ELSE 0 END), 0) AS doanhThuPos,
-                       COUNT(CASE WHEN trangThaiThanhToan = N'Đã hủy' THEN 1 END) AS soHoaDonHuy
+                       COUNT(CASE WHEN trangThaiThanhToan = N'Đã hủy' THEN 1 END) AS soHoaDonHuy,
+                       COUNT(CASE WHEN trangThaiThanhToan = N'Đã thanh toán' THEN 1 END) AS soHoaDonThanhCong,
+                       (SELECT ISNULL(SUM(sp.soLuong * sp.donGia), 0)
+                        FROM dbo.ChiTietHoaDon_SanPham sp
+                        JOIN dbo.HoaDon h ON sp.maHoaDon = h.maHoaDon
+                        WHERE h.ngayLap >= ? AND h.ngayLap <= ? AND h.trangThaiThanhToan = N'Đã thanh toán'""" + (locTheoTrangThai ? " AND h.trangThaiThanhToan = ?" : "") + """
+                        ) AS doanhThuSanPham,
+                       (SELECT ISNULL(SUM(dv.soLuong * dv.donGia), 0)
+                        FROM dbo.ChiTietHoaDon_DichVu dv
+                        JOIN dbo.HoaDon h ON dv.maHoaDon = h.maHoaDon
+                        WHERE h.ngayLap >= ? AND h.ngayLap <= ? AND h.trangThaiThanhToan = N'Đã thanh toán'""" + (locTheoTrangThai ? " AND h.trangThaiThanhToan = ?" : "") + """
+                        ) AS doanhThuDichVu
                 FROM dbo.HoaDon
                 WHERE ngayLap >= ? AND ngayLap <= ?
-                """;
+                """ + dieuKienTrangThai.replace("hd.", "");
 
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setDate(1, Date.valueOf(tuNgay != null ? tuNgay : LocalDate.now().minusMonths(1)));
-            ps.setDate(2, Date.valueOf(denNgay != null ? denNgay : LocalDate.now()));
+            Date dTu = Date.valueOf(tuNgay != null ? tuNgay : LocalDate.now().minusMonths(1));
+            Date dDen = Date.valueOf(denNgay != null ? denNgay : LocalDate.now());
+
+            int thamSo = 1;
+            ps.setDate(thamSo++, dTu);
+            ps.setDate(thamSo++, dDen);
+            if (locTheoTrangThai) ps.setString(thamSo++, trangThaiLoc);
+            ps.setDate(thamSo++, dTu);
+            ps.setDate(thamSo++, dDen);
+            if (locTheoTrangThai) ps.setString(thamSo++, trangThaiLoc);
+            ps.setDate(thamSo++, dTu);
+            ps.setDate(thamSo++, dDen);
+            if (locTheoTrangThai) ps.setString(thamSo++, trangThaiLoc);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    baoCao.put("tongSoHoaDon", rs.getInt("tongSoHoaDon"));
-                    baoCao.put("tongDoanhThu", rs.getBigDecimal("tongDoanhThu"));
-                    baoCao.put("doanhThuTienMat", rs.getBigDecimal("doanhThuTienMat"));
-                    baoCao.put("doanhThuChuyenKhoan", rs.getBigDecimal("doanhThuChuyenKhoan"));
-                    baoCao.put("doanhThuPos", rs.getBigDecimal("doanhThuPos"));
-                    baoCao.put("soHoaDonHuy", rs.getInt("soHoaDonHuy"));
+                    int tongSoHd = rs.getInt("tongSoHoaDon");
+                    int soHuy = rs.getInt("soHoaDonHuy");
+                    int soTc = rs.getInt("soHoaDonThanhCong");
+
+                    BigDecimal tongDt = rs.getBigDecimal("tongDoanhThu");
+                    if (tongDt == null) tongDt = BigDecimal.ZERO;
+
+                    BigDecimal dtTm = rs.getBigDecimal("doanhThuTienMat");
+                    if (dtTm == null) dtTm = BigDecimal.ZERO;
+
+                    BigDecimal dtCk = rs.getBigDecimal("doanhThuChuyenKhoan");
+                    if (dtCk == null) dtCk = BigDecimal.ZERO;
+
+                    BigDecimal dtPos = rs.getBigDecimal("doanhThuPos");
+                    if (dtPos == null) dtPos = BigDecimal.ZERO;
+
+                    BigDecimal dtSp = rs.getBigDecimal("doanhThuSanPham");
+                    if (dtSp == null) dtSp = BigDecimal.ZERO;
+
+                    BigDecimal dtDv = rs.getBigDecimal("doanhThuDichVu");
+                    if (dtDv == null) dtDv = BigDecimal.ZERO;
+
+                    // Tổng tiền giảm giá = Tổng tiền hàng gốc (Sản phẩm + Dịch vụ) - Tổng thực thu (sau giảm giá)
+                    BigDecimal tongGoc = dtSp.add(dtDv);
+                    BigDecimal tongGiamGia = tongGoc.subtract(tongDt).max(BigDecimal.ZERO);
+
+                    BigDecimal aov = soTc > 0
+                            ? tongDt.divide(BigDecimal.valueOf(soTc), 0, java.math.RoundingMode.HALF_UP)
+                            : BigDecimal.ZERO;
+
+                    baoCao.put("tongSoHoaDon", tongSoHd);
+                    baoCao.put("tongDoanhThu", tongDt);
+                    baoCao.put("doanhThuTienMat", dtTm);
+                    baoCao.put("doanhThuChuyenKhoan", dtCk);
+                    baoCao.put("doanhThuPos", dtPos);
+                    baoCao.put("soHoaDonHuy", soHuy);
+                    baoCao.put("soHoaDonThanhCong", soTc);
+                    baoCao.put("doanhThuSanPham", dtSp);
+                    baoCao.put("doanhThuDichVu", dtDv);
+                    baoCao.put("tongGiamGia", tongGiamGia);
+                    baoCao.put("giaTriTrungBinhDon", aov);
                 }
             }
         } catch (SQLException e) {
@@ -754,4 +885,3 @@ public class HoaDonDAO {
         return hd;
     }
 }
-

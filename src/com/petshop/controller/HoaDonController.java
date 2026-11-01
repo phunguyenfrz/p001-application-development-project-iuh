@@ -71,6 +71,13 @@ public class HoaDonController {
     }
 
     /**
+     * Lấy toàn bộ danh sách hóa đơn hiện có.
+     */
+    public List<HoaDon> layTatCaHoaDon() {
+        return hoaDonService.layTatCaHoaDon();
+    }
+
+    /**
      * Sinh mã hóa đơn mới theo ngày.
      */
     public String taoMaHoaDonMoi() {
@@ -82,6 +89,14 @@ public class HoaDonController {
      */
     public List<PhieuDichVu> layDanhSachPhieuDichVuChuaThanhToan() {
         return hoaDonService.layDanhSachPhieuDichVuChuaThanhToan();
+    }
+
+    /**
+     * Lấy danh sách phiếu dịch vụ trong ngày của khách hàng mà chưa được thanh toán.
+     * Tự động xuất thông tin phiếu dịch vụ khi nhân viên nhập số điện thoại khách hàng.
+     */
+    public List<PhieuDichVu> layPhieuDichVuTrongNgayCuaKhachHang(String maKhachHang, LocalDate ngay) {
+        return hoaDonService.layPhieuDichVuTrongNgayCuaKhachHang(maKhachHang, ngay);
     }
 
     /**
@@ -150,5 +165,8 @@ public class HoaDonController {
     public Map<String, Object> layBaoCaoDoanhThu(LocalDate tuNgay, LocalDate denNgay) {
         return hoaDonService.layBaoCaoDoanhThu(tuNgay, denNgay);
     }
-}
 
+    public Map<String, Object> layBaoCaoDoanhThu(LocalDate tuNgay, LocalDate denNgay, String trangThai) {
+        return hoaDonService.layBaoCaoDoanhThu(tuNgay, denNgay, trangThai);
+    }
+}

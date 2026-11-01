@@ -194,10 +194,26 @@ public class HoaDonService {
     }
 
     /**
+     * Lấy toàn bộ danh sách hóa đơn hiện có trong cơ sở dữ liệu.
+     */
+    public List<HoaDon> layTatCaHoaDon() {
+        kiemTraQuyenHoaDon("HD_TIM_KIEM");
+        return hoaDonDAO.layTatCaHoaDon();
+    }
+
+    /**
      * Lấy danh sách các Phiếu dịch vụ chưa thanh toán để nạp nhanh vào hóa đơn.
      */
     public List<PhieuDichVu> layDanhSachPhieuDichVuChuaThanhToan() {
         return hoaDonDAO.layDanhSachPhieuDichVuChuaThanhToan();
+    }
+
+    /**
+     * Lấy danh sách phiếu dịch vụ trong ngày của khách hàng mà chưa được thanh toán.
+     * Tự động xuất thông tin phiếu dịch vụ khi nhân viên nhập số điện thoại khách hàng.
+     */
+    public List<PhieuDichVu> layPhieuDichVuTrongNgayCuaKhachHang(String maKhachHang, LocalDate ngay) {
+        return hoaDonDAO.layPhieuDichVuTrongNgayCuaKhachHang(maKhachHang, ngay);
     }
 
     /**
@@ -223,6 +239,11 @@ public class HoaDonService {
         return hoaDonDAO.layBaoCaoDoanhThu(tuNgay, denNgay);
     }
 
+    public Map<String, Object> layBaoCaoDoanhThu(LocalDate tuNgay, LocalDate denNgay, String trangThai) {
+        kiemTraQuyenHoaDon("HD_DOANH_THU");
+        return hoaDonDAO.layBaoCaoDoanhThu(tuNgay, denNgay, trangThai);
+    }
+
     // =========================================================================
     // HÀM KIỂM TRA RÀNG BUỘC (VALIDATION)
     // =========================================================================
@@ -241,6 +262,16 @@ public class HoaDonService {
 
         if (!coSanPham && !coDichVu) {
             throw new IllegalArgumentException("Hóa đơn phải có ít nhất 1 sản phẩm hoặc 1 dịch vụ chăm sóc!");
+        }
+
+        // Kiểm tra ràng buộc phiếu dịch vụ nếu có: Phải ở trạng thái "Hoàn thành" mới được thanh toán
+        if (hoaDon.getMaPhieuDichVu() != null && !hoaDon.getMaPhieuDichVu().trim().isEmpty()) {
+            PhieuDichVu phieu = phieuDichVuService.layPhieuDichVuTheoMa(hoaDon.getMaPhieuDichVu().trim());
+            if (phieu != null && !"Hoàn thành".equalsIgnoreCase(phieu.getTrangThai())) {
+                throw new IllegalArgumentException("Phiếu dịch vụ '" + hoaDon.getMaPhieuDichVu()
+                        + "' hiện đang ở trạng thái '" + phieu.getTrangThai()
+                        + "'. Chỉ khi phiếu dịch vụ ở trạng thái 'Hoàn thành' thì mới được thanh toán hóa đơn!");
+            }
         }
 
         // Kiểm tra từng sản phẩm và tồn kho

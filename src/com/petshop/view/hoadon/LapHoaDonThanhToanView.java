@@ -26,6 +26,8 @@ import java.util.List;
 /**
  * Giao diện Lập hóa đơn và thanh toán bán lẻ POS (INV_CREATE / HD_TAO).
  * - Tra cứu khách hàng theo SĐT (giống bên Lập phiếu dịch vụ): có thì tự động nạp, chưa có thì mở popup thêm mới.
+ * - TỰ ĐỘNG XUẤT THÔNG TIN PHIẾU DỊCH VỤ trong ngày của khách hàng nếu khách có sử dụng dịch vụ.
+ * - CHỈ CHO PHÉP THANH TOÁN KHI PHIẾU DỊCH VỤ Ở TRẠNG THÁI "HOÀN THÀNH".
  * - Quy tắc điểm tích lũy:
  *   + Hóa đơn < 1 triệu: 100k = 5 điểm; hóa đơn >= 1 triệu: 100k = 10 điểm.
  *   + 1 điểm tích lũy = giảm 1.000 VNĐ. Có ô chọn thanh toán kết hợp điểm tích lũy.
@@ -60,9 +62,20 @@ public class LapHoaDonThanhToanView extends VBox {
     private final Button btnKiemTraSdt = new Button("Tra cứu SĐT");
     private final ComboBox<KhachHang> cboKhachHang = new ComboBox<>();
     private final Label lblThongTinDiemKhach = new Label("Khách vãng lai (không tích điểm)");
+
+    // Thông tin Phiếu dịch vụ nạp tự động hoặc chọn thủ công
     private String maPhieuDichVuDaNap = null;
     private String maLichHenDaNap = null;
+    private String trangThaiPhieuDichVuDaNap = null;
     private boolean dangDongBo = false;
+
+    // Hộp hiển thị thông tin Phiếu dịch vụ trong ngày
+    private final HBox boxPhieuDichVu = new HBox(10);
+    private final Label lblIconPhieu = new Label("📋 Phiếu dịch vụ trong ngày:");
+    private final Label lblMaPhieuDv = new Label();
+    private final Label lblTrangThaiPhieuDv = new Label();
+    private final Label lblCanhBaoThanhToan = new Label();
+    private final Button btnBoPhieuDv = new Button("✕ Bỏ phiếu DV");
 
     // 2. Tìm kiếm & chọn sản phẩm bán lẻ
     private final TextField txtTimSanPham = new TextField();
@@ -133,7 +146,7 @@ public class LapHoaDonThanhToanView extends VBox {
         VBox pnlTieuDe = new VBox(3);
         Label lblTieuDe = new Label("LẬP HÓA ĐƠN & THANH TOÁN BÁN LẺ");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-        Label lblMoTa = new Label("Thanh toán bán lẻ, nạp phiếu dịch vụ, tích điểm & đổi điểm tích lũy, in hóa đơn chuyên nghiệp.");
+        Label lblMoTa = new Label("Thanh toán bán lẻ, tự động nạp phiếu dịch vụ hoàn thành trong ngày, tích lũy điểm & in hóa đơn.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
         pnlTieuDe.getChildren().addAll(lblTieuDe, lblMoTa);
 
@@ -211,6 +224,7 @@ public class LapHoaDonThanhToanView extends VBox {
             lblThongTinDiemKhach.setStyle("-fx-text-fill: #64748b; -fx-font-style: italic;");
             chkDungDiem.setSelected(false);
             chkDungDiem.setDisable(true);
+            xoaPhieuDichVuDaNap(true);
             capNhatTongTienThanhToan();
         });
 
@@ -237,7 +251,24 @@ public class LapHoaDonThanhToanView extends VBox {
         luoi.add(new Label("Khách hàng:"), 0, 1);
         luoi.add(hangKhachHang, 1, 1, 5, 1);
 
-        pnl.getChildren().add(luoi);
+        // Hộp thông tin Phiếu dịch vụ tự động nạp
+        boxPhieuDichVu.setAlignment(Pos.CENTER_LEFT);
+        boxPhieuDichVu.setPadding(new Insets(6, 12, 6, 12));
+        boxPhieuDichVu.setStyle("-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 4; -fx-background-radius: 4;");
+        lblIconPhieu.setStyle("-fx-font-weight: bold; -fx-text-fill: #0369a1;");
+        lblMaPhieuDv.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #0f172a;");
+        btnBoPhieuDv.getStyleClass().add("nut-phu");
+        btnBoPhieuDv.setStyle("-fx-font-size: 11px;");
+        btnBoPhieuDv.setOnAction(e -> xoaPhieuDichVuDaNap(true));
+
+        Region spacerPdv = new Region();
+        HBox.setHgrow(spacerPdv, Priority.ALWAYS);
+
+        boxPhieuDichVu.getChildren().addAll(lblIconPhieu, lblMaPhieuDv, lblTrangThaiPhieuDv, lblCanhBaoThanhToan, spacerPdv, btnBoPhieuDv);
+        boxPhieuDichVu.setVisible(false);
+        boxPhieuDichVu.setManaged(false);
+
+        pnl.getChildren().addAll(luoi, boxPhieuDichVu);
         return pnl;
     }
 
@@ -494,6 +525,7 @@ public class LapHoaDonThanhToanView extends VBox {
                 lblThongTinDiemKhach.setStyle("-fx-text-fill: #64748b; -fx-font-style: italic;");
                 chkDungDiem.setSelected(false);
                 chkDungDiem.setDisable(true);
+                xoaPhieuDichVuDaNap(true);
                 capNhatTongTienThanhToan();
             } else if (moi.length() == 10) {
                 KhachHang khKhop = null;
@@ -551,16 +583,18 @@ public class LapHoaDonThanhToanView extends VBox {
             }
         });
 
-        // 3. Khuyến mãi
+        // Chọn khuyến mãi
         cboKhuyenMai.setOnAction(e -> capNhatTongTienThanhToan());
 
-        // 4. Điểm tích lũy
+        // Sử dụng điểm tích lũy
         chkDungDiem.setOnAction(e -> {
             boolean dung = chkDungDiem.isSelected();
             spnDiemDung.setDisable(!dung);
             btnDungToiDaDiem.setDisable(!dung);
             if (!dung) {
-                spnDiemDung.getValueFactory().setValue(0);
+                if (spnDiemDung.getValueFactory() != null) {
+                    spnDiemDung.getValueFactory().setValue(0);
+                }
             } else {
                 dungToiDaDiem();
             }
@@ -570,23 +604,23 @@ public class LapHoaDonThanhToanView extends VBox {
         spnDiemDung.valueProperty().addListener((obs, cu, moi) -> capNhatTongTienThanhToan());
         btnDungToiDaDiem.setOnAction(e -> dungToiDaDiem());
 
-        // 5. Hình thức thanh toán
-        grpPhuongThuc.selectedToggleProperty().addListener((obs, cu, moi) -> {
-            if (radTienMat.isSelected()) {
-                boxTienMat.setVisible(true);
-                boxTienMat.setManaged(true);
-                boxChuyenKhoan.setVisible(false);
-                boxChuyenKhoan.setManaged(false);
-            } else {
-                boxTienMat.setVisible(false);
-                boxTienMat.setManaged(false);
-                boxChuyenKhoan.setVisible(true);
-                boxChuyenKhoan.setManaged(true);
-                lblNoiDungCk.setText("Nội dung CK: " + txtMaHoaDon.getText() + " " + (txtTimKhach.getText() != null ? txtTimKhach.getText().trim() : ""));
-            }
+        // Chuyển đổi phương thức thanh toán
+        radTienMat.setOnAction(e -> {
+            boxTienMat.setVisible(true);
+            boxTienMat.setManaged(true);
+            boxChuyenKhoan.setVisible(false);
+            boxChuyenKhoan.setManaged(false);
+            tinhToanTienThoi();
         });
 
-        // Nhập tiền khách đưa
+        radChuyenKhoan.setOnAction(e -> {
+            boxTienMat.setVisible(false);
+            boxTienMat.setManaged(false);
+            boxChuyenKhoan.setVisible(true);
+            boxChuyenKhoan.setManaged(true);
+            lblTienThoiLai.setText("0 VNĐ");
+        });
+
         txtTienKhachDua.textProperty().addListener((obs, cu, moi) -> tinhToanTienThoi());
     }
 
@@ -594,9 +628,9 @@ public class LapHoaDonThanhToanView extends VBox {
         txtMaHoaDon.setText(controller.taoMaHoaDonMoi());
         lblNoiDungCk.setText("Nội dung CK: " + txtMaHoaDon.getText());
 
-        var tkHienTai = SessionManager.getTaiKhoanHienTai();
-        if (tkHienTai != null) {
-            txtThuNgan.setText(tkHienTai.getTenDangNhap() + " (" + tkHienTai.getMaNhanVien() + ")");
+        var tk = SessionManager.getTaiKhoanHienTai();
+        if (tk != null) {
+            txtThuNgan.setText(tk.getTenDangNhap() + " (" + (tk.getMaNhanVien() != null ? tk.getMaNhanVien() : "NV") + ")");
         } else {
             txtThuNgan.setText("admin (NV-20261005-000001)");
         }
@@ -646,7 +680,7 @@ public class LapHoaDonThanhToanView extends VBox {
     }
 
     // =========================================================================
-    // NGHIỆP VỤ TRA CỨU KHÁCH HÀNG & THÊM MỚI (GIỐNG LẬP PHIẾU DỊCH VỤ)
+    // NGHIỆP VỤ TRA CỨU KHÁCH HÀNG & TỰ ĐỘNG XUẤT THÔNG TIN PHIẾU DỊCH VỤ
     // =========================================================================
 
     private void xuLyKiemTraSoDienThoai() {
@@ -691,6 +725,7 @@ public class LapHoaDonThanhToanView extends VBox {
             chkDungDiem.setDisable(true);
             spnDiemDung.setDisable(true);
             btnDungToiDaDiem.setDisable(true);
+            xoaPhieuDichVuDaNap(true);
             capNhatTongTienThanhToan();
             return;
         }
@@ -732,6 +767,139 @@ public class LapHoaDonThanhToanView extends VBox {
             spnDiemDung.setDisable(true);
             btnDungToiDaDiem.setDisable(true);
         }
+
+        // TỰ ĐỘNG XUẤT THÔNG TIN PHIẾU DỊCH VỤ TRONG NGÀY CỦA KHÁCH HÀNG
+        tuDongTraCuuPhieuDichVuTrongNgay(kh);
+
+        capNhatTongTienThanhToan();
+    }
+
+    /**
+     * Tự động tra cứu phiếu dịch vụ trong ngày của khách hàng và nạp vào hóa đơn nếu có.
+     */
+    private void tuDongTraCuuPhieuDichVuTrongNgay(KhachHang kh) {
+        if (kh == null) {
+            xoaPhieuDichVuDaNap(false);
+            return;
+        }
+
+        try {
+            LocalDate ngay = dpNgayLap.getValue() != null ? dpNgayLap.getValue() : LocalDate.now();
+            List<PhieuDichVu> dsPhieu = controller.layPhieuDichVuTrongNgayCuaKhachHang(kh.getMaKhachHang(), ngay);
+
+            if (dsPhieu != null && !dsPhieu.isEmpty()) {
+                // Tự động nạp phiếu dịch vụ gần nhất trong ngày
+                PhieuDichVu pdv = dsPhieu.get(0);
+                napPhieuDichVuVaoHoaDon(pdv);
+
+                Platform.runLater(() -> {
+                    String thongBao = "Đã tự động tìm thấy Phiếu dịch vụ " + pdv.getMaPhieuDichVu()
+                            + " trong ngày của khách hàng '" + kh.getHoTen() + "'!\n"
+                            + "Trạng thái: " + pdv.getTrangThai();
+                    if (!"Hoàn thành".equalsIgnoreCase(pdv.getTrangThai())) {
+                        thongBao += "\n\nLƯU Ý: Phiếu dịch vụ chưa 'Hoàn thành' nên hệ thống tạm khóa thanh toán!";
+                    }
+                    hienThiThongBao("Đã nạp phiếu dịch vụ", thongBao);
+                });
+            } else {
+                xoaPhieuDichVuDaNap(false);
+            }
+        } catch (Exception ex) {
+            // Không làm gián đoạn luồng bán lẻ nếu lỗi tra cứu tự động
+        }
+    }
+
+    /**
+     * Nạp chi tiết phiếu dịch vụ vào hóa đơn và kiểm tra điều kiện hoàn thành.
+     */
+    private void napPhieuDichVuVaoHoaDon(PhieuDichVu pChon) {
+        if (pChon == null) return;
+        try {
+            PhieuDichVu phieuChiTiet = controller.layPhieuDichVuDeThanhToan(pChon.getMaPhieuDichVu());
+            this.maPhieuDichVuDaNap = phieuChiTiet.getMaPhieuDichVu();
+            this.maLichHenDaNap = phieuChiTiet.getMaLichHen();
+            this.trangThaiPhieuDichVuDaNap = phieuChiTiet.getTrangThai();
+
+            // Xóa các dòng dịch vụ cũ nếu trước đó từng nạp
+            dsDongHang.removeIf(d -> d.getLoai() == DongHoaDon.LoaiDong.DICH_VU);
+
+            // Nạp các dòng dịch vụ mới từ phiếu
+            if (phieuChiTiet.getDanhSachChiTiet() != null) {
+                for (ChiTietPhieuDichVu ct : phieuChiTiet.getDanhSachChiTiet()) {
+                    DongHoaDon d = DongHoaDon.tuDichVu(
+                            dsDongHang.size() + 1,
+                            ct.getMaDichVu(),
+                            ct.getTenDichVu() != null ? ct.getTenDichVu() : ct.getMaDichVu(),
+                            ct.getMaThuCung(),
+                            ct.getTenThuCung(),
+                            ct.getDonGia()
+                    );
+                    dsDongHang.add(d);
+                }
+            }
+
+            // Đánh lại STT
+            for (int i = 0; i < dsDongHang.size(); i++) {
+                dsDongHang.get(i).setStt(i + 1);
+            }
+            bangChiTiet.refresh();
+
+            // Hiển thị khung thông tin phiếu dịch vụ
+            lblMaPhieuDv.setText(phieuChiTiet.getMaPhieuDichVu());
+            String tt = phieuChiTiet.getTrangThai() != null ? phieuChiTiet.getTrangThai() : "Đang chờ";
+            lblTrangThaiPhieuDv.setText("[" + tt + "]");
+
+            boolean daHoanThanh = "Hoàn thành".equalsIgnoreCase(tt);
+            if (daHoanThanh) {
+                lblTrangThaiPhieuDv.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #15803d; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 4;");
+                lblCanhBaoThanhToan.setText("✔ Phiếu DV đã hoàn thành - Sẵn sàng thanh toán");
+                lblCanhBaoThanhToan.setStyle("-fx-text-fill: #15803d; -fx-font-weight: bold;");
+                btnThanhToan.setDisable(false);
+                btnThanhToanVaIn.setDisable(false);
+                btnThanhToan.setTooltip(null);
+                btnThanhToanVaIn.setTooltip(null);
+            } else {
+                lblTrangThaiPhieuDv.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #dc2626; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 4;");
+                lblCanhBaoThanhToan.setText("⚠ Phiếu dịch vụ chưa 'Hoàn thành' (" + tt + ") - Chỉ khi hoàn thành mới được thanh toán!");
+                lblCanhBaoThanhToan.setStyle("-fx-text-fill: #dc2626; -fx-font-weight: bold;");
+                btnThanhToan.setDisable(true);
+                btnThanhToanVaIn.setDisable(true);
+                btnThanhToan.setTooltip(new Tooltip("Phiếu dịch vụ " + phieuChiTiet.getMaPhieuDichVu() + " chưa ở trạng thái 'Hoàn thành'"));
+                btnThanhToanVaIn.setTooltip(new Tooltip("Phiếu dịch vụ " + phieuChiTiet.getMaPhieuDichVu() + " chưa ở trạng thái 'Hoàn thành'"));
+            }
+
+            boxPhieuDichVu.setVisible(true);
+            boxPhieuDichVu.setManaged(true);
+
+            capNhatTongTienThanhToan();
+        } catch (Exception ex) {
+            hienThiLoi("Lỗi nạp phiếu dịch vụ: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Bỏ phiếu dịch vụ đã nạp ra khỏi hóa đơn.
+     */
+    private void xoaPhieuDichVuDaNap(boolean capNhatBang) {
+        maPhieuDichVuDaNap = null;
+        maLichHenDaNap = null;
+        trangThaiPhieuDichVuDaNap = null;
+
+        boxPhieuDichVu.setVisible(false);
+        boxPhieuDichVu.setManaged(false);
+
+        if (capNhatBang) {
+            dsDongHang.removeIf(d -> d.getLoai() == DongHoaDon.LoaiDong.DICH_VU);
+            for (int i = 0; i < dsDongHang.size(); i++) {
+                dsDongHang.get(i).setStt(i + 1);
+            }
+            bangChiTiet.refresh();
+        }
+
+        btnThanhToan.setDisable(false);
+        btnThanhToanVaIn.setDisable(false);
+        btnThanhToan.setTooltip(null);
+        btnThanhToanVaIn.setTooltip(null);
 
         capNhatTongTienThanhToan();
     }
@@ -894,7 +1062,6 @@ public class LapHoaDonThanhToanView extends VBox {
         if (kh == null || kh.getDiemTichLuy() <= 0) return;
 
         BigDecimal tienSauKm = tongTienHangHienTai.subtract(tienGiamKMHienTai).max(BigDecimal.ZERO);
-        // Làm tròn lên để có thể dùng điểm lấn át toàn bộ tiền thanh toán về 0đ
         int diemToiDaCoTheDungTheoTien = (int) Math.ceil(tienSauKm.doubleValue() / 1000.0);
         int diemDung = Math.min(kh.getDiemTichLuy(), diemToiDaCoTheDungTheoTien);
 
@@ -949,7 +1116,6 @@ public class LapHoaDonThanhToanView extends VBox {
 
             if (laKhachHang && chkDungDiem.isSelected() && spnDiemDung.getValue() != null && spnDiemDung.getValue() > 0) {
                 int diemDung = spnDiemDung.getValue();
-                // Làm tròn lên để có thể dùng điểm lấn át toàn bộ tiền thanh toán về 0đ
                 int diemToiDaCoTheDung = (int) Math.ceil(tienSauKm.doubleValue() / 1000.0);
                 int diemToiDaHopLe = Math.min(kh.getDiemTichLuy(), diemToiDaCoTheDung);
                 if (diemDung > diemToiDaHopLe) {
@@ -971,8 +1137,6 @@ public class LapHoaDonThanhToanView extends VBox {
             lblTongThanhToan.setText(DINH_DANG_TIEN.format(tongThanhToanHienTai));
 
             // 4. Tính điểm tích lũy cộng mới từ đơn này:
-            // Rule: Hóa đơn < 1tr: 100k = 5 điểm; Hóa đơn >= 1tr: 100k = 10 điểm
-            // Khách vãng lai: 0 điểm
             if (laKhachHang) {
                 diemCongMoiHienTai = controller.tinhDiemTichLuy(tongThanhToanHienTai, true);
                 lblDiemCongDuKien.setText("Điểm nhận thêm: +" + diemCongMoiHienTai + " điểm");
@@ -1076,41 +1240,17 @@ public class LapHoaDonThanhToanView extends VBox {
                 return;
             }
 
-            try {
-                PhieuDichVu phieuChiTiet = controller.layPhieuDichVuDeThanhToan(pChon.getMaPhieuDichVu());
-                maPhieuDichVuDaNap = phieuChiTiet.getMaPhieuDichVu();
-                maLichHenDaNap = phieuChiTiet.getMaLichHen();
-
-                // Nạp khách hàng
-                for (KhachHang kh : dsKhachHangGoc) {
-                    if (kh.getMaKhachHang().equals(phieuChiTiet.getMaKhachHang())) {
-                        dongBoThongTinKhachHang(kh);
-                        break;
-                    }
+            // Đồng bộ khách hàng nếu có
+            for (KhachHang kh : dsKhachHangGoc) {
+                if (kh.getMaKhachHang().equals(pChon.getMaKhachHang())) {
+                    dongBoThongTinKhachHang(kh);
+                    break;
                 }
-
-                // Nạp danh sách dịch vụ vào bảng
-                if (phieuChiTiet.getDanhSachChiTiet() != null) {
-                    for (ChiTietPhieuDichVu ct : phieuChiTiet.getDanhSachChiTiet()) {
-                        DongHoaDon d = DongHoaDon.tuDichVu(
-                                dsDongHang.size() + 1,
-                                ct.getMaDichVu(),
-                                ct.getTenDichVu() != null ? ct.getTenDichVu() : ct.getMaDichVu(),
-                                ct.getMaThuCung(),
-                                ct.getTenThuCung(),
-                                ct.getDonGia()
-                        );
-                        dsDongHang.add(d);
-                    }
-                }
-
-                bangChiTiet.refresh();
-                capNhatTongTienThanhToan();
-                dlg.close();
-                hienThiThongBao("Thành công", "Đã nạp toàn bộ dịch vụ từ phiếu " + pChon.getMaPhieuDichVu() + " vào hóa đơn!");
-            } catch (Exception ex) {
-                hienThiLoi("Lỗi nạp phiếu dịch vụ: " + ex.getMessage());
             }
+
+            napPhieuDichVuVaoHoaDon(pChon);
+            dlg.close();
+            hienThiThongBao("Thành công", "Đã nạp phiếu dịch vụ " + pChon.getMaPhieuDichVu() + " vào hóa đơn!");
         });
 
         HBox pnlNut = new HBox(8, btnChon, btnHuy);
@@ -1129,6 +1269,15 @@ public class LapHoaDonThanhToanView extends VBox {
         if (dsDongHang.isEmpty()) {
             hienThiCanhBao("Hóa đơn chưa có sản phẩm hoặc dịch vụ nào để thanh toán!");
             return;
+        }
+
+        // RÀNG BUỘC CHÍNH XÁC: Khi có phiếu dịch vụ thì phiếu dịch vụ phải ở trạng thái "Hoàn thành" mới cho thanh toán
+        if (maPhieuDichVuDaNap != null && !maPhieuDichVuDaNap.isBlank()) {
+            if (trangThaiPhieuDichVuDaNap != null && !"Hoàn thành".equalsIgnoreCase(trangThaiPhieuDichVuDaNap)) {
+                hienThiCanhBao("Phiếu dịch vụ '" + maPhieuDichVuDaNap + "' đang ở trạng thái '" + trangThaiPhieuDichVuDaNap
+                        + "'.\nTheo quy định: Chỉ khi phiếu dịch vụ ở trạng thái 'Hoàn thành' thì mới được phép thanh toán hóa đơn!");
+                return;
+            }
         }
 
         BigDecimal tienDua = BigDecimal.ZERO;
@@ -1255,8 +1404,7 @@ public class LapHoaDonThanhToanView extends VBox {
     private void lamMoiToanBoForm() {
         txtMaHoaDon.setText(controller.taoMaHoaDonMoi());
         lblNoiDungCk.setText("Nội dung CK: " + txtMaHoaDon.getText());
-        maPhieuDichVuDaNap = null;
-        maLichHenDaNap = null;
+        xoaPhieuDichVuDaNap(false);
 
         txtTimKhach.clear();
         cboKhachHang.setValue(null);
