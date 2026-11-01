@@ -76,15 +76,22 @@ public class SanPhamService {
         return sanPhamDAO.capNhatSanPham(sp);
     }
 
-    /**
-     * Xóa mềm sản phẩm - chuyển sang ngừng kinh doanh (Quyền SP_CAP_NHAT).
-     */
-    public boolean xoaMemSanPham(String maSanPham) {
+    /** Xóa sản phẩm nếu không còn tồn kho và chưa phát sinh giao dịch. */
+    public boolean xoaSanPham(String maSanPham) {
         xacThucService.kiemTraQuyen("SP_CAP_NHAT");
         if (maSanPham == null || maSanPham.trim().isEmpty()) {
             throw new IllegalArgumentException("Mã sản phẩm cần xóa không được để trống!");
         }
-        return sanPhamDAO.xoaMemSanPham(maSanPham.trim());
+        return sanPhamDAO.xoaSanPham(maSanPham.trim());
+    }
+
+    /** Ngừng kinh doanh hoặc kinh doanh lại sản phẩm, giữ nguyên lịch sử. */
+    public boolean capNhatTrangThaiSanPham(String maSanPham, boolean trangThai) {
+        xacThucService.kiemTraQuyen("SP_CAP_NHAT");
+        if (maSanPham == null || maSanPham.isBlank()) {
+            throw new IllegalArgumentException("Mã sản phẩm không được để trống!");
+        }
+        return sanPhamDAO.capNhatTrangThaiSanPham(maSanPham.trim(), trangThai);
     }
 
     /**
@@ -152,6 +159,15 @@ public class SanPhamService {
      */
     public List<NhaCungCap> layDanhSachNhaCungCap() {
         return sanPhamDAO.layDanhSachNhaCungCap();
+    }
+
+    /** Lấy danh sách sản phẩm đang kinh doanh của nhà cung cấp trong màn chi tiết NCC. */
+    public List<SanPham> layTheoNhaCungCap(String maNhaCungCap) {
+        xacThucService.kiemTraQuyen("NCC_TIM_KIEM");
+        if (maNhaCungCap == null || maNhaCungCap.isBlank()) {
+            throw new IllegalArgumentException("Mã nhà cung cấp không được để trống!");
+        }
+        return sanPhamDAO.layTheoNhaCungCap(maNhaCungCap.trim());
     }
 
     private void kiemTraDuLieuSanPham(SanPham sp) {

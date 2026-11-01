@@ -102,17 +102,16 @@ public class DanhMucMenu {
         // 8. Đơn hàng nhập
         TAT_CA_MENU.add(new NhomMenu("DON_NHAP", "Đơn hàng nhập", "DON_NHAP", List.of(
                 new ChucNangMenu("DN_TAO", "Lập đơn nhập", null),
-                new ChucNangMenu("DN_NHAN_HANG", "Nhận hàng", null),
                 new ChucNangMenu("DN_CAP_NHAT", "Cập nhật đơn nhập", null),
                 new ChucNangMenu("DN_TIM_KIEM", "Tìm kiếm đơn nhập", "Ctrl+F")
         )));
 
         // 9. Sản phẩm
         TAT_CA_MENU.add(new NhomMenu("SAN_PHAM", "Sản phẩm", "SAN_PHAM", List.of(
-                new ChucNangMenu("SP_CAP_NHAT", "Cập nhật sản phẩm", null),
-                new ChucNangMenu("SP_TIM_KIEM", "Tìm kiếm sản phẩm", "Ctrl+F"),
-                new ChucNangMenu("SP_TON_KHO", "Tồn kho", null),
-                new ChucNangMenu("SP_BAO_CAO", "Báo cáo sản phẩm", null)
+                new ChucNangMenu("PRD_CRUD", "Cập nhật sản phẩm", null),
+                new ChucNangMenu("PRD_SEARCH", "Tìm kiếm sản phẩm", "Ctrl+F"),
+                new ChucNangMenu("PRD_INVENTORY", "Tồn kho", null),
+                new ChucNangMenu("PRD_REPORT", "Báo cáo sản phẩm", null)
         )));
 
         // 10. Dịch vụ chăm sóc
@@ -152,7 +151,7 @@ public class DanhMucMenu {
 
                 // Quản lý: Quản trị nhân sự, ca trực, danh mục dịch vụ, khuyến mãi và báo cáo
                 if (nhom.getMaNhom().equals("NHAN_VIEN") || nhom.getMaNhom().equals("CA_TRUC") ||
-                    nhom.getMaNhom().equals("NHA_CUNG_CAP") || nhom.getMaNhom().equals("DICH_VU_CHAM_SOC") ||
+                    nhom.getMaNhom().equals("NHA_CUNG_CAP") || nhom.getMaNhom().equals("DON_NHAP") || nhom.getMaNhom().equals("DICH_VU_CHAM_SOC") ||
                     nhom.getMaNhom().equals("KHUYEN_MAI") || nhom.getMaNhom().equals("SAN_PHAM") ||
                     chucNang.getMaChucNang().equals("HD_DOANH_THU")) {
                     dsVaiTro.add(TaiKhoan.VaiTro.QUAN_LY);
@@ -160,7 +159,7 @@ public class DanhMucMenu {
 
                 // Bán hàng: Khách hàng, sản phẩm, đơn nhập, hóa đơn, đổi trả
                 if (nhom.getMaNhom().equals("KHACH_HANG") || nhom.getMaNhom().equals("SAN_PHAM") ||
-                    nhom.getMaNhom().equals("DON_NHAP") || nhom.getMaNhom().equals("PHIEU_DOI_TRA") ||
+                    (nhom.getMaNhom().equals("DON_NHAP") && !chucNang.getMaChucNang().equals("DN_CAP_NHAT")) || nhom.getMaNhom().equals("PHIEU_DOI_TRA") ||
                     (nhom.getMaNhom().equals("HOA_DON") && !chucNang.getMaChucNang().equals("HD_DOANH_THU"))) {
                     dsVaiTro.add(TaiKhoan.VaiTro.BAN_HANG);
                 }
@@ -174,6 +173,16 @@ public class DanhMucMenu {
                 BANG_PHAN_QUYEN.put(chucNang.getMaChucNang(), dsVaiTro);
             }
         }
+        BANG_PHAN_QUYEN.put("PRD_LOW_STOCK", Set.of(TaiKhoan.VaiTro.ADMIN, TaiKhoan.VaiTro.QUAN_LY, TaiKhoan.VaiTro.BAN_HANG));
+        // Các service sản phẩm vẫn kiểm tra quyền bằng mã SP_*, song song với mã PRD_* trên menu.
+        Set<TaiKhoan.VaiTro> quyenSanPham = Set.of(
+                TaiKhoan.VaiTro.ADMIN,
+                TaiKhoan.VaiTro.QUAN_LY,
+                TaiKhoan.VaiTro.BAN_HANG
+        );
+        BANG_PHAN_QUYEN.put("SP_CAP_NHAT", quyenSanPham);
+        BANG_PHAN_QUYEN.put("SP_TIM_KIEM", quyenSanPham);
+        BANG_PHAN_QUYEN.put("SP_TON_KHO", quyenSanPham);
     }
 
     public static List<NhomMenu> layTatCaMenu() {

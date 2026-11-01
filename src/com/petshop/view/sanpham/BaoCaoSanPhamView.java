@@ -118,47 +118,75 @@ public class BaoCaoSanPhamView extends VBox {
                 ThemSanPhamView.dinhDangTien(cell.getValue().getGiaBan().doubleValue())
         ));
 
-        TableColumn<SanPham, String> colTon = new TableColumn<>("SL Tồn");
-        colTon.setPrefWidth(80);
-        colTon.setStyle("-fx-alignment: CENTER-RIGHT;");
-        colTon.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getSoLuongTon())));
+TableColumn<SanPham, String> colTon = new TableColumn<>("Số lượng tồn");
+colTon.setPrefWidth(110);
+colTon.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
+colTon.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getSoLuongTon())));
 
-        TableColumn<SanPham, String> colGiaTri = new TableColumn<>("Thành tiền tồn");
-        colGiaTri.setPrefWidth(140);
-        colGiaTri.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
-        colGiaTri.setCellValueFactory(cell -> {
-            BigDecimal thanhTien = cell.getValue().getGiaBan().multiply(BigDecimal.valueOf(cell.getValue().getSoLuongTon()));
-            return new SimpleStringProperty(ThemSanPhamView.dinhDangTien(thanhTien.doubleValue()));
-        });
+TableColumn<SanPham, String> colNguong = new TableColumn<>("Ngưỡng an toàn");
+colNguong.setPrefWidth(120);
+colNguong.setStyle("-fx-alignment: CENTER-RIGHT;");
+colNguong.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getNguongTonToiThieu())));
 
-        TableColumn<SanPham, String> colNcc = new TableColumn<>("Nhà cung cấp");
-        colNcc.setPrefWidth(180);
-        colNcc.setCellValueFactory(cell -> new SimpleStringProperty(
-                cell.getValue().getTenNhaCungCap() != null ? cell.getValue().getTenNhaCungCap() : "Chưa xác định"
-        ));
+TableColumn<SanPham, String> colTinhTrang = new TableColumn<>("Tình trạng");
+colTinhTrang.setPrefWidth(140);
+colTinhTrang.setCellValueFactory(cell -> {
+    if (cell.getValue().getSoLuongTon() == 0) {
+        return new SimpleStringProperty("✖ HẾT HÀNG");
+    }
+    boolean sapHet = cell.getValue().isSapHetHang();
+    return new SimpleStringProperty(sapHet ? "⚠ SẮP HẾT HÀNG" : "Ổn định");
+});
 
-        TableColumn<SanPham, String> colTrangThai = new TableColumn<>("Trạng thái");
-        colTrangThai.setPrefWidth(120);
-        colTrangThai.setCellValueFactory(cell -> new SimpleStringProperty(
-                cell.getValue().isTrangThai() ? "Đang bán" : "Ngừng bán"
-        ));
+TableColumn<SanPham, String> colGiaTri = new TableColumn<>("Thành tiền tồn");
+colGiaTri.setPrefWidth(140);
+colGiaTri.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
+colGiaTri.setCellValueFactory(cell -> {
+    BigDecimal thanhTien = cell.getValue().getGiaBan().multiply(BigDecimal.valueOf(cell.getValue().getSoLuongTon()));
+    return new SimpleStringProperty(ThemSanPhamView.dinhDangTien(thanhTien.doubleValue()));
+});
 
-        tblDanhSach.getColumns().setAll(List.of(colMa, colTen, colDonVi, colGiaBan, colTon, colGiaTri, colNcc, colTrangThai));
-        tblDanhSach.getStyleClass().add("bang-du-lieu");
-        tblDanhSach.setPlaceholder(new Label("Chưa có dữ liệu sản phẩm trong cơ sở dữ liệu."));
+TableColumn<SanPham, String> colNcc = new TableColumn<>("Nhà cung cấp");
+colNcc.setPrefWidth(180);
+colNcc.setCellValueFactory(cell -> new SimpleStringProperty(
+        cell.getValue().getTenNhaCungCap() != null ? cell.getValue().getTenNhaCungCap() : "Chưa xác định"
+));
 
-        // Làm mờ dòng đã Ngừng bán
-        tblDanhSach.setRowFactory(tv -> new TableRow<>() {
-            @Override
-            protected void updateItem(SanPham item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setOpacity(1.0);
-                } else {
-                    setOpacity(item.isTrangThai() ? 1.0 : 0.5);
-                }
-            }
-        });
+TableColumn<SanPham, String> colTrangThai = new TableColumn<>("Trạng thái");
+colTrangThai.setPrefWidth(130);
+colTrangThai.setCellValueFactory(cell -> new SimpleStringProperty(
+        cell.getValue().isTrangThai() ? "Đang bán" : "Ngừng bán"
+));
+
+tblDanhSach.getColumns().setAll(List.of(
+        colMa, colTen, colDonVi, colTon, colNguong, colTinhTrang, colGiaBan, colGiaTri, colNcc, colTrangThai
+));
+tblDanhSach.getStyleClass().add("bang-du-lieu");
+tblDanhSach.setPlaceholder(new Label("Chưa có dữ liệu sản phẩm trong cơ sở dữ liệu."));
+
+// Hết hàng và sắp hết hàng đổi màu nền dòng giống bên Theo dõi tồn kho
+tblDanhSach.setRowFactory(tv -> new TableRow<>() {
+    @Override
+    protected void updateItem(SanPham item, boolean empty) {
+        super.updateItem(item, empty);
+        if (empty || item == null) {
+            setOpacity(1.0);
+            setStyle("");
+        } else if (!item.isTrangThai()) {
+            setOpacity(0.5);
+            setStyle("-fx-background-color: #f1f5f9;");
+        } else if (item.getSoLuongTon() == 0) {
+            setOpacity(1.0);
+            setStyle("-fx-background-color: #fee2e2;");
+        } else if (item.isSapHetHang()) {
+            setOpacity(1.0);
+            setStyle("-fx-background-color: #fef2f2;");
+        } else {
+            setOpacity(1.0);
+            setStyle("");
+        }
+    }
+});
 
         pnlBang.getChildren().addAll(pnlTieuDeBang, tblDanhSach);
         VBox.setVgrow(tblDanhSach, Priority.ALWAYS);

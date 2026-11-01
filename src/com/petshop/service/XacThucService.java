@@ -50,6 +50,20 @@ public class XacThucService {
 
     /**
      * Kiểm tra tài khoản hiện tại có quyền thực hiện chức năng nghiệp vụ không.
+     */
+    public boolean coQuyen(String maChucNang) {
+        TaiKhoan tk = getTaiKhoanHienTai();
+        if (tk == null) {
+            return false;
+        }
+        if (tk.getPhanQuyen() == TaiKhoan.VaiTro.ADMIN) {
+            return true;
+        }
+        return DanhMucMenu.kiemTraQuyen(tk.getPhanQuyen(), maChucNang);
+    }
+
+    /**
+     * Kiểm tra tài khoản hiện tại có quyền thực hiện chức năng nghiệp vụ không.
      * @throws SecurityException nếu không có quyền hoặc chưa đăng nhập.
      */
     public void kiemTraQuyen(String maChucNang) {

@@ -105,20 +105,52 @@ public class NhaCungCapDAO {
         }
     }
 
-    /**
-     * Xóa mềm nhà cung cấp (chuyển trangThai = 0).
-     */
-    public boolean xoaMemNhaCungCap(String maNhaCungCap) {
-        String sql = "UPDATE NhaCungCap SET trangThai = 0 WHERE maNhaCungCap = ?";
+    /** Cập nhật trạng thái hợp tác mà không thay đổi trạng thái sản phẩm đã liên kết. */
+    public boolean capNhatTrangThaiNhaCungCap(String maNhaCungCap, boolean trangThai) {
+        String sql = "UPDATE NhaCungCap SET trangThai = ? WHERE maNhaCungCap = ?";
+        try (Connection conn = DatabaseManager.getConnection()) {
+            if (conn == null) return false;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setBoolean(1, trangThai);
+                ps.setString(2, maNhaCungCap);
+                return ps.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi cập nhật trạng thái nhà cung cấp: " + e.getMessage(), e);
+        }
+    }
 
+    /** Xóa nhà cung cấp chỉ khi chưa liên kết sản phẩm hoặc phát sinh đơn nhập. */
+    public boolean xoaNhaCungCap(String maNhaCungCap) {
+        String sql = """
+                DELETE FROM NhaCungCap
+                WHERE maNhaCungCap = ?
+                  AND NOT EXISTS (SELECT 1 FROM SanPham WHERE maNhaCungCap = ?)
+                  AND NOT EXISTS (SELECT 1 FROM DonHang WHERE maNhaCungCap = ?)
+                """;
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) return false;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, maNhaCungCap);
-                return ps.executeUpdate() > 0;
+                ps.setString(2, maNhaCungCap);
+                ps.setString(3, maNhaCungCap);
+                int affected = ps.executeUpdate();
+                if (affected == 0) {
+                    try (PreparedStatement check = conn.prepareStatement("SELECT 1 FROM NhaCungCap WHERE maNhaCungCap = ?")) {
+                        check.setString(1, maNhaCungCap);
+                        try (ResultSet rs = check.executeQuery()) {
+                            if (!rs.next()) return false;
+                            throw new IllegalStateException("Không thể xóa nhà cung cấp đã liên kết sản phẩm hoặc phát sinh đơn nhập. Hãy dùng chức năng Ngừng hợp tác.");
+                        }
+                    }
+                }
+                return true;
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Lỗi khi xóa mềm nhà cung cấp: " + e.getMessage(), e);
+            if (e.getErrorCode() == 547) {
+                throw new IllegalStateException("Không thể xóa nhà cung cấp đang được dữ liệu khác sử dụng. Hãy dùng chức năng Ngừng hợp tác.", e);
+            }
+            throw new IllegalStateException("Lỗi khi xóa nhà cung cấp: " + e.getMessage(), e);
         }
     }
 
@@ -174,10 +206,21 @@ public class NhaCungCapDAO {
      * Tìm kiếm nhà cung cấp theo từ khóa (khớp mã, tên, SĐT hoặc email), chỉ lấy NCC đang hoạt động (trangThai = 1).
      */
     public List<NhaCungCap> timKiemNhaCungCap(String tuKhoa) {
+        return timKiemNhaCungCap(tuKhoa, true);
+    }
+
+    /**
+     * Tìm kiếm theo từ khóa và trạng thái. Trạng thái null nghĩa là lấy tất cả.
+     */
+    public List<NhaCungCap> timKiemNhaCungCap(String tuKhoa, Boolean trangThai) {
         List<NhaCungCap> danhSach = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
                 "SELECT maNhaCungCap, tenNhaCungCap, soDienThoai, diaChi, email, trangThai "
-                        + "FROM NhaCungCap WHERE trangThai = 1");
+                        + "FROM NhaCungCap WHERE 1 = 1");
+
+        if (trangThai != null) {
+            sql.append(" AND trangThai = ?");
+        }
 
         boolean coTuKhoa = tuKhoa != null && !tuKhoa.trim().isEmpty();
         if (coTuKhoa) {
@@ -189,12 +232,16 @@ public class NhaCungCapDAO {
             if (conn == null) return danhSach;
 
             try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                int viTri = 1;
+                if (trangThai != null) {
+                    ps.setBoolean(viTri++, trangThai);
+                }
                 if (coTuKhoa) {
                     String pattern = "%" + tuKhoa.trim() + "%";
-                    ps.setString(1, pattern);
-                    ps.setString(2, pattern);
-                    ps.setString(3, pattern);
-                    ps.setString(4, pattern);
+                    ps.setString(viTri++, pattern);
+                    ps.setString(viTri++, pattern);
+                    ps.setString(viTri++, pattern);
+                    ps.setString(viTri, pattern);
                 }
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {

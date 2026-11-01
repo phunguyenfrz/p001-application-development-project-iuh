@@ -35,11 +35,12 @@ public class NhaCungCapController {
         return nhaCungCapService.capNhatNhaCungCap(nhaCungCap);
     }
 
-    /**
-     * Xóa mềm nhà cung cấp.
-     */
-    public boolean xoaMemNhaCungCap(String maNhaCungCap) {
-        return nhaCungCapService.xoaMemNhaCungCap(maNhaCungCap);
+    public boolean xoaNhaCungCap(String maNhaCungCap) {
+        return nhaCungCapService.xoaNhaCungCap(maNhaCungCap);
+    }
+
+    public boolean capNhatTrangThaiNhaCungCap(String maNhaCungCap, boolean trangThai) {
+        return nhaCungCapService.capNhatTrangThaiNhaCungCap(maNhaCungCap, trangThai);
     }
 
     /**
@@ -68,6 +69,13 @@ public class NhaCungCapController {
      */
     public List<NhaCungCap> timKiemNhaCungCap(String tuKhoa) {
         return nhaCungCapService.timKiemNhaCungCap(tuKhoa);
+    }
+
+    /**
+     * Tìm kiếm theo từ khóa và trạng thái (null để lấy tất cả).
+     */
+    public List<NhaCungCap> timKiemNhaCungCap(String tuKhoa, Boolean trangThai) {
+        return nhaCungCapService.timKiemNhaCungCap(tuKhoa, trangThai);
     }
 
     // =========================================================================
