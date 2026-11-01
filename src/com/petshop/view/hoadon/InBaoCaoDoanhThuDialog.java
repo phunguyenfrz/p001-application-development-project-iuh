@@ -5,6 +5,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.print.PageLayout;
 import javafx.print.PrinterJob;
+import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -32,8 +33,21 @@ public class InBaoCaoDoanhThuDialog extends Stage {
     private static final DateTimeFormatter DINH_DANG_NGAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter DINH_DANG_GIO = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    // Chiều rộng chuẩn khổ A4 trừ lề an toàn trong JavaFX (72 DPI)
-    private static final double RONG_A4_CHUAN = 540;
+    // Chiều rộng chuẩn khổ A4 trừ lề an toàn mặc định của máy in / Microsoft Print to PDF (487pt)
+    private static final double RONG_A4_CHUAN = 475;
+
+    private final String khoangThoiGian;
+    private final String trangThai;
+    private final String tongDoanhThu;
+    private final String doanhThuSanPham;
+    private final String doanhThuDichVu;
+    private final String tongGiamGia;
+    private final String tienMat;
+    private final String chuyenKhoan;
+    private final String hoaDonHoanTat;
+    private final String hoaDonHuy;
+    private final String giaTriTrungBinh;
+    private final List<HoaDon> danhSachHoaDon;
 
     public InBaoCaoDoanhThuDialog(
             String khoangThoiGian,
@@ -49,6 +63,19 @@ public class InBaoCaoDoanhThuDialog extends Stage {
             String giaTriTrungBinh,
             List<HoaDon> danhSachHoaDon,
             Stage chuSoHuu) {
+
+        this.khoangThoiGian = khoangThoiGian;
+        this.trangThai = trangThai;
+        this.tongDoanhThu = tongDoanhThu;
+        this.doanhThuSanPham = doanhThuSanPham;
+        this.doanhThuDichVu = doanhThuDichVu;
+        this.tongGiamGia = tongGiamGia;
+        this.tienMat = tienMat;
+        this.chuyenKhoan = chuyenKhoan;
+        this.hoaDonHoanTat = hoaDonHoanTat;
+        this.hoaDonHuy = hoaDonHuy;
+        this.giaTriTrungBinh = giaTriTrungBinh;
+        this.danhSachHoaDon = danhSachHoaDon;
 
         initModality(Modality.APPLICATION_MODAL);
         if (chuSoHuu != null) initOwner(chuSoHuu);
@@ -73,7 +100,7 @@ public class InBaoCaoDoanhThuDialog extends Stage {
         Button btnIn = new Button("🖨 In / Xuất PDF");
         btnIn.getStyleClass().add("nut-chinh");
         btnIn.setStyle("-fx-font-weight: bold; -fx-padding: 6 16;");
-        btnIn.setOnAction(e -> inBaoCao(noiDungBaoCao));
+        btnIn.setOnAction(e -> inBaoCao());
 
         Button btnDong = new Button("Đóng");
         btnDong.getStyleClass().add("nut-phu");
@@ -105,9 +132,10 @@ public class InBaoCaoDoanhThuDialog extends Stage {
             List<HoaDon> danhSachHoaDon) {
 
         VBox baoCao = new VBox(8);
-        baoCao.setPadding(new Insets(16, 20, 16, 20));
+        baoCao.setPadding(new Insets(14, 12, 14, 12));
         baoCao.setPrefWidth(RONG_A4_CHUAN);
         baoCao.setMaxWidth(RONG_A4_CHUAN);
+        baoCao.setMinWidth(RONG_A4_CHUAN);
         baoCao.setStyle("-fx-background-color: #ffffff; -fx-border-color: #94a3b8; -fx-border-width: 1; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.15), 6, 0, 0, 2);");
         baoCao.setAlignment(Pos.TOP_CENTER);
 
@@ -128,11 +156,17 @@ public class InBaoCaoDoanhThuDialog extends Stage {
                 + (trangThai == null ? "Tất cả trạng thái" : trangThai));
         thongTinLoc.setStyle("-fx-font-size: 10px; -fx-text-fill: #475569; -fx-font-style: italic;");
 
-        // 3. Khung 8 thẻ chỉ số (GridPane 4 cột x 2 hàng, tổng bề ngang vừa khít 500px)
+        // 3. Khung 8 thẻ chỉ số (GridPane 4 cột x 2 hàng, tổng bề ngang vừa khít 450px)
         GridPane chiSo = new GridPane();
         chiSo.setHgap(6);
         chiSo.setVgap(6);
         chiSo.setAlignment(Pos.CENTER);
+        chiSo.setMinWidth(450);
+        chiSo.setPrefWidth(450);
+        chiSo.setMaxWidth(450);
+        for (int i = 0; i < 4; i++) {
+            chiSo.getColumnConstraints().add(new ColumnConstraints(108, 108, 108));
+        }
 
         themChiSo(chiSo, 0, 0, "Tổng doanh thu thực", tongDoanhThu, "#0284c7");
         themChiSo(chiSo, 1, 0, "Doanh thu sản phẩm", doanhThuSanPham, "#7c3aed");
@@ -152,13 +186,16 @@ public class InBaoCaoDoanhThuDialog extends Stage {
         VBox bang = new VBox(0);
         bang.setAlignment(Pos.TOP_LEFT);
         bang.setStyle("-fx-border-color: #cbd5e1; -fx-border-width: 1;");
+        bang.setMinWidth(450);
+        bang.setPrefWidth(450);
+        bang.setMaxWidth(450);
 
         GridPane tieuDeBang = taoHangBang(true);
         bang.getChildren().add(tieuDeBang);
 
         if (danhSachHoaDon != null) {
-            for (HoaDon hoaDon : danhSachHoaDon) {
-                bang.getChildren().add(taoHangHoaDon(hoaDon));
+            for (int i = 0; i < danhSachHoaDon.size(); i++) {
+                bang.getChildren().add(taoHangHoaDon(danhSachHoaDon.get(i), i));
             }
         }
 
@@ -166,6 +203,9 @@ public class InBaoCaoDoanhThuDialog extends Stage {
         HBox hangChanBang = new HBox();
         hangChanBang.setAlignment(Pos.CENTER_LEFT);
         hangChanBang.setPadding(new Insets(4, 2, 4, 2));
+        hangChanBang.setMinWidth(450);
+        hangChanBang.setPrefWidth(450);
+        hangChanBang.setMaxWidth(450);
 
         Label chanBang = new Label("Tổng số hóa đơn: " + (danhSachHoaDon == null ? 0 : danhSachHoaDon.size()));
         chanBang.setStyle("-fx-font-weight: bold; -fx-font-size: 10px; -fx-text-fill: #334155;");
@@ -180,9 +220,14 @@ public class InBaoCaoDoanhThuDialog extends Stage {
 
         // 7. Khu vực chữ ký xác nhận
         HBox hangKy = new HBox();
-        hangKy.setPadding(new Insets(16, 24, 8, 24));
+        hangKy.setPadding(new Insets(14, 10, 8, 10));
+        hangKy.setMinWidth(450);
+        hangKy.setPrefWidth(450);
+        hangKy.setMaxWidth(450);
 
         VBox boxKyNguoiLap = new VBox(3);
+        boxKyNguoiLap.setMinWidth(140);
+        boxKyNguoiLap.setPrefWidth(140);
         boxKyNguoiLap.setAlignment(Pos.CENTER);
         Label lblNguoiLap = new Label("Người lập biểu");
         lblNguoiLap.setStyle("-fx-font-weight: bold; -fx-font-size: 10px; -fx-text-fill: #0f172a;");
@@ -194,6 +239,8 @@ public class InBaoCaoDoanhThuDialog extends Stage {
         HBox.setHgrow(spacerKy, Priority.ALWAYS);
 
         VBox boxKyQuanLy = new VBox(3);
+        boxKyQuanLy.setMinWidth(140);
+        boxKyQuanLy.setPrefWidth(140);
         boxKyQuanLy.setAlignment(Pos.CENTER);
         Label lblQuanLy = new Label("Quản lý cửa hàng");
         lblQuanLy.setStyle("-fx-font-weight: bold; -fx-font-size: 10px; -fx-text-fill: #0f172a;");
@@ -215,16 +262,17 @@ public class InBaoCaoDoanhThuDialog extends Stage {
 
     private void themChiSo(GridPane chiSo, int cot, int hang, String ten, String giaTri, String mauGia) {
         VBox the = new VBox(2);
-        the.setPadding(new Insets(5, 6, 5, 6));
-        the.setPrefWidth(120);
-        the.setMaxWidth(120);
+        the.setPadding(new Insets(4, 5, 4, 5));
+        the.setPrefWidth(108);
+        the.setMaxWidth(108);
+        the.setMinWidth(108);
         the.setStyle("-fx-border-color: #cbd5e1; -fx-border-radius: 3; -fx-background-radius: 3; -fx-background-color: #f8fafc;");
 
         Label nhan = new Label(ten);
-        nhan.setStyle("-fx-font-size: 9px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
+        nhan.setStyle("-fx-font-size: 8.5px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
 
         Label gia = new Label(giaTri);
-        gia.setStyle("-fx-font-size: 11.5px; -fx-font-weight: bold; -fx-text-fill: " + mauGia + ";");
+        gia.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + mauGia + ";");
 
         the.getChildren().addAll(nhan, gia);
         chiSo.add(the, cot, hang);
@@ -232,28 +280,37 @@ public class InBaoCaoDoanhThuDialog extends Stage {
 
     private GridPane taoHangBang(boolean laTieuDe) {
         GridPane hang = new GridPane();
-        // Tổng chiều rộng các cột: 120 + 68 + 122 + 65 + 55 + 70 = 500px (vừa khít A4)
-        double[] rong = {120, 68, 122, 65, 55, 70};
+        hang.setMinWidth(450);
+        hang.setPrefWidth(450);
+        hang.setMaxWidth(450);
+        // Tổng chiều rộng các cột: 95 + 55 + 105 + 58 + 67 + 70 = 450px (vừa khít 100% lề giấy in A4)
+        double[] rong = {95, 55, 105, 58, 67, 70};
         String[] nhan = {"Mã HĐ", "Ngày", "Khách hàng", "Thanh toán", "Trạng thái", "Thực thu"};
         Pos[] canLe = {Pos.CENTER_LEFT, Pos.CENTER, Pos.CENTER_LEFT, Pos.CENTER, Pos.CENTER, Pos.CENTER_RIGHT};
 
         for (int i = 0; i < nhan.length; i++) {
+            hang.getColumnConstraints().add(new ColumnConstraints(rong[i], rong[i], rong[i]));
             Label label = new Label(nhan[i]);
+            label.setMinWidth(rong[i]);
             label.setPrefWidth(rong[i]);
             label.setMaxWidth(rong[i]);
             label.setAlignment(canLe[i]);
             label.setStyle(laTieuDe
-                    ? "-fx-font-weight: bold; -fx-font-size: 9.5px; -fx-background-color: #f1f5f9; -fx-padding: 4 4; -fx-border-color: #cbd5e1; -fx-border-width: 0 0 1 0;"
-                    : "-fx-font-size: 9px; -fx-padding: 3 4;");
+                    ? "-fx-font-weight: bold; -fx-font-size: 9px; -fx-background-color: #f1f5f9; -fx-padding: 4 3; -fx-border-color: #cbd5e1; -fx-border-width: 0 0 1 0;"
+                    : "-fx-font-size: 8.5px; -fx-padding: 3 3;");
             hang.add(label, i, 0);
         }
         return hang;
     }
 
-    private GridPane taoHangHoaDon(HoaDon hoaDon) {
+    private GridPane taoHangHoaDon(HoaDon hoaDon, int index) {
         GridPane hang = new GridPane();
-        hang.setStyle("-fx-border-color: #f1f5f9; -fx-border-width: 0 0 1 0;");
-        double[] rong = {120, 68, 122, 65, 55, 70};
+        hang.setMinWidth(450);
+        hang.setPrefWidth(450);
+        hang.setMaxWidth(450);
+        String bg = (index % 2 == 1) ? "#f8fafc" : "#ffffff";
+        hang.setStyle("-fx-background-color: " + bg + "; -fx-border-color: #f1f5f9; -fx-border-width: 0 0 1 0;");
+        double[] rong = {95, 55, 105, 58, 67, 70};
         Pos[] canLe = {Pos.CENTER_LEFT, Pos.CENTER, Pos.CENTER_LEFT, Pos.CENTER, Pos.CENTER, Pos.CENTER_RIGHT};
 
         String ngay = hoaDon.getNgayLap() != null ? hoaDon.getNgayLap().format(DINH_DANG_NGAY) : "";
@@ -276,12 +333,14 @@ public class InBaoCaoDoanhThuDialog extends Stage {
         };
 
         for (int i = 0; i < giaTri.length; i++) {
+            hang.getColumnConstraints().add(new ColumnConstraints(rong[i], rong[i], rong[i]));
             Label label = new Label(giaTri[i]);
+            label.setMinWidth(rong[i]);
             label.setPrefWidth(rong[i]);
             label.setMaxWidth(rong[i]);
             label.setAlignment(canLe[i]);
 
-            StringBuilder style = new StringBuilder("-fx-font-size: 9px; -fx-padding: 3 4;");
+            StringBuilder style = new StringBuilder("-fx-font-size: 8.5px; -fx-padding: 3 3;");
             if (i == 0) {
                 style.append(" -fx-font-weight: bold; -fx-text-fill: #0f172a;");
             } else if (i == 4) {
@@ -308,29 +367,37 @@ public class InBaoCaoDoanhThuDialog extends Stage {
 
     /**
      * Thực hiện in hoặc xuất sang file PDF qua PrinterJob.
-     * Tự động tính toán Scale Transform co giãn vừa khít 100% lề giấy in A4,
-     * tuyệt đối không để tràn viền hay mất cột bên phải.
+     * Sử dụng bản in độc lập trong Group để căn lề tuyệt đối (0, 0),
+     * triệt tiêu toàn bộ độ lệch từ cửa sổ xem trước, căn đều hai bên khổ giấy A4.
      */
-    private void inBaoCao(VBox noiDungBaoCao) {
+    private void inBaoCao() {
         PrinterJob job = PrinterJob.createPrinterJob();
         if (job != null && job.showPrintDialog(this)) {
             PageLayout pageLayout = job.getJobSettings().getPageLayout();
             double printableWidth = pageLayout.getPrintableWidth();
 
-            noiDungBaoCao.applyCss();
-            noiDungBaoCao.layout();
-            double nodeWidth = noiDungBaoCao.getBoundsInParent().getWidth();
-            if (nodeWidth <= 0) nodeWidth = RONG_A4_CHUAN;
+            // Tạo một bản in độc lập hoàn toàn, không phụ thuộc vào vị trí trong Stage/ScrollPane
+            VBox banIn = taoNoiDungBaoCao(
+                    khoangThoiGian, trangThai, tongDoanhThu, doanhThuSanPham, doanhThuDichVu,
+                    tongGiamGia, tienMat, chuyenKhoan, hoaDonHoanTat, hoaDonHuy,
+                    giaTriTrungBinh, danhSachHoaDon
+            );
+            // Gỡ bỏ viền xám và hiệu ứng bóng đổ (chỉ dùng cho xem trước trên màn hình)
+            banIn.setStyle("-fx-background-color: #ffffff; -fx-border-width: 0;");
+            banIn.setEffect(null);
 
-            // Tính tỷ lệ co giãn để vừa khít 100% bề rộng trang in
-            double scale = printableWidth / nodeWidth;
-            if (scale > 1.0) scale = 1.0;
+            // Đặt vào Group để layoutX = 0, layoutY = 0 tuyệt đối, căn đều lề trang in chuẩn xác
+            Group printRoot = new Group(banIn);
 
-            Scale scaleTransform = new Scale(scale, scale, 0, 0);
-            noiDungBaoCao.getTransforms().add(scaleTransform);
+            Scale scaleTransform = null;
+            if (printableWidth < RONG_A4_CHUAN) {
+                double scale = printableWidth / RONG_A4_CHUAN;
+                scaleTransform = new Scale(scale, scale, 0, 0);
+                printRoot.getTransforms().add(scaleTransform);
+            }
 
             try {
-                boolean thanhCong = job.printPage(pageLayout, noiDungBaoCao);
+                boolean thanhCong = job.printPage(pageLayout, printRoot);
                 if (thanhCong) {
                     job.endJob();
                     Alert alert = new Alert(Alert.AlertType.INFORMATION, "Đã gửi lệnh in / xuất PDF báo cáo thành công!");
@@ -340,8 +407,15 @@ public class InBaoCaoDoanhThuDialog extends Stage {
                 } else {
                     job.cancelJob();
                 }
+            } catch (Exception ex) {
+                job.cancelJob();
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Lỗi khi in báo cáo: " + ex.getMessage());
+                alert.setHeaderText(null);
+                alert.showAndWait();
             } finally {
-                noiDungBaoCao.getTransforms().remove(scaleTransform);
+                if (scaleTransform != null) {
+                    printRoot.getTransforms().remove(scaleTransform);
+                }
             }
         }
     }
