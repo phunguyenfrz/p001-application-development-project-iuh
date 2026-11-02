@@ -15,6 +15,10 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.SVGPath;
+import javafx.scene.shape.StrokeLineCap;
+import javafx.scene.shape.StrokeLineJoin;
 import javafx.stage.Stage;
 
 /**
@@ -33,6 +37,12 @@ public class DangNhapView extends StackPane {
 
     private final TextField txtTenDangNhap = new TextField();
     private final PasswordField pwdMatKhau = new PasswordField();
+    private final TextField txtMatKhauHien = new TextField();
+    private final Button btnAnHienMatKhau = new Button();
+    private final SVGPath iconMatKhau = new SVGPath();
+
+    private static final String SVG_MAT_MO = "M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z";
+    private static final String SVG_MAT_GACH = "M9.88 9.88a3 3 0 1 0 4.24 4.24 M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68 M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61 M2 2l20 20";
 
     private final Button btnDangNhap = new Button("Đăng nhập");
 
@@ -67,11 +77,9 @@ public class DangNhapView extends StackPane {
 
         lblLoiTenDangNhap.getStyleClass().add("thong-bao-loi-inline");
         lblLoiTenDangNhap.setVisible(false);
-        
 
         lblLoiMatKhau.getStyleClass().add("thong-bao-loi-inline");
         lblLoiMatKhau.setVisible(false);
-        
 
         GridPane pnlLuoiNhap = new GridPane();
         pnlLuoiNhap.setHgap(12);
@@ -97,24 +105,71 @@ public class DangNhapView extends StackPane {
         pwdMatKhau.setPromptText("Nhập mật khẩu");
         pwdMatKhau.setPrefWidth(260);
         pwdMatKhau.setMaxWidth(Double.MAX_VALUE);
+        pwdMatKhau.setStyle("-fx-padding: 4 30 4 8;");
+
+        txtMatKhauHien.setPromptText("Nhập mật khẩu");
+        txtMatKhauHien.setPrefWidth(260);
+        txtMatKhauHien.setMaxWidth(Double.MAX_VALUE);
+        txtMatKhauHien.setStyle("-fx-padding: 4 30 4 8;");
+        txtMatKhauHien.setVisible(false);
+        txtMatKhauHien.setManaged(false);
+
+        // Đồng bộ dữ liệu 2 chiều giữa PasswordField và TextField
+        txtMatKhauHien.textProperty().bindBidirectional(pwdMatKhau.textProperty());
+
+        // Cấu hình icon mắt chuẩn vector (mắt thường khi ẩn, mắt gạch chéo khi hiện)
+        iconMatKhau.setContent(SVG_MAT_MO);
+        iconMatKhau.setFill(Color.TRANSPARENT);
+        iconMatKhau.setStroke(Color.web("#64748b"));
+        iconMatKhau.setStrokeWidth(1.8);
+        iconMatKhau.setStrokeLineCap(StrokeLineCap.ROUND);
+        iconMatKhau.setStrokeLineJoin(StrokeLineJoin.ROUND);
+        iconMatKhau.setScaleX(0.65);
+        iconMatKhau.setScaleY(0.65);
+
+        btnAnHienMatKhau.setGraphic(iconMatKhau);
+        btnAnHienMatKhau.setFocusTraversable(false);
+        btnAnHienMatKhau.setStyle("-fx-background-color: transparent; -fx-cursor: hand; -fx-padding: 0 8 0 0;");
+        btnAnHienMatKhau.setOnMouseEntered(e -> iconMatKhau.setStroke(Color.web("#0284c7")));
+        btnAnHienMatKhau.setOnMouseExited(e -> iconMatKhau.setStroke(Color.web("#64748b")));
+        btnAnHienMatKhau.setOnAction(e -> {
+            boolean dangHien = txtMatKhauHien.isVisible();
+            txtMatKhauHien.setVisible(!dangHien);
+            txtMatKhauHien.setManaged(!dangHien);
+            pwdMatKhau.setVisible(dangHien);
+            pwdMatKhau.setManaged(dangHien);
+            iconMatKhau.setContent(dangHien ? SVG_MAT_MO : SVG_MAT_GACH);
+            if (!dangHien) {
+                txtMatKhauHien.requestFocus();
+                txtMatKhauHien.positionCaret(txtMatKhauHien.getText() != null ? txtMatKhauHien.getText().length() : 0);
+            } else {
+                pwdMatKhau.requestFocus();
+                pwdMatKhau.positionCaret(pwdMatKhau.getText() != null ? pwdMatKhau.getText().length() : 0);
+            }
+        });
+
+        StackPane pnlKhungMatKhau = new StackPane(pwdMatKhau, txtMatKhauHien, btnAnHienMatKhau);
+        StackPane.setAlignment(btnAnHienMatKhau, Pos.CENTER_RIGHT);
 
         txtTenDangNhap.textProperty().addListener((obs, o, n) -> {
             xoaLoiTenDangNhap();
-            xoaLoiMatKhau(); // Xóa luôn lỗi chung nếu có
-        });
-        pwdMatKhau.textProperty().addListener((obs, o, n) -> {
-            xoaLoiTenDangNhap(); // Xóa viền đỏ ô trên nếu có
             xoaLoiMatKhau();
         });
+        pwdMatKhau.textProperty().addListener((obs, o, n) -> {
+            xoaLoiTenDangNhap();
+            xoaLoiMatKhau();
+        });
+
         txtTenDangNhap.setOnAction(e -> xuLyDangNhap());
         pwdMatKhau.setOnAction(e -> xuLyDangNhap());
+        txtMatKhauHien.setOnAction(e -> xuLyDangNhap());
 
         pnlLuoiNhap.add(lblTenDangNhap, 0, 0);
         pnlLuoiNhap.add(txtTenDangNhap, 1, 0);
         pnlLuoiNhap.add(lblLoiTenDangNhap, 1, 1);
 
         pnlLuoiNhap.add(lblMatKhau, 0, 2);
-        pnlLuoiNhap.add(pwdMatKhau, 1, 2);
+        pnlLuoiNhap.add(pnlKhungMatKhau, 1, 2);
         pnlLuoiNhap.add(lblLoiMatKhau, 1, 3);
 
         HBox pnlNutThaoTac = new HBox(12);
@@ -144,16 +199,15 @@ public class DangNhapView extends StackPane {
         txtTenDangNhap.getStyleClass().remove("o-nhap-loi");
         if (lblLoiTenDangNhap.isVisible()) {
             lblLoiTenDangNhap.setVisible(false);
-            
             lblLoiTenDangNhap.setText("");
         }
     }
 
     private void xoaLoiMatKhau() {
         pwdMatKhau.getStyleClass().remove("o-nhap-loi");
+        txtMatKhauHien.getStyleClass().remove("o-nhap-loi");
         if (lblLoiMatKhau.isVisible()) {
             lblLoiMatKhau.setVisible(false);
-          
             lblLoiMatKhau.setText("");
         }
     }
@@ -164,16 +218,17 @@ public class DangNhapView extends StackPane {
         }
         lblLoiTenDangNhap.setText(thongBao);
         lblLoiTenDangNhap.setVisible(true);
-       
     }
 
     private void hienLoiMatKhau(String thongBao) {
         if (!pwdMatKhau.getStyleClass().contains("o-nhap-loi")) {
             pwdMatKhau.getStyleClass().add("o-nhap-loi");
         }
+        if (!txtMatKhauHien.getStyleClass().contains("o-nhap-loi")) {
+            txtMatKhauHien.getStyleClass().add("o-nhap-loi");
+        }
         lblLoiMatKhau.setText(thongBao);
         lblLoiMatKhau.setVisible(true);
-      
     }
 
     private void xuLyDangNhap() {
@@ -194,7 +249,11 @@ public class DangNhapView extends StackPane {
         if (matKhau.isEmpty()) {
             hienLoiMatKhau("Mật khẩu không được để trống");
             if (!coLoi) {
-                pwdMatKhau.requestFocus();
+                if (txtMatKhauHien.isVisible()) {
+                    txtMatKhauHien.requestFocus();
+                } else {
+                    pwdMatKhau.requestFocus();
+                }
             }
             coLoi = true;
         }
@@ -223,7 +282,11 @@ public class DangNhapView extends StackPane {
             hienLoiMatKhau("Tên đăng nhập hoặc mật khẩu không chính xác");
             
             // 4. Đưa con trỏ chuột vào ô mật khẩu
-            pwdMatKhau.requestFocus();
+            if (txtMatKhauHien.isVisible()) {
+                txtMatKhauHien.requestFocus();
+            } else {
+                pwdMatKhau.requestFocus();
+            }
             return;
         }
 
