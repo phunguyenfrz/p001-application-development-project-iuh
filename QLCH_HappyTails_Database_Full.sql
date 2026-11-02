@@ -535,3 +535,83 @@ VALUES
 ('PDT-20261006-000001', 'HD-20261005-000001', 'SP-20261005-000001', 1, 350000, N'Lỗi sản phẩm', N'Đã mở', N'Trả nhà cung cấp', N'Bao bì rách, ẩm hạt', NULL, NULL);
 
 GO
+
+
+-- =======================================================
+-- 6. CHỈ MỤC TỐI ƯU HIỆU NĂNG TRUY VẤN (NON-CLUSTERED INDEXES)
+-- =======================================================
+
+-- Khách hàng & Thú cưng
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_KhachHang_TrangThai_HoTen' AND object_id = OBJECT_ID(N'dbo.KhachHang'))
+    CREATE NONCLUSTERED INDEX IX_KhachHang_TrangThai_HoTen ON dbo.KhachHang (trangThai, hoTen);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ThuCung_MaKhachHang' AND object_id = OBJECT_ID(N'dbo.ThuCung'))
+    CREATE NONCLUSTERED INDEX IX_ThuCung_MaKhachHang ON dbo.ThuCung (maKhachHang) INCLUDE (tenThuCung, loaiThuCung, canNang, diUng);
+
+-- Phân ca nhân viên
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_PhanCa_NgayLam' AND object_id = OBJECT_ID(N'dbo.PhanCa'))
+    CREATE NONCLUSTERED INDEX IX_PhanCa_NgayLam ON dbo.PhanCa (ngayLam, trangThai) INCLUDE (maNhanVien, maCa);
+
+-- Lịch hẹn & Phiếu dịch vụ chăm sóc
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_LichHen_NgayHen_GioHen' AND object_id = OBJECT_ID(N'dbo.LichHen'))
+    CREATE NONCLUSTERED INDEX IX_LichHen_NgayHen_GioHen ON dbo.LichHen (ngayHen DESC, gioHen DESC) INCLUDE (trangThai, maKhachHang, maThuCung, maNhanVien);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_LichHen_MaThuCung_TrangThai' AND object_id = OBJECT_ID(N'dbo.LichHen'))
+    CREATE NONCLUSTERED INDEX IX_LichHen_MaThuCung_TrangThai ON dbo.LichHen (maThuCung, trangThai, ngayHen DESC);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_LichHen_MaKhachHang' AND object_id = OBJECT_ID(N'dbo.LichHen'))
+    CREATE NONCLUSTERED INDEX IX_LichHen_MaKhachHang ON dbo.LichHen (maKhachHang, ngayHen DESC);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_LichHen_MaNhanVien_NgayGio' AND object_id = OBJECT_ID(N'dbo.LichHen'))
+    CREATE NONCLUSTERED INDEX IX_LichHen_MaNhanVien_NgayGio ON dbo.LichHen (maNhanVien, ngayHen, gioHen);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_PhieuDichVu_NgayGio' AND object_id = OBJECT_ID(N'dbo.PhieuDichVu'))
+    CREATE NONCLUSTERED INDEX IX_PhieuDichVu_NgayGio ON dbo.PhieuDichVu (ngayTiepNhan DESC, gioTiepNhan DESC) INCLUDE (trangThai, maKhachHang, maNhanVien, maLichHen);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_PhieuDichVu_MaLichHen' AND object_id = OBJECT_ID(N'dbo.PhieuDichVu'))
+    CREATE NONCLUSTERED INDEX IX_PhieuDichVu_MaLichHen ON dbo.PhieuDichVu (maLichHen, trangThai) WHERE maLichHen IS NOT NULL;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_PhieuDichVu_MaKhachHang' AND object_id = OBJECT_ID(N'dbo.PhieuDichVu'))
+    CREATE NONCLUSTERED INDEX IX_PhieuDichVu_MaKhachHang ON dbo.PhieuDichVu (maKhachHang, ngayTiepNhan DESC);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ChiTietPDV_MaThuCung' AND object_id = OBJECT_ID(N'dbo.ChiTietPhieuDichVu'))
+    CREATE NONCLUSTERED INDEX IX_ChiTietPDV_MaThuCung ON dbo.ChiTietPhieuDichVu (maThuCung);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ChiTietPDV_MaDichVu' AND object_id = OBJECT_ID(N'dbo.ChiTietPhieuDichVu'))
+    CREATE NONCLUSTERED INDEX IX_ChiTietPDV_MaDichVu ON dbo.ChiTietPhieuDichVu (maDichVu) INCLUDE (donGia);
+
+-- Sản phẩm & Đơn nhập hàng
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_SanPham_TrangThai' AND object_id = OBJECT_ID(N'dbo.SanPham'))
+    CREATE NONCLUSTERED INDEX IX_SanPham_TrangThai ON dbo.SanPham (trangThai) INCLUDE (tenSanPham, giaBan, soLuongTon, nguongTonToiThieu);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_SanPham_MaNhaCungCap' AND object_id = OBJECT_ID(N'dbo.SanPham'))
+    CREATE NONCLUSTERED INDEX IX_SanPham_MaNhaCungCap ON dbo.SanPham (maNhaCungCap);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_DonHang_NgayLap' AND object_id = OBJECT_ID(N'dbo.DonHang'))
+    CREATE NONCLUSTERED INDEX IX_DonHang_NgayLap ON dbo.DonHang (ngayLap DESC, trangThai) INCLUDE (maNhaCungCap, maNhanVien, tongTien);
+
+-- Hóa đơn & Phiếu đổi trả
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_HoaDon_NgayLap' AND object_id = OBJECT_ID(N'dbo.HoaDon'))
+    CREATE NONCLUSTERED INDEX IX_HoaDon_NgayLap ON dbo.HoaDon (ngayLap DESC, trangThaiThanhToan) INCLUDE (tongTien, maKhachHang, maNhanVien, hinhThucThanhToan, maKhuyenMai);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_HoaDon_MaKhachHang' AND object_id = OBJECT_ID(N'dbo.HoaDon'))
+    CREATE NONCLUSTERED INDEX IX_HoaDon_MaKhachHang ON dbo.HoaDon (maKhachHang, ngayLap DESC);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_HoaDon_MaPhieuDichVu' AND object_id = OBJECT_ID(N'dbo.HoaDon'))
+    CREATE NONCLUSTERED INDEX IX_HoaDon_MaPhieuDichVu ON dbo.HoaDon (maPhieuDichVu, trangThaiThanhToan) WHERE maPhieuDichVu IS NOT NULL;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_CTHDSanPham_MaSanPham' AND object_id = OBJECT_ID(N'dbo.ChiTietHoaDon_SanPham'))
+    CREATE NONCLUSTERED INDEX IX_CTHDSanPham_MaSanPham ON dbo.ChiTietHoaDon_SanPham (maSanPham) INCLUDE (soLuong, donGia);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_CTHDDichVu_MaDichVu' AND object_id = OBJECT_ID(N'dbo.ChiTietHoaDon_DichVu'))
+    CREATE NONCLUSTERED INDEX IX_CTHDDichVu_MaDichVu ON dbo.ChiTietHoaDon_DichVu (maDichVu) INCLUDE (soLuong, donGia);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_PhieuDoiTra_NgayLap' AND object_id = OBJECT_ID(N'dbo.PhieuDoiTra'))
+    CREATE NONCLUSTERED INDEX IX_PhieuDoiTra_NgayLap ON dbo.PhieuDoiTra (ngayLap DESC, trangThai) INCLUDE (maHoaDon, maKhachHang, maNhanVien, tienHoan, tienBu);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_PhieuDoiTra_MaHoaDon' AND object_id = OBJECT_ID(N'dbo.PhieuDoiTra'))
+    CREATE NONCLUSTERED INDEX IX_PhieuDoiTra_MaHoaDon ON dbo.PhieuDoiTra (maHoaDon, trangThai);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ChiTietPhieuDoiTra_MaHoaDon' AND object_id = OBJECT_ID(N'dbo.ChiTietPhieuDoiTra'))
+    CREATE NONCLUSTERED INDEX IX_ChiTietPhieuDoiTra_MaHoaDon ON dbo.ChiTietPhieuDoiTra (maHoaDon, maSanPham) INCLUDE (soLuong, maPhieuDoiTra);
+GO
