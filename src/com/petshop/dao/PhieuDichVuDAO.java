@@ -265,6 +265,22 @@ public class PhieuDichVuDAO {
         return danhSach;
     }
 
+    // Kiểm tra xem thú cưng có thuộc quyền sở hữu của khách hàng hay không
+    public boolean kiemTraThuCungThuocKhachHang(String maThuCung, String maKhachHang) {
+        if (maThuCung == null || maKhachHang == null) return false;
+        String sql = "SELECT 1 FROM ThuCung WHERE maThuCung = ? AND maKhachHang = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maThuCung.trim());
+            ps.setString(2, maKhachHang.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi kiểm tra chủ nuôi của thú cưng: " + e.getMessage(), e);
+        }
+    }
+
     // Xóa mềm phiếu dịch vụ (chuyển trạng thái sang 'Đã hủy' và lưu lý do)
     public boolean xoaMem(String maPhieuDichVu, String lyDoHuy) {
         String sql = """

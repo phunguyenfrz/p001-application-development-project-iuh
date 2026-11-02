@@ -258,6 +258,13 @@ public class PhieuDichVuService {
                 throw new IllegalArgumentException("Đơn giá dịch vụ không được nhỏ hơn 0!");
             }
 
+
+            // Đảm bảo thú cưng trong chi tiết thuộc quyền sở hữu của khách hàng trong phiếu
+            if (!phieuDichVuDAO.kiemTraThuCungThuocKhachHang(ct.getMaThuCung(), phieu.getMaKhachHang())) {
+                String tenTc = ct.getTenThuCung() != null ? ct.getTenThuCung() : ct.getMaThuCung();
+                throw new IllegalArgumentException("Thú cưng '" + tenTc + "' không thuộc sở hữu của khách hàng trong phiếu tiếp nhận!");
+            }
+
             // Chặn thêm trùng cùng một thú cưng với cùng một dịch vụ trong phiếu
             String khoaChung = ct.getMaThuCung().trim() + "_" + ct.getMaDichVu().trim();
             if (!cacDichVuDaThem.add(khoaChung)) {
