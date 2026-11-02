@@ -3,6 +3,7 @@ package com.petshop.view.doitra;
 import com.petshop.controller.PhieuDoiTraController;
 import com.petshop.model.*;
 import com.petshop.util.SessionManager;
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -36,24 +37,21 @@ public class LapPhieuDoiTraView extends VBox {
 
     private final PhieuDoiTraController controller;
 
-    // Thanh tiến trình
-    private final Label lblStep1 = new Label("1. Tìm hóa đơn gốc");
-    private final Label lblStep2 = new Label("2. Chọn sản phẩm đổi trả");
-    private final Label lblStep3 = new Label("3. Xác nhận & lưu");
-
-    // Vùng A - Tìm hóa đơn
+    // Tìm hóa đơn gốc
     private final TextField txtTimKiemHoaDon = new TextField();
     private final Button btnTimHoaDon = new Button("Tìm hóa đơn");
+    private final ComboBox<HoaDon> cboChonHoaDon = new ComboBox<>();
     private final Label lblBannerLoiHoaDon = new Label();
     private final TableView<HoaDon> tblKetQuaHoaDon = new TableView<>();
     private final ObservableList<HoaDon> dsHoaDonTimKiem = FXCollections.observableArrayList();
     private final VBox pnlThongTinHoaDonChon = new VBox(8);
+    private boolean dangDongBoChonHoaDon = false;
 
     // Hóa đơn đang chọn
     private HoaDon hoaDonDangChon = null;
     private boolean hoaDonHopLe = false;
 
-    // Vùng B - Bảng sản phẩm đổi trả
+    // Bảng sản phẩm đổi trả
     public static class DongTraHang {
         private final BooleanProperty chon = new SimpleBooleanProperty(false);
         private final String maSanPham;
@@ -145,7 +143,7 @@ public class LapPhieuDoiTraView extends VBox {
     private final TableView<DongTraHang> tblSanPhamDoiTra = new TableView<>();
     private final ObservableList<DongTraHang> dsSanPhamDoiTra = FXCollections.observableArrayList();
 
-    // Vùng C - Hình thức xử lý
+    // Hình thức xử lý
     private final RadioButton rdoTraHang = new RadioButton("Trả hàng, hoàn tiền");
     private final RadioButton rdoDoiHang = new RadioButton("Đổi sang sản phẩm khác");
     private final ToggleGroup grpHinhThuc = new ToggleGroup();
@@ -187,7 +185,7 @@ public class LapPhieuDoiTraView extends VBox {
     private final ObservableList<DongDoiHang> dsSanPhamDoiMoi = FXCollections.observableArrayList();
     private final Label lblDongChenhLech = new Label("Không phát sinh chênh lệch (0 VNĐ)");
 
-    // Vùng D - Thanh tóm tắt cố định
+    // Thanh tóm tắt cố định
     private final Label lblTongTienTra = new Label("0 VNĐ");
     private final Label lblTongTienDoi = new Label("0 VNĐ");
     private final Label lblChenhLechCuoi = new Label("0 VNĐ");
@@ -199,6 +197,7 @@ public class LapPhieuDoiTraView extends VBox {
         this.controller = new PhieuDoiTraController();
         khoiTaoGiaoDien();
         dangKySuKien();
+        napDanhSachHoaDon7NgayMacDinh();
     }
 
     private void khoiTaoGiaoDien() {
@@ -212,23 +211,20 @@ public class LapPhieuDoiTraView extends VBox {
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
         pnlTieuDeMan.getChildren().addAll(lblTieuDe, lblMoTa);
 
-        // 1. Thanh tiến trình
-        HBox pnlTienTrinh = taoThanhTienTrinh();
-
-        // 2. Vùng A - Tìm hóa đơn gốc
+        // 1. Tìm hóa đơn gốc
         VBox vungA = taoVungATimHoaDon();
 
-        // 3. Vùng B - Chọn sản phẩm đổi trả
+        // 2. Chọn sản phẩm đổi trả
         VBox vungB = taoVungBChonSanPham();
 
-        // 4. Vùng C - Hình thức xử lý
+        // 3. Hình thức xử lý
         VBox vungC = taoVungCHinhThucXuLy();
 
-        // 5. Vùng D - Thanh tóm tắt cố định
+        // 4. Thanh tóm tắt cố định
         HBox vungD = taoVungDTomTatCoDinh();
 
         ScrollPane scroll = new ScrollPane();
-        VBox noiDungCuon = new VBox(14, pnlTienTrinh, vungA, vungB, vungC);
+        VBox noiDungCuon = new VBox(14, vungA, vungB, vungC);
         noiDungCuon.setPadding(new Insets(0, 4, 10, 0));
         scroll.setContent(noiDungCuon);
         scroll.setFitToWidth(true);
@@ -238,45 +234,30 @@ public class LapPhieuDoiTraView extends VBox {
         this.getChildren().addAll(pnlTieuDeMan, scroll, vungD);
     }
 
-    private HBox taoThanhTienTrinh() {
-        HBox box = new HBox(12);
-        box.setAlignment(Pos.CENTER);
-        box.getStyleClass().add("hop-noi-dung");
-
-        capNhatMauTienTrinh(1);
-
-        Label muiTen1 = new Label(" ➔ ");
-        muiTen1.setStyle("-fx-text-fill: #64748b; -fx-font-weight: bold;");
-        Label muiTen2 = new Label(" ➔ ");
-        muiTen2.setStyle("-fx-text-fill: #64748b; -fx-font-weight: bold;");
-
-        box.getChildren().addAll(lblStep1, muiTen1, lblStep2, muiTen2, lblStep3);
-        return box;
-    }
-
-    private void capNhatMauTienTrinh(int stepHienTai) {
-        String styleActive = "-fx-font-weight: bold; -fx-text-fill: #0f172a; -fx-background-color: #e2e8f0; -fx-padding: 5 14; -fx-background-radius: 4px;";
-        String styleInActive = "-fx-font-weight: normal; -fx-text-fill: #64748b; -fx-background-color: transparent; -fx-padding: 5 14;";
-
-        lblStep1.setStyle(stepHienTai == 1 ? styleActive : styleInActive);
-        lblStep2.setStyle(stepHienTai == 2 ? styleActive : styleInActive);
-        lblStep3.setStyle(stepHienTai == 3 ? styleActive : styleInActive);
-    }
-
     private VBox taoVungATimHoaDon() {
         VBox card = new VBox(10);
         card.getStyleClass().add("hop-noi-dung");
 
-        Label lblTieuDe = new Label("VÙNG A - TÌM HÓA ĐƠN GỐC CẦN ĐỔI TRẢ");
+        Label lblTieuDe = new Label("TÌM HÓA ĐƠN GỐC CẦN ĐỔI TRẢ");
         lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px;");
 
         HBox hangTim = new HBox(10);
         hangTim.setAlignment(Pos.CENTER_LEFT);
-        txtTimKiemHoaDon.setPromptText("Nhập Mã hóa đơn / Số điện thoại / Mã khách hàng...");
-        txtTimKiemHoaDon.setPrefWidth(380);
+        txtTimKiemHoaDon.setPromptText("Nhập Mã hóa đơn / Số điện thoại / Tên hoặc Mã khách hàng...");
+        txtTimKiemHoaDon.setPrefWidth(320);
 
         btnTimHoaDon.getStyleClass().add("nut-chinh");
-        hangTim.getChildren().addAll(new Label("Tìm kiếm:"), txtTimKiemHoaDon, btnTimHoaDon);
+
+        cboChonHoaDon.setPromptText("-- Chọn hóa đơn trong 7 ngày gần nhất --");
+        cboChonHoaDon.setPrefWidth(430);
+        HBox.setHgrow(cboChonHoaDon, Priority.ALWAYS);
+        cboChonHoaDon.setMaxWidth(Double.MAX_VALUE);
+        cauHinhHienThiComboBoxHoaDon(cboChonHoaDon);
+
+        hangTim.getChildren().addAll(
+                new Label("Tìm kiếm:"), txtTimKiemHoaDon, btnTimHoaDon,
+                new Label("Chọn hóa đơn (7 ngày):"), cboChonHoaDon
+        );
 
         lblBannerLoiHoaDon.setManaged(false);
         lblBannerLoiHoaDon.setVisible(false);
@@ -296,9 +277,14 @@ public class LapPhieuDoiTraView extends VBox {
         colNgayLap.setPrefWidth(100);
 
         TableColumn<HoaDon, String> colKhach = new TableColumn<>("Khách hàng");
-        colKhach.setCellValueFactory(d -> new SimpleStringProperty(
-                d.getValue().getTenKhachHang() != null ? d.getValue().getTenKhachHang() : "Khách vãng lai"));
-        colKhach.setPrefWidth(150);
+        colKhach.setCellValueFactory(d -> {
+            HoaDon hd = d.getValue();
+            String ten = hd.getTenKhachHang() != null ? hd.getTenKhachHang() : "Khách vãng lai";
+            String sdt = hd.getSoDienThoaiKhachHang() != null && !hd.getSoDienThoaiKhachHang().isBlank()
+                    ? " (" + hd.getSoDienThoaiKhachHang() + ")" : "";
+            return new SimpleStringProperty(ten + sdt);
+        });
+        colKhach.setPrefWidth(170);
 
         TableColumn<HoaDon, String> colTongTien = new TableColumn<>("Tổng tiền");
         colTongTien.setCellValueFactory(d -> new SimpleStringProperty(
@@ -325,11 +311,46 @@ public class LapPhieuDoiTraView extends VBox {
         return card;
     }
 
+    private void cauHinhHienThiComboBoxHoaDon(ComboBox<HoaDon> combo) {
+        StringConverter<HoaDon> converter = new StringConverter<>() {
+            @Override
+            public String toString(HoaDon hd) {
+                if (hd == null) return "";
+                String ngay = hd.getNgayLap() != null ? hd.getNgayLap().format(DINH_DANG_NGAY) : "";
+                String khach = hd.getTenKhachHang() != null ? hd.getTenKhachHang() : "Khách vãng lai";
+                String sdt = hd.getSoDienThoaiKhachHang() != null && !hd.getSoDienThoaiKhachHang().isBlank()
+                        ? " (" + hd.getSoDienThoaiKhachHang() + ")" : "";
+                String tien = hd.getTongTien() != null ? DINH_DANG_TIEN.format(hd.getTongTien()) : "0 VNĐ";
+                return hd.getMaHoaDon() + " | Ngày: " + ngay + " | " + khach + sdt + " | " + tien;
+            }
+
+            @Override
+            public HoaDon fromString(String s) {
+                return null;
+            }
+        };
+        combo.setConverter(converter);
+        combo.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(HoaDon item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : converter.toString(item));
+            }
+        });
+        combo.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(HoaDon item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "-- Chọn hóa đơn trong 7 ngày gần nhất --" : converter.toString(item));
+            }
+        });
+    }
+
     private VBox taoVungBChonSanPham() {
         VBox card = new VBox(10);
         card.getStyleClass().add("hop-noi-dung");
 
-        Label lblTieuDe = new Label("VÙNG B - CHỌN SẢN PHẨM ĐỔI TRẢ & TÌNH TRẠNG HÀNG (Ma trận QL5)");
+        Label lblTieuDe = new Label("CHỌN SẢN PHẨM ĐỔI TRẢ & TÌNH TRẠNG HÀNG");
         lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px;");
 
         Label lblGhiChuMaTran = new Label("(*) Lưu ý: 'Không phù hợp' và 'Khác' chỉ chấp nhận khi sản phẩm 'Nguyên vẹn'. Dịch vụ chăm sóc không được đổi trả.");
@@ -348,7 +369,7 @@ public class LapPhieuDoiTraView extends VBox {
                     DongTraHang d = getTableView().getItems().get(getIndex());
                     if (d.isLaDichVu()) {
                         cb.setSelected(false);
-                        hienThongBaoCanhBao("Hóa đơn/dòng dịch vụ không được phép đổi trả theo QL4!");
+                        hienThongBaoCanhBao("Hóa đơn/dòng dịch vụ không được phép đổi trả!");
                         return;
                     }
                     d.setChon(cb.isSelected());
@@ -423,7 +444,7 @@ public class LapPhieuDoiTraView extends VBox {
         VBox card = new VBox(12);
         card.getStyleClass().add("hop-noi-dung");
 
-        Label lblTieuDe = new Label("VÙNG C - HÌNH THỨC XỬ LÝ ĐỔI TRẢ");
+        Label lblTieuDe = new Label("HÌNH THỨC XỬ LÝ ĐỔI TRẢ");
         lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px;");
 
         rdoTraHang.setToggleGroup(grpHinhThuc);
@@ -582,9 +603,36 @@ public class LapPhieuDoiTraView extends VBox {
         btnTimHoaDon.setOnAction(e -> timKiemHoaDon());
         txtTimKiemHoaDon.setOnAction(e -> timKiemHoaDon());
 
-        tblKetQuaHoaDon.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+        cboChonHoaDon.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (dangDongBoChonHoaDon) return;
             if (newVal != null) {
-                chonHoaDonGoc(newVal);
+                dangDongBoChonHoaDon = true;
+                try {
+                    if (!dsHoaDonTimKiem.contains(newVal)) {
+                        dsHoaDonTimKiem.setAll(cboChonHoaDon.getItems());
+                    }
+                    tblKetQuaHoaDon.getSelectionModel().select(newVal);
+                    lblBannerLoiHoaDon.setVisible(false);
+                    lblBannerLoiHoaDon.setManaged(false);
+                    chonHoaDonGoc(newVal);
+                } finally {
+                    dangDongBoChonHoaDon = false;
+                }
+            }
+        });
+
+        tblKetQuaHoaDon.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (dangDongBoChonHoaDon) return;
+            if (newVal != null) {
+                dangDongBoChonHoaDon = true;
+                try {
+                    cboChonHoaDon.setValue(newVal);
+                    lblBannerLoiHoaDon.setVisible(false);
+                    lblBannerLoiHoaDon.setManaged(false);
+                    chonHoaDonGoc(newVal);
+                } finally {
+                    dangDongBoChonHoaDon = false;
+                }
             }
         });
 
@@ -625,10 +673,26 @@ public class LapPhieuDoiTraView extends VBox {
         btnLuuPhiu.setOnAction(e -> xacNhanVaLuuPhiu());
     }
 
+    private void napDanhSachHoaDon7NgayMacDinh() {
+        try {
+            List<HoaDon> ds7Ngay = controller.layDanhSachHoaDonTrong7Ngay();
+            dangDongBoChonHoaDon = true;
+            try {
+                cboChonHoaDon.setItems(FXCollections.observableArrayList(ds7Ngay));
+                cboChonHoaDon.setValue(null);
+                dsHoaDonTimKiem.setAll(ds7Ngay);
+                tblKetQuaHoaDon.getSelectionModel().clearSelection();
+            } finally {
+                dangDongBoChonHoaDon = false;
+            }
+        } catch (Exception ignored) {}
+    }
+
     private void timKiemHoaDon() {
         String tuKhoa = txtTimKiemHoaDon.getText();
         if (tuKhoa == null || tuKhoa.trim().isEmpty()) {
-            hienBannerLoi("Vui lòng nhập Mã hóa đơn, SĐT hoặc Mã khách hàng để tìm kiếm!");
+            napDanhSachHoaDon7NgayMacDinh();
+            Platform.runLater(cboChonHoaDon::show);
             return;
         }
 
@@ -637,17 +701,39 @@ public class LapPhieuDoiTraView extends VBox {
         dsHoaDonTimKiem.clear();
 
         try {
-            HoaDon hd = controller.traCuuHoaDonDeDoiTra(tuKhoa.trim());
-            if (hd != null) {
-                dsHoaDonTimKiem.add(hd);
-                tblKetQuaHoaDon.getSelectionModel().select(0);
-                capNhatMauTienTrinh(2);
+            List<HoaDon> dsHoaDon = controller.traCuuDanhSachHoaDonDeDoiTra(tuKhoa.trim());
+            dangDongBoChonHoaDon = true;
+            try {
+                cboChonHoaDon.setItems(FXCollections.observableArrayList(dsHoaDon));
+                dsHoaDonTimKiem.setAll(dsHoaDon);
+
+                if (dsHoaDon.size() == 1) {
+                    HoaDon hdDuyNhat = dsHoaDon.get(0);
+                    cboChonHoaDon.setValue(hdDuyNhat);
+                    tblKetQuaHoaDon.getSelectionModel().select(0);
+                    chonHoaDonGoc(hdDuyNhat);
+                } else if (dsHoaDon.size() > 1) {
+                    cboChonHoaDon.setValue(null);
+                    tblKetQuaHoaDon.getSelectionModel().clearSelection();
+                    hoaDonDangChon = null;
+                    hoaDonHopLe = false;
+                    pnlThongTinHoaDonChon.setVisible(false);
+                    pnlThongTinHoaDonChon.setManaged(false);
+                    dsSanPhamDoiTra.clear();
+                    tinhToanLaiTaiChinh();
+
+                    hienBannerLoi("Tìm thấy " + dsHoaDon.size() + " hóa đơn trong 7 ngày gần nhất. Vui lòng chọn hóa đơn cần đổi trả từ danh sách xổ xuống!");
+                    Platform.runLater(cboChonHoaDon::show);
+                }
+            } finally {
+                dangDongBoChonHoaDon = false;
             }
         } catch (Exception ex) {
             hienBannerLoi(ex.getMessage() != null ? ex.getMessage() : "Không tìm thấy hóa đơn gốc!");
             pnlThongTinHoaDonChon.setVisible(false);
             pnlThongTinHoaDonChon.setManaged(false);
             dsSanPhamDoiTra.clear();
+            tinhToanLaiTaiChinh();
         }
     }
 
@@ -687,6 +773,7 @@ public class LapPhieuDoiTraView extends VBox {
         pnlThongTinHoaDonChon.setManaged(true);
 
         napDanhSachSanPhamTuHoaDon(hd);
+        tinhToanLaiTaiChinh();
     }
 
     private void napDanhSachSanPhamTuHoaDon(HoaDon hd) {
@@ -757,7 +844,7 @@ public class LapPhieuDoiTraView extends VBox {
             dong.getCboTinhTrang().setStyle("");
             dong.getLblThanhTien().setText(DINH_DANG_TIEN.format(dong.tinhThanhTien()));
         } catch (IllegalArgumentException ex) {
-            hienThongBaoCanhBao("Quy tắc QL5 không hợp lệ:\n" + ex.getMessage());
+            hienThongBaoCanhBao("Quy tắc đổi trả không hợp lệ:\n" + ex.getMessage());
         }
     }
 
@@ -855,7 +942,6 @@ public class LapPhieuDoiTraView extends VBox {
         txtTimKiemHoaDon.clear();
         lblBannerLoiHoaDon.setVisible(false);
         lblBannerLoiHoaDon.setManaged(false);
-        tblKetQuaHoaDon.getItems().clear();
         pnlThongTinHoaDonChon.getChildren().clear();
         pnlThongTinHoaDonChon.setVisible(false);
         pnlThongTinHoaDonChon.setManaged(false);
@@ -863,9 +949,9 @@ public class LapPhieuDoiTraView extends VBox {
         dsSanPhamDoiMoi.clear();
         rdoTraHang.setSelected(true);
         tinhToanLaiTaiChinh();
-        capNhatMauTienTrinh(1);
         hoaDonDangChon = null;
         hoaDonHopLe = false;
+        napDanhSachHoaDon7NgayMacDinh();
     }
 
     private void xemLaiTruocKhiLuu() {
@@ -873,8 +959,6 @@ public class LapPhieuDoiTraView extends VBox {
             hienThongBaoCanhBao("Chưa chọn hóa đơn gốc!");
             return;
         }
-
-        capNhatMauTienTrinh(3);
 
         StringBuilder sb = new StringBuilder();
         sb.append("TÓM TẮT PHIẾU ĐỔI TRẢ:\n\n");
@@ -949,7 +1033,7 @@ public class LapPhieuDoiTraView extends VBox {
                 try {
                     controller.kiemTraHopLeChiTiet(ct);
                 } catch (IllegalArgumentException ex) {
-                    hienThongBaoCanhBao("Lỗi kiểm tra quy tắc ma trận: " + ex.getMessage());
+                    hienThongBaoCanhBao("Lỗi kiểm tra quy tắc đổi trả: " + ex.getMessage());
                     return;
                 }
 

@@ -8,6 +8,7 @@ import com.petshop.model.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -74,9 +75,30 @@ public class PhieuDoiTraService {
     }
 
     /**
-     * Tra cứu và kiểm tra hóa đơn gốc để lập phiếu đổi trả.
+     * Lấy danh sách tất cả hóa đơn hợp lệ trong 7 ngày gần nhất để hiển thị trong danh sách xổ xuống.
      */
-    public HoaDon traCuuHoaDonDeDoiTra(String tuKhoa) {
+    public List<HoaDon> layDanhSachHoaDonTrong7Ngay() {
+        kiemTraQuyenDoiTra("RET_CREATE");
+        LocalDate tuNgay = LocalDate.now().minusDays(SO_NGAY_DOI_TRA_TOI_DA);
+        LocalDate denNgay = LocalDate.now();
+        List<HoaDon> ds = hoaDonDAO.timKiemHoaDon(null, tuNgay, denNgay, "Tất cả", "Đã thanh toán");
+        List<HoaDon> ketQua = new ArrayList<>();
+        for (HoaDon item : ds) {
+            HoaDon full = hoaDonDAO.layHoaDonTheoMa(item.getMaHoaDon());
+            if (full != null) {
+                try {
+                    kiemTraDieuKienHoaDon(full);
+                    ketQua.add(full);
+                } catch (IllegalArgumentException ignored) {}
+            }
+        }
+        return ketQua;
+    }
+
+    /**
+     * Tra cứu tất cả hóa đơn hợp lệ trong 7 ngày gần nhất theo từ khóa (Mã HĐ, SĐT, Tên KH, Mã KH).
+     */
+    public List<HoaDon> traCuuDanhSachHoaDonDeDoiTra(String tuKhoa) {
         kiemTraQuyenDoiTra("RET_CREATE");
 
         if (tuKhoa == null || tuKhoa.trim().isEmpty()) {
@@ -84,21 +106,57 @@ public class PhieuDoiTraService {
         }
 
         String keyword = tuKhoa.trim();
-        HoaDon hd = hoaDonDAO.layHoaDonTheoMa(keyword);
+        HoaDon exact = hoaDonDAO.layHoaDonTheoMa(keyword);
+        if (exact != null) {
+            kiemTraDieuKienHoaDon(exact);
+            return List.of(exact);
+        }
 
-        if (hd == null) {
-            List<HoaDon> ds = hoaDonDAO.timKiemHoaDon(keyword, null, null, "Tất cả", "Tất cả");
-            if (!ds.isEmpty()) {
-                hd = hoaDonDAO.layHoaDonTheoMa(ds.get(0).getMaHoaDon());
+        List<HoaDon> ds = hoaDonDAO.timKiemHoaDon(keyword, null, null, "Tất cả", "Tất cả");
+        if (ds.isEmpty()) {
+            List<HoaDon> tatCa7Ngay = hoaDonDAO.timKiemHoaDon(null, LocalDate.now().minusDays(SO_NGAY_DOI_TRA_TOI_DA), LocalDate.now(), "Tất cả", "Tất cả");
+            for (HoaDon h : tatCa7Ngay) {
+                if (h.getMaKhachHang() != null && h.getMaKhachHang().toLowerCase().contains(keyword.toLowerCase())) {
+                    ds.add(h);
+                }
             }
         }
 
-        if (hd == null) {
+        if (ds.isEmpty()) {
             throw new IllegalArgumentException("Không tìm thấy hóa đơn gốc khớp với thông tin: " + keyword);
         }
 
-        kiemTraDieuKienHoaDon(hd);
-        return hd;
+        List<HoaDon> dsHopLe = new ArrayList<>();
+        String loiGanNhat = null;
+
+        for (HoaDon item : ds) {
+            HoaDon full = hoaDonDAO.layHoaDonTheoMa(item.getMaHoaDon());
+            if (full == null) continue;
+            try {
+                kiemTraDieuKienHoaDon(full);
+                dsHopLe.add(full);
+            } catch (IllegalArgumentException ex) {
+                if (loiGanNhat == null) {
+                    loiGanNhat = ex.getMessage();
+                }
+            }
+        }
+
+        if (dsHopLe.isEmpty()) {
+            throw new IllegalArgumentException(loiGanNhat != null
+                    ? loiGanNhat
+                    : "Không có hóa đơn sản phẩm hợp lệ trong 7 ngày gần nhất khớp với: " + keyword);
+        }
+
+        return dsHopLe;
+    }
+
+    /**
+     * Tra cứu và kiểm tra hóa đơn gốc để lập phiếu đổi trả.
+     */
+    public HoaDon traCuuHoaDonDeDoiTra(String tuKhoa) {
+        List<HoaDon> ds = traCuuDanhSachHoaDonDeDoiTra(tuKhoa);
+        return ds.get(0);
     }
 
     /**

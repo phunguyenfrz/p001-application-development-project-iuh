@@ -49,6 +49,20 @@ public class PhieuDoiTraController {
     }
 
     /**
+     * Tra cuu danh sach tat ca hoa don hop le trong 7 ngay gan nhat theo tu khoa.
+     */
+    public List<HoaDon> traCuuDanhSachHoaDonDeDoiTra(String tuKhoa) {
+        return phieuDoiTraService.traCuuDanhSachHoaDonDeDoiTra(tuKhoa);
+    }
+
+    /**
+     * Lay danh sach tat ca hoa don hop le trong 7 ngay gan nhat.
+     */
+    public List<HoaDon> layDanhSachHoaDonTrong7Ngay() {
+        return phieuDoiTraService.layDanhSachHoaDonTrong7Ngay();
+    }
+
+    /**
      * Kiem tra ma tran dieu kien Ly do doi tra va Tinh trang hang hoa (QL5, QL5a, QL5b).
      */
     public void kiemTraHopLeChiTiet(ChiTietPhieuDoiTra ct) {
@@ -133,4 +147,3 @@ public class PhieuDoiTraController {
         return phieuDoiTraService.capNhatPhieuDoiTra(phieu);
     }
 }
-
