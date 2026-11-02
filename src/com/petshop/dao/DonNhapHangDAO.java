@@ -152,13 +152,13 @@ public class DonNhapHangDAO {
     }
 
     /**
-     * Tự động sinh mã đơn nhập hàng theo định dạng mới PN-yyyyMMdd-xxxxxx.
+     * Tự động sinh mã đơn nhập hàng theo định dạng DH-yyyyMMdd-xxxxxx.
      */
     public String taoMaDonNhapHang() {
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) {
                 String ngay = LocalDate.now().format(DINH_DANG_NGAY_MA);
-                return "PN-" + ngay + "-000001";
+                return "DH-" + ngay + "-000001";
             }
             return taoMaDonNhapHang(conn);
         } catch (SQLException e) {
@@ -167,12 +167,12 @@ public class DonNhapHangDAO {
     }
 
     /**
-     * Tự động sinh mã đơn nhập hàng trong một connection sẵn có (mã mới luôn mang tiền tố PN-).
+     * Tự động sinh mã đơn nhập hàng trong một connection sẵn có (mã mới luôn mang tiền tố DH-).
      */
     public String taoMaDonNhapHang(Connection conn) throws SQLException {
         String ngay = LocalDate.now().format(DINH_DANG_NGAY_MA);
-        String tienToMoi = "PN-" + ngay + "-";
-        String tienToCu = "DH-" + ngay + "-";
+        String tienToMoi = "DH-" + ngay + "-";
+        String tienToCu = "PN-" + ngay + "-";
         String bang = getTenBangDonNhap(conn);
         String sql = "SELECT maDonHang FROM " + bang + " WHERE maDonHang LIKE ? OR maDonHang LIKE ?";
 

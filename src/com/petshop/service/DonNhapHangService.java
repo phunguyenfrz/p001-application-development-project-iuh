@@ -32,7 +32,7 @@ public class DonNhapHangService {
     }
 
     /**
-     * Tự động sinh mã đơn nhập hàng theo định dạng PN-yyyyMMdd-xxxxxx.
+     * Tự động sinh mã đơn nhập hàng theo định dạng DH-yyyyMMdd-xxxxxx.
      */
     public String taoMaDonNhapHang() {
         return donNhapHangDAO.taoMaDonNhapHang();
