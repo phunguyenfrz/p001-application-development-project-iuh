@@ -69,6 +69,10 @@ public class PhieuDichVuService {
         kiemTraDuLieuPhieu(phieu, danhSachChiTiet);
         kiemTraChuyenDoiTrangThai(phieuCu.getTrangThai(), phieu.getTrangThai());
 
+        if ("Đang thực hiện".equalsIgnoreCase(phieu.getTrangThai())) {
+            kiemTraRangBuocBatDauThucHien(phieu);
+        }
+
         return phieuDichVuDAO.capNhatPhieuDichVu(phieu, danhSachChiTiet);
     }
 
@@ -89,6 +93,11 @@ public class PhieuDichVuService {
         }
 
         kiemTraChuyenDoiTrangThai(phieuHienTai.getTrangThai(), trangThaiMoi.trim());
+        // Chặn nhân viên hoặc thú cưng làm 2 phiếu cùng lúc
+        if ("Đang thực hiện".equalsIgnoreCase(trangThaiMoi.trim())) {
+            kiemTraRangBuocBatDauThucHien(phieuHienTai);
+        }
+
         return phieuDichVuDAO.capNhatTrangThai(maPhieuDichVu.trim(), trangThaiMoi.trim());
     }
 
@@ -171,6 +180,11 @@ public class PhieuDichVuService {
         return phieuDichVuDAO.layDanhSachLichHenChoTiepNhan();
     }
 
+    // Lấy danh sách mã các nhân viên đang bận làm dịch vụ (có phiếu Đang thực hiện)
+    public Set<String> laySetMaNhanVienDangBan() {
+        return phieuDichVuDAO.laySetMaNhanVienDangThucHien();
+    }
+
     // Tự sinh mã phiếu dịch vụ mới tiếp theo
     public String taoMaPhieuDichVuMoi() {
         return phieuDichVuDAO.taoMaPhieuDichVu();
@@ -251,6 +265,24 @@ public class PhieuDichVuService {
                 String tenDv = ct.getTenDichVu() != null ? ct.getTenDichVu() : ct.getMaDichVu();
                 throw new IllegalArgumentException("Dịch vụ '" + tenDv + "' đã được áp dụng cho thú cưng '" + tenTc + "' trong phiếu này!");
             }
+        }
+    }
+
+    // Kiểm tra ràng buộc khi bắt đầu thực hiện: nhân viên và thú cưng không được trùng dịch vụ đang chạy
+    private void kiemTraRangBuocBatDauThucHien(PhieuDichVu phieu) {
+        if (phieu == null) return;
+
+        // 1. Kiểm tra nhân viên phụ trách có đang bận phiếu dịch vụ khác không
+        String maPhieuBan = phieuDichVuDAO.layMaPhieuDangThucHienCuaNhanVien(phieu.getMaNhanVien(), phieu.getMaPhieuDichVu());
+        if (maPhieuBan != null) {
+            String tenNv = phieu.getTenNhanVien() != null ? phieu.getTenNhanVien() : phieu.getMaNhanVien();
+            throw new IllegalStateException("Nhân viên " + tenNv + " hiện đang thực hiện phiếu dịch vụ " + maPhieuBan + ". Vui lòng hoàn thành phiếu hiện tại trước khi bắt đầu phiếu mới!");
+        }
+
+        // 2. Kiểm tra thú cưng trong phiếu có đang được chăm sóc ở phiếu khác không
+        String thongTinTc = phieuDichVuDAO.layThongTinThuCungDangThucHien(phieu.getMaPhieuDichVu(), phieu.getMaPhieuDichVu());
+        if (thongTinTc != null) {
+            throw new IllegalStateException(thongTinTc + ". Vui lòng hoàn thành phiếu cũ trước khi bắt đầu phiếu này!");
         }
     }
 

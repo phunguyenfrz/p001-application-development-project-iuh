@@ -123,6 +123,11 @@ public class PhieuDichVuController {
         return lichHenDAO.layDanhSachNhanVienChamSoc();
     }
 
+    // Lấy tập hợp mã các nhân viên đang bận thực hiện phiếu dịch vụ
+    public java.util.Set<String> laySetMaNhanVienDangBan() {
+        return phieuDichVuService.laySetMaNhanVienDangBan();
+    }
+
     // Cập nhật cân nặng thực tế cho thú cưng khi cân tại quầy tiếp nhận
     public boolean capNhatCanNangThuCung(String maThuCung, java.math.BigDecimal canNang) {
         return thuCungDAO.capNhatCanNang(maThuCung, canNang);

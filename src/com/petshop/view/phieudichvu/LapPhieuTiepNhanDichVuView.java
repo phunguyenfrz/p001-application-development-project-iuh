@@ -54,6 +54,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
     private final Button btnKiemTraSdt = new Button("Kiểm tra");
     private final ComboBox<KhachHang> cboKhachHang = new ComboBox<>();
     private final ComboBox<String[]> cboNhanVien = new ComboBox<>();
+    private final java.util.Set<String> dsMaNhanVienDangBan = new java.util.HashSet<>();
     private final DatePicker dpNgayTiepNhan = new DatePicker();
     private final TextField txtGioTiepNhan = new TextField();
     private final TextArea txtGhiChu = new TextArea();
@@ -519,7 +520,8 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             public String toString(String[] nv) {
                 if (nv == null || nv.length < 2) return "";
                 String chucVu = (nv.length > 2 && nv[2] != null && !nv[2].isBlank()) ? " (" + nv[2] + ")" : "";
-                return nv[1] + chucVu;
+                String trangThai = dsMaNhanVienDangBan.contains(nv[0]) ? " - [Đang bận]" : " - [Sẵn sàng]";
+                return nv[1] + chucVu + trangThai;
             }
 
             @Override
@@ -1324,6 +1326,8 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             cboKhachHang.setItems(FXCollections.observableArrayList(dsKhachHangGoc));
 
             // Nạp nhân viên và chọn mặc định nhân viên Chăm sóc
+            dsMaNhanVienDangBan.clear();
+            dsMaNhanVienDangBan.addAll(controller.laySetMaNhanVienDangBan());
             List<String[]> dsNv = controller.layDanhSachNhanVien();
             cboNhanVien.setItems(FXCollections.observableArrayList(dsNv));
             chonMacDinhNhanVienChamSoc();
@@ -1344,6 +1348,12 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
 
     // Chọn nhân viên có chức vụ "Chăm sóc" đầu tiên làm mặc định
     private void chonMacDinhNhanVienChamSoc() {
+        for (String[] nv : cboNhanVien.getItems()) {
+            if (nv.length > 2 && nv[2] != null && nv[2].toLowerCase().contains("chăm sóc") && !dsMaNhanVienDangBan.contains(nv[0])) {
+                cboNhanVien.setValue(nv);
+                return;
+            }
+        }
         for (String[] nv : cboNhanVien.getItems()) {
             if (nv.length > 2 && nv[2] != null && nv[2].toLowerCase().contains("chăm sóc")) {
                 cboNhanVien.setValue(nv);
