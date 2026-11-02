@@ -166,7 +166,7 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
         HBox hang1 = new HBox(10);
         hang1.setAlignment(Pos.CENTER);
 
-        VBox theTongDt = taoThe("DOANH THU THỰC THU", lblTongDoanhThu, "#0f172a", "Đã trừ giảm giá & điều chỉnh đổi trả");
+        VBox theTongDt = taoThe("DOANH THU THỰC THU", lblTongDoanhThu, "#0f172a", "Đã trừ giảm giá, hoàn trả & cộng bù đổi trả");
         VBox theSp = taoThe("DOANH THU SẢN PHẨM", lblDoanhThuSanPham, "#0f172a", "Bán lẻ thức ăn & phụ kiện");
         VBox theDv = taoThe("DOANH THU DỊCH VỤ", lblDoanhThuDichVu, "#0f172a", "Dịch vụ spa & chăm sóc thú cưng");
         VBox theGiam = taoThe("TỔNG TIỀN GIẢM GIÁ", lblTongGiamGia, "#475569", "Khuyến mãi + Điểm tích lũy");
@@ -183,7 +183,7 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
         hang2.setAlignment(Pos.CENTER);
 
         VBox theHoanDt = taoThe("TIỀN HOÀN ĐỔI TRẢ", lblTongHoanDoiTra, "#b91c1c", "Hoàn lại cho khách từ hàng đổi trả");
-        VBox theBuDt = taoThe("TIỀN KHÁCH BÙ ĐỔI TRẢ", lblTongBuDoiTra, "#0f172a", "Khách bù thêm khi đổi hàng");
+        VBox theBuDt = taoThe("TIỀN KHÁCH BÙ ĐỔI TRẢ", lblTongBuDoiTra, "#0f172a", "Khách bù thêm khi đổi hàng (cộng vào DT)");
         VBox theTc = taoThe("ĐƠN HOÀN TẤT", lblSoHoaDonThanhCong, "#0f172a", "Hóa đơn thanh toán thành công");
         VBox theHuy = taoThe("ĐƠN ĐÃ HỦY", lblSoHoaDonHuy, "#b91c1c", "Hóa đơn đã bị thu hồi / hủy");
         VBox theAov = taoThe("GIÁ TRỊ TB / ĐƠN (AOV)", lblGiaTriTrungBinhDon, "#0f172a", "Doanh thu bình quân mỗi đơn");
@@ -598,8 +598,19 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
             List<PhieuDoiTra> dsPdt = phieuDoiTraController.timKiemPhieuDoiTra("", tuNgay, denNgay, "Tất cả", "Tất cả");
             if (dsPdt != null) {
                 for (PhieuDoiTra p : dsPdt) {
+                    boolean laDoi = p.getLoaiXuLy() != null && (p.getLoaiXuLy().toLowerCase().contains("đổi") || p.getLoaiXuLy().toLowerCase().contains("doi"));
                     if (p.getDanhSachSanPham() != null && !p.getDanhSachSanPham().isEmpty()) {
-                        for (ChiTietPhieuDoiTra ct : p.getDanhSachSanPham()) {
+                        for (int i = 0; i < p.getDanhSachSanPham().size(); i++) {
+                            ChiTietPhieuDoiTra ct = p.getDanhSachSanPham().get(i);
+                            BigDecimal tienHoanDong;
+                            BigDecimal tienBuDong;
+                            if (laDoi) {
+                                tienHoanDong = (i == 0 && p.getTienHoan() != null) ? p.getTienHoan() : BigDecimal.ZERO;
+                                tienBuDong = (i == 0 && p.getTienBu() != null) ? p.getTienBu() : BigDecimal.ZERO;
+                            } else {
+                                tienHoanDong = ct.tinhThanhTienTra();
+                                tienBuDong = BigDecimal.ZERO;
+                            }
                             dsHangDoiTra.add(new DongHangDoiTraBaoCao(
                                     p.getMaPhieuDoiTra(),
                                     p.getMaHoaDon(),
@@ -607,8 +618,8 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
                                     ct.getSoLuong(),
                                     ct.getLyDo(),
                                     ct.getHuongXuLy(),
-                                    ct.tinhThanhTienTra(),
-                                    p.getTienBu() != null ? p.getTienBu() : BigDecimal.ZERO,
+                                    tienHoanDong,
+                                    tienBuDong,
                                     p.getTrangThai()
                             ));
                         }

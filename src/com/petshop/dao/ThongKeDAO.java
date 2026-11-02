@@ -22,16 +22,19 @@ public class ThongKeDAO {
 
     /**
      * Lấy các số liệu tổng quan cho thẻ KPI:
-     * - Doanh thu hôm nay (đã trừ tiền hoàn đổi trả trong ngày và cộng bù)
+     * - Doanh thu hôm nay (đã trừ tiền hoàn đổi trả trong ngày và cộng thẳng tiền khách bù đổi trả vào doanh thu)
      * - Lịch hẹn hôm nay
      * - Sản phẩm cần nhập thêm (tồn <= ngưỡng tối thiểu)
      */
     public ThongKeTongQuan layThongKeTongQuan() {
+        // Đảm bảo dữ liệu tiền hoàn / tiền bù của phiếu đổi trả đã được đồng bộ chuẩn trong CSDL
+        new PhieuDoiTraDAO();
+
         BigDecimal doanhThu = BigDecimal.ZERO;
         int soLichHen = 0;
         int soSanPhamSapHet = 0;
 
-        // 1. Tính tổng doanh thu hôm nay từ HoaDon trừ đi tiền hoàn đổi trả trong ngày
+        // 1. Tính tổng doanh thu hôm nay từ HoaDon trừ đi tiền hoàn đổi trả trong ngày và cộng thẳng tiền khách bù
         String sqlDoanhThu = """
                 SELECT COALESCE(
                     (SELECT SUM(tongTien) FROM dbo.HoaDon WHERE ngayLap = CAST(GETDATE() AS DATE) AND trangThaiThanhToan = N'Đã thanh toán'), 0
@@ -109,6 +112,7 @@ public class ThongKeDAO {
      * - Phiếu đổi trả hàng phát sinh trong ngày
      */
     public List<HoatDongGanDay> layHoatDongGanDay() {
+        new PhieuDoiTraDAO();
         List<HoatDongGanDay> danhSach = new ArrayList<>();
 
         try (Connection conn = DatabaseManager.getConnection()) {

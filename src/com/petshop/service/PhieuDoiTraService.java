@@ -53,6 +53,12 @@ public class PhieuDoiTraService {
         return phieuDoiTraDAO.sinhMaPhieu();
     }
 
+    private boolean laDoiHang(String loaiXuLy) {
+        if (loaiXuLy == null) return false;
+        String lower = loaiXuLy.trim().toLowerCase();
+        return lower.contains("đổi") || lower.contains("doi");
+    }
+
     private void kiemTraQuyenDoiTra(String maQuyenChinh) {
         if (xacThucService == null) return;
         try {
@@ -256,6 +262,8 @@ public class PhieuDoiTraService {
         int tongSoLuongTra = 0;
         BigDecimal tongTienTra = BigDecimal.ZERO;
         BigDecimal tongTienDoi = BigDecimal.ZERO;
+        BigDecimal tienBuTruoc = phieu.getTienBu() != null ? phieu.getTienBu() : BigDecimal.ZERO;
+        BigDecimal tienHoanTruoc = phieu.getTienHoan() != null ? phieu.getTienHoan() : BigDecimal.ZERO;
 
         for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
             if (ct.getSoLuong() <= 0) {
@@ -288,7 +296,7 @@ public class PhieuDoiTraService {
             }
 
             // Nếu là đổi hàng, kiểm tra tồn kho sản phẩm đổi mới
-            if ("Đổi sang sản phẩm khác".equalsIgnoreCase(phieu.getLoaiXuLy())) {
+            if (laDoiHang(phieu.getLoaiXuLy())) {
                 if (ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().trim().isEmpty()) {
                     if (ct.getSoLuongDoi() <= 0) {
                         throw new IllegalArgumentException("Vui lòng nhập số lượng sản phẩm đổi lấy mới cho '" + ct.getTenSanPham() + "'!");
@@ -297,6 +305,12 @@ public class PhieuDoiTraService {
                     if (tonKho < ct.getSoLuongDoi()) {
                         throw new IllegalArgumentException("Sản phẩm đổi mới '" + ct.getTenSanPhamDoi() + "' chỉ còn tồn kho "
                                 + tonKho + ", không đủ số lượng đổi (" + ct.getSoLuongDoi() + ")!");
+                    }
+                    if (ct.getDonGiaDoi() == null || ct.getDonGiaDoi().compareTo(BigDecimal.ZERO) <= 0) {
+                        SanPham spDoi = sanPhamDAO.layTheoMa(ct.getMaSanPhamDoi());
+                        if (spDoi != null && spDoi.getGiaBan() != null) {
+                            ct.setDonGiaDoi(spDoi.getGiaBan());
+                        }
                     }
                     tongTienDoi = tongTienDoi.add(ct.tinhThanhTienDoi());
                 }
@@ -309,19 +323,29 @@ public class PhieuDoiTraService {
         phieu.setSoLuong(tongSoLuongTra);
 
         // Tính toán tiền hoàn / tiền bù
-        if ("Đổi sang sản phẩm khác".equalsIgnoreCase(phieu.getLoaiXuLy())) {
-            BigDecimal chenhLech = tongTienDoi.subtract(tongTienTra);
-            if (chenhLech.compareTo(BigDecimal.ZERO) > 0) {
-                // Khách cần bù thêm tiền
-                phieu.setTienBu(chenhLech);
-                phieu.setTienHoan(BigDecimal.ZERO);
-            } else if (chenhLech.compareTo(BigDecimal.ZERO) < 0) {
-                // Cửa hàng hoàn lại tiền cho khách
-                phieu.setTienHoan(chenhLech.abs());
-                phieu.setTienBu(BigDecimal.ZERO);
+        if (laDoiHang(phieu.getLoaiXuLy())) {
+            if (tongTienDoi.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal chenhLech = tongTienDoi.subtract(tongTienTra);
+                if (chenhLech.compareTo(BigDecimal.ZERO) > 0) {
+                    // Khách cần bù thêm tiền (nếu giao diện truyền vào tổng tiền bù lớn hơn do chọn nhiều SP đổi thì giữ mức lớn hơn)
+                    phieu.setTienBu(chenhLech.max(tienBuTruoc));
+                    phieu.setTienHoan(BigDecimal.ZERO);
+                } else if (chenhLech.compareTo(BigDecimal.ZERO) < 0) {
+                    // Cửa hàng hoàn lại tiền cho khách
+                    if (tienBuTruoc.compareTo(BigDecimal.ZERO) > 0) {
+                        phieu.setTienBu(tienBuTruoc);
+                        phieu.setTienHoan(BigDecimal.ZERO);
+                    } else {
+                        phieu.setTienHoan(chenhLech.abs());
+                        phieu.setTienBu(BigDecimal.ZERO);
+                    }
+                } else {
+                    phieu.setTienHoan(BigDecimal.ZERO);
+                    phieu.setTienBu(tienBuTruoc);
+                }
             } else {
-                phieu.setTienHoan(BigDecimal.ZERO);
-                phieu.setTienBu(BigDecimal.ZERO);
+                phieu.setTienBu(tienBuTruoc);
+                phieu.setTienHoan(tienBuTruoc.compareTo(BigDecimal.ZERO) > 0 ? BigDecimal.ZERO : tienHoanTruoc);
             }
         } else {
             // Trả hàng hoàn tiền 100% giá trị hàng trả
@@ -361,10 +385,11 @@ public class PhieuDoiTraService {
             throw new IllegalArgumentException("Phiếu đổi trả phải có ít nhất một mặt hàng!");
         }
 
-        HoaDon hdGoc = hoaDonDAO.layHoaDonTheoMa(phieu.getMaHoaDon());
         int tongSoLuongTra = 0;
         BigDecimal tongTienTra = BigDecimal.ZERO;
         BigDecimal tongTienDoi = BigDecimal.ZERO;
+        BigDecimal tienBuTruoc = phieu.getTienBu() != null ? phieu.getTienBu() : BigDecimal.ZERO;
+        BigDecimal tienHoanTruoc = phieu.getTienHoan() != null ? phieu.getTienHoan() : BigDecimal.ZERO;
 
         for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
             if (ct.getSoLuong() <= 0) {
@@ -378,23 +403,39 @@ public class PhieuDoiTraService {
 
             tongSoLuongTra += ct.getSoLuong();
             tongTienTra = tongTienTra.add(ct.tinhThanhTienTra());
-            if ("Đổi sang sản phẩm khác".equalsIgnoreCase(phieu.getLoaiXuLy()) && ct.getMaSanPhamDoi() != null) {
+            if (laDoiHang(phieu.getLoaiXuLy()) && ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().trim().isEmpty()) {
+                if (ct.getDonGiaDoi() == null || ct.getDonGiaDoi().compareTo(BigDecimal.ZERO) <= 0) {
+                    SanPham spDoi = sanPhamDAO.layTheoMa(ct.getMaSanPhamDoi());
+                    if (spDoi != null && spDoi.getGiaBan() != null) {
+                        ct.setDonGiaDoi(spDoi.getGiaBan());
+                    }
+                }
                 tongTienDoi = tongTienDoi.add(ct.tinhThanhTienDoi());
             }
         }
 
         phieu.setSoLuong(tongSoLuongTra);
-        if ("Đổi sang sản phẩm khác".equalsIgnoreCase(phieu.getLoaiXuLy())) {
-            BigDecimal chenhLech = tongTienDoi.subtract(tongTienTra);
-            if (chenhLech.compareTo(BigDecimal.ZERO) > 0) {
-                phieu.setTienBu(chenhLech);
-                phieu.setTienHoan(BigDecimal.ZERO);
-            } else if (chenhLech.compareTo(BigDecimal.ZERO) < 0) {
-                phieu.setTienHoan(chenhLech.abs());
-                phieu.setTienBu(BigDecimal.ZERO);
+        if (laDoiHang(phieu.getLoaiXuLy())) {
+            if (tongTienDoi.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal chenhLech = tongTienDoi.subtract(tongTienTra);
+                if (chenhLech.compareTo(BigDecimal.ZERO) > 0) {
+                    phieu.setTienBu(chenhLech.max(tienBuTruoc));
+                    phieu.setTienHoan(BigDecimal.ZERO);
+                } else if (chenhLech.compareTo(BigDecimal.ZERO) < 0) {
+                    if (tienBuTruoc.compareTo(BigDecimal.ZERO) > 0) {
+                        phieu.setTienBu(tienBuTruoc);
+                        phieu.setTienHoan(BigDecimal.ZERO);
+                    } else {
+                        phieu.setTienHoan(chenhLech.abs());
+                        phieu.setTienBu(BigDecimal.ZERO);
+                    }
+                } else {
+                    phieu.setTienHoan(BigDecimal.ZERO);
+                    phieu.setTienBu(tienBuTruoc);
+                }
             } else {
-                phieu.setTienHoan(BigDecimal.ZERO);
-                phieu.setTienBu(BigDecimal.ZERO);
+                phieu.setTienBu(tienBuTruoc);
+                phieu.setTienHoan(tienBuTruoc.compareTo(BigDecimal.ZERO) > 0 ? BigDecimal.ZERO : tienHoanTruoc);
             }
         } else {
             phieu.setTienHoan(tongTienTra);

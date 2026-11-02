@@ -81,6 +81,26 @@ public class PhieuDoiTraDAO {
                     )
                 """);
                 st.executeUpdate("UPDATE dbo.PhieuDoiTra SET trangThai = N'Đã duyệt' WHERE trangThai = N'Hoàn thành'");
+
+                // 5. Đồng bộ lại tienBu và tienHoan cho các phiếu Đổi hàng từ dữ liệu chi tiết sản phẩm đổi
+                st.executeUpdate("""
+                    ;WITH BangTinh AS (
+                        SELECT p.maPhieuDoiTra,
+                               ISNULL(SUM(ct.soLuong * ct.donGia), 0) AS tongTra,
+                               ISNULL(SUM(ISNULL(ct.soLuongDoi, 0) * ISNULL(spDoi.giaBan, 0)), 0) AS tongDoi
+                        FROM dbo.PhieuDoiTra p
+                        JOIN dbo.ChiTietPhieuDoiTra ct ON p.maPhieuDoiTra = ct.maPhieuDoiTra
+                        LEFT JOIN dbo.SanPham spDoi ON ct.maSanPhamDoi = spDoi.maSanPham
+                        WHERE p.loaiXuLy LIKE N'%Đổi%'
+                        GROUP BY p.maPhieuDoiTra
+                    )
+                    UPDATE p
+                    SET p.tienBu = CASE WHEN bt.tongDoi > bt.tongTra THEN bt.tongDoi - bt.tongTra ELSE 0 END,
+                        p.tienHoan = CASE WHEN bt.tongTra > bt.tongDoi THEN bt.tongTra - bt.tongDoi ELSE 0 END
+                    FROM dbo.PhieuDoiTra p
+                    JOIN BangTinh bt ON p.maPhieuDoiTra = bt.maPhieuDoiTra
+                    WHERE bt.tongDoi > 0
+                """);
             }
             daKiemTraCauTruc = true;
         } catch (Exception ignored) {
@@ -296,13 +316,15 @@ public class PhieuDoiTraDAO {
         String sqlCongTon = "UPDATE dbo.SanPham SET soLuongTon = soLuongTon + ? WHERE maSanPham = ?";
         String sqlTruTon = "UPDATE dbo.SanPham SET soLuongTon = soLuongTon - ? WHERE maSanPham = ? AND soLuongTon >= ?";
         String sqlCapNhatHuong = "UPDATE dbo.ChiTietPhieuDoiTra SET huongXuLy = ? WHERE maPhieuDoiTra = ? AND maSanPham = ?";
+        String sqlCapNhatPhieu = "UPDATE dbo.PhieuDoiTra SET tienHoan = ?, tienBu = ? WHERE maPhieuDoiTra = ?";
 
         try (Connection conn = DatabaseManager.getConnection()) {
             conn.setAutoCommit(false);
 
             try (PreparedStatement psCong = conn.prepareStatement(sqlCongTon);
                  PreparedStatement psTru = conn.prepareStatement(sqlTruTon);
-                 PreparedStatement psHuong = conn.prepareStatement(sqlCapNhatHuong)) {
+                 PreparedStatement psHuong = conn.prepareStatement(sqlCapNhatHuong);
+                 PreparedStatement psPhieu = conn.prepareStatement(sqlCapNhatPhieu)) {
 
                 for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
                     String huong = ct.getHuongXuLy() != null ? ct.getHuongXuLy().trim() : "";
@@ -341,9 +363,15 @@ public class PhieuDoiTraDAO {
                     }
                 }
 
-                // Cập nhật tiền hoàn/bù và ghi chú liên kết vào Hóa đơn gốc (nếu có cột)
+                // Cập nhật lại tienHoan và tienBu của phiếu cho chính xác trước khi duyệt
                 BigDecimal tienHoan = phieu.getTienHoan() != null ? phieu.getTienHoan() : BigDecimal.ZERO;
                 BigDecimal tienBu = phieu.getTienBu() != null ? phieu.getTienBu() : BigDecimal.ZERO;
+                psPhieu.setBigDecimal(1, tienHoan);
+                psPhieu.setBigDecimal(2, tienBu);
+                psPhieu.setString(3, phieu.getMaPhieuDoiTra());
+                psPhieu.executeUpdate();
+
+                // Cập nhật tiền hoàn/bù và ghi chú liên kết vào Hóa đơn gốc (nếu có cột)
                 String moTaDoiTra = "Đổi trả " + phieu.getMaPhieuDoiTra() + " (" + phieu.getLoaiXuLy() + "): "
                         + (tienHoan.compareTo(BigDecimal.ZERO) > 0 ? "Hoàn " + tienHoan + "đ" : "")
                         + (tienBu.compareTo(BigDecimal.ZERO) > 0 ? "Bù " + tienBu + "đ" : "");
@@ -639,6 +667,22 @@ public class PhieuDoiTraDAO {
                 }
             }
         }
+
+        // Đồng bộ lại tienBu và tienHoan của phiếu Đổi hàng nếu có thông tin sản phẩm đổi mới
+        String loai = phieu.getLoaiXuLy() != null ? phieu.getLoaiXuLy().toLowerCase() : "";
+        if (loai.contains("đổi") || loai.contains("doi")) {
+            BigDecimal tongTra = phieu.tinhTongTienHangTra();
+            BigDecimal tongDoi = phieu.tinhTongTienHangDoi();
+            if (tongDoi.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal chenhLech = tongDoi.subtract(tongTra);
+                if (chenhLech.compareTo(BigDecimal.ZERO) > 0) {
+                    phieu.setTienBu(chenhLech);
+                    phieu.setTienHoan(BigDecimal.ZERO);
+                } else {
+                    phieu.setTienHoan(chenhLech.abs());
+                    phieu.setTienBu(BigDecimal.ZERO);
+                }
+            }
+        }
     }
 }
-
