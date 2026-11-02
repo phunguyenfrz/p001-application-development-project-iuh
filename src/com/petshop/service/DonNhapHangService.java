@@ -32,7 +32,7 @@ public class DonNhapHangService {
     }
 
     /**
-     * Tự động sinh mã đơn nhập hàng theo định dạng PN-yyyyMMdd-xxxxxx.
+     * Tự động sinh mã đơn nhập hàng theo định dạng DH-yyyyMMdd-xxxxxx (hoặc PN-yyyyMMdd-xxxxxx).
      */
     public String taoMaDonNhapHang() {
         return donNhapHangDAO.taoMaDonNhapHang();
@@ -217,13 +217,6 @@ public class DonNhapHangService {
      * - Nếu toàn bộ dòng đều có soLuongThucNhan = 0 thì chặn, báo lỗi và gợi ý Hủy đơn.
      * - Tính lại tongTienThucNhan.
      */
-    /**
-     * Xác nhận nhận hàng và cộng tồn kho với danh sách thực nhận (IMP_CONFIRM).
-     * Bắt buộc kiểm tra:
-     * - soLuongThucNhan: >= 0 và <= soLuong
-     * - Nếu toàn bộ dòng đều có soLuongThucNhan = 0 thì chặn, báo lỗi và gợi ý Hủy đơn.
-     * - Tính lại tongTienThucNhan.
-     */
     public boolean xacNhanNhanHang(String maDonHang, List<ChiTietDonNhap> chiTietCapNhat) {
         String ketQua = xacNhanNhanHangThieu(maDonHang, chiTietCapNhat, false, "Đóng đơn theo thực nhận");
         return ketQua != null;
@@ -232,7 +225,11 @@ public class DonNhapHangService {
     /**
      * Xác nhận nhận hàng có xử lý giao thiếu (Phương án 3):
      * - Nếu nhận đủ 100%: hoàn tất đơn bình thường.
-     * - Nếu giao thiếu và taoDonBu = true: hoàn tất đơn hiện tại và tự động tách đơn nhập bù trong cùng một transaction.
+     * - Nếu giao thiếu và taoDonBu = true:
+     *   + Đơn gốc: chỉ giữ lại số lượng thực nhận, cập nhật tổng tiền = tổng tiền thực nhận, trạng thái Hoàn tất.
+     *   + Đơn tách (đơn nhập bù): chứa số lượng còn thiếu, tổng tiền = tổng tiền phần thiếu, trạng thái Chờ nhận hàng.
+     *   + Tổng tiền 2 đơn bằng tổng tiền đơn ban đầu.
+     *   + Tồn kho và công nợ NCC chỉ tính theo số lượng đã nhận.
      * - Nếu giao thiếu và taoDonBu = false: đóng đơn theo số thực nhận và bắt buộc lưu lý do chênh lệch.
      *
      * @param maDonHang Mã đơn hàng cần xác nhận
@@ -316,6 +313,13 @@ public class DonNhapHangService {
 
         if (tongSoLuongThieu > 0) {
             if (taoDonBu) {
+                // Khi tách đơn: Đơn gốc chỉ giữ lại số lượng thực nhận (phần thiếu đã chuyển sang đơn tách)
+                for (ChiTietDonNhap ct : chiTietCapNhat) {
+                    int thucNhan = ct.getSoLuongThucNhan() != null ? ct.getSoLuongThucNhan() : 0;
+                    ct.setSoLuong(thucNhan);
+                    ct.setSoLuongThucNhan(thucNhan);
+                }
+
                 donNhapBu = new DonNhapHang();
                 donNhapBu.setMaNhaCungCap(dh.getMaNhaCungCap());
                 String maNV = (dh.getMaNhanVien() != null && !dh.getMaNhanVien().isBlank()) ? dh.getMaNhanVien() : maNhanVienNhan;
@@ -401,30 +405,30 @@ public class DonNhapHangService {
     }
 
     /**
-     * Tìm kiếm đơn nhập hàng đa tiêu chí (IMP_SEARCH) - hỗ trợ tìm theo tên hàng.
+     * Tìm kiếm đơn nhập hàng theo đa tiêu chí (IMP_SEARCH).
      */
     public List<DonNhapHang> timKiemDonHang(String keyword, String maNhaCungCap, LocalDate tuNgay, LocalDate denNgay, String trangThai) {
         return timKiemDonHang(keyword, maNhaCungCap, tuNgay, denNgay, trangThai, null);
     }
 
     /**
-     * Tìm kiếm đơn nhập hàng đa tiêu chí (IMP_SEARCH) bao gồm tìm kiếm theo tên hàng.
+     * Tìm kiếm đơn nhập hàng nâng cao có hỗ trợ tên hàng.
      */
     public List<DonNhapHang> timKiemDonHang(String keyword, String maNhaCungCap, LocalDate tuNgay, LocalDate denNgay, String trangThai, String tenHang) {
         xacThucService.kiemTraQuyen("DN_TIM_KIEM");
+
         if (tuNgay != null && denNgay != null && tuNgay.isAfter(denNgay)) {
-            throw new IllegalArgumentException("Từ ngày không được lớn hơn Đến ngày!");
+            throw new IllegalArgumentException("Ngày bắt đầu không được lớn hơn ngày kết thúc!");
         }
+
         return donNhapHangDAO.timKiemDonHang(keyword, maNhaCungCap, tuNgay, denNgay, trangThai, tenHang);
     }
 
     /**
-     * Lấy tất cả đơn nhập hàng.
+     * Lấy toàn bộ danh sách đơn nhập hàng.
      */
     public List<DonNhapHang> layTatCaDonHang() {
-        if (!xacThucService.coQuyen("DN_CAP_NHAT") && !xacThucService.coQuyen("DN_TIM_KIEM")) {
-            xacThucService.kiemTraQuyen("DN_CAP_NHAT");
-        }
+        xacThucService.kiemTraQuyen("DN_TIM_KIEM");
         return donNhapHangDAO.layTatCaDonHang();
     }
 
@@ -432,19 +436,15 @@ public class DonNhapHangService {
      * Lấy thông tin đơn nhập hàng theo mã.
      */
     public DonNhapHang timTheoMa(String maDonHang) {
-        if (maDonHang == null || maDonHang.trim().isEmpty()) {
-            return null;
-        }
-        return donNhapHangDAO.timTheoMa(maDonHang.trim());
+        xacThucService.kiemTraQuyen("DN_TIM_KIEM");
+        return donNhapHangDAO.timTheoMa(maDonHang);
     }
 
     /**
      * Lấy danh sách chi tiết sản phẩm của một đơn nhập.
      */
     public List<ChiTietDonNhap> layChiTietTheoMaDonHang(String maDonHang) {
-        if (maDonHang == null || maDonHang.trim().isEmpty()) {
-            return List.of();
-        }
-        return donNhapHangDAO.layChiTietTheoMaDonHang(maDonHang.trim());
+        xacThucService.kiemTraQuyen("DN_TIM_KIEM");
+        return donNhapHangDAO.layChiTietTheoMaDonHang(maDonHang);
     }
 }

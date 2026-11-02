@@ -129,6 +129,13 @@ public class CapNhatSanPhamView extends VBox {
             return new SimpleStringProperty(sapHet ? "⚠ SẮP HẾT HÀNG" : "Ổn định");
         });
 
+        TableColumn<SanPham, String> colGiaNhap = new TableColumn<>("Giá nhập");
+        colGiaNhap.setPrefWidth(120);
+        colGiaNhap.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colGiaNhap.setCellValueFactory(cell -> new SimpleStringProperty(
+                ThemSanPhamView.dinhDangTien(cell.getValue().getGiaNhapHopLe().doubleValue())
+        ));
+
         TableColumn<SanPham, String> colGiaBan = new TableColumn<>("Giá bán");
         colGiaBan.setPrefWidth(120);
         colGiaBan.setStyle("-fx-alignment: CENTER-RIGHT;");
@@ -149,7 +156,7 @@ public class CapNhatSanPhamView extends VBox {
         ));
 
         tblDanhSach.getColumns().setAll(List.of(
-                colMa, colTen, colLoai, colTonKho, colNguong, colTinhTrang, colGiaBan, colNhaCungCap, colTrangThai
+                colMa, colTen, colLoai, colTonKho, colNguong, colTinhTrang, colGiaNhap, colGiaBan, colNhaCungCap, colTrangThai
         ));
 
         // Hết hàng và sắp hết hàng đổi màu nền dòng giống bên Theo dõi tồn kho
@@ -176,7 +183,7 @@ public class CapNhatSanPhamView extends VBox {
                     }
                 }
             };
-row.setOnMouseClicked(event -> {
+            row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
                     moCuaSoCapNhat();
                 }
@@ -230,7 +237,7 @@ row.setOnMouseClicked(event -> {
         dlgThem.setTitle("Thêm sản phẩm mới");
 
         ThemSanPhamView manThem = new ThemSanPhamView(this::taiLaiBang);
-        Scene scene = new Scene(manThem, 560, 480);
+        Scene scene = new Scene(manThem, 560, 520);
         ganCssChung(scene);
 
         dlgThem.setScene(scene);
@@ -254,7 +261,7 @@ row.setOnMouseClicked(event -> {
         dlgCapNhat.setTitle("Cập nhật thông tin sản phẩm");
 
         VBox pnlGoc = taoNoiDungCuaSoCapNhat(spChon, dlgCapNhat);
-        Scene scene = new Scene(pnlGoc, 560, 520);
+        Scene scene = new Scene(pnlGoc, 560, 560);
         ganCssChung(scene);
 
         dlgCapNhat.setScene(scene);
@@ -315,12 +322,18 @@ row.setOnMouseClicked(event -> {
             cboNcc.getItems().clear();
         }
 
+        BigDecimal giaNhapHienTai = spChon.getGiaNhapHopLe();
+        if (giaNhapHienTai == null || giaNhapHienTai.compareTo(BigDecimal.ZERO) <= 0) {
+            giaNhapHienTai = SanPham.tinhGiaNhapMacDinh(spChon.getGiaBan());
+        }
+        TextField txtGiaNhap = new TextField(ThemSanPhamView.dinhDangTien(giaNhapHienTai.doubleValue()));
         TextField txtGiaBan = new TextField(ThemSanPhamView.dinhDangTien(spChon.getGiaBan().doubleValue()));
         TextField txtSoLuongTon = new TextField(String.valueOf(spChon.getSoLuongTon()));
         TextField txtNguongTon = new TextField(String.valueOf(spChon.getNguongTonToiThieu()));
 
         chanNhapSoNguyen(txtSoLuongTon);
         chanNhapSoNguyen(txtNguongTon);
+        ganDinhDangTienChoO(txtGiaNhap);
         ganDinhDangTienChoO(txtGiaBan);
 
         pnlLuoi.add(new Label("Mã sản phẩm:"), 0, 0);
@@ -337,14 +350,17 @@ row.setOnMouseClicked(event -> {
         pnlLuoi.add(new Label("Nhà cung cấp:"), 0, 3);
         pnlLuoi.add(cboNcc, 1, 3);
 
-        pnlLuoi.add(new Label("Giá bán (VNĐ) (*):"), 0, 4);
-        pnlLuoi.add(txtGiaBan, 1, 4);
+        pnlLuoi.add(new Label("Giá nhập (VNĐ) (*):"), 0, 4);
+        pnlLuoi.add(txtGiaNhap, 1, 4);
 
-        pnlLuoi.add(new Label("Số lượng tồn:"), 0, 5);
-        pnlLuoi.add(txtSoLuongTon, 1, 5);
+        pnlLuoi.add(new Label("Giá bán (VNĐ) (*):"), 0, 5);
+        pnlLuoi.add(txtGiaBan, 1, 5);
 
-        pnlLuoi.add(new Label("Ngưỡng an toàn (*):"), 0, 6);
-        pnlLuoi.add(txtNguongTon, 1, 6);
+        pnlLuoi.add(new Label("Số lượng tồn:"), 0, 6);
+        pnlLuoi.add(txtSoLuongTon, 1, 6);
+
+        pnlLuoi.add(new Label("Ngưỡng an toàn (*):"), 0, 7);
+        pnlLuoi.add(txtNguongTon, 1, 7);
 
         ColumnConstraints colNhan = new ColumnConstraints();
         colNhan.setMinWidth(170);
@@ -361,7 +377,9 @@ row.setOnMouseClicked(event -> {
 
         Button btnLuu = new Button("Lưu cập nhật");
         btnLuu.getStyleClass().add("nut-chinh");
-        btnLuu.setOnAction(e -> xuLyLuuCapNhat(spChon, dlgCapNhat, txtTenSanPham, cboLoaiSanPham, cboNcc, txtGiaBan, txtSoLuongTon, txtNguongTon));
+        btnLuu.setOnAction(e -> xuLyLuuCapNhat(
+                spChon, dlgCapNhat, txtTenSanPham, cboLoaiSanPham, cboNcc,
+                txtGiaNhap, txtGiaBan, txtSoLuongTon, txtNguongTon));
 
         pnlNut.getChildren().addAll(btnDong, btnLuu);
         pnlForm.getChildren().addAll(pnlLuoi, pnlNut);
@@ -371,7 +389,7 @@ row.setOnMouseClicked(event -> {
 
     private void xuLyLuuCapNhat(SanPham spChon, Stage dlgCapNhat,
                                 TextField txtTen, ComboBox<String> cboLoai, ComboBox<NhaCungCap> cboNcc,
-                                TextField txtGia, TextField txtTon, TextField txtNguong) {
+                                TextField txtGiaNhap, TextField txtGia, TextField txtTon, TextField txtNguong) {
         String ten = txtTen.getText() == null ? "" : txtTen.getText().trim();
         if (ten.isEmpty()) {
             hienThiCanhBao("Tên sản phẩm không được để trống!");
@@ -384,6 +402,24 @@ row.setOnMouseClicked(event -> {
             return;
         }
 
+        String chuoiGiaNhap = ThemSanPhamView.boKyTuDinhDangTien(txtGiaNhap.getText());
+        if (chuoiGiaNhap.isEmpty()) {
+            hienThiCanhBao("Giá nhập không được để trống!");
+            return;
+        }
+
+        BigDecimal giaNhap;
+        try {
+            giaNhap = new BigDecimal(chuoiGiaNhap);
+            if (giaNhap.compareTo(BigDecimal.ZERO) <= 0) {
+                hienThiCanhBao("Giá nhập phải lớn hơn 0!");
+                return;
+            }
+        } catch (NumberFormatException ex) {
+            hienThiCanhBao("Giá nhập không hợp lệ!");
+            return;
+        }
+
         String chuoiGia = ThemSanPhamView.boKyTuDinhDangTien(txtGia.getText());
         if (chuoiGia.isEmpty()) {
             hienThiCanhBao("Giá bán không được để trống!");
@@ -393,12 +429,17 @@ row.setOnMouseClicked(event -> {
         BigDecimal giaBan;
         try {
             giaBan = new BigDecimal(chuoiGia);
-            if (giaBan.compareTo(BigDecimal.ZERO) < 0) {
-                hienThiCanhBao("Giá bán phải lớn hơn hoặc bằng 0!");
+            if (giaBan.compareTo(BigDecimal.ZERO) <= 0) {
+                hienThiCanhBao("Giá bán phải lớn hơn 0 (không được để bằng 0)!");
                 return;
             }
         } catch (NumberFormatException ex) {
             hienThiCanhBao("Giá bán không hợp lệ!");
+            return;
+        }
+
+        if (giaBan.compareTo(giaNhap) <= 0) {
+            hienThiCanhBao("Giá bán phải lớn hơn giá nhập!");
             return;
         }
 
@@ -429,6 +470,7 @@ row.setOnMouseClicked(event -> {
         try {
             spChon.setTenSanPham(ten);
             spChon.setDonViTinh(loaiSp);
+            spChon.setGiaNhap(giaNhap);
             spChon.setGiaBan(giaBan);
             spChon.setSoLuongTon(soLuongTon);
             spChon.setNguongTonToiThieu(nguongTon);
@@ -509,12 +551,18 @@ row.setOnMouseClicked(event -> {
 
     private void ganDinhDangTienChoO(TextField txt) {
         txt.textProperty().addListener((obs, cu, moi) -> {
-            if (moi != null && !moi.matches("[\\d.\\sđ]*")) {
+            if (moi != null && !moi.matches("[\\d.,\\sđ₫]*")) {
                 txt.setText(cu);
             }
         });
         txt.focusedProperty().addListener((obs, cu, dangChon) -> {
-            if (!dangChon) {
+            if (dangChon) {
+                String chuoi = ThemSanPhamView.boKyTuDinhDangTien(txt.getText());
+                if (!chuoi.isEmpty()) {
+                    txt.setText(chuoi);
+                    txt.selectAll();
+                }
+            } else {
                 String chuoi = ThemSanPhamView.boKyTuDinhDangTien(txt.getText());
                 if (!chuoi.isEmpty()) {
                     try {

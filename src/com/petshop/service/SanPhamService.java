@@ -180,8 +180,14 @@ public class SanPhamService {
         if (sp.getMaVach() == null || sp.getMaVach().trim().isEmpty()) {
             throw new IllegalArgumentException("Mã vạch sản phẩm không được để trống!");
         }
-        if (sp.getGiaBan() == null || sp.getGiaBan().compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Giá bán sản phẩm phải lớn hơn hoặc bằng 0!");
+        if (sp.getGiaNhap() == null || sp.getGiaNhap().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Giá nhập sản phẩm phải lớn hơn 0!");
+        }
+        if (sp.getGiaBan() == null || sp.getGiaBan().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Giá bán sản phẩm phải lớn hơn 0 (không được để bằng 0)!");
+        }
+        if (sp.getGiaBan().compareTo(sp.getGiaNhap()) <= 0) {
+            throw new IllegalArgumentException("Giá bán phải lớn hơn giá nhập!");
         }
         if (sp.getSoLuongTon() < 0) {
             throw new IllegalArgumentException("Số lượng tồn kho không được âm!");

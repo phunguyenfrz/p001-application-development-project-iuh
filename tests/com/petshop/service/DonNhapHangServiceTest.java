@@ -86,7 +86,8 @@ class DonNhapHangServiceTest {
         assertEquals(7, dao.soLuongTon.get("SP-01"));
         // SP-02 thực nhận 0 -> không cộng tồn kho
         assertEquals(0, dao.soLuongTon.getOrDefault("SP-02", 0));
-        // Tổng tiền thực nhận = 7 * 100 + 0 * 50 = 700
+        // Tổng tiền = Tổng tiền thực nhận = 7 * 100 + 0 * 50 = 700
+        assertEquals(new BigDecimal("700"), donHang.getTongTien());
         assertEquals(new BigDecimal("700"), donHang.getTongTienThucNhan());
     }
 
@@ -104,28 +105,34 @@ class DonNhapHangServiceTest {
     @Test
     void xacNhanNhanHangThieu_PhuongAn3_TaoDonBu() {
         DonNhapHang donHang = taoDonChoNhan();
-        ChiTietDonNhap ct1 = new ChiTietDonNhap(MA_DON, "SP-01", "Hạt Me-O", "Gói", 10, 7, new BigDecimal("100"));
-        ChiTietDonNhap ct2 = new ChiTietDonNhap(MA_DON, "SP-02", "Pate Royal", "Lon", 5, 2, new BigDecimal("50"));
-        dao.themDonNhapHang(donHang, List.of(ct1, ct2));
+        donHang.setTongTien(new BigDecimal("462828"));
+        ChiTietDonNhap ct1 = new ChiTietDonNhap(MA_DON, "SP-01", "Hạt Me-O", "Gói", 2, 1, new BigDecimal("231414"));
+        dao.themDonNhapHang(donHang, List.of(ct1));
 
-        // Giao thiếu: SP-01 thiếu 3, SP-02 thiếu 3. Chọn tạo đơn bù (taoDonBu = true)
-        String maDonBu = service.xacNhanNhanHangThieu(MA_DON, List.of(ct1, ct2), true, null);
+        // Đặt 2 món (462.828), nhận 1 món (231.414), chọn tạo đơn bù (taoDonBu = true)
+        String maDonBu = service.xacNhanNhanHangThieu(MA_DON, List.of(ct1), true, null);
 
-        // Đơn gốc hoàn tất với số lượng thực nhận và tổng tiền thực nhận = 7*100 + 2*50 = 800
+        // Đơn gốc: chỉ còn số lượng đã nhận (x1), tổng tiền = 231.414, trạng thái Hoàn tất
         assertEquals(DonNhapHang.TRANG_THAI_HOAN_TAT, donHang.getTrangThai());
-        assertEquals(new BigDecimal("800"), donHang.getTongTienThucNhan());
-        assertEquals(7, dao.soLuongTon.get("SP-01"));
-        assertEquals(2, dao.soLuongTon.get("SP-02"));
+        assertEquals(new BigDecimal("231414"), donHang.getTongTien());
+        assertEquals(new BigDecimal("231414"), donHang.getTongTienThucNhan());
+        assertEquals(1, dao.soLuongTon.get("SP-01"));
+        List<ChiTietDonNhap> ctGoc = dao.layChiTietTheoMaDonHang(MA_DON);
+        assertEquals(1, ctGoc.size());
+        assertEquals(1, ctGoc.get(0).getSoLuong());
+        assertEquals(1, ctGoc.get(0).getSoLuongThucNhan());
 
-        // Kiểm tra đơn bù tự động sinh
+        // Đơn tách: số lượng còn thiếu (x1), tổng tiền = 231.414, trạng thái Chờ nhận hàng
         assertEquals("PN-20261030-999999", maDonBu);
         DonNhapHang donBu = dao.timTheoMa(maDonBu);
         assertEquals(DonNhapHang.TRANG_THAI_CHO_NHAN, donBu.getTrangThai());
-        assertEquals(new BigDecimal("450"), donBu.getTongTien()); // 3 * 100 + 3 * 50 = 450
+        assertEquals(new BigDecimal("231414"), donBu.getTongTien());
         List<ChiTietDonNhap> ctBu = dao.layChiTietTheoMaDonHang(maDonBu);
-        assertEquals(2, ctBu.size());
-        assertEquals(3, ctBu.get(0).getSoLuong());
-        assertEquals(3, ctBu.get(1).getSoLuong());
+        assertEquals(1, ctBu.size());
+        assertEquals(1, ctBu.get(0).getSoLuong());
+
+        // Tổng tiền 2 đơn phải bằng đơn ban đầu (231.414 + 231.414 = 462.828)
+        assertEquals(new BigDecimal("462828"), donHang.getTongTien().add(donBu.getTongTien()));
     }
 
     @Test
@@ -289,10 +296,17 @@ class DonNhapHangServiceTest {
             donHang.setTrangThai(DonNhapHang.TRANG_THAI_HOAN_TAT);
             donHang.setMaNhanVienNhan(maNhanVienNhan);
             donHang.setNgayGioNhan(ngayGioNhan);
+            donHang.setTongTien(tongTienThucNhan);
             donHang.setTongTienThucNhan(tongTienThucNhan);
             donHang.setLyDoHuy(ghiChuChenhLech);
 
             if (donNhapBu != null) {
+                List<ChiTietDonNhap> dsGocConLai = chiTietCapNhat.stream()
+                        .filter(ct -> ct.getSoLuongThucNhan() > 0)
+                        .peek(ct -> ct.setSoLuong(ct.getSoLuongThucNhan()))
+                        .toList();
+                chiTietTheoDon.put(maDonHang, new ArrayList<>(dsGocConLai));
+
                 String maBu = "PN-20261030-999999";
                 donNhapBu.setMaDonHang(maBu);
                 donHangs.put(maBu, donNhapBu);

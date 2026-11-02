@@ -152,13 +152,13 @@ public class DonNhapHangDAO {
     }
 
     /**
-     * Tự động sinh mã đơn nhập hàng theo định dạng mới PN-yyyyMMdd-xxxxxx.
+     * Tự động sinh mã đơn nhập hàng theo định dạng chuẩn DH-yyyyMMdd-xxxxxx (khớp CHECK constraint CSDL).
      */
     public String taoMaDonNhapHang() {
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) {
                 String ngay = LocalDate.now().format(DINH_DANG_NGAY_MA);
-                return "PN-" + ngay + "-000001";
+                return "DH-" + ngay + "-000001";
             }
             return taoMaDonNhapHang(conn);
         } catch (SQLException e) {
@@ -167,19 +167,19 @@ public class DonNhapHangDAO {
     }
 
     /**
-     * Tự động sinh mã đơn nhập hàng trong một connection sẵn có (mã mới luôn mang tiền tố PN-).
+     * Tự động sinh mã đơn nhập hàng trong một connection sẵn có (mã mang tiền tố DH- theo chuẩn CSDL).
      */
     public String taoMaDonNhapHang(Connection conn) throws SQLException {
         String ngay = LocalDate.now().format(DINH_DANG_NGAY_MA);
-        String tienToMoi = "PN-" + ngay + "-";
-        String tienToCu = "DH-" + ngay + "-";
+        String tienToDH = "DH-" + ngay + "-";
+        String tienToPN = "PN-" + ngay + "-";
         String bang = getTenBangDonNhap(conn);
         String sql = "SELECT maDonHang FROM " + bang + " WHERE maDonHang LIKE ? OR maDonHang LIKE ?";
 
         int maxStt = 0;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tienToMoi + "%");
-            ps.setString(2, tienToCu + "%");
+            ps.setString(1, tienToDH + "%");
+            ps.setString(2, tienToPN + "%");
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     String ma = rs.getString("maDonHang");
@@ -197,7 +197,9 @@ public class DonNhapHangDAO {
                 }
             }
         }
-        return tienToMoi + String.format("%06d", maxStt + 1);
+        // Chuẩn bảng DonHang trong CSDL quy định CHECK (maDonHang LIKE 'DH-[0-9]...'), vì vậy sinh mã tiền tố DH-
+        String tienTo = bang.equalsIgnoreCase("DonNhapHang") ? tienToPN : tienToDH;
+        return tienTo + String.format("%06d", maxStt + 1);
     }
 
     /**
@@ -578,13 +580,6 @@ public class DonNhapHangDAO {
     }
 
     /**
-     * Xác nhận nhận hàng trong transaction:
-     * 1. Cập nhật trạng thái đơn thành 'Hoàn tất' (chỉ thực hiện nếu trạng thái hiện tại là 'Chờ nhận hàng').
-     * 2. Ghi nhận người nhận, ngày giờ nhận, tổng tiền thực nhận (nếu schema hỗ trợ).
-     * 3. Cập nhật soLuongThucNhan cho từng dòng chi tiết (nếu schema hỗ trợ).
-     * 4. Cộng số lượng tồn kho theo soLuongThucNhan (dòng có soLuongThucNhan = 0 thì bỏ qua update SanPham, không rollback).
-     */
-    /**
      * Xác nhận nhận hàng và cộng tồn kho (tương thích ngược).
      */
     public boolean xacNhanNhanHangVaCongTonKho(String maDonHang, String maNhanVienNhan,
@@ -597,7 +592,9 @@ public class DonNhapHangDAO {
 
     /**
      * Xác nhận nhận hàng có xử lý giao thiếu (Phương án 3):
-     * - Cập nhật trạng thái 'Hoàn tất' cho đơn hiện tại với số lượng thực nhận và tổng tiền thực nhận.
+     * - Cập nhật trạng thái 'Hoàn tất' cho đơn gốc, đồng thời cập nhật lại tongTien = tongTienThucNhan.
+     * - Khi tách đơn (donNhapBu != null): đơn gốc chỉ giữ lại số lượng thực nhận (soLuong = soLuongThucNhan),
+     *   xóa các dòng có soLuongThucNhan = 0 khỏi đơn gốc vì đã chuyển sang đơn tách.
      * - Cộng tồn kho chỉ đúng số lượng thực nhận.
      * - Lưu ghi chú/lý do chênh lệch vào lyDoHuy (nếu đóng đơn hoặc tách đơn bù).
      * - Nếu có donNhapBu != null: tạo mới đơn nhập bù cho phần thiếu trong cùng 1 transaction.
@@ -628,23 +625,25 @@ public class DonNhapHangDAO {
                 throw new IllegalStateException("Đơn hàng không có chi tiết sản phẩm để xác nhận nhận hàng.");
             }
 
-            // 2. Chuyển trạng thái có điều kiện (WHERE trangThai = 'Chờ nhận hàng')
+            // 2. Chuyển trạng thái sang 'Hoàn tất' và cập nhật lại tongTien = tongTienThucNhan cho đơn gốc
+            BigDecimal tienThucNhan = tongTienThucNhan != null ? tongTienThucNhan : BigDecimal.ZERO;
             String sqlUpdateDonHang = coTruyVet ?
-                    "UPDATE " + bangDH + " SET trangThai = ?, maNhanVienNhan = ?, ngayGioNhan = ?, tongTienThucNhan = ?, lyDoHuy = ? WHERE maDonHang = ? AND trangThai = ?" :
-                    "UPDATE " + bangDH + " SET trangThai = ? WHERE maDonHang = ? AND trangThai = ?";
+                    "UPDATE " + bangDH + " SET trangThai = ?, tongTien = ?, maNhanVienNhan = ?, ngayGioNhan = ?, tongTienThucNhan = ?, lyDoHuy = ? WHERE maDonHang = ? AND trangThai = ?" :
+                    "UPDATE " + bangDH + " SET trangThai = ?, tongTien = ? WHERE maDonHang = ? AND trangThai = ?";
 
             try (PreparedStatement psUpdate = conn.prepareStatement(sqlUpdateDonHang)) {
                 psUpdate.setNString(1, DonNhapHang.TRANG_THAI_HOAN_TAT);
+                psUpdate.setBigDecimal(2, tienThucNhan);
                 if (coTruyVet) {
-                    psUpdate.setString(2, maNhanVienNhan);
-                    psUpdate.setTimestamp(3, ngayGioNhan != null ? Timestamp.valueOf(ngayGioNhan) : Timestamp.valueOf(LocalDateTime.now()));
-                    psUpdate.setBigDecimal(4, tongTienThucNhan != null ? tongTienThucNhan : BigDecimal.ZERO);
-                    psUpdate.setNString(5, ghiChuChenhLech);
-                    psUpdate.setString(6, maDonHang);
-                    psUpdate.setNString(7, DonNhapHang.TRANG_THAI_CHO_NHAN);
+                    psUpdate.setString(3, maNhanVienNhan);
+                    psUpdate.setTimestamp(4, ngayGioNhan != null ? Timestamp.valueOf(ngayGioNhan) : Timestamp.valueOf(LocalDateTime.now()));
+                    psUpdate.setBigDecimal(5, tienThucNhan);
+                    psUpdate.setNString(6, ghiChuChenhLech);
+                    psUpdate.setString(7, maDonHang);
+                    psUpdate.setNString(8, DonNhapHang.TRANG_THAI_CHO_NHAN);
                 } else {
-                    psUpdate.setString(2, maDonHang);
-                    psUpdate.setNString(3, DonNhapHang.TRANG_THAI_CHO_NHAN);
+                    psUpdate.setString(3, maDonHang);
+                    psUpdate.setNString(4, DonNhapHang.TRANG_THAI_CHO_NHAN);
                 }
 
                 if (psUpdate.executeUpdate() != 1) {
@@ -653,8 +652,44 @@ public class DonNhapHangDAO {
                 }
             }
 
-            // 3. Cập nhật soLuongThucNhan vào ChiTietDonNhap (nếu có cột)
-            if (coTN) {
+            // 3. Cập nhật chi tiết đơn gốc
+            boolean laTachDon = donNhapBu != null && donNhapBu.getDanhSachChiTiet() != null && !donNhapBu.getDanhSachChiTiet().isEmpty();
+            if (laTachDon) {
+                // Khi tách đơn: Đơn gốc chỉ còn giữ lại số lượng đã nhận (soLuong = soLuongThucNhan).
+                // Nếu mặt hàng nào thực nhận = 0 thì xóa khỏi đơn gốc vì đã chuyển toàn bộ sang đơn tách.
+                String sqlDeleteCT = "DELETE FROM " + bangCT + " WHERE maDonHang = ? AND maSanPham = ?";
+                String sqlUpdateCT = coTN ?
+                        "UPDATE " + bangCT + " SET soLuong = ?, soLuongThucNhan = ? WHERE maDonHang = ? AND maSanPham = ?" :
+                        "UPDATE " + bangCT + " SET soLuong = ? WHERE maDonHang = ? AND maSanPham = ?";
+                try (PreparedStatement psDel = conn.prepareStatement(sqlDeleteCT);
+                     PreparedStatement psUpd = conn.prepareStatement(sqlUpdateCT)) {
+                    boolean coDel = false;
+                    boolean coUpd = false;
+                    for (ChiTietDonNhap ct : chiTietCapNhat) {
+                        int thucNhan = ct.getSoLuongThucNhan() != null ? ct.getSoLuongThucNhan() : 0;
+                        if (thucNhan <= 0) {
+                            psDel.setString(1, maDonHang);
+                            psDel.setString(2, ct.getMaSanPham());
+                            psDel.addBatch();
+                            coDel = true;
+                        } else {
+                            psUpd.setInt(1, thucNhan);
+                            if (coTN) {
+                                psUpd.setInt(2, thucNhan);
+                                psUpd.setString(3, maDonHang);
+                                psUpd.setString(4, ct.getMaSanPham());
+                            } else {
+                                psUpd.setString(2, maDonHang);
+                                psUpd.setString(3, ct.getMaSanPham());
+                            }
+                            psUpd.addBatch();
+                            coUpd = true;
+                        }
+                    }
+                    if (coDel) psDel.executeBatch();
+                    if (coUpd) psUpd.executeBatch();
+                }
+            } else if (coTN) {
                 String sqlUpdateCT = "UPDATE " + bangCT + " SET soLuongThucNhan = ? WHERE maDonHang = ? AND maSanPham = ?";
                 try (PreparedStatement psCT = conn.prepareStatement(sqlUpdateCT)) {
                     for (ChiTietDonNhap ct : chiTietCapNhat) {
@@ -686,7 +721,7 @@ public class DonNhapHangDAO {
 
             // 5. Tự động tách đơn nhập bù (Backorder) nếu có yêu cầu
             String maDonBu = null;
-            if (donNhapBu != null && donNhapBu.getDanhSachChiTiet() != null && !donNhapBu.getDanhSachChiTiet().isEmpty()) {
+            if (laTachDon) {
                 maDonBu = taoMaDonNhapHang(conn);
                 donNhapBu.setMaDonHang(maDonBu);
                 boolean coGio = coCotGioLap(conn);
@@ -783,14 +818,22 @@ public class DonNhapHangDAO {
     private void napTenHangChoDanhSach(Connection conn, List<DonNhapHang> list) {
         if (list == null || list.isEmpty()) return;
         String bangCT = getTenBangChiTiet(conn);
+        String bangDH = getTenBangDonNhap(conn);
+        boolean coTN = coCotThucNhan(conn);
         Map<String, List<String>> mapTenHang = new HashMap<>();
         for (int i = 0; i < list.size(); i += 50) {
             List<DonNhapHang> sub = list.subList(i, Math.min(i + 50, list.size()));
             String placeholders = String.join(",", Collections.nCopies(sub.size(), "?"));
-            String sql = "SELECT ct.maDonHang, sp.tenSanPham, ct.soLuong " +
-                    "FROM " + bangCT + " ct " +
-                    "LEFT JOIN SanPham sp ON ct.maSanPham = sp.maSanPham " +
-                    "WHERE ct.maDonHang IN (" + placeholders + ")";
+            String sql = coTN
+                    ? "SELECT ct.maDonHang, sp.tenSanPham, ct.soLuong, ct.soLuongThucNhan, dh.trangThai " +
+                      "FROM " + bangCT + " ct " +
+                      "JOIN " + bangDH + " dh ON ct.maDonHang = dh.maDonHang " +
+                      "LEFT JOIN SanPham sp ON ct.maSanPham = sp.maSanPham " +
+                      "WHERE ct.maDonHang IN (" + placeholders + ")"
+                    : "SELECT ct.maDonHang, sp.tenSanPham, ct.soLuong " +
+                      "FROM " + bangCT + " ct " +
+                      "LEFT JOIN SanPham sp ON ct.maSanPham = sp.maSanPham " +
+                      "WHERE ct.maDonHang IN (" + placeholders + ")";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 for (int j = 0; j < sub.size(); j++) {
                     ps.setString(j + 1, sub.get(j).getMaDonHang());
@@ -800,8 +843,17 @@ public class DonNhapHangDAO {
                         String maDH = rs.getString("maDonHang");
                         String tenSP = rs.getNString("tenSanPham");
                         int sl = rs.getInt("soLuong");
-                        String hienThi = (tenSP != null ? tenSP : "SP") + " (x" + sl + ")";
-                        mapTenHang.computeIfAbsent(maDH, k -> new ArrayList<>()).add(hienThi);
+                        if (coTN) {
+                            String tt = rs.getNString("trangThai");
+                            int slTN = rs.getInt("soLuongThucNhan");
+                            if (!rs.wasNull() && DonNhapHang.TRANG_THAI_HOAN_TAT.equalsIgnoreCase(tt)) {
+                                sl = slTN;
+                            }
+                        }
+                        if (sl > 0) {
+                            String hienThi = (tenSP != null ? tenSP : "SP") + " (x" + sl + ")";
+                            mapTenHang.computeIfAbsent(maDH, k -> new ArrayList<>()).add(hienThi);
+                        }
                     }
                 }
             } catch (SQLException ignored) {}

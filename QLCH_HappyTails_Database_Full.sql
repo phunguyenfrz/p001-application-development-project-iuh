@@ -262,11 +262,13 @@ CREATE TABLE SanPham (
     maNhaCungCap VARCHAR(20),
     tenSanPham NVARCHAR(150) NOT NULL CHECK (LEN(LTRIM(RTRIM(tenSanPham))) > 0),
     maVach VARCHAR(50) NOT NULL UNIQUE CHECK (LEN(LTRIM(RTRIM(maVach))) > 0),
-    giaBan DECIMAL(18,2) NOT NULL DEFAULT 0 CHECK (giaBan >= 0),
+    giaNhap DECIMAL(18,2) NOT NULL DEFAULT 1 CHECK (giaNhap > 0),
+    giaBan DECIMAL(18,2) NOT NULL DEFAULT 2 CHECK (giaBan > 0),
     soLuongTon INT NOT NULL DEFAULT 0 CHECK (soLuongTon >= 0),
     nguongTonToiThieu INT NOT NULL DEFAULT 10 CHECK (nguongTonToiThieu >= 0),
     donViTinh NVARCHAR(30) NOT NULL CHECK (LEN(LTRIM(RTRIM(donViTinh))) > 0),
     trangThai BIT NOT NULL DEFAULT 1,
+    CONSTRAINT CK_SanPham_GiaBan_LonHon_GiaNhap CHECK (giaBan > giaNhap),
     CONSTRAINT FK_SanPham_NhaCungCap FOREIGN KEY (maNhaCungCap) REFERENCES NhaCungCap(maNhaCungCap)
 );
 GO
@@ -496,21 +498,21 @@ VALUES
 ('NCC-20261005-000001', N'Công ty CP Thức Ăn Thú Cưng Royal Canin VN', '0283812345', N'KCN Tân Bình, TP.HCM', 'contact@royalcanin.vn', 1),
 ('NCC-20261005-000002', N'Nhà phân phối Phụ kiện thú cưng PetCare',     '0283898765', N'Quận 10, TP.HCM',      'support@petcare.vn',    1);
 
-INSERT INTO SanPham (maSanPham, maNhaCungCap, tenSanPham, maVach, giaBan, soLuongTon, nguongTonToiThieu, donViTinh, trangThai)
+INSERT INTO SanPham (maSanPham, maNhaCungCap, tenSanPham, maVach, giaNhap, giaBan, soLuongTon, nguongTonToiThieu, donViTinh, trangThai)
 VALUES 
-('SP-20261005-000001', 'NCC-20261005-000001', N'Hạt Royal Canin Indoor 2kg', '893123456701', 350000, 45, 10, N'Gói', 1),
-('SP-20261005-000002', 'NCC-20261005-000001', N'Pate Whiskas Cá Biển 85g',   '893123456702', 20000,  120, 20, N'Gói', 1),
-('SP-20261005-000003', 'NCC-20261005-000002', N'Cát vệ sinh Cature gỗ 6L',   '893123456703', 140000, 30, 10, N'Túi', 1),
-('SP-20261005-000004', 'NCC-20261005-000002', N'Dây dắt kèm yếm ngực size M', '893123456704', 85000,  15, 5,  N'Cái', 1),
-('SP-20261005-000005', 'NCC-20261005-000002', N'Sữa tắm thú cưng SOS 530ml', '893123456705', 120000, 25, 8,  N'Chai', 1);
+('SP-20261005-000001', 'NCC-20261005-000001', N'Hạt Royal Canin Indoor 2kg', '893123456701', 245000, 350000, 45, 10, N'Gói', 1),
+('SP-20261005-000002', 'NCC-20261005-000001', N'Pate Whiskas Cá Biển 85g',   '893123456702', 14000,  20000,  120, 20, N'Gói', 1),
+('SP-20261005-000003', 'NCC-20261005-000002', N'Cát vệ sinh Cature gỗ 6L',   '893123456703', 98000,  140000, 30, 10, N'Túi', 1),
+('SP-20261005-000004', 'NCC-20261005-000002', N'Dây dắt kèm yếm ngực size M', '893123456704', 59500,  85000,  15, 5,  N'Cái', 1),
+('SP-20261005-000005', 'NCC-20261005-000002', N'Sữa tắm thú cưng SOS 530ml', '893123456705', 84000,  120000, 25, 8,  N'Chai', 1);
 
 INSERT INTO DonHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai)
 VALUES
-('DH-20261005-000001', 'NCC-20261005-000001', 'NV-20261005-000001', '2026-10-02', 17500000, N'Hoàn tất');
+('DH-20261005-000001', 'NCC-20261005-000001', 'NV-20261005-000001', '2026-10-02', 12250000, N'Hoàn tất');
 
 INSERT INTO ChiTietDonHang (maDonHang, maSanPham, soLuong, donGia)
 VALUES
-('DH-20261005-000001', 'SP-20261005-000001', 50, 350000);
+('DH-20261005-000001', 'SP-20261005-000001', 50, 245000);
 
 INSERT INTO KhuyenMai (maKhuyenMai, tenChuongTrinh, phanTramGiam, ngayBatDau, ngayKetThuc, trangThai)
 VALUES 
@@ -582,7 +584,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ChiTietPDV_MaDichVu' 
 
 -- Sản phẩm & Đơn nhập hàng
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_SanPham_TrangThai' AND object_id = OBJECT_ID(N'dbo.SanPham'))
-    CREATE NONCLUSTERED INDEX IX_SanPham_TrangThai ON dbo.SanPham (trangThai) INCLUDE (tenSanPham, giaBan, soLuongTon, nguongTonToiThieu);
+    CREATE NONCLUSTERED INDEX IX_SanPham_TrangThai ON dbo.SanPham (trangThai) INCLUDE (tenSanPham, giaNhap, giaBan, soLuongTon, nguongTonToiThieu);
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_SanPham_MaNhaCungCap' AND object_id = OBJECT_ID(N'dbo.SanPham'))
     CREATE NONCLUSTERED INDEX IX_SanPham_MaNhaCungCap ON dbo.SanPham (maNhaCungCap);

@@ -1,6 +1,7 @@
 package com.petshop.model;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * Thực thể Sản phẩm (hàng hóa) trong cửa hàng Happy Tails.
@@ -12,6 +13,7 @@ public class SanPham {
     private String maNhaCungCap;
     private String tenSanPham;
     private String maVach;
+    private BigDecimal giaNhap;
     private BigDecimal giaBan;
     private int soLuongTon;
     private int nguongTonToiThieu;
@@ -22,6 +24,7 @@ public class SanPham {
     private String tenNhaCungCap;
 
     public SanPham() {
+        this.giaNhap = BigDecimal.ZERO;
         this.giaBan = BigDecimal.ZERO;
         this.soLuongTon = 0;
         this.nguongTonToiThieu = 10;
@@ -30,15 +33,52 @@ public class SanPham {
 
     public SanPham(String maSanPham, String maNhaCungCap, String tenSanPham, String maVach,
                    BigDecimal giaBan, int soLuongTon, int nguongTonToiThieu, String donViTinh, boolean trangThai) {
+        this(maSanPham, maNhaCungCap, tenSanPham, maVach,
+                tinhGiaNhapMacDinh(giaBan), giaBan,
+                soLuongTon, nguongTonToiThieu, donViTinh, trangThai);
+    }
+
+    public SanPham(String maSanPham, String maNhaCungCap, String tenSanPham, String maVach,
+                   BigDecimal giaNhap, BigDecimal giaBan, int soLuongTon, int nguongTonToiThieu,
+                   String donViTinh, boolean trangThai) {
         this.maSanPham = maSanPham;
         this.maNhaCungCap = maNhaCungCap;
         this.tenSanPham = tenSanPham;
         this.maVach = maVach;
         this.giaBan = giaBan != null ? giaBan : BigDecimal.ZERO;
+        if (giaNhap != null && giaNhap.compareTo(BigDecimal.ZERO) > 0
+                && (this.giaBan.compareTo(BigDecimal.ZERO) <= 0 || giaNhap.compareTo(this.giaBan) < 0)) {
+            this.giaNhap = giaNhap;
+        } else {
+            this.giaNhap = tinhGiaNhapMacDinh(this.giaBan);
+        }
         this.soLuongTon = soLuongTon;
         this.nguongTonToiThieu = nguongTonToiThieu;
         this.donViTinh = donViTinh;
         this.trangThai = trangThai;
+    }
+
+    /**
+     * Tính giá nhập mặc định hợp lý (70% giá bán) cho dữ liệu cũ chưa có giá nhập,
+     * đảm bảo 0 < giaNhap < giaBan khi giaBan > 1.
+     */
+    public static BigDecimal tinhGiaNhapMacDinh(BigDecimal giaBan) {
+        if (giaBan == null || giaBan.compareTo(BigDecimal.ONE) <= 0) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal macDinh;
+        if (giaBan.compareTo(new BigDecimal("2000")) >= 0) {
+            macDinh = giaBan.multiply(new BigDecimal("0.7")).setScale(-2, RoundingMode.HALF_UP).setScale(0, RoundingMode.DOWN);
+        } else {
+            macDinh = giaBan.multiply(new BigDecimal("0.7")).setScale(0, RoundingMode.DOWN);
+        }
+        if (macDinh.compareTo(BigDecimal.ZERO) <= 0) {
+            macDinh = BigDecimal.ONE;
+        }
+        if (macDinh.compareTo(giaBan) >= 0) {
+            macDinh = giaBan.subtract(BigDecimal.ONE);
+        }
+        return macDinh;
     }
 
     public String getMaSanPham() {
@@ -71,6 +111,25 @@ public class SanPham {
 
     public void setMaVach(String maVach) {
         this.maVach = maVach;
+    }
+
+    public BigDecimal getGiaNhap() {
+        return giaNhap;
+    }
+
+    public void setGiaNhap(BigDecimal giaNhap) {
+        this.giaNhap = giaNhap;
+    }
+
+    /**
+     * Trả về giá nhập hợp lệ (nếu dữ liệu cũ chưa có giá nhập hoặc không hợp lệ thì tự tính giá mặc định hợp lý từ giá bán).
+     */
+    public BigDecimal getGiaNhapHopLe() {
+        if (giaNhap != null && giaNhap.compareTo(BigDecimal.ZERO) > 0
+                && (giaBan == null || giaBan.compareTo(BigDecimal.ZERO) <= 0 || giaNhap.compareTo(giaBan) < 0)) {
+            return giaNhap;
+        }
+        return tinhGiaNhapMacDinh(giaBan);
     }
 
     public BigDecimal getGiaBan() {
@@ -148,4 +207,3 @@ public class SanPham {
         return "Đang kinh doanh";
     }
 }
-

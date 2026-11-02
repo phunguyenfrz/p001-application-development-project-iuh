@@ -318,6 +318,82 @@ public class NhaCungCapDAO {
     }
 
     /**
+     * Kiểm tra tên nhà cung cấp có bị trùng với nhà cung cấp khác hay không.
+     * So sánh không phân biệt hoa thường và loại bỏ khoảng trắng thừa.
+     * @param tenNhaCungCap Tên nhà cung cấp cần kiểm tra
+     * @param maLoaiTru Mã nhà cung cấp bỏ qua (khi cập nhật), có thể null khi thêm mới
+     */
+    public boolean kiemTraTrungTenNhaCungCap(String tenNhaCungCap, String maLoaiTru) {
+        if (tenNhaCungCap == null || tenNhaCungCap.trim().isEmpty()) {
+            return false;
+        }
+
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM NhaCungCap WHERE LOWER(LTRIM(RTRIM(tenNhaCungCap))) = LOWER(?)");
+        boolean coLoaiTru = maLoaiTru != null && !maLoaiTru.trim().isEmpty();
+        if (coLoaiTru) {
+            sql.append(" AND maNhaCungCap <> ?");
+        }
+
+        try (Connection conn = DatabaseManager.getConnection()) {
+            if (conn == null) return false;
+
+            try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                ps.setNString(1, tenNhaCungCap.trim());
+                if (coLoaiTru) {
+                    ps.setString(2, maLoaiTru.trim());
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1) > 0;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi kiểm tra trùng tên nhà cung cấp: " + e.getMessage(), e);
+        }
+
+        return false;
+    }
+
+    /**
+     * Kiểm tra email có bị trùng với nhà cung cấp khác hay không.
+     * So sánh không phân biệt hoa thường.
+     * @param email Email cần kiểm tra
+     * @param maLoaiTru Mã nhà cung cấp bỏ qua (khi cập nhật), có thể null khi thêm mới
+     */
+    public boolean kiemTraTrungEmail(String email, String maLoaiTru) {
+        if (email == null || email.trim().isEmpty()) {
+            return false;
+        }
+
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM NhaCungCap WHERE LOWER(LTRIM(RTRIM(email))) = LOWER(?)");
+        boolean coLoaiTru = maLoaiTru != null && !maLoaiTru.trim().isEmpty();
+        if (coLoaiTru) {
+            sql.append(" AND maNhaCungCap <> ?");
+        }
+
+        try (Connection conn = DatabaseManager.getConnection()) {
+            if (conn == null) return false;
+
+            try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                ps.setString(1, email.trim());
+                if (coLoaiTru) {
+                    ps.setString(2, maLoaiTru.trim());
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1) > 0;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi kiểm tra trùng email: " + e.getMessage(), e);
+        }
+
+        return false;
+    }
+
+    /**
      * Hàm ánh xạ dữ liệu từ ResultSet sang đối tượng NhaCungCap.
      */
     private NhaCungCap docNhaCungCap(ResultSet rs) throws SQLException {

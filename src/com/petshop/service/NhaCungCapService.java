@@ -35,7 +35,7 @@ public class NhaCungCapService {
 
     /**
      * Thêm nhà cung cấp mới.
-     * Kiểm tra quyền NCC_CAP_NHAT, validate dữ liệu, sinh mã nếu chưa có và kiểm tra trùng SĐT.
+     * Kiểm tra quyền NCC_CAP_NHAT, validate dữ liệu, sinh mã nếu chưa có và kiểm tra trùng tên, SĐT, email.
      */
     public boolean themNhaCungCap(NhaCungCap nhaCungCap) {
         xacThucService.kiemTraQuyen("NCC_CAP_NHAT");
@@ -56,7 +56,7 @@ public class NhaCungCapService {
 
     /**
      * Cập nhật thông tin nhà cung cấp.
-     * Kiểm tra quyền NCC_CAP_NHAT, mã tồn tại, validate dữ liệu và trùng SĐT loại trừ mã đang cập nhật.
+     * Kiểm tra quyền NCC_CAP_NHAT, mã tồn tại, validate dữ liệu và trùng tên, SĐT, email loại trừ mã đang cập nhật.
      */
     public boolean capNhatNhaCungCap(NhaCungCap nhaCungCap) {
         xacThucService.kiemTraQuyen("NCC_CAP_NHAT");
@@ -182,6 +182,8 @@ public class NhaCungCapService {
             throw new IllegalArgumentException("Dữ liệu nhà cung cấp không hợp lệ!");
         }
 
+        String maLoaiTru = laCapNhat ? ncc.getMaNhaCungCap() : null;
+
         // 1. Kiểm tra và chuẩn hóa tên nhà cung cấp
         String ten = ncc.getTenNhaCungCap() == null ? "" : ncc.getTenNhaCungCap().trim();
         if (ten.isEmpty()) {
@@ -189,6 +191,9 @@ public class NhaCungCapService {
         }
         if (ten.length() > 150) {
             throw new IllegalArgumentException("Tên nhà cung cấp không được vượt quá 150 ký tự!");
+        }
+        if (nhaCungCapDAO.kiemTraTrungTenNhaCungCap(ten, maLoaiTru)) {
+            throw new IllegalArgumentException("Tên nhà cung cấp '" + ten + "' đã tồn tại ở nhà cung cấp khác!");
         }
         ncc.setTenNhaCungCap(ten);
 
@@ -200,13 +205,10 @@ public class NhaCungCapService {
         if (!PATTERN_SDT.matcher(sdt).matches()) {
             throw new IllegalArgumentException("Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0 (ví dụ: 0912345678)!");
         }
-        ncc.setSoDienThoai(sdt);
-
-        // Kiểm tra trùng SĐT
-        String maLoaiTru = laCapNhat ? ncc.getMaNhaCungCap() : null;
         if (nhaCungCapDAO.kiemTraTrungSoDienThoai(sdt, maLoaiTru)) {
             throw new IllegalArgumentException("Số điện thoại '" + sdt + "' đã tồn tại ở nhà cung cấp khác!");
         }
+        ncc.setSoDienThoai(sdt);
 
         // 3. Kiểm tra và chuẩn hóa email (cho phép để trống)
         String email = ncc.getEmail() == null ? null : ncc.getEmail().trim();
@@ -216,6 +218,9 @@ public class NhaCungCapService {
             }
             if (!PATTERN_EMAIL.matcher(email).matches()) {
                 throw new IllegalArgumentException("Địa chỉ email không đúng định dạng hợp lệ!");
+            }
+            if (nhaCungCapDAO.kiemTraTrungEmail(email, maLoaiTru)) {
+                throw new IllegalArgumentException("Email '" + email + "' đã tồn tại ở nhà cung cấp khác!");
             }
             ncc.setEmail(email);
         } else {

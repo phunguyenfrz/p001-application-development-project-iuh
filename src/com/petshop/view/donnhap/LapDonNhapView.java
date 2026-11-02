@@ -29,10 +29,8 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -86,7 +84,7 @@ public class LapDonNhapView extends VBox {
         Label tieuDe = new Label("LẬP ĐƠN NHẬP HÀNG");
         tieuDe.getStyleClass().add("tieu-de-phan-he");
 
-        Label moTa = new Label("Chọn sản phẩm cần nhập; nhà cung cấp sẽ được lấy tự động từ sản phẩm.");
+        Label moTa = new Label("Chọn sản phẩm cần nhập; nhà cung cấp và giá nhập sẽ được lấy tự động từ sản phẩm.");
         moTa.getStyleClass().add("mo-ta-phan-he");
         moTa.setWrapText(true);
 
@@ -291,43 +289,19 @@ public class LapDonNhapView extends VBox {
             }
         });
 
-        // Cột đơn giá (chỉnh sửa bằng TextField)
-        TableColumn<ChiTietDonNhap, BigDecimal> cotDonGia = new TableColumn<>("Đơn giá");
-        cotDonGia.setMinWidth(130);
+        // Cột Giá nhập (chỉ để xem, lấy từ cấu hình sản phẩm, định dạng tiền tệ)
+        TableColumn<ChiTietDonNhap, BigDecimal> cotDonGia = new TableColumn<>("Giá nhập");
+        cotDonGia.setMinWidth(120);
         cotDonGia.setStyle("-fx-alignment: CENTER-RIGHT;");
         cotDonGia.setCellValueFactory(new PropertyValueFactory<>("donGia"));
         cotDonGia.setCellFactory(col -> new TableCell<>() {
-            private final TextField txtGia = new TextField();
-
-            {
-                txtGia.setPrefWidth(110);
-                // Chỉ cho phép nhập số
-                txtGia.textProperty().addListener((obs, cu, moi) -> {
-                    if (moi != null && !moi.matches("\\d*")) {
-                        txtGia.setText(cu);
-                    }
-                });
-                txtGia.focusedProperty().addListener((obs, cu, moi) -> {
-                    if (!moi && getTableRow() != null && getTableRow().getItem() != null) {
-                        // Khi mất focus, cập nhật đơn giá
-                        capNhatDonGia(getTableRow().getItem(), txtGia.getText());
-                    }
-                });
-                txtGia.setOnAction(e -> {
-                    if (getTableRow() != null && getTableRow().getItem() != null) {
-                        capNhatDonGia(getTableRow().getItem(), txtGia.getText());
-                    }
-                });
-            }
-
             @Override
             protected void updateItem(BigDecimal item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
-                    setGraphic(null);
+                    setText(null);
                 } else {
-                    txtGia.setText(item.toBigInteger().toString());
-                    setGraphic(txtGia);
+                    setText(DINH_DANG_TIEN.format(item));
                 }
             }
         });
@@ -387,23 +361,6 @@ public class LapDonNhapView extends VBox {
 
         hopBang.getChildren().addAll(thanhTieuDe, bangChiTiet);
         return hopBang;
-    }
-
-    /**
-     * Cập nhật đơn giá từ TextField.
-     */
-    private void capNhatDonGia(ChiTietDonNhap chiTiet, String giaText) {
-        try {
-            if (giaText == null || giaText.trim().isEmpty()) {
-                chiTiet.setDonGia(BigDecimal.ZERO);
-            } else {
-                chiTiet.setDonGia(new BigDecimal(giaText.trim()));
-            }
-        } catch (NumberFormatException ex) {
-            chiTiet.setDonGia(BigDecimal.ZERO);
-        }
-        capNhatTongTien();
-        bangChiTiet.refresh();
     }
 
     /**
@@ -485,14 +442,19 @@ public class LapDonNhapView extends VBox {
             }
         }
 
-        // Tạo chi tiết đơn hàng mới
+        // Tạo chi tiết đơn hàng mới theo Giá nhập của sản phẩm (không dùng giá bán)
         ChiTietDonNhap chiTietMoi = new ChiTietDonNhap();
         chiTietMoi.setMaSanPham(sanPhamDuocChon.getMaSanPham());
         chiTietMoi.setTenSanPham(sanPhamDuocChon.getTenSanPham());
         chiTietMoi.setDonViTinh(sanPhamDuocChon.getDonViTinh());
         chiTietMoi.setSoLuong(1);
-        // Đơn giá nhập mặc định lấy giá bán làm gợi ý
-        chiTietMoi.setDonGia(sanPhamDuocChon.getGiaBan() != null ? sanPhamDuocChon.getGiaBan() : BigDecimal.ZERO);
+        BigDecimal giaNhap = sanPhamDuocChon.getGiaNhapHopLe();
+        if (giaNhap == null || giaNhap.compareTo(BigDecimal.ZERO) <= 0) {
+            if (sanPhamDuocChon.getGiaBan() != null && sanPhamDuocChon.getGiaBan().compareTo(BigDecimal.ZERO) > 0) {
+                giaNhap = SanPham.tinhGiaNhapMacDinh(sanPhamDuocChon.getGiaBan());
+            }
+        }
+        chiTietMoi.setDonGia(giaNhap != null ? giaNhap : BigDecimal.ZERO);
 
         danhSachChiTiet.add(chiTietMoi);
         nhaCungCapTheoSanPham.put(sanPhamDuocChon.getMaSanPham(), sanPhamDuocChon.getMaNhaCungCap());
@@ -520,7 +482,7 @@ public class LapDonNhapView extends VBox {
                 return;
             }
             if (ct.getDonGia() == null || ct.getDonGia().compareTo(BigDecimal.ZERO) <= 0) {
-                hienThiLoi("Đơn giá sản phẩm \"" + ct.getTenSanPham() + "\" phải lớn hơn 0.");
+                hienThiLoi("Giá nhập của sản phẩm \"" + ct.getTenSanPham() + "\" phải lớn hơn 0.");
                 return;
             }
         }
@@ -552,6 +514,12 @@ public class LapDonNhapView extends VBox {
             SanPham hienTai = sanPhamHienTai.get(ct.getMaSanPham());
             if (hienTai == null || !hienTai.isTrangThai()) {
                 hienThiLoi("Sản phẩm " + ct.getTenSanPham() + " không còn kinh doanh hoặc đã bị xóa.");
+                return;
+            }
+            if (hienTai.getGiaBan() != null && hienTai.getGiaBan().compareTo(BigDecimal.ZERO) > 0
+                    && ct.getDonGia().compareTo(hienTai.getGiaBan()) >= 0) {
+                hienThiLoi("Giá nhập của sản phẩm \"" + ct.getTenSanPham()
+                        + "\" phải nhỏ hơn giá bán (" + DINH_DANG_TIEN.format(hienTai.getGiaBan()) + " đ)!");
                 return;
             }
             if (maNhaCungCap == null || maNhaCungCap.isBlank()) {
@@ -671,7 +639,7 @@ public class LapDonNhapView extends VBox {
 
     /**
      * Hộp thoại chọn sản phẩm từ danh sách sản phẩm đang kinh doanh.
-     * Hiển thị bảng sản phẩm để người dùng chọn và thêm vào đơn nhập hàng.
+     * Hiển thị bảng sản phẩm kèm Giá nhập để người dùng chọn và thêm vào đơn nhập hàng.
      */
     private static class ChonSanPhamDialog extends Stage {
 
@@ -702,7 +670,7 @@ public class LapDonNhapView extends VBox {
             // Tiêu đề
             Label lblTieuDe = new Label("CHỌN SẢN PHẨM");
             lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-            Label lblMoTa = new Label("Chọn sản phẩm cần nhập. Nhà cung cấp của sản phẩm sẽ được liên kết tự động.");
+            Label lblMoTa = new Label("Chọn sản phẩm cần nhập. Nhà cung cấp và Giá nhập của sản phẩm sẽ được áp dụng tự động.");
             lblMoTa.getStyleClass().add("mo-ta-phan-he");
             lblMoTa.setWrapText(true);
 
@@ -804,7 +772,7 @@ public class LapDonNhapView extends VBox {
         }
 
         /**
-         * Tạo các cột cho bảng sản phẩm.
+         * Tạo các cột cho bảng sản phẩm (hiển thị Giá nhập thay vì Giá bán).
          */
         private void taoCotBang() {
             DecimalFormat dinhDangTien = new DecimalFormat("#,##0");
@@ -837,12 +805,13 @@ public class LapDonNhapView extends VBox {
             colDVT.setStyle("-fx-alignment: CENTER;");
             colDVT.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getDonViTinh()));
 
-            TableColumn<SanPham, String> colGia = new TableColumn<>("Giá bán");
-            colGia.setPrefWidth(120);
-            colGia.setStyle("-fx-alignment: CENTER-RIGHT;");
-            colGia.setCellValueFactory(d -> new SimpleStringProperty(
-                    d.getValue().getGiaBan() != null ? dinhDangTien.format(d.getValue().getGiaBan()) : "0"
-            ));
+            TableColumn<SanPham, String> colGiaNhap = new TableColumn<>("Giá nhập");
+            colGiaNhap.setPrefWidth(120);
+            colGiaNhap.setStyle("-fx-alignment: CENTER-RIGHT;");
+            colGiaNhap.setCellValueFactory(d -> {
+                BigDecimal giaNhap = d.getValue().getGiaNhapHopLe();
+                return new SimpleStringProperty(giaNhap != null ? dinhDangTien.format(giaNhap) : "0");
+            });
 
             TableColumn<SanPham, String> colTon = new TableColumn<>("SL Tồn");
             colTon.setPrefWidth(80);
@@ -851,7 +820,7 @@ public class LapDonNhapView extends VBox {
                     String.valueOf(d.getValue().getSoLuongTon())
             ));
 
-            tblSanPham.getColumns().setAll(List.of(colMa, colTen, colNhaCungCap, colTrangThaiNhaCungCap, colDVT, colGia, colTon));
+            tblSanPham.getColumns().setAll(List.of(colMa, colTen, colNhaCungCap, colTrangThaiNhaCungCap, colDVT, colGiaNhap, colTon));
         }
 
         /**
@@ -899,4 +868,3 @@ public class LapDonNhapView extends VBox {
         }
     }
 }
-

@@ -132,6 +132,13 @@ public class TimKiemSanPhamView extends VBox {
             return new SimpleStringProperty(sapHet ? "⚠ SẮP HẾT HÀNG" : "Ổn định");
         });
 
+        TableColumn<SanPham, String> colGiaNhap = new TableColumn<>("Giá nhập");
+        colGiaNhap.setPrefWidth(120);
+        colGiaNhap.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colGiaNhap.setCellValueFactory(cell -> new SimpleStringProperty(
+                ThemSanPhamView.dinhDangTien(cell.getValue().getGiaNhapHopLe().doubleValue())
+        ));
+
         TableColumn<SanPham, String> colGiaBan = new TableColumn<>("Giá bán");
         colGiaBan.setPrefWidth(120);
         colGiaBan.setStyle("-fx-alignment: CENTER-RIGHT;");
@@ -152,7 +159,7 @@ public class TimKiemSanPhamView extends VBox {
         ));
 
         tblDanhSach.getColumns().setAll(List.of(
-                colMa, colTen, colLoai, colTon, colNguong, colTinhTrang, colGiaBan, colNcc, colTrangThai
+                colMa, colTen, colLoai, colTon, colNguong, colTinhTrang, colGiaNhap, colGiaBan, colNcc, colTrangThai
         ));
 
         // Hết hàng và sắp hết hàng đổi màu nền dòng giống bên Theo dõi tồn kho
@@ -179,7 +186,7 @@ public class TimKiemSanPhamView extends VBox {
             }
         });
 
-pnlBang.getChildren().add(tblDanhSach);
+        pnlBang.getChildren().add(tblDanhSach);
         VBox.setVgrow(tblDanhSach, Priority.ALWAYS);
         return pnlBang;
     }
