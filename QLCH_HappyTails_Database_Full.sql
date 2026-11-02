@@ -615,3 +615,10 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_PhieuDoiTra_MaHoaDon'
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ChiTietPhieuDoiTra_MaHoaDon' AND object_id = OBJECT_ID(N'dbo.ChiTietPhieuDoiTra'))
     CREATE NONCLUSTERED INDEX IX_ChiTietPhieuDoiTra_MaHoaDon ON dbo.ChiTietPhieuDoiTra (maHoaDon, maSanPham) INCLUDE (soLuong, maPhieuDoiTra);
 GO
+
+-- Đảm bảo 1 nhân viên chỉ có DUY NHẤT 1 phiếu ở trạng thái 'Đang thực hiện' tại một thời điểm
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_PhieuDichVu_NhanVien_DangThucHien' AND object_id = OBJECT_ID(N'dbo.PhieuDichVu'))
+    CREATE UNIQUE NONCLUSTERED INDEX UX_PhieuDichVu_NhanVien_DangThucHien 
+    ON dbo.PhieuDichVu (maNhanVien) 
+    WHERE trangThai = N'Đang thực hiện';
+GO

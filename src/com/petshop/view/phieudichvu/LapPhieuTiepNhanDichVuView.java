@@ -53,7 +53,9 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
     private final TextField txtTimKhach = new TextField();
     private final Button btnKiemTraSdt = new Button("Kiểm tra");
     private final ComboBox<KhachHang> cboKhachHang = new ComboBox<>();
+    private KhachHang khachHangHienTai = null;
     private final ComboBox<String[]> cboNhanVien = new ComboBox<>();
+    private final java.util.Set<String> dsMaNhanVienDangBan = new java.util.HashSet<>();
     private final DatePicker dpNgayTiepNhan = new DatePicker();
     private final TextField txtGioTiepNhan = new TextField();
     private final TextArea txtGhiChu = new TextArea();
@@ -412,6 +414,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
                 if (moi.trim().isEmpty()) {
                     cboKhachHang.setItems(FXCollections.observableArrayList(dsKhachHangGoc));
                     cboKhachHang.setValue(null);
+        khachHangHienTai = null;
                     cboLichHen.setValue(null);
                 } else {
                     List<KhachHang> loc = dsKhachHangGoc.stream()
@@ -435,7 +438,17 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
 
             // Đồng bộ thông tin khách hàng và tự động nạp lịch hẹn / dịch vụ đã đặt trước (nếu có)
             if (khChinhXac != null) {
-                dongBoThongTinKhachHang(khChinhXac);
+                if (kiemTraVaXacNhanDoiKhachHang(khChinhXac)) {
+                    dongBoThongTinKhachHang(khChinhXac);
+                } else {
+                    dangDongBo = true;
+                    try {
+                        txtTimKhach.setText(khachHangHienTai != null && khachHangHienTai.getSoDienThoai() != null ? khachHangHienTai.getSoDienThoai() : "");
+                        cboKhachHang.setValue(khachHangHienTai);
+                    } finally {
+                        dangDongBo = false;
+                    }
+                }
             }
         });
 
@@ -443,6 +456,15 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         cboKhachHang.setOnAction(e -> {
             if (dangDongBo) return;
             KhachHang kh = cboKhachHang.getValue();
+            if (!kiemTraVaXacNhanDoiKhachHang(kh)) {
+                dangDongBo = true;
+                try {
+                    cboKhachHang.setValue(khachHangHienTai);
+                } finally {
+                    dangDongBo = false;
+                }
+                return;
+            }
             if (kh != null) {
                 dongBoThongTinKhachHang(kh);
             } else {
@@ -519,7 +541,8 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             public String toString(String[] nv) {
                 if (nv == null || nv.length < 2) return "";
                 String chucVu = (nv.length > 2 && nv[2] != null && !nv[2].isBlank()) ? " (" + nv[2] + ")" : "";
-                return nv[1] + chucVu;
+                String trangThai = dsMaNhanVienDangBan.contains(nv[0]) ? " - [Đang bận]" : " - [Sẵn sàng]";
+                return nv[1] + chucVu + trangThai;
             }
 
             @Override
@@ -644,6 +667,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             try {
                 cboKhachHang.setItems(FXCollections.observableArrayList(dsKhachHangGoc));
                 cboKhachHang.setValue(khKhop);
+                khachHangHienTai = khKhop;
                 if (khKhop.getSoDienThoai() != null) {
                     txtTimKhach.setText(khKhop.getSoDienThoai());
                 }
@@ -726,8 +750,54 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
     }
 
     // Đồng bộ thông tin khi tìm kiếm/chọn khách hàng (nếu có lịch hẹn chờ thì tự động nạp lịch hẹn & dịch vụ đã đặt)
+    // Kiểm tra và hiển thị hộp thoại xác nhận khi đổi sang khách hàng khác nếu bảng dịch vụ đang có dữ liệu
+    private boolean kiemTraVaXacNhanDoiKhachHang(KhachHang khMoi) {
+        if (khMoi == null) {
+            if (khachHangHienTai != null && !dsChiTietChon.isEmpty()) {
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                confirm.setTitle("Hủy chọn khách hàng");
+                confirm.setHeaderText("Danh sách đang có dịch vụ của khách hàng '" + khachHangHienTai.getHoTen() + "'");
+                confirm.setContentText("Mỗi phiếu chỉ tiếp nhận cho một khách hàng duy nhất.\nBạn có chắc chắn muốn bỏ chọn khách hàng và làm mới danh sách dịch vụ không?");
+                Optional<ButtonType> opt = confirm.showAndWait();
+                if (opt.isEmpty() || opt.get() != ButtonType.OK) {
+                    return false;
+                }
+                dsChiTietChon.clear();
+                mapCanNangDaCan.clear();
+                capNhatTongTien();
+            }
+            khachHangHienTai = null;
+            return true;
+        }
+
+        if (khachHangHienTai != null && !khachHangHienTai.getMaKhachHang().equals(khMoi.getMaKhachHang())) {
+            if (!dsChiTietChon.isEmpty()) {
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                confirm.setTitle("Đổi khách hàng tiếp nhận");
+                confirm.setHeaderText("Danh sách đang có dịch vụ của khách hàng '" + khachHangHienTai.getHoTen() + "'");
+                confirm.setContentText("Mỗi phiếu dịch vụ chỉ tiếp nhận cho một khách hàng duy nhất.\nViệc đổi sang khách hàng '" + khMoi.getHoTen() + "' sẽ xóa các dịch vụ đã chọn của khách hàng trước đó.\n\nBạn có chắc chắn muốn tiếp tục đổi không?");
+                Optional<ButtonType> opt = confirm.showAndWait();
+                if (opt.isEmpty() || opt.get() != ButtonType.OK) {
+                    return false;
+                }
+                dsChiTietChon.clear();
+                mapCanNangDaCan.clear();
+                capNhatTongTien();
+            }
+        }
+        return true;
+    }
+
     private void dongBoThongTinKhachHang(KhachHang kh) {
         if (kh == null) return;
+
+        // Dọn dẹp chi tiết cũ nếu khách hàng thay đổi
+        if (khachHangHienTai != null && !kh.getMaKhachHang().equals(khachHangHienTai.getMaKhachHang())) {
+            dsChiTietChon.clear();
+            mapCanNangDaCan.clear();
+            capNhatTongTien();
+        }
+        khachHangHienTai = kh;
 
         dangDongBo = true;
         try {
@@ -786,7 +856,11 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         }
 
         if (khKhop != null) {
-            dongBoThongTinKhachHang(khKhop);
+            if (kiemTraVaXacNhanDoiKhachHang(khKhop)) {
+                dongBoThongTinKhachHang(khKhop);
+            } else {
+                txtTimKhach.setText(khachHangHienTai != null && khachHangHienTai.getSoDienThoai() != null ? khachHangHienTai.getSoDienThoai() : "");
+            }
             cboKhachHang.requestFocus();
         } else {
             if (sdt.matches("^0[0-9]{9}$")) {
@@ -1148,7 +1222,16 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
 
     // Xử lý thêm một dòng dịch vụ vào bảng chi tiết
     private void xuLyThemDichVu() {
+        KhachHang kh = cboKhachHang.getValue();
+        if (kh == null) {
+            hienThiCanhBao("Chưa chọn khách hàng", "Vui lòng chọn hoặc tra cứu khách hàng tiếp nhận trước khi thêm dịch vụ!");
+            return;
+        }
         ThuCung tc = cboThuCung.getValue();
+        if (tc != null && tc.getMaKhachHang() != null && !tc.getMaKhachHang().equals(kh.getMaKhachHang())) {
+            hienThiCanhBao("Thú cưng không hợp lệ", "Thú cưng '" + tc.getTenThuCung() + "' không thuộc sở hữu của khách hàng " + kh.getHoTen() + "!");
+            return;
+        }
         if (tc == null) {
             hienThiCanhBao("Chưa chọn thú cưng", "Vui lòng chọn thú cưng cần làm dịch vụ!");
             return;
@@ -1254,6 +1337,23 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
                 return;
             }
 
+            // Kiểm tra tính toàn vẹn: Tất cả thú cưng trong chi tiết phải thuộc sở hữu của khách hàng tiếp nhận
+            List<ThuCung> dsThuCungCuaKhach = controller.layDanhSachThuCungTheoKhachHang(kh.getMaKhachHang());
+            Set<String> setMaThuCungHopLe = new HashSet<>();
+            for (ThuCung tcKh : dsThuCungCuaKhach) {
+                setMaThuCungHopLe.add(tcKh.getMaThuCung());
+            }
+
+            for (ChiTietPhieuDichVu ct : dsChiTietChon) {
+                if (!setMaThuCungHopLe.contains(ct.getMaThuCung())) {
+                    String tenTc = ct.getTenThuCung() != null ? ct.getTenThuCung() : ct.getMaThuCung();
+                    hienThiCanhBao("Thú cưng không đúng chủ",
+                            "Thú cưng '" + tenTc + "' không thuộc sở hữu của khách hàng '" + kh.getHoTen() + "'!\n"
+                            + "Vui lòng xóa các dịch vụ không đúng chủ trước khi lưu phiếu tiếp nhận.");
+                    return;
+                }
+            }
+
             LocalDate ngay = dpNgayTiepNhan.getValue() != null ? dpNgayTiepNhan.getValue() : LocalDate.now();
             String gioStr = txtGioTiepNhan.getText() != null ? txtGioTiepNhan.getText().trim() : "";
             LocalTime gio;
@@ -1324,6 +1424,8 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             cboKhachHang.setItems(FXCollections.observableArrayList(dsKhachHangGoc));
 
             // Nạp nhân viên và chọn mặc định nhân viên Chăm sóc
+            dsMaNhanVienDangBan.clear();
+            dsMaNhanVienDangBan.addAll(controller.laySetMaNhanVienDangBan());
             List<String[]> dsNv = controller.layDanhSachNhanVien();
             cboNhanVien.setItems(FXCollections.observableArrayList(dsNv));
             chonMacDinhNhanVienChamSoc();
@@ -1344,6 +1446,12 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
 
     // Chọn nhân viên có chức vụ "Chăm sóc" đầu tiên làm mặc định
     private void chonMacDinhNhanVienChamSoc() {
+        for (String[] nv : cboNhanVien.getItems()) {
+            if (nv.length > 2 && nv[2] != null && nv[2].toLowerCase().contains("chăm sóc") && !dsMaNhanVienDangBan.contains(nv[0])) {
+                cboNhanVien.setValue(nv);
+                return;
+            }
+        }
         for (String[] nv : cboNhanVien.getItems()) {
             if (nv.length > 2 && nv[2] != null && nv[2].toLowerCase().contains("chăm sóc")) {
                 cboNhanVien.setValue(nv);
@@ -1374,6 +1482,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         cboLichHen.setValue(null);
         cboKhachHang.setItems(FXCollections.observableArrayList(dsKhachHangGoc));
         cboKhachHang.setValue(null);
+        khachHangHienTai = null;
         cboKhachHang.setDisable(false);
         txtTimKhach.clear();
         txtTimKhach.setDisable(false);

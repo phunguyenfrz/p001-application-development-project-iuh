@@ -241,7 +241,11 @@ public class CapNhatPhieuDichVuView extends VBox {
                 hienThiThongBao("Đã cập nhật trạng thái phiếu thành: " + trangThaiMoi);
                 taiLaiDanhSach();
             } catch (Exception ex) {
-                hienThiLoi("Lỗi khi chuyển trạng thái: " + ex.getMessage());
+                if (ex instanceof IllegalStateException || ex instanceof IllegalArgumentException) {
+                    hienThiCanhBao(ex.getMessage());
+                } else {
+                    hienThiLoi("Lỗi khi chuyển trạng thái: " + ex.getMessage());
+                }
             }
         }
     }

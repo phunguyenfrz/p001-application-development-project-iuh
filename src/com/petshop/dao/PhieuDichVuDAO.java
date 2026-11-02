@@ -15,7 +15,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Lớp DAO phụ trách truy xuất dữ liệu phiếu dịch vụ và chi tiết phiếu trong SQL Server.
@@ -189,6 +191,93 @@ public class PhieuDichVuDAO {
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new IllegalStateException("Lỗi khi cập nhật trạng thái phiếu dịch vụ: " + e.getMessage(), e);
+        }
+    }
+
+    // Lấy mã phiếu dịch vụ mà nhân viên đang thực hiện (nếu có, bỏ qua mã phiếu chỉ định)
+    public String layMaPhieuDangThucHienCuaNhanVien(String maNhanVien, String maPhieuBoQua) {
+        if (maNhanVien == null || maNhanVien.trim().isEmpty()) return null;
+        String sql = "SELECT TOP 1 maPhieuDichVu FROM PhieuDichVu WHERE maNhanVien = ? AND trangThai = N'Đang thực hiện'"
+                + (maPhieuBoQua != null && !maPhieuBoQua.trim().isEmpty() ? " AND maPhieuDichVu != ?" : "");
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maNhanVien.trim());
+            if (maPhieuBoQua != null && !maPhieuBoQua.trim().isEmpty()) {
+                ps.setString(2, maPhieuBoQua.trim());
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("maPhieuDichVu");
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi kiểm tra nhân viên đang bận phiếu dịch vụ: " + e.getMessage(), e);
+        }
+        return null;
+    }
+
+    // Kiểm tra xem thú cưng trong phiếu có đang được chăm sóc ở phiếu khác hay không
+    public String layThongTinThuCungDangThucHien(String maPhieuDichVu, String maPhieuBoQua) {
+        if (maPhieuDichVu == null || maPhieuDichVu.trim().isEmpty()) return null;
+        String sql = """
+                SELECT TOP 1 tc.tenThuCung, pdv.maPhieuDichVu
+                FROM ChiTietPhieuDichVu ct
+                INNER JOIN ThuCung tc ON tc.maThuCung = ct.maThuCung
+                INNER JOIN ChiTietPhieuDichVu ctKhac ON ctKhac.maThuCung = ct.maThuCung
+                INNER JOIN PhieuDichVu pdv ON pdv.maPhieuDichVu = ctKhac.maPhieuDichVu
+                WHERE ct.maPhieuDichVu = ? 
+                  AND pdv.trangThai = N'Đang thực hiện'
+                  AND pdv.maPhieuDichVu != ?
+                """;
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maPhieuDichVu.trim());
+            ps.setString(2, maPhieuBoQua != null && !maPhieuBoQua.trim().isEmpty() ? maPhieuBoQua.trim() : "");
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return "Thú cưng '" + rs.getString("tenThuCung") + "' hiện đang được chăm sóc tại phiếu " + rs.getString("maPhieuDichVu");
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi kiểm tra thú cưng đang thực hiện: " + e.getMessage(), e);
+        }
+        return null;
+    }
+
+    // Lấy tập hợp mã nhân viên hiện đang có phiếu ở trạng thái 'Đang thực hiện'
+    public Set<String> laySetMaNhanVienDangThucHien() {
+        String sql = "SELECT DISTINCT maNhanVien FROM PhieuDichVu WHERE trangThai = N'Đang thực hiện'";
+        Set<String> danhSach = new HashSet<>();
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                String maNv = rs.getString("maNhanVien");
+                if (maNv != null && !maNv.trim().isEmpty()) {
+                    danhSach.add(maNv.trim());
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi lấy danh sách nhân viên đang bận: " + e.getMessage(), e);
+        }
+        return danhSach;
+    }
+
+    // Kiểm tra xem thú cưng có thuộc quyền sở hữu của khách hàng hay không
+    public boolean kiemTraThuCungThuocKhachHang(String maThuCung, String maKhachHang) {
+        if (maThuCung == null || maKhachHang == null) return false;
+        String sql = "SELECT 1 FROM ThuCung WHERE maThuCung = ? AND maKhachHang = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maThuCung.trim());
+            ps.setString(2, maKhachHang.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi kiểm tra chủ nuôi của thú cưng: " + e.getMessage(), e);
         }
     }
 
