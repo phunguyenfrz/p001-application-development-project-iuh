@@ -1,6 +1,6 @@
 package com.petshop.dao;
 
-import com.petshop.model.NhaCungCap;
+import com.petshop.entity.NhaCungCap;
 import com.petshop.util.DatabaseManager;
 
 import java.sql.Connection;

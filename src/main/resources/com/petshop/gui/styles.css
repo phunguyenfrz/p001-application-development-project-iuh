@@ -1,0 +1,11 @@
+/* ==========================================================================
+   HAPPY TAILS - STYLESHEET TỔNG HỢP
+   Nạp CSS theo từng màn hình chức năng:
+   - css/chung.css: Cấu hình chung cho controls, buttons, tableview
+   - css/dangnhap.css: Màn hình đăng nhập (DangNhapView)
+   - css/manhinhchinh.css: Màn hình chính (ManHinhChinhView)
+   ========================================================================== */
+
+@import "css/chung.css";
+@import "css/dangnhap.css";
+@import "css/manhinhchinh.css";

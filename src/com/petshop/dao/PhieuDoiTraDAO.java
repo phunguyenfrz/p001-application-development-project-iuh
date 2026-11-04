@@ -1,7 +1,7 @@
 package com.petshop.dao;
 
-import com.petshop.model.ChiTietPhieuDoiTra;
-import com.petshop.model.PhieuDoiTra;
+import com.petshop.entity.ChiTietPhieuDoiTra;
+import com.petshop.entity.PhieuDoiTra;
 import com.petshop.util.DatabaseManager;
 
 import java.math.BigDecimal;

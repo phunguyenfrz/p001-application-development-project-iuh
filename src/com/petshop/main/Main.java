@@ -1,6 +1,6 @@
 package com.petshop.main;
 
-import com.petshop.view.DangNhapView;
+import com.petshop.gui.DangNhapView;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
@@ -12,7 +12,7 @@ public class Main extends Application {
     public void start(Stage stage) {
         stage.setTitle("Happy Tails - Đăng nhập");
         try {
-            var iconStream = getClass().getResourceAsStream("/com/petshop/view/logo.png");
+            var iconStream = getClass().getResourceAsStream("/com/petshop/gui/logo.png");
             if (iconStream != null) {
                 stage.getIcons().setAll(new Image(iconStream));
             }
@@ -20,8 +20,8 @@ public class Main extends Application {
 
         Scene scene = new Scene(new DangNhapView(stage), 540, 420);
         scene.getStylesheets().addAll(
-                getClass().getResource("/com/petshop/view/css/chung.css").toExternalForm(),
-                getClass().getResource("/com/petshop/view/css/dangnhap.css").toExternalForm()
+                getClass().getResource("/com/petshop/gui/css/chung.css").toExternalForm(),
+                getClass().getResource("/com/petshop/gui/css/dangnhap.css").toExternalForm()
         );
 
         stage.setScene(scene);

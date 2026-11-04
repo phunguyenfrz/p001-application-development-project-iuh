@@ -1,7 +1,7 @@
 package com.petshop.dao;
 
-import com.petshop.model.HoatDongGanDay;
-import com.petshop.model.ThongKeTongQuan;
+import com.petshop.entity.HoatDongGanDay;
+import com.petshop.entity.ThongKeTongQuan;
 import com.petshop.util.DatabaseManager;
 
 import java.math.BigDecimal;
