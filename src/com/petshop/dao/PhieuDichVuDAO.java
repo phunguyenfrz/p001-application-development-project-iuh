@@ -1,8 +1,11 @@
 package com.petshop.dao;
 
 import com.petshop.entity.ChiTietPhieuDichVu;
+import com.petshop.entity.KhachHang;
 import com.petshop.entity.LichHen;
+import com.petshop.entity.NhanVien;
 import com.petshop.entity.PhieuDichVu;
+import com.petshop.entity.ThuCung;
 import com.petshop.util.DatabaseManager;
 
 import java.sql.Connection;
@@ -65,7 +68,7 @@ public class PhieuDichVuDAO {
                 INSERT INTO ChiTietPhieuDichVu (maPhieuDichVu, maThuCung, maDichVu, donGia)
                 VALUES (?, ?, ?, ?)
                 """;
-        String sqlCapNhatLichHen = "UPDATE LichHen SET trangThai = N'Hoàn thành' WHERE maLichHen = ? AND trangThai != N'Đã hủy'";
+        String sqlCapNhatLichHen = "UPDATE LichHen SET trangThai = N'Đã tiếp nhận' WHERE maLichHen = ? AND trangThai != N'Đã hủy'";
 
         try (Connection conn = DatabaseManager.getConnection()) {
             conn.setAutoCommit(false);
@@ -90,17 +93,24 @@ public class PhieuDichVuDAO {
                             psCt.setString(1, phieu.getMaPhieuDichVu());
                             psCt.setString(2, ct.getMaThuCung());
                             psCt.setString(3, ct.getMaDichVu());
-                            psCt.setBigDecimal(4, ct.getDonGia());
+                            psCt.setDouble(4, ct.getDonGia());
                             psCt.executeUpdate();
                         }
                     }
                 }
 
-                // 3. Nếu lập từ lịch hẹn: cập nhật trạng thái lịch hẹn sang 'Đang thực hiện'
+                // 3. Nếu lập từ lịch hẹn: cập nhật trạng thái lịch hẹn sang 'Đã tiếp nhận'
                 if (phieu.getMaLichHen() != null && !phieu.getMaLichHen().trim().isEmpty()) {
                     try (PreparedStatement psLh = conn.prepareStatement(sqlCapNhatLichHen)) {
                         psLh.setString(1, phieu.getMaLichHen().trim());
                         psLh.executeUpdate();
+                    } catch (SQLException ex) {
+                        // Fallback nếu database cũ chưa cập nhật CHECK constraint 'Đã tiếp nhận'
+                        try (PreparedStatement psFallback = conn.prepareStatement(
+                                "UPDATE LichHen SET trangThai = N'Đang thực hiện' WHERE maLichHen = ? AND trangThai != N'Đã hủy'")) {
+                            psFallback.setString(1, phieu.getMaLichHen().trim());
+                            psFallback.executeUpdate();
+                        }
                     }
                 }
 
@@ -160,7 +170,7 @@ public class PhieuDichVuDAO {
                                 psThem.setString(1, phieu.getMaPhieuDichVu());
                                 psThem.setString(2, ct.getMaThuCung());
                                 psThem.setString(3, ct.getMaDichVu());
-                                psThem.setBigDecimal(4, ct.getDonGia());
+                                psThem.setDouble(4, ct.getDonGia());
                                 psThem.executeUpdate();
                             }
                         }
@@ -306,6 +316,69 @@ public class PhieuDichVuDAO {
         }
     }
 
+    // Kiểm tra xem phiếu dịch vụ đã được lập hóa đơn thanh toán hay chưa (chặn lập trùng vào 2 hóa đơn)
+    public boolean kiemTraPhieuDichVuDaCoHoaDon(String maPhieuDichVu) {
+        if (maPhieuDichVu == null || maPhieuDichVu.trim().isEmpty()) return false;
+        String sql = "SELECT 1 FROM dbo.HoaDon WHERE maPhieuDichVu = ? AND trangThaiThanhToan != N'Đã hủy'";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maPhieuDichVu.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi kiểm tra hóa đơn của phiếu dịch vụ: " + e.getMessage(), e);
+        }
+    }
+
+    // Lấy danh sách phiếu dịch vụ ở trạng thái hợp lệ chưa có hóa đơn thanh toán
+    public List<PhieuDichVu> timKiemPhieuDichVuChoThanhToan(String tuKhoa) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT pdv.maPhieuDichVu, pdv.maKhachHang, kh.hoTen AS tenKhachHang, kh.soDienThoai,
+                       pdv.maNhanVien, nv.hoTen AS tenNhanVien, pdv.maLichHen,
+                       pdv.ngayTiepNhan, pdv.gioTiepNhan, pdv.trangThai, pdv.ghiChu
+                FROM PhieuDichVu pdv
+                LEFT JOIN KhachHang kh ON kh.maKhachHang = pdv.maKhachHang
+                LEFT JOIN NhanVien nv ON nv.maNhanVien = pdv.maNhanVien
+                WHERE pdv.trangThai != N'Đã hủy'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM dbo.HoaDon hd 
+                      WHERE hd.maPhieuDichVu = pdv.maPhieuDichVu AND hd.trangThaiThanhToan != N'Đã hủy'
+                  )
+                """);
+
+        List<Object> params = new ArrayList<>();
+        if (tuKhoa != null && !tuKhoa.trim().isEmpty()) {
+            String tk = "%" + tuKhoa.trim() + "%";
+            sql.append(" AND (pdv.maPhieuDichVu LIKE ? OR kh.hoTen LIKE ? OR kh.soDienThoai LIKE ? OR kh.maKhachHang LIKE ?)");
+            params.add(tk);
+            params.add(tk);
+            params.add(tk);
+            params.add(tk);
+        }
+        sql.append(" ORDER BY pdv.ngayTiepNhan DESC, pdv.gioTiepNhan DESC");
+
+        List<PhieuDichVu> danhSach = new ArrayList<>();
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    danhSach.add(docPhieuDichVu(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi tìm phiếu dịch vụ chờ thanh toán: " + e.getMessage(), e);
+        }
+
+        for (PhieuDichVu pdv : danhSach) {
+            pdv.setDanhSachChiTiet(layChiTietPhieuDichVu(pdv.getMaPhieuDichVu()));
+        }
+        return danhSach;
+    }
+
     // Lấy toàn bộ danh sách phiếu dịch vụ
     public List<PhieuDichVu> layDanhSachPhieuDichVu() {
         String sql = """
@@ -384,13 +457,14 @@ public class PhieuDichVuDAO {
                 while (rs.next()) {
                     String tenTc = rs.getString("tenThuCung");
                     String tenDv = rs.getString("tenDichVu");
+                    double donGia = rs.getDouble("donGia");
                     ChiTietPhieuDichVu ct = new ChiTietPhieuDichVu(
                             rs.getString("maPhieuDichVu"),
                             rs.getString("maThuCung"),
                             tenTc != null ? tenTc : rs.getString("maThuCung"),
                             rs.getString("maDichVu"),
                             tenDv != null ? tenDv : rs.getString("maDichVu"),
-                            rs.getBigDecimal("donGia")
+                            donGia
                     );
                     danhSach.add(ct);
                 }
@@ -465,7 +539,7 @@ public class PhieuDichVuDAO {
         return danhSach;
     }
 
-    // Lấy danh sách lịch hẹn đang chờ tiếp nhận (trạng thái 'Đã đặt' hoặc 'Đã xác nhận' và chưa lập phiếu)
+    // Lấy danh sách các lịch hẹn đang chờ tiếp nhận (trạng thái 'Đã đặt' hoặc 'Đã xác nhận' và chưa lập phiếu)
     public List<LichHen> layDanhSachLichHenChoTiepNhan() {
         String sql = """
                 SELECT lh.maLichHen, lh.maKhachHang, kh.hoTen AS tenKhachHang, kh.soDienThoai,
@@ -476,6 +550,8 @@ public class PhieuDichVuDAO {
                 LEFT JOIN ThuCung tc ON tc.maThuCung = lh.maThuCung
                 LEFT JOIN NhanVien nv ON nv.maNhanVien = lh.maNhanVien
                 WHERE lh.trangThai IN (N'Đã đặt', N'Đã xác nhận')
+                  AND lh.trangThai != N'Đã tiếp nhận'
+                  AND CAST(lh.ngayHen AS DATE) = CAST(GETDATE() AS DATE)
                   AND NOT EXISTS (
                       SELECT 1 FROM PhieuDichVu pdv
                       WHERE pdv.maLichHen = lh.maLichHen AND pdv.trangThai != N'Đã hủy'
@@ -497,24 +573,149 @@ public class PhieuDichVuDAO {
                     if (gio != null) gioHen = gio.toLocalTime();
                 } catch (Exception ignored) {}
 
+                String maKh = rs.getString("maKhachHang");
+                String tenKh = rs.getString("tenKhachHang");
+                String sdt = rs.getString("soDienThoai");
+
+                String maTc = rs.getString("maThuCung");
+                String tenTc = rs.getString("tenThuCung");
+
+                String maNv = rs.getString("maNhanVien");
+                String tenNv = rs.getString("tenNhanVien");
+
+                KhachHang kh = null;
+                if (maKh != null) {
+                    kh = new KhachHang();
+                    kh.setMaKhachHang(maKh);
+                    kh.setHoTen(tenKh != null ? tenKh : maKh);
+                    kh.setSoDienThoai(sdt != null ? sdt : "");
+                }
+
+                ThuCung tc = null;
+                if (maTc != null) {
+                    tc = new ThuCung();
+                    tc.setMaThuCung(maTc);
+                    tc.setTenThuCung(tenTc != null ? tenTc : maTc);
+                    if (kh != null) tc.setKhachHang(kh);
+                }
+
+                NhanVien nv = null;
+                if (maNv != null) {
+                    nv = new NhanVien();
+                    nv.setMaNhanVien(maNv);
+                    nv.setHoTen(tenNv != null ? tenNv : maNv);
+                }
+
                 LichHen lh = new LichHen(
                         rs.getString("maLichHen"),
-                        rs.getString("maKhachHang"),
-                        rs.getString("maThuCung"),
-                        rs.getString("maNhanVien"),
+                        kh,
+                        tc,
+                        nv,
                         ngayHen,
                         gioHen,
                         rs.getString("trangThai"),
                         rs.getString("ghiChu")
                 );
-                lh.setTenKhachHang(rs.getString("tenKhachHang"));
-                lh.setSoDienThoai(rs.getString("soDienThoai"));
-                lh.setTenThuCung(rs.getString("tenThuCung"));
-                lh.setTenNhanVien(rs.getString("tenNhanVien"));
+                lh.setTenKhachHang(tenKh != null ? tenKh : maKh);
+                lh.setSoDienThoai(sdt != null ? sdt : "");
+                lh.setTenThuCung(tenTc != null ? tenTc : maTc);
+                lh.setTenNhanVien(tenNv != null ? tenNv : maNv);
                 danhSach.add(lh);
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Lỗi khi lấy danh sách lịch hẹn chờ tiếp nhận: " + e.getMessage(), e);
+        }
+
+        return danhSach;
+    }
+
+    // Lấy danh sách các lịch hẹn đang chờ tiếp nhận hôm nay của một khách hàng cụ thể
+    public List<LichHen> layDanhSachLichHenChoTheoKhachHang(String maKhachHang) {
+        String sql = """
+                SELECT lh.maLichHen, lh.maKhachHang, kh.hoTen AS tenKhachHang, kh.soDienThoai,
+                       lh.maThuCung, tc.tenThuCung, lh.maNhanVien, nv.hoTen AS tenNhanVien,
+                       lh.ngayHen, lh.gioHen, lh.trangThai, lh.ghiChu
+                FROM LichHen lh
+                LEFT JOIN KhachHang kh ON kh.maKhachHang = lh.maKhachHang
+                LEFT JOIN ThuCung tc ON tc.maThuCung = lh.maThuCung
+                LEFT JOIN NhanVien nv ON nv.maNhanVien = lh.maNhanVien
+                WHERE lh.maKhachHang = ?
+                  AND lh.trangThai IN (N'Đã đặt', N'Đã xác nhận')
+                  AND lh.trangThai != N'Đã tiếp nhận'
+                  AND CAST(lh.ngayHen AS DATE) = CAST(GETDATE() AS DATE)
+                  AND NOT EXISTS (
+                      SELECT 1 FROM PhieuDichVu pdv
+                      WHERE pdv.maLichHen = lh.maLichHen AND pdv.trangThai != N'Đã hủy'
+                  )
+                ORDER BY lh.gioHen ASC
+                """;
+        List<LichHen> danhSach = new ArrayList<>();
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maKhachHang);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Date ngay = rs.getDate("ngayHen");
+                    LocalDate ngayHen = (ngay != null) ? ngay.toLocalDate() : null;
+
+                    LocalTime gioHen = null;
+                    try {
+                        Time gio = rs.getTime("gioHen");
+                        if (gio != null) gioHen = gio.toLocalTime();
+                    } catch (Exception ignored) {}
+
+                    String maKh = rs.getString("maKhachHang");
+                    String tenKh = rs.getString("tenKhachHang");
+                    String sdt = rs.getString("soDienThoai");
+
+                    String maTc = rs.getString("maThuCung");
+                    String tenTc = rs.getString("tenThuCung");
+
+                    String maNv = rs.getString("maNhanVien");
+                    String tenNv = rs.getString("tenNhanVien");
+
+                    KhachHang kh = null;
+                    if (maKh != null) {
+                        kh = new KhachHang();
+                        kh.setMaKhachHang(maKh);
+                        kh.setHoTen(tenKh != null ? tenKh : maKh);
+                        kh.setSoDienThoai(sdt != null ? sdt : "");
+                    }
+
+                    ThuCung tc = null;
+                    if (maTc != null) {
+                        tc = new ThuCung();
+                        tc.setMaThuCung(maTc);
+                        tc.setTenThuCung(tenTc != null ? tenTc : maTc);
+                        if (kh != null) tc.setKhachHang(kh);
+                    }
+
+                    NhanVien nv = null;
+                    if (maNv != null) {
+                        nv = new NhanVien();
+                        nv.setMaNhanVien(maNv);
+                        nv.setHoTen(tenNv != null ? tenNv : maNv);
+                    }
+
+                    LichHen lh = new LichHen(
+                            rs.getString("maLichHen"),
+                            kh,
+                            tc,
+                            nv,
+                            ngayHen,
+                            gioHen,
+                            rs.getString("trangThai"),
+                            rs.getString("ghiChu")
+                    );
+                    lh.setTenKhachHang(tenKh != null ? tenKh : maKh);
+                    lh.setSoDienThoai(sdt != null ? sdt : "");
+                    lh.setTenThuCung(tenTc != null ? tenTc : maTc);
+                    lh.setTenNhanVien(tenNv != null ? tenNv : maNv);
+                    danhSach.add(lh);
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi lấy danh sách lịch hẹn chờ tiếp nhận của khách: " + e.getMessage(), e);
         }
 
         return danhSach;
@@ -542,22 +743,49 @@ public class PhieuDichVuDAO {
             }
         }
 
+        String maKh = rs.getString("maKhachHang");
+        String tenKh = rs.getString("tenKhachHang");
+        String sdt = rs.getString("soDienThoai");
+
+        String maNv = rs.getString("maNhanVien");
+        String tenNv = rs.getString("tenNhanVien");
+
+        String maLh = rs.getString("maLichHen");
+
+        KhachHang kh = null;
+        if (maKh != null) {
+            kh = new KhachHang();
+            kh.setMaKhachHang(maKh);
+            kh.setHoTen(tenKh != null ? tenKh : maKh);
+            kh.setSoDienThoai(sdt != null ? sdt : "");
+        }
+
+        NhanVien nv = null;
+        if (maNv != null) {
+            nv = new NhanVien();
+            nv.setMaNhanVien(maNv);
+            nv.setHoTen(tenNv != null ? tenNv : maNv);
+        }
+
+        LichHen lh = null;
+        if (maLh != null && !maLh.trim().isEmpty()) {
+            lh = new LichHen();
+            lh.setMaLichHen(maLh.trim());
+        }
+
         PhieuDichVu pdv = new PhieuDichVu(
                 rs.getString("maPhieuDichVu"),
-                rs.getString("maKhachHang"),
-                rs.getString("maNhanVien"),
-                rs.getString("maLichHen"),
+                kh,
+                nv,
+                lh,
                 ngayTiepNhan,
                 gioTiepNhan,
                 rs.getString("trangThai"),
                 rs.getString("ghiChu")
         );
-        String tenKh = rs.getString("tenKhachHang");
-        pdv.setTenKhachHang(tenKh != null ? tenKh : rs.getString("maKhachHang"));
-        pdv.setSoDienThoai(rs.getString("soDienThoai") != null ? rs.getString("soDienThoai") : "");
-        String tenNv = rs.getString("tenNhanVien");
-        pdv.setTenNhanVien(tenNv != null ? tenNv : rs.getString("maNhanVien"));
+        pdv.setTenKhachHang(tenKh != null ? tenKh : maKh);
+        pdv.setSoDienThoai(sdt != null ? sdt : "");
+        pdv.setTenNhanVien(tenNv != null ? tenNv : maNv);
         return pdv;
     }
 }
-

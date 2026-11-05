@@ -14,7 +14,6 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -155,8 +154,8 @@ public class ChiTietLanChamSocView extends VBox {
         TableColumn<ChiTietDichVuLichHen, String> colCanNang = new TableColumn<>("Cân nặng ghi nhận (kg)");
         colCanNang.setPrefWidth(180);
         colCanNang.setCellValueFactory(c -> {
-            BigDecimal cn = c.getValue().getCanNangThuCung();
-            return new SimpleStringProperty(cn != null && cn.compareTo(BigDecimal.ZERO) > 0 ? String.format("%.2f kg", cn) : "-");
+            double cn = c.getValue().getCanNangThuCung();
+            return new SimpleStringProperty(cn > 0 ? String.format("%.2f kg", cn) : "-");
         });
         colCanNang.setStyle("-fx-alignment: CENTER;");
 

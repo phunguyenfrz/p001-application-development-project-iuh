@@ -1,19 +1,27 @@
 package com.petshop.bus;
 
+import com.petshop.dao.DichVuChamSocDAO;
+import com.petshop.dao.KhachHangDAO;
+import com.petshop.dao.LichHenDAO;
 import com.petshop.dao.PhieuDichVuDAO;
-import com.petshop.entity.*;
+import com.petshop.dao.ThuCungDAO;
+import com.petshop.entity.ChiTietLichHen;
+import com.petshop.entity.ChiTietPhieuDichVu;
+import com.petshop.entity.DichVuChamSoc;
+import com.petshop.entity.KhachHang;
 import com.petshop.entity.LichHen;
 import com.petshop.entity.PhieuDichVu;
 import com.petshop.entity.TaiKhoan;
+import com.petshop.entity.ThuCung;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
- * Lớp dịch vụ (Service Layer) xử lý nghiệp vụ, kiểm tra ràng buộc và phân quyền cho phiếu dịch vụ.
+ * Lớp nghiệp vụ (BUS Layer) xử lý nghiệp vụ, kiểm tra ràng buộc và phân quyền cho phiếu dịch vụ.
+ * Tuân thủ chuẩn kiến trúc 3 tầng IUH: không import javafx.*, ném IllegalArgumentException khi có lỗi nghiệp vụ.
  */
 public class PhieuDichVuBUS {
 
@@ -180,6 +188,15 @@ public class PhieuDichVuBUS {
         return phieuDichVuDAO.layDanhSachLichHenChoTiepNhan();
     }
 
+    // Lấy danh sách các lịch hẹn đang chờ tiếp nhận hôm nay của một khách hàng cụ thể
+    public List<LichHen> layDanhSachLichHenChoTheoKhachHang(String maKhachHang) {
+        if (maKhachHang == null || maKhachHang.trim().isEmpty()) {
+            return List.of();
+        }
+        kiemTraQuyenXemPhieu();
+        return phieuDichVuDAO.layDanhSachLichHenChoTheoKhachHang(maKhachHang.trim());
+    }
+
     // Lấy danh sách mã các nhân viên đang bận làm dịch vụ (có phiếu Đang thực hiện)
     public Set<String> laySetMaNhanVienDangBan() {
         return phieuDichVuDAO.laySetMaNhanVienDangThucHien();
@@ -190,9 +207,27 @@ public class PhieuDichVuBUS {
         return phieuDichVuDAO.taoMaPhieuDichVu();
     }
 
-    // =========================================================================
-    // HÀM CUNG CẤP CHO PHÂN HỆ HÓA ĐƠN (#71 - Hóa đơn)
-    // =========================================================================
+    // Tra cứu khách hàng theo số điện thoại (10 chữ số, bắt đầu bằng 0)
+    public KhachHang timKhachHangTheoSoDienThoai(String soDienThoai) {
+        if (soDienThoai == null || soDienThoai.trim().isEmpty()) {
+            throw new IllegalArgumentException("Số điện thoại không được để trống!");
+        }
+        String sdt = soDienThoai.trim();
+        if (!sdt.matches("^0\\d{9}$")) {
+            throw new IllegalArgumentException("Số điện thoại không đúng định dạng (phải có 10 chữ số, bắt đầu bằng số 0)!");
+        }
+        return new KhachHangDAO().layKhachHangTheoSoDienThoai(sdt);
+    }
+
+    // Kiểm tra xem phiếu dịch vụ đã có hóa đơn thanh toán hay chưa (chặn trùng 2 hóa đơn)
+    public boolean kiemTraPhieuDichVuDaCoHoaDon(String maPhieuDichVu) {
+        return phieuDichVuDAO.kiemTraPhieuDichVuDaCoHoaDon(maPhieuDichVu);
+    }
+
+    // Tìm kiếm phiếu dịch vụ chờ thanh toán theo từ khóa
+    public List<PhieuDichVu> timKiemPhieuDichVuChoThanhToan(String tuKhoa) {
+        return phieuDichVuDAO.timKiemPhieuDichVuChoThanhToan(tuKhoa);
+    }
 
     /**
      * Lấy phiếu dịch vụ để nạp vào hóa đơn thanh toán tại quầy.
@@ -210,12 +245,11 @@ public class PhieuDichVuBUS {
         if ("Đã hủy".equalsIgnoreCase(phieu.getTrangThai())) {
             throw new IllegalArgumentException("Phiếu dịch vụ này đã bị hủy, không thể lập hóa đơn thanh toán!");
         }
+        if (phieuDichVuDAO.kiemTraPhieuDichVuDaCoHoaDon(phieu.getMaPhieuDichVu())) {
+            throw new IllegalArgumentException("Phiếu dịch vụ này đã được thanh toán trong một hóa đơn khác!");
+        }
         return phieu;
     }
-
-    // =========================================================================
-    // HÀM BỔ TRỢ KIỂM TRA RÀNG BUỘC (VALIDATION)
-    // =========================================================================
 
     // Kiểm tra ràng buộc hợp lệ của thông tin phiếu và danh sách chi tiết
     private void kiemTraDuLieuPhieu(PhieuDichVu phieu, List<ChiTietPhieuDichVu> danhSachChiTiet) {
@@ -254,10 +288,9 @@ public class PhieuDichVuBUS {
             if (ct.getMaDichVu() == null || ct.getMaDichVu().trim().isEmpty()) {
                 throw new IllegalArgumentException("Vui lòng chọn dịch vụ chăm sóc trong chi tiết phiếu!");
             }
-            if (ct.getDonGia() == null || ct.getDonGia().compareTo(BigDecimal.ZERO) < 0) {
+            if (ct.getDonGia() < 0) {
                 throw new IllegalArgumentException("Đơn giá dịch vụ không được nhỏ hơn 0!");
             }
-
 
             // Đảm bảo thú cưng trong chi tiết thuộc quyền sở hữu của khách hàng trong phiếu
             if (!phieuDichVuDAO.kiemTraThuCungThuocKhachHang(ct.getMaThuCung(), phieu.getMaKhachHang())) {
@@ -321,50 +354,53 @@ public class PhieuDichVuBUS {
     }
 
     public List<KhachHang> layDanhSachKhachHang() {
-        return new com.petshop.dao.KhachHangDAO().layDanhSachKhachHang();
+        return new KhachHangDAO().layDanhSachKhachHang();
     }
 
     public List<ThuCung> layDanhSachThuCungTheoKhachHang(String maKhachHang) {
-        return new com.petshop.dao.ThuCungDAO().layDanhSachTheoKhachHang(maKhachHang);
+        if (maKhachHang == null || maKhachHang.trim().isEmpty()) {
+            return List.of();
+        }
+        return new ThuCungDAO().layDanhSachTheoKhachHang(maKhachHang.trim());
     }
 
     public List<DichVuChamSoc> layDanhSachDichVu() {
-        return new com.petshop.dao.DichVuChamSocDAO().layDanhSachDichVuDangKinhDoanh();
+        return new DichVuChamSocDAO().layDanhSachDichVuDangKinhDoanh();
     }
 
     public double traGiaDichVuTheoCanNang(String maDichVu, double canNang) {
-        return new com.petshop.dao.DichVuChamSocDAO().traGiaTheoCanNang(maDichVu, canNang);
+        return new DichVuChamSocDAO().traGiaTheoCanNang(maDichVu, canNang);
     }
 
     public List<ChiTietLichHen> layChiTietLichHen(String maLichHen) {
-        return new com.petshop.dao.LichHenDAO().layChiTietLichHen(maLichHen);
+        return new LichHenDAO().layChiTietLichHen(maLichHen);
     }
 
     public List<String[]> layDanhSachNhanVien() {
-        return new com.petshop.dao.LichHenDAO().layDanhSachNhanVienChamSoc();
+        return new LichHenDAO().layDanhSachNhanVienChamSoc();
     }
 
-    public boolean capNhatCanNangThuCung(String maThuCung, BigDecimal canNang) {
-        return new com.petshop.dao.ThuCungDAO().capNhatCanNang(maThuCung, canNang);
+    public boolean capNhatCanNangThuCung(String maThuCung, double canNang) {
+        return new ThuCungDAO().capNhatCanNang(maThuCung, canNang);
     }
 
     public boolean themKhachHang(KhachHang kh) {
-        return new com.petshop.dao.KhachHangDAO().themKhachHang(kh);
+        return new KhachHangDAO().themKhachHang(kh);
     }
 
     public String taoMaKhachHang() {
-        return new com.petshop.dao.KhachHangDAO().taoMaKhachHang();
+        return new KhachHangDAO().taoMaKhachHang();
     }
 
     public boolean kiemTraTrungSoDienThoai(String soDienThoai) {
-        return new com.petshop.dao.KhachHangDAO().kiemTraTrungSoDienThoai(soDienThoai, null);
+        return new KhachHangDAO().kiemTraTrungSoDienThoai(soDienThoai, null);
     }
 
     public boolean themThuCung(ThuCung tc) {
-        return new com.petshop.dao.ThuCungDAO().themThuCung(tc);
+        return new ThuCungDAO().themThuCung(tc);
     }
 
     public String taoMaThuCungMoi() {
-        return new com.petshop.dao.ThuCungDAO().taoMaThuCung();
+        return new ThuCungDAO().taoMaThuCung();
     }
 }

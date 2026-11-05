@@ -1182,8 +1182,8 @@ public class LapHoaDonThanhToanView extends VBox {
     }
 
     private void moCuaSoChonPhieuDichVu() {
-        List<PhieuDichVu> dsPhieu = controller.layDanhSachPhieuDichVuChuaThanhToan();
-        if (dsPhieu.isEmpty()) {
+        List<PhieuDichVu> dsPhieuGoc = controller.layDanhSachPhieuDichVuChuaThanhToan();
+        if (dsPhieuGoc.isEmpty()) {
             hienThiThongBao("Thông báo", "Hiện không có phiếu dịch vụ nào đang chờ thanh toán!");
             return;
         }
@@ -1199,7 +1199,28 @@ public class LapHoaDonThanhToanView extends VBox {
         Label lblHeader = new Label("DANH SÁCH PHIẾU DỊCH VỤ CHỜ THANH TOÁN");
         lblHeader.getStyleClass().add("tieu-de-phan-he");
 
-        TableView<PhieuDichVu> bangPhieu = new TableView<>(FXCollections.observableArrayList(dsPhieu));
+        // Ô tìm kiếm SĐT / Mã phiếu / Tên khách
+        TextField txtTimKiemPhieu = new TextField();
+        txtTimKiemPhieu.setPromptText("Tìm kiếm theo SĐT, Tên khách hoặc Mã phiếu...");
+        HBox.setHgrow(txtTimKiemPhieu, Priority.ALWAYS);
+        HBox pnlTim = new HBox(8, new Label("Tìm kiếm:"), txtTimKiemPhieu);
+        pnlTim.setAlignment(Pos.CENTER_LEFT);
+
+        ObservableList<PhieuDichVu> dsPhieuHienThi = FXCollections.observableArrayList(dsPhieuGoc);
+        txtTimKiemPhieu.textProperty().addListener((obs, cu, moi) -> {
+            if (moi == null || moi.trim().isEmpty()) {
+                dsPhieuHienThi.setAll(dsPhieuGoc);
+            } else {
+                String tuKhoa = moi.trim().toLowerCase();
+                dsPhieuHienThi.setAll(dsPhieuGoc.stream().filter(p ->
+                        (p.getMaPhieuDichVu() != null && p.getMaPhieuDichVu().toLowerCase().contains(tuKhoa)) ||
+                        (p.getTenKhachHang() != null && p.getTenKhachHang().toLowerCase().contains(tuKhoa)) ||
+                        (p.getSoDienThoai() != null && p.getSoDienThoai().contains(tuKhoa))
+                ).toList());
+            }
+        });
+
+        TableView<PhieuDichVu> bangPhieu = new TableView<>(dsPhieuHienThi);
         bangPhieu.getStyleClass().add("bang-du-lieu");
         VBox.setVgrow(bangPhieu, Priority.ALWAYS);
 
@@ -1240,6 +1261,12 @@ public class LapHoaDonThanhToanView extends VBox {
                 return;
             }
 
+            // Chặn nạp trùng 1 phiếu dịch vụ vào 2 hóa đơn khác nhau
+            if (new com.petshop.bus.PhieuDichVuBUS().kiemTraPhieuDichVuDaCoHoaDon(pChon.getMaPhieuDichVu())) {
+                hienThiCanhBao("Phiếu dịch vụ '" + pChon.getMaPhieuDichVu() + "' đã được lập hóa đơn thanh toán trước đó!");
+                return;
+            }
+
             // Đồng bộ khách hàng nếu có
             for (KhachHang kh : dsKhachHangGoc) {
                 if (kh.getMaKhachHang().equals(pChon.getMaKhachHang())) {
@@ -1256,7 +1283,7 @@ public class LapHoaDonThanhToanView extends VBox {
         HBox pnlNut = new HBox(8, btnChon, btnHuy);
         pnlNut.setAlignment(Pos.CENTER_RIGHT);
 
-        pnl.getChildren().addAll(lblHeader, bangPhieu, pnlNut);
+        pnl.getChildren().addAll(lblHeader, pnlTim, bangPhieu, pnlNut);
         Scene scene = new Scene(pnl, 650, 420);
         if (LapHoaDonThanhToanView.class.getResource(CSS_CHUNG) != null) {
             scene.getStylesheets().add(LapHoaDonThanhToanView.class.getResource(CSS_CHUNG).toExternalForm());

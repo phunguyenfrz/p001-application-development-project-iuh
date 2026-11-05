@@ -35,6 +35,10 @@ public class ChiTietHoaDonDichVu {
         this.tenThuCung = tenThuCung;
     }
 
+    public ChiTietHoaDonDichVu(String maHoaDon, String maDichVu, String tenDichVu, String maThuCung, String tenThuCung, double donGia) {
+        this(maHoaDon, maDichVu, tenDichVu, maThuCung, tenThuCung, BigDecimal.valueOf(donGia));
+    }
+
     public BigDecimal getThanhTien() {
         if (donGia == null) return BigDecimal.ZERO;
         return donGia.multiply(BigDecimal.valueOf(soLuong));
@@ -62,4 +66,3 @@ public class ChiTietHoaDonDichVu {
     public BigDecimal getDonGia() { return donGia; }
     public void setDonGia(BigDecimal donGia) { this.donGia = donGia; }
 }
-

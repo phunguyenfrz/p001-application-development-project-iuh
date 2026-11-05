@@ -74,6 +74,10 @@ public class DongHoaDon {
         return dong;
     }
 
+    public static DongHoaDon tuDichVu(int stt, String maDichVu, String tenDichVu, String maThuCung, String tenThuCung, double donGia) {
+        return tuDichVu(stt, maDichVu, tenDichVu, maThuCung, tenThuCung, BigDecimal.valueOf(donGia));
+    }
+
     public BigDecimal getThanhTien() {
         if (donGia == null) return BigDecimal.ZERO;
         return donGia.multiply(BigDecimal.valueOf(soLuong));
@@ -114,4 +118,3 @@ public class DongHoaDon {
     public String getTenThuCung() { return tenThuCung; }
     public void setTenThuCung(String tenThuCung) { this.tenThuCung = tenThuCung; }
 }
-

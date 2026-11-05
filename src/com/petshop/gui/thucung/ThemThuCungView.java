@@ -14,7 +14,6 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -303,10 +302,10 @@ public class ThemThuCungView extends VBox {
                 return;
             }
 
-            BigDecimal canNang;
+            double canNang;
             try {
-                canNang = new BigDecimal(canNangStr);
-                if (canNang.compareTo(BigDecimal.ZERO) <= 0) {
+                canNang = Double.parseDouble(canNangStr);
+                if (canNang <= 0) {
                     hienThiCanhBao("Cân nặng không hợp lệ", "Cân nặng thú cưng phải lớn hơn 0 kg!");
                     txtCanNang.requestFocus();
                     return;

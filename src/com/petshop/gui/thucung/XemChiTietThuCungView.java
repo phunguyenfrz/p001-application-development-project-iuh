@@ -13,7 +13,6 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
@@ -129,8 +128,8 @@ public class XemChiTietThuCungView extends VBox {
             txtLoai.setText(tc.getLoaiThuCung() != null ? tc.getLoaiThuCung() : "-");
             txtGiong.setText(tc.getGiongLoai() != null ? tc.getGiongLoai() : "-");
             txtGioiTinh.setText(tc.getGioiTinh() != null ? tc.getGioiTinh() : "-");
-            BigDecimal cn = tc.getCanNang();
-            txtCanNang.setText(cn != null ? String.format("%.2f kg", cn) : "-");
+            double cn = tc.getCanNang();
+            txtCanNang.setText(cn > 0 ? String.format("%.2f kg", cn) : "-");
             LocalDate ns = tc.getNgaySinh();
             txtNgaySinh.setText(ns != null ? ns.format(DINH_DANG_NGAY) : "-");
             txtDiUng.setText(tc.getDiUng() != null ? tc.getDiUng() : "Không có");

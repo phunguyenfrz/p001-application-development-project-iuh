@@ -1,19 +1,19 @@
 package com.petshop.entity;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
  * Thực thể Thú cưng (ánh xạ bảng ThuCung trong cơ sở dữ liệu).
  * Đại diện cho hồ sơ thú cưng của khách hàng trong hệ thống Happy Tails.
+ * Tuân thủ Chuẩn hóa OOP (Object Reference KhachHang), kiểu nguyên thủy double cho canNang (IUH Directive).
  */
 public class ThuCung {
 
     /** Mã định danh thú cưng (định dạng: TC-yyyyMMdd-xxxxxx) */
     private String maThuCung;
 
-    /** Mã khách hàng sở hữu thú cưng (Khóa ngoại tham chiếu KhachHang) */
-    private String maKhachHang;
+    /** Tham chiếu đối tượng Khách hàng sở hữu thú cưng (OOP Object Reference) */
+    private KhachHang khachHang;
 
     /** Tên của thú cưng */
     private String tenThuCung;
@@ -24,8 +24,8 @@ public class ThuCung {
     /** Giống loài chi tiết (VD: Poodle, Corgi, Mèo Anh lông ngắn...) */
     private String giongLoai;
 
-    /** Cân nặng (kg) */
-    private BigDecimal canNang;
+    /** Cân nặng (kg) - Dùng kiểu nguyên thủy double theo Chuẩn IUH */
+    private double canNang;
 
     /** Ngày sinh của thú cưng */
     private LocalDate ngaySinh;
@@ -36,20 +36,35 @@ public class ThuCung {
     /** Giới tính: Đực hoặc Cái */
     private String gioiTinh;
 
-    /** Tên khách hàng sở hữu (thuộc tính hiển thị mở rộng khi JOIN) */
-    private String tenKhachHang;
-
-    /** Số điện thoại khách hàng sở hữu (thuộc tính hiển thị mở rộng khi JOIN) */
-    private String soDienThoaiKhachHang;
+    // Biến phụ lưu trữ mã khách khi chưa kịp liên kết đối tượng KhachHang
+    private String maKhachHangTam;
 
     public ThuCung() {
-        this.canNang = null;
+        this.canNang = 0.0;
+        this.loaiThuCung = "Chó";
+        this.gioiTinh = "Đực";
     }
 
     public ThuCung(String maThuCung, String maKhachHang, String tenThuCung, String loaiThuCung,
-                   String giongLoai, BigDecimal canNang, LocalDate ngaySinh, String diUng, String gioiTinh) {
+                   String giongLoai, double canNang, LocalDate ngaySinh, String diUng, String gioiTinh) {
         this.maThuCung = maThuCung;
-        this.maKhachHang = maKhachHang;
+        this.maKhachHangTam = maKhachHang;
+        this.tenThuCung = tenThuCung;
+        this.loaiThuCung = loaiThuCung;
+        this.giongLoai = giongLoai;
+        this.canNang = canNang;
+        this.ngaySinh = ngaySinh;
+        this.diUng = diUng;
+        this.gioiTinh = gioiTinh;
+    }
+
+    public ThuCung(String maThuCung, KhachHang khachHang, String tenThuCung, String loaiThuCung,
+                   String giongLoai, double canNang, LocalDate ngaySinh, String diUng, String gioiTinh) {
+        this.maThuCung = maThuCung;
+        this.khachHang = khachHang;
+        if (khachHang != null) {
+            this.maKhachHangTam = khachHang.getMaKhachHang();
+        }
         this.tenThuCung = tenThuCung;
         this.loaiThuCung = loaiThuCung;
         this.giongLoai = giongLoai;
@@ -60,11 +75,15 @@ public class ThuCung {
     }
 
     public ThuCung(String maThuCung, String maKhachHang, String tenThuCung, String loaiThuCung,
-                   String giongLoai, BigDecimal canNang, LocalDate ngaySinh, String diUng, String gioiTinh,
+                   String giongLoai, double canNang, LocalDate ngaySinh, String diUng, String gioiTinh,
                    String tenKhachHang, String soDienThoaiKhachHang) {
         this(maThuCung, maKhachHang, tenThuCung, loaiThuCung, giongLoai, canNang, ngaySinh, diUng, gioiTinh);
-        this.tenKhachHang = tenKhachHang;
-        this.soDienThoaiKhachHang = soDienThoaiKhachHang;
+        if (this.khachHang == null) {
+            this.khachHang = new KhachHang();
+            this.khachHang.setMaKhachHang(maKhachHang);
+            this.khachHang.setHoTen(tenKhachHang);
+            this.khachHang.setSoDienThoai(soDienThoaiKhachHang);
+        }
     }
 
     // =========================================================================
@@ -79,12 +98,53 @@ public class ThuCung {
         this.maThuCung = maThuCung;
     }
 
+    public KhachHang getKhachHang() {
+        return khachHang;
+    }
+
+    public void setKhachHang(KhachHang khachHang) {
+        this.khachHang = khachHang;
+        if (khachHang != null) {
+            this.maKhachHangTam = khachHang.getMaKhachHang();
+        }
+    }
+
+    // Delegate Getters / Setters để không làm gãy TableView và code cũ
     public String getMaKhachHang() {
-        return maKhachHang;
+        if (khachHang != null && khachHang.getMaKhachHang() != null) {
+            return khachHang.getMaKhachHang();
+        }
+        return maKhachHangTam;
     }
 
     public void setMaKhachHang(String maKhachHang) {
-        this.maKhachHang = maKhachHang;
+        this.maKhachHangTam = maKhachHang;
+        if (this.khachHang == null) {
+            this.khachHang = new KhachHang();
+        }
+        this.khachHang.setMaKhachHang(maKhachHang);
+    }
+
+    public String getTenKhachHang() {
+        return khachHang != null ? khachHang.getHoTen() : "";
+    }
+
+    public void setTenKhachHang(String tenKhachHang) {
+        if (this.khachHang == null) {
+            this.khachHang = new KhachHang();
+        }
+        this.khachHang.setHoTen(tenKhachHang);
+    }
+
+    public String getSoDienThoaiKhachHang() {
+        return khachHang != null ? khachHang.getSoDienThoai() : "";
+    }
+
+    public void setSoDienThoaiKhachHang(String soDienThoai) {
+        if (this.khachHang == null) {
+            this.khachHang = new KhachHang();
+        }
+        this.khachHang.setSoDienThoai(soDienThoai);
     }
 
     public String getTenThuCung() {
@@ -111,11 +171,11 @@ public class ThuCung {
         this.giongLoai = giongLoai;
     }
 
-    public BigDecimal getCanNang() {
+    public double getCanNang() {
         return canNang;
     }
 
-    public void setCanNang(BigDecimal canNang) {
+    public void setCanNang(double canNang) {
         this.canNang = canNang;
     }
 
@@ -143,24 +203,11 @@ public class ThuCung {
         this.gioiTinh = gioiTinh;
     }
 
-    public String getTenKhachHang() {
-        return tenKhachHang;
-    }
-
-    public void setTenKhachHang(String tenKhachHang) {
-        this.tenKhachHang = tenKhachHang;
-    }
-
-    public String getSoDienThoaiKhachHang() {
-        return soDienThoaiKhachHang;
-    }
-
-    public void setSoDienThoaiKhachHang(String soDienThoaiKhachHang) {
-        this.soDienThoaiKhachHang = soDienThoaiKhachHang;
-    }
-
     @Override
     public String toString() {
-        return (tenThuCung != null ? tenThuCung : "") + " (" + (loaiThuCung != null ? loaiThuCung : "") + ")";
+        String loai = (loaiThuCung != null && !loaiThuCung.isBlank()) ? loaiThuCung : "Thú cưng";
+        String giong = (giongLoai != null && !giongLoai.isBlank()) ? " - " + giongLoai : "";
+        String can = canNang > 0 ? String.format(" (%.1f kg)", canNang) : "";
+        return (tenThuCung != null ? tenThuCung : "") + " [" + loai + giong + "]" + can;
     }
 }

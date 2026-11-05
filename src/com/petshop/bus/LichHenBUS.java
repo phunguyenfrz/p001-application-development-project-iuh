@@ -1,17 +1,23 @@
 package com.petshop.bus;
 
+import com.petshop.dao.DichVuChamSocDAO;
+import com.petshop.dao.KhachHangDAO;
 import com.petshop.dao.LichHenDAO;
-import com.petshop.entity.*;
+import com.petshop.dao.ThuCungDAO;
+import com.petshop.entity.ChiTietLichHen;
+import com.petshop.entity.DichVuChamSoc;
+import com.petshop.entity.KhachHang;
 import com.petshop.entity.LichHen;
 import com.petshop.entity.TaiKhoan;
+import com.petshop.entity.ThuCung;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
 /**
- * Lớp dịch vụ (Service Layer) xử lý nghiệp vụ, kiểm tra ràng buộc và phân quyền cho lịch hẹn.
+ * Lớp nghiệp vụ (BUS Layer) xử lý nghiệp vụ, kiểm tra ràng buộc và phân quyền cho lịch hẹn.
+ * Tuân thủ chuẩn kiến trúc 3 tầng IUH: không import javafx.*, ném IllegalArgumentException khi có lỗi nghiệp vụ.
  */
 public class LichHenBUS {
 
@@ -69,7 +75,7 @@ public class LichHenBUS {
         return lichHenDAO.capNhatLichHen(lichHen, danhSachChiTiet);
     }
 
-    // Cập nhật trạng thái duyệt lịch: Đã đặt -> Đã xác nhận -> Hoàn thành (APT_STATUS)
+    // Cập nhật trạng thái duyệt lịch: Đã đặt -> Đã xác nhận -> Đã tiếp nhận / Hoàn thành
     public boolean capNhatTrangThai(String maLichHen, String trangThaiMoi) {
         xacThucService.kiemTraQuyen("LH_CAP_NHAT");
 
@@ -132,7 +138,8 @@ public class LichHenBUS {
             return;
         }
         if (DanhMucMenu.kiemTraQuyen(tk.getPhanQuyen(), "LH_TIM_KIEM")
-                || DanhMucMenu.kiemTraQuyen(tk.getPhanQuyen(), "LH_CAP_NHAT")) {
+                || DanhMucMenu.kiemTraQuyen(tk.getPhanQuyen(), "LH_CAP_NHAT")
+                || DanhMucMenu.kiemTraQuyen(tk.getPhanQuyen(), "LH_TAO")) {
             return;
         }
         throw new SecurityException("Tài khoản của bạn không có quyền xem thông tin lịch hẹn!");
@@ -144,11 +151,7 @@ public class LichHenBUS {
         return lichHenDAO.layDanhSachLichHen();
     }
 
-    // =========================================================================
-    // HÀM CUNG CẤP CHO PHÂN HỆ HÓA ĐƠN (#71 - Hóa đơn)
-    // =========================================================================
-
-    // Tìm một lịch hẹn theo mã duy nhất (cung cấp cho #71 để nạp thông tin khách, thú cưng vào hóa đơn)
+    // Tìm một lịch hẹn theo mã duy nhất
     public LichHen layLichHenTheoMa(String maLichHen) {
         kiemTraQuyenXemLich();
         if (maLichHen == null || maLichHen.trim().isEmpty()) {
@@ -157,7 +160,7 @@ public class LichHenBUS {
         return lichHenDAO.layLichHenTheoMa(maLichHen.trim());
     }
 
-    // Lấy danh sách dịch vụ chi tiết của lịch hẹn (cung cấp cho #71 để nạp các dòng dịch vụ vào chi tiết hóa đơn)
+    // Lấy danh sách dịch vụ chi tiết của lịch hẹn
     public List<ChiTietLichHen> layChiTietLichHen(String maLichHen) {
         kiemTraQuyenXemLich();
         if (maLichHen == null || maLichHen.trim().isEmpty()) {
@@ -166,12 +169,12 @@ public class LichHenBUS {
         return lichHenDAO.layChiTietLichHen(maLichHen.trim());
     }
 
-    // Tìm kiếm và lọc lịch hẹn theo khách hàng, ngày và trạng thái (APT_SEARCH)
+    // Tìm kiếm và lọc lịch hẹn theo khách hàng, ngày và trạng thái
     public List<LichHen> timKiemLichHen(String tuKhoaKhach, LocalDate tuNgay, LocalDate denNgay, String trangThai) {
         return timKiemLichHen(tuKhoaKhach, tuNgay, denNgay, trangThai, null);
     }
 
-    // Tìm kiếm và lọc lịch hẹn theo khách hàng, ngày, trạng thái và nhân viên phụ trách (APT_SEARCH)
+    // Tìm kiếm và lọc lịch hẹn theo khách hàng, ngày, trạng thái và nhân viên phụ trách
     public List<LichHen> timKiemLichHen(String tuKhoaKhach, LocalDate tuNgay, LocalDate denNgay, String trangThai, String maNhanVien) {
         kiemTraQuyenXemLich();
         if (tuNgay != null && denNgay != null && denNgay.isBefore(tuNgay)) {
@@ -188,6 +191,61 @@ public class LichHenBUS {
     // Lấy danh sách nhân viên chăm sóc đang làm việc
     public List<String[]> layDanhSachNhanVienChamSoc() {
         return lichHenDAO.layDanhSachNhanVienChamSoc();
+    }
+
+    // Tra cứu khách hàng theo số điện thoại (10 chữ số, bắt đầu bằng 0)
+    public KhachHang timKhachHangTheoSoDienThoai(String soDienThoai) {
+        if (soDienThoai == null || soDienThoai.trim().isEmpty()) {
+            throw new IllegalArgumentException("Số điện thoại không được để trống!");
+        }
+        String sdt = soDienThoai.trim();
+        if (!sdt.matches("^0\\d{9}$")) {
+            throw new IllegalArgumentException("Số điện thoại không đúng định dạng (phải có 10 chữ số, bắt đầu bằng số 0)!");
+        }
+        return new KhachHangDAO().layKhachHangTheoSoDienThoai(sdt);
+    }
+
+    // Lấy danh sách thú cưng của một khách hàng
+    public List<ThuCung> layDanhSachThuCungTheoKhachHang(String maKhachHang) {
+        if (maKhachHang == null || maKhachHang.trim().isEmpty()) {
+            return List.of();
+        }
+        return new ThuCungDAO().layDanhSachTheoKhachHang(maKhachHang.trim());
+    }
+
+    // Lấy danh sách dịch vụ chăm sóc đang kinh doanh
+    public List<DichVuChamSoc> layDanhSachDichVu() {
+        return new DichVuChamSocDAO().layDanhSachDichVuDangKinhDoanh();
+    }
+
+    // Tra đơn giá dịch vụ theo cân nặng
+    public double traGiaDichVuTheoCanNang(String maDichVu, double canNang) {
+        return new DichVuChamSocDAO().traGiaTheoCanNang(maDichVu, canNang);
+    }
+
+    // Thêm khách hàng nhanh
+    public boolean themKhachHang(KhachHang kh) {
+        return new KhachHangDAO().themKhachHang(kh);
+    }
+
+    // Sinh mã khách hàng mới
+    public String taoMaKhachHang() {
+        return new KhachHangDAO().taoMaKhachHang();
+    }
+
+    // Kiểm tra trùng số điện thoại khách hàng
+    public boolean kiemTraTrungSoDienThoai(String soDienThoai) {
+        return new KhachHangDAO().kiemTraTrungSoDienThoai(soDienThoai, null);
+    }
+
+    // Thêm thú cưng nhanh
+    public boolean themThuCung(ThuCung tc) {
+        return new ThuCungBUS().themThuCung(tc);
+    }
+
+    // Sinh mã thú cưng mới
+    public String taoMaThuCungMoi() {
+        return new ThuCungDAO().taoMaThuCung();
     }
 
     // Kiểm tra tính hợp lệ của dữ liệu lịch hẹn trước khi lưu CSDL
@@ -219,13 +277,16 @@ public class LichHenBUS {
             throw new IllegalArgumentException("Vui lòng chọn giờ hẹn dịch vụ!");
         }
 
-        // Chặn chọn ngày hẹn trong quá khứ
+        // Chặn chọn ngày/giờ hẹn trong quá khứ
         LocalDate homNay = LocalDate.now();
         if (lichHen.getNgayHen().isBefore(homNay)) {
             throw new IllegalArgumentException("Ngày hẹn không được ở trong quá khứ!");
         }
+        if (lichHen.getNgayHen().isEqual(homNay) && lichHen.getGioHen().isBefore(LocalTime.now())) {
+            throw new IllegalArgumentException("Giờ hẹn không được ở trong quá khứ!");
+        }
 
-        // 5. Kiểm tra danh sách dịch vụ chi tiết (nếu có cập nhật danh sách dịch vụ)
+        // 5. Kiểm tra danh sách dịch vụ chi tiết
         if (danhSachChiTiet != null) {
             if (danhSachChiTiet.isEmpty()) {
                 throw new IllegalArgumentException("Lịch hẹn phải có ít nhất một dịch vụ chăm sóc!");
@@ -234,17 +295,16 @@ public class LichHenBUS {
                 if (ct.getMaDichVu() == null || ct.getMaDichVu().trim().isEmpty()) {
                     throw new IllegalArgumentException("Mã dịch vụ trong chi tiết không hợp lệ!");
                 }
-                // Khách đặt trước chưa rõ cân nặng sẽ để null để nhân viên cân và nhập bắt buộc khi lập phiếu tiếp nhận
-                if (ct.getCanNangThuCung() != null && ct.getCanNangThuCung().compareTo(BigDecimal.ZERO) <= 0) {
-                    ct.setCanNangThuCung(null);
+                if (ct.getCanNangThuCung() < 0) {
+                    ct.setCanNangThuCung(0.0);
                 }
-                if (ct.getDonGia() == null || ct.getDonGia().compareTo(BigDecimal.ZERO) < 0) {
-                    ct.setDonGia(BigDecimal.ZERO);
+                if (ct.getDonGia() < 0) {
+                    ct.setDonGia(0.0);
                 }
             }
         }
 
-        // 6. Kiểm tra trùng lịch hẹn theo tiêu chí: cùng thú cưng hoặc cùng nhân viên tại khung giờ đó
+        // 6. Kiểm tra trùng lịch hẹn: cùng thú cưng hoặc cùng nhân viên tại khung giờ đó
         String maLichBoQua = laCapNhat ? lichHen.getMaLichHen() : null;
         boolean trungLich = lichHenDAO.kiemTraTrungLich(
                 lichHen.getMaNhanVien(),
@@ -254,7 +314,7 @@ public class LichHenBUS {
                 maLichBoQua
         );
         if (trungLich) {
-            throw new IllegalArgumentException("Thú cưng hoặc nhân viên này đã có lịch hẹn khác vào thời điểm "
+            throw new IllegalArgumentException("Bé thú cưng này đã có lịch hẹn khác vào thời điểm "
                     + lichHen.getGioHen().toString() + " ngày " + lichHen.getNgayHen().toString() + "!");
         }
     }
@@ -271,48 +331,24 @@ public class LichHenBUS {
             throw new IllegalArgumentException("Lịch hẹn đã bị hủy, không thể kích hoạt lại trạng thái!");
         }
 
-        // Từ 'Đã đặt' chỉ được sang 'Đã xác nhận' hoặc 'Đã hủy'
+        // Từ 'Đã đặt' chỉ được sang 'Đã xác nhận', 'Đã tiếp nhận' hoặc 'Đã hủy'
         if ("Đã đặt".equalsIgnoreCase(trangThaiCu)) {
-            if (!"Đã xác nhận".equalsIgnoreCase(trangThaiMoi) && !"Đã hủy".equalsIgnoreCase(trangThaiMoi)) {
-                throw new IllegalArgumentException("Lịch hẹn mới đặt chỉ có thể chuyển sang 'Đã xác nhận' hoặc 'Đã hủy'!");
+            if (!"Đã xác nhận".equalsIgnoreCase(trangThaiMoi)
+                    && !"Đã tiếp nhận".equalsIgnoreCase(trangThaiMoi)
+                    && !"Đang thực hiện".equalsIgnoreCase(trangThaiMoi)
+                    && !"Đã hủy".equalsIgnoreCase(trangThaiMoi)) {
+                throw new IllegalArgumentException("Lịch hẹn mới đặt chỉ có thể chuyển sang 'Đã xác nhận', 'Đã tiếp nhận' hoặc 'Đã hủy'!");
             }
         }
 
-        // Từ 'Đã xác nhận' có thể sang 'Đang thực hiện', 'Hoàn thành' hoặc 'Đã hủy'
+        // Từ 'Đã xác nhận' có thể sang 'Đã tiếp nhận', 'Đang thực hiện', 'Hoàn thành' hoặc 'Đã hủy'
         if ("Đã xác nhận".equalsIgnoreCase(trangThaiCu)) {
-            if (!"Đang thực hiện".equalsIgnoreCase(trangThaiMoi)
+            if (!"Đã tiếp nhận".equalsIgnoreCase(trangThaiMoi)
+                    && !"Đang thực hiện".equalsIgnoreCase(trangThaiMoi)
                     && !"Hoàn thành".equalsIgnoreCase(trangThaiMoi)
                     && !"Đã hủy".equalsIgnoreCase(trangThaiMoi)) {
                 throw new IllegalArgumentException("Lịch hẹn đã xác nhận không thể quay lại trạng thái 'Đã đặt'!");
             }
         }
-    }
-
-    public List<KhachHang> layDanhSachKhachHang() {
-        return new com.petshop.dao.KhachHangDAO().layDanhSachKhachHang();
-    }
-
-    public List<ThuCung> layDanhSachThuCungTheoKhachHang(String maKhachHang) {
-        return new com.petshop.dao.ThuCungDAO().layDanhSachTheoKhachHang(maKhachHang);
-    }
-
-    public List<DichVuChamSoc> layDanhSachDichVu() {
-        return new com.petshop.dao.DichVuChamSocDAO().layDanhSachDichVuDangKinhDoanh();
-    }
-
-    public double traGiaDichVuTheoCanNang(String maDichVu, double canNang) {
-        return new com.petshop.dao.DichVuChamSocDAO().traGiaTheoCanNang(maDichVu, canNang);
-    }
-
-    public boolean themKhachHang(KhachHang kh) {
-        return new com.petshop.dao.KhachHangDAO().themKhachHang(kh);
-    }
-
-    public String taoMaKhachHang() {
-        return new com.petshop.dao.KhachHangDAO().taoMaKhachHang();
-    }
-
-    public boolean kiemTraTrungSoDienThoai(String soDienThoai) {
-        return new com.petshop.dao.KhachHangDAO().kiemTraTrungSoDienThoai(soDienThoai, null);
     }
 }

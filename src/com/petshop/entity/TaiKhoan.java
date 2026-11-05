@@ -42,6 +42,7 @@ public class TaiKhoan {
     private VaiTro phanQuyen;
     private boolean trangThai; // true: hoạt động, false: bị khóa
     private String hoTenNhanVien; // Tên nhân viên hiển thị trên giao diện
+    private NhanVien nhanVien; // Tham chiếu đối tượng Nhân viên sở hữu tài khoản
 
     public TaiKhoan() {
     }
@@ -72,11 +73,14 @@ public class TaiKhoan {
     }
 
     public String getMaNhanVien() {
-        return maNhanVien;
+        return nhanVien != null ? nhanVien.getMaNhanVien() : maNhanVien;
     }
 
     public void setMaNhanVien(String maNhanVien) {
         this.maNhanVien = maNhanVien;
+        if (this.nhanVien != null) {
+            this.nhanVien.setMaNhanVien(maNhanVien);
+        }
     }
 
     public String getTenDangNhap() {
@@ -112,11 +116,34 @@ public class TaiKhoan {
     }
 
     public String getHoTenNhanVien() {
-        return hoTenNhanVien;
+        return nhanVien != null ? nhanVien.getHoTen() : hoTenNhanVien;
     }
 
     public void setHoTenNhanVien(String hoTenNhanVien) {
         this.hoTenNhanVien = hoTenNhanVien;
+        if (this.nhanVien != null) {
+            this.nhanVien.setHoTen(hoTenNhanVien);
+        }
+    }
+
+    public NhanVien getNhanVien() {
+        if (nhanVien == null && maNhanVien != null && !maNhanVien.isBlank()) {
+            nhanVien = new NhanVien();
+            nhanVien.setMaNhanVien(maNhanVien);
+            nhanVien.setHoTen(hoTenNhanVien != null ? hoTenNhanVien : "Nhân viên");
+            if (phanQuyen != null) {
+                nhanVien.setChucVu(phanQuyen.getTenHienThi());
+            }
+        }
+        return nhanVien;
+    }
+
+    public void setNhanVien(NhanVien nhanVien) {
+        this.nhanVien = nhanVien;
+        if (nhanVien != null) {
+            this.maNhanVien = nhanVien.getMaNhanVien();
+            this.hoTenNhanVien = nhanVien.getHoTen();
+        }
     }
 
     // Các phương thức nghiệp vụ khớp với Class Diagram
@@ -140,4 +167,3 @@ public class TaiKhoan {
         this.matKhau = matKhauMacDinh;
     }
 }
-
