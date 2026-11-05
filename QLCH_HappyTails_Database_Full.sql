@@ -100,9 +100,9 @@ GO
 -- 2. CỤM NHÂN VIÊN, TÀI KHOẢN & PHÂN CA
 -- =======================================================
 
--- Nhân viên
+-- Nhân viên (Mã nhân viên tự động sinh dạng 26xxxx: 2 số cuối năm + 4 số STT)
 CREATE TABLE NhanVien (
-    maNhanVien VARCHAR(20) PRIMARY KEY CHECK (maNhanVien LIKE 'NV-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]'),
+    maNhanVien VARCHAR(20) PRIMARY KEY CHECK (maNhanVien LIKE '[0-9][0-9][0-9][0-9][0-9][0-9]' OR maNhanVien LIKE 'NV-%'),
     hoTen NVARCHAR(100) NOT NULL CHECK (LEN(LTRIM(RTRIM(hoTen))) > 0),
     soDienThoai VARCHAR(10) NOT NULL UNIQUE CHECK (soDienThoai LIKE '0[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'),
     chucVu NVARCHAR(50) NOT NULL CHECK (chucVu IN (N'Quản lý', N'Bán hàng', N'Chăm sóc')),
@@ -422,19 +422,21 @@ VALUES
 ('TC-20261005-000003', 'KH-20261005-000002', N'Lu',    N'Chó', N'Poodle Standard', 8.50, '2021-08-15', N'Nhát nước, cần tắm nhẹ nhàng', N'Đực');
 
 -- 2. Nhân viên, Tài khoản & Ca trực
+-- Tên đăng nhập định danh theo Mã nhân viên (260001, 260002, 260003...)
+-- Mật khẩu đã băm SHA-256 (admin123 -> 240be518..., 123456 -> 8d969eef...)
 INSERT INTO NhanVien (maNhanVien, hoTen, soDienThoai, chucVu, ngaySinh, gioiTinh, trangThai)
 VALUES 
-('NV-20261005-000000', N'Quản trị hệ thống', '0909000000', N'Quản lý', '1990-01-01', 1, N'Đang làm'),
-('NV-20261005-000001', N'Nguyễn Thị Lan',    '0901234567', N'Quản lý', '1985-05-15', 0, N'Đang làm'),
-('NV-20261005-000002', N'Trần Văn Minh',    '0902345678', N'Bán hàng', '1998-08-20', 1, N'Đang làm'),
-('NV-20261005-000003', N'Phạm Thị Hoa',     '0903456789', N'Chăm sóc', '1995-12-10', 0, N'Đang làm');
+('260000', N'Quản trị hệ thống', '0909000000', N'Quản lý', '1990-01-01', 1, N'Đang làm'),
+('260001', N'Nguyễn Thị Lan',    '0901234567', N'Quản lý', '1985-05-15', 0, N'Đang làm'),
+('260002', N'Trần Văn Minh',    '0902345678', N'Bán hàng', '1998-08-20', 1, N'Đang làm'),
+('260003', N'Phạm Thị Hoa',     '0903456789', N'Chăm sóc', '1995-12-10', 0, N'Đang làm');
 
 INSERT INTO TaiKhoan (maTaiKhoan, maNhanVien, tenDangNhap, matKhau, phanQuyen, trangThai)
 VALUES 
-('TK-20261005-000000', 'NV-20261005-000000', 'admin',   'admin123', N'Admin', 1),
-('TK-20261005-000001', 'NV-20261005-000001', 'quanly',  '123456',   N'Quản lý', 1),
-('TK-20261005-000002', 'NV-20261005-000002', 'banhang', '123456',   N'Bán hàng', 1),
-('TK-20261005-000003', 'NV-20261005-000003', 'chamsoc', '123456',   N'Chăm sóc', 1);
+('TK-20261005-000000', '260000', '260000', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', N'Admin', 1),
+('TK-20261005-000001', '260001', '260001', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Quản lý', 1),
+('TK-20261005-000002', '260002', '260002', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Bán hàng', 1),
+('TK-20261005-000003', '260003', '260003', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Chăm sóc', 1);
 
 INSERT INTO Ca (maCa, tenCa, gioBatDau, gioKetThuc, trangThai)
 VALUES 
@@ -444,8 +446,8 @@ VALUES
 
 INSERT INTO PhanCa (maPhanCa, maNhanVien, maCa, ngayLam, trangThai)
 VALUES 
-('PC-20261005-000001', 'NV-20261005-000002', 'CA-20261005-000001', '2026-10-06', N'Đã phân công'),
-('PC-20261005-000002', 'NV-20261005-000003', 'CA-20261005-000001', '2026-10-06', N'Đã phân công');
+('PC-20261005-000001', '260002', 'CA-20261005-000001', '2026-10-06', N'Đã phân công'),
+('PC-20261005-000002', '260003', 'CA-20261005-000001', '2026-10-06', N'Đã phân công');
 
 -- 3. Dịch vụ & Lịch hẹn
 INSERT INTO DichVuChamSoc (maDichVu, tenDichVu, moTa, thoiLuong, trangThai)
@@ -476,7 +478,7 @@ VALUES
 
 INSERT INTO LichHen (maLichHen, maKhachHang, maThuCung, maNhanVien, ngayHen, gioHen, trangThai, ghiChu)
 VALUES
-('LH-20261005-000001', 'KH-20261005-000001', 'TC-20261005-000001', 'NV-20261005-000003', '2026-10-06', '09:00:00', N'Đã xác nhận', N'Bé Mochi đặt lịch tắm');
+('LH-20261005-000001', 'KH-20261005-000001', 'TC-20261005-000001', '260003', '2026-10-06', '09:00:00', N'Đã xác nhận', N'Bé Mochi đặt lịch tắm');
 
 INSERT INTO ChiTietLichHen (maLichHen, maDichVu, canNangThuCung, donGia)
 VALUES
@@ -484,7 +486,7 @@ VALUES
 
 INSERT INTO PhieuDichVu (maPhieuDichVu, maKhachHang, maNhanVien, maLichHen, ngayTiepNhan, gioTiepNhan, trangThai, ghiChu)
 VALUES
-('PDV-20261005-000001', 'KH-20261005-000001', 'NV-20261005-000003', 'LH-20261005-000001', '2026-10-06', '08:55:00', N'Đang thực hiện', N'Tiếp nhận bé Mochi từ lịch hẹn');
+('PDV-20261005-000001', 'KH-20261005-000001', '260003', 'LH-20261005-000001', '2026-10-06', '08:55:00', N'Đang thực hiện', N'Tiếp nhận bé Mochi từ lịch hẹn');
 
 INSERT INTO ChiTietPhieuDichVu (maPhieuDichVu, maThuCung, maDichVu, donGia)
 VALUES
@@ -506,7 +508,7 @@ VALUES
 
 INSERT INTO DonHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai)
 VALUES
-('DH-20261005-000001', 'NCC-20261005-000001', 'NV-20261005-000001', '2026-10-02', 17500000, N'Hoàn tất');
+('DH-20261005-000001', 'NCC-20261005-000001', '260001', '2026-10-02', 17500000, N'Hoàn tất');
 
 INSERT INTO ChiTietDonHang (maDonHang, maSanPham, soLuong, donGia)
 VALUES
@@ -519,7 +521,7 @@ VALUES
 
 INSERT INTO HoaDon (maHoaDon, maLichHen, maPhieuDichVu, maNhanVien, maKhachHang, ngayLap, hinhThucThanhToan, trangThaiThanhToan, maKhuyenMai, tongTien)
 VALUES 
-('HD-20261005-000001', NULL, NULL, 'NV-20261005-000002', 'KH-20261005-000001', '2026-10-05', N'Tiền mặt', N'Đã thanh toán', NULL, 350000);
+('HD-20261005-000001', NULL, NULL, '260002', 'KH-20261005-000001', '2026-10-05', N'Tiền mặt', N'Đã thanh toán', NULL, 350000);
 
 INSERT INTO ChiTietHoaDon_SanPham (maHoaDon, maSanPham, soLuong, donGia)
 VALUES 
@@ -528,7 +530,7 @@ VALUES
 -- 5. Phiếu đổi trả mẫu & Chi tiết đổi trả
 INSERT INTO PhieuDoiTra (maPhieuDoiTra, maHoaDon, maNhanVien, maKhachHang, ngayLap, lyDo, soLuong, loaiXuLy, tienHoan, tienBu, trangThai, ghiChu)
 VALUES
-('PDT-20261006-000001', 'HD-20261005-000001', 'NV-20261005-000001', 'KH-20261005-000001', '2026-10-06', N'Lỗi sản phẩm', 1, N'Trả hàng, hoàn tiền', 350000, 0, N'Đã duyệt', N'Hạt bị ẩm mốc');
+('PDT-20261006-000001', 'HD-20261005-000001', '260001', 'KH-20261005-000001', '2026-10-06', N'Lỗi sản phẩm', 1, N'Trả hàng, hoàn tiền', 350000, 0, N'Đã duyệt', N'Hạt bị ẩm mốc');
 
 INSERT INTO ChiTietPhieuDoiTra (maPhieuDoiTra, maHoaDon, maSanPham, soLuong, donGia, lyDo, tinhTrang, huongXuLy, ghiChu, maSanPhamDoi, soLuongDoi)
 VALUES

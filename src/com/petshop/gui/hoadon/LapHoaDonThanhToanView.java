@@ -1083,8 +1083,8 @@ public class LapHoaDonThanhToanView extends VBox {
                 || (km.getNgayKetThuc() != null && homNay.isAfter(km.getNgayKetThuc()))) {
             return BigDecimal.ZERO;
         }
-        if (km.getPhanTramGiam() != null) {
-            return tongTien.multiply(km.getPhanTramGiam()).divide(new BigDecimal("100"));
+        if (km.getPhanTramGiam() > 0) {
+            return BigDecimal.valueOf(km.tinhTienGiam(tongTien.doubleValue()));
         }
         return BigDecimal.ZERO;
     }

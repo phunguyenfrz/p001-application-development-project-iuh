@@ -3,6 +3,7 @@ package com.petshop.bus;
 import com.petshop.dao.NhanVienDAO;
 import com.petshop.entity.NhanVien;
 import com.petshop.entity.TaiKhoan;
+import com.petshop.util.HashUtil;
 import com.petshop.util.SessionManager;
 
 import java.time.LocalDate;
@@ -52,7 +53,7 @@ public class NhanVienBUS {
         return nhanVienDAO.layNhanVienTheoMa(maNhanVien.trim());
     }
 
-    // Thêm nhân viên mới (chỉ hồ sơ nhân sự)
+    // Thêm nhân viên mới (tự động cấp tài khoản theo Mã nhân viên và Chức vụ)
     public boolean themNhanVien(NhanVien nv) {
         xacThucService.kiemTraQuyen("NV_CAP_NHAT");
         if (nv == null) {
@@ -62,7 +63,15 @@ public class NhanVienBUS {
             nv.setMaNhanVien(nhanVienDAO.taoMaNhanVien());
         }
         kiemTraHopLeNhanVien(nv, false);
-        return nhanVienDAO.themNhanVien(nv);
+
+        // Tự động cấp tài khoản liên kết (tên đăng nhập = mã nhân viên, mật khẩu mặc định 1111 băm SHA-256)
+        String maTk = nhanVienDAO.taoMaTaiKhoan();
+        String tenDangNhap = nv.getMaNhanVien().trim();
+        String matKhauHash = HashUtil.sha256("1111");
+        TaiKhoan.VaiTro vaiTro = TaiKhoan.VaiTro.tuTenHienThi(nv.getChucVu());
+
+        TaiKhoan tk = new TaiKhoan(maTk, nv.getMaNhanVien().trim(), tenDangNhap, matKhauHash, vaiTro, true);
+        return nhanVienDAO.themNhanVien(nv, tk);
     }
 
     // Cập nhật thông tin nhân viên (chỉ hồ sơ nhân sự)
@@ -95,7 +104,7 @@ public class NhanVienBUS {
         }
 
         // Chặn sửa tài khoản Admin hệ thống qua màn hình nhân viên thường
-        if ("Admin".equalsIgnoreCase(nvCu.getPhanQuyen()) || "NV-20261005-000000".equals(nvCu.getMaNhanVien())) {
+        if ("Admin".equalsIgnoreCase(nvCu.getPhanQuyen()) || "260000".equals(nvCu.getMaNhanVien()) || "NV-20261005-000000".equals(nvCu.getMaNhanVien())) {
             TaiKhoan tkHienTai = SessionManager.getTaiKhoanHienTai();
             if (tkHienTai == null || tkHienTai.getPhanQuyen() != TaiKhoan.VaiTro.ADMIN) {
                 throw new SecurityException("Chỉ Quản trị viên tối cao (Admin) mới có quyền chỉnh sửa tài khoản quản trị hệ thống!");
@@ -140,7 +149,7 @@ public class NhanVienBUS {
             throw new IllegalArgumentException("Không tìm thấy nhân viên mã: " + maNhanVien);
         }
 
-        if ("Admin".equalsIgnoreCase(nv.getPhanQuyen()) || "NV-20261005-000000".equals(nv.getMaNhanVien())) {
+        if ("Admin".equalsIgnoreCase(nv.getPhanQuyen()) || "260000".equals(nv.getMaNhanVien()) || "NV-20261005-000000".equals(nv.getMaNhanVien())) {
             throw new SecurityException("Không thể ngừng làm việc tài khoản Quản trị hệ thống!");
         }
 
@@ -204,14 +213,18 @@ public class NhanVienBUS {
         if (nhanVienDAO.kiemTraTenDangNhapTonTai(tenDangNhap.trim())) {
             throw new IllegalArgumentException("Tên đăng nhập '" + tenDangNhap.trim() + "' đã được sử dụng!");
         }
-        return nhanVienDAO.themTaiKhoanChoNhanVien(maNhanVien, tenDangNhap.trim(), (matKhau != null && !matKhau.isBlank()) ? matKhau : "1111", phanQuyen);
+        String passRaw = (matKhau != null && !matKhau.isBlank()) ? matKhau : "1111";
+        String passHash = HashUtil.sha256(passRaw);
+        return nhanVienDAO.themTaiKhoanChoNhanVien(maNhanVien, tenDangNhap.trim(), passHash, phanQuyen);
     }
 
     public boolean datLaiMatKhau(String maTaiKhoan, String matKhauMoi) {
         if (maTaiKhoan == null || maTaiKhoan.trim().isEmpty()) {
             throw new IllegalArgumentException("Mã tài khoản không hợp lệ!");
         }
-        return nhanVienDAO.datLaiMatKhau(maTaiKhoan, (matKhauMoi != null && !matKhauMoi.isBlank()) ? matKhauMoi : "1111");
+        String passRaw = (matKhauMoi != null && !matKhauMoi.isBlank()) ? matKhauMoi : "1111";
+        String passHash = HashUtil.sha256(passRaw);
+        return nhanVienDAO.datLaiMatKhau(maTaiKhoan, passHash);
     }
 
     public boolean xoaTaiKhoan(String maTaiKhoan) {

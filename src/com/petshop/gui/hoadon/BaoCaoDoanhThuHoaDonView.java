@@ -605,10 +605,10 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
                             BigDecimal tienHoanDong;
                             BigDecimal tienBuDong;
                             if (laDoi) {
-                                tienHoanDong = (i == 0 && p.getTienHoan() != null) ? p.getTienHoan() : BigDecimal.ZERO;
-                                tienBuDong = (i == 0 && p.getTienBu() != null) ? p.getTienBu() : BigDecimal.ZERO;
+                                tienHoanDong = i == 0 ? BigDecimal.valueOf(p.getTienHoan()) : BigDecimal.ZERO;
+                                tienBuDong = i == 0 ? BigDecimal.valueOf(p.getTienBu()) : BigDecimal.ZERO;
                             } else {
-                                tienHoanDong = ct.tinhThanhTienTra();
+                                tienHoanDong = BigDecimal.valueOf(ct.tinhThanhTienTra());
                                 tienBuDong = BigDecimal.ZERO;
                             }
                             dsHangDoiTra.add(new DongHangDoiTraBaoCao(
@@ -632,8 +632,8 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
                                 p.getSoLuong(),
                                 p.getLyDo(),
                                 "Đang cập nhật",
-                                p.getTienHoan() != null ? p.getTienHoan() : BigDecimal.ZERO,
-                                p.getTienBu() != null ? p.getTienBu() : BigDecimal.ZERO,
+                                BigDecimal.valueOf(p.getTienHoan()),
+                                BigDecimal.valueOf(p.getTienBu()),
                                 p.getTrangThai()
                         ));
                     }
