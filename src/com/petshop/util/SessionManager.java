@@ -1,6 +1,6 @@
 package com.petshop.util;
 
-import com.petshop.model.TaiKhoan;
+import com.petshop.entity.TaiKhoan;
 
 /**
  * Quản lý phiên làm việc của người dùng sau khi đăng nhập thành công.

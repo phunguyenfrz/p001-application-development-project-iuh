@@ -1,9 +1,9 @@
 package com.petshop.dao;
 
-import com.petshop.model.ChiTietHoaDonDichVu;
-import com.petshop.model.ChiTietHoaDonSanPham;
-import com.petshop.model.HoaDon;
-import com.petshop.model.PhieuDichVu;
+import com.petshop.entity.ChiTietHoaDonDichVu;
+import com.petshop.entity.ChiTietHoaDonSanPham;
+import com.petshop.entity.HoaDon;
+import com.petshop.entity.PhieuDichVu;
 import com.petshop.util.DatabaseManager;
 
 import java.math.BigDecimal;

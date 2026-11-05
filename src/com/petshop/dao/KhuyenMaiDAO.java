@@ -1,6 +1,6 @@
 package com.petshop.dao;
 
-import com.petshop.model.KhuyenMai;
+import com.petshop.entity.KhuyenMai;
 import com.petshop.util.DatabaseManager;
 
 import java.sql.Connection;

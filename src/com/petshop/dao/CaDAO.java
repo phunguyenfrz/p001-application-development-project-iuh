@@ -1,6 +1,6 @@
 package com.petshop.dao;
 
-import com.petshop.model.Ca;
+import com.petshop.entity.Ca;
 import com.petshop.util.DatabaseManager;
 
 import java.sql.Connection;

@@ -1,7 +1,7 @@
 package com.petshop.dao;
 
-import com.petshop.model.NhaCungCap;
-import com.petshop.model.SanPham;
+import com.petshop.entity.NhaCungCap;
+import com.petshop.entity.SanPham;
 import com.petshop.util.DatabaseManager;
 
 import java.sql.*;

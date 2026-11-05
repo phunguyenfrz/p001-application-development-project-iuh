@@ -1,7 +1,7 @@
 package com.petshop.dao;
 
-import com.petshop.model.ChiTietLichHen;
-import com.petshop.model.LichHen;
+import com.petshop.entity.ChiTietLichHen;
+import com.petshop.entity.LichHen;
 import com.petshop.util.DatabaseManager;
 
 import java.sql.Connection;

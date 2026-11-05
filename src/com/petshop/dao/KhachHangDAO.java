@@ -1,8 +1,8 @@
 package com.petshop.dao;
 
-import com.petshop.model.ChiTietGiaoDich;
-import com.petshop.model.KhachHang;
-import com.petshop.model.LichSuGiaoDich;
+import com.petshop.entity.ChiTietGiaoDich;
+import com.petshop.entity.KhachHang;
+import com.petshop.entity.LichSuGiaoDich;
 import com.petshop.util.DatabaseManager;
 
 import java.math.BigDecimal;
@@ -356,12 +356,12 @@ public class KhachHangDAO {
 
     // =========================================================================
     // CÁC PHƯƠNG THỨC TRUY XUẤT LỊCH SỬ GIAO DỊCH & CHI TIẾT HÓA ĐƠN
-    // TODO: nối HoaDonService khi phân hệ Hóa đơn merge theo Quy ước #60 (Mục 7.3)
+    // TODO: nối HoaDonBUS khi phân hệ Hóa đơn merge theo Quy ước #60 (Mục 7.3)
     // =========================================================================
 
     /**
      * Lấy danh sách lịch sử hóa đơn giao dịch của khách hàng.
-     * // TODO: nối HoaDonService khi phân hệ Hóa đơn merge theo Quy ước #60 (Mục 7.3)
+     * // TODO: nối HoaDonBUS khi phân hệ Hóa đơn merge theo Quy ước #60 (Mục 7.3)
      */
     public List<LichSuGiaoDich> layLichSuGiaoDich(String maKhachHang, LocalDate tuNgay, LocalDate denNgay, String trangThaiThanhToan) {
         List<LichSuGiaoDich> danhSach = new ArrayList<>();
@@ -438,7 +438,7 @@ public class KhachHangDAO {
 
     /**
      * Lấy danh sách sản phẩm trong một hóa đơn của khách hàng.
-     * // TODO: nối HoaDonService khi phân hệ Hóa đơn merge theo Quy ước #60 (Mục 7.3)
+     * // TODO: nối HoaDonBUS khi phân hệ Hóa đơn merge theo Quy ước #60 (Mục 7.3)
      */
     public List<ChiTietGiaoDich> laySanPhamHoaDon(String maKhachHang, String maHoaDon) {
         List<ChiTietGiaoDich> danhSach = new ArrayList<>();
@@ -478,7 +478,7 @@ public class KhachHangDAO {
 
     /**
      * Lấy danh sách dịch vụ chăm sóc trong một hóa đơn của khách hàng.
-     * // TODO: nối HoaDonService khi phân hệ Hóa đơn merge theo Quy ước #60 (Mục 7.3)
+     * // TODO: nối HoaDonBUS khi phân hệ Hóa đơn merge theo Quy ước #60 (Mục 7.3)
      */
     public List<ChiTietGiaoDich> layDichVuHoaDon(String maKhachHang, String maHoaDon) {
         List<ChiTietGiaoDich> danhSach = new ArrayList<>();

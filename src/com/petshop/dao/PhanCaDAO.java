@@ -1,6 +1,6 @@
 package com.petshop.dao;
 
-import com.petshop.model.PhanCa;
+import com.petshop.entity.PhanCa;
 import com.petshop.util.DatabaseManager;
 
 import java.sql.*;
