@@ -1,41 +1,60 @@
 package com.petshop.entity;
 
-import java.math.BigDecimal;
-
 /**
- * Lớp chứa số liệu tổng quan thống kê cho Dashboard.
+ * Đối tượng truyền dữ liệu (DTO) chứa các chỉ số thống kê nhanh cho màn hình Tổng quan (Dashboard).
+ * Tuân thủ Bộ chỉ thị kỹ thuật IUH: kiểu tiền tệ doanhThuHomNay dùng double nguyên thủy.
  */
 public class ThongKeTongQuan {
-    private BigDecimal doanhThuHomNay;
-    private int soLichHenHomNay;
+    private double doanhThuHomNay;
+    private int soHoaDonHomNay;
+    private int tongSoLichHenHomNay;
+    private int soLichHenChoXuLy;
     private int soSanPhamSapHet;
 
     public ThongKeTongQuan() {
-        this.doanhThuHomNay = BigDecimal.ZERO;
-        this.soLichHenHomNay = 0;
-        this.soSanPhamSapHet = 0;
+        this.doanhThuHomNay = 0.0;
     }
 
-    public ThongKeTongQuan(BigDecimal doanhThuHomNay, int soLichHenHomNay, int soSanPhamSapHet) {
-        this.doanhThuHomNay = doanhThuHomNay != null ? doanhThuHomNay : BigDecimal.ZERO;
-        this.soLichHenHomNay = soLichHenHomNay;
+    public ThongKeTongQuan(double doanhThuHomNay, int soHoaDonHomNay,
+                           int tongSoLichHenHomNay, int soLichHenChoXuLy,
+                           int soSanPhamSapHet) {
+        this.doanhThuHomNay = doanhThuHomNay;
+        this.soHoaDonHomNay = soHoaDonHomNay;
+        this.tongSoLichHenHomNay = tongSoLichHenHomNay;
+        this.soLichHenChoXuLy = soLichHenChoXuLy;
         this.soSanPhamSapHet = soSanPhamSapHet;
     }
 
-    public BigDecimal getDoanhThuHomNay() {
+    public double getDoanhThuHomNay() {
         return doanhThuHomNay;
     }
 
-    public void setDoanhThuHomNay(BigDecimal doanhThuHomNay) {
+    public void setDoanhThuHomNay(double doanhThuHomNay) {
         this.doanhThuHomNay = doanhThuHomNay;
     }
 
-    public int getSoLichHenHomNay() {
-        return soLichHenHomNay;
+    public int getSoHoaDonHomNay() {
+        return soHoaDonHomNay;
     }
 
-    public void setSoLichHenHomNay(int soLichHenHomNay) {
-        this.soLichHenHomNay = soLichHenHomNay;
+    public void setSoHoaDonHomNay(int soHoaDonHomNay) {
+        this.soHoaDonHomNay = soHoaDonHomNay;
+    }
+
+    public int getTongSoLichHenHomNay() {
+        return tongSoLichHenHomNay;
+    }
+
+    public void setTongSoLichHenHomNay(int tongSoLichHenHomNay) {
+        this.tongSoLichHenHomNay = tongSoLichHenHomNay;
+    }
+
+    public int getSoLichHenChoXuLy() {
+        return soLichHenChoXuLy;
+    }
+
+    public void setSoLichHenChoXuLy(int soLichHenChoXuLy) {
+        this.soLichHenChoXuLy = soLichHenChoXuLy;
     }
 
     public int getSoSanPhamSapHet() {
@@ -46,4 +65,3 @@ public class ThongKeTongQuan {
         this.soSanPhamSapHet = soSanPhamSapHet;
     }
 }
-

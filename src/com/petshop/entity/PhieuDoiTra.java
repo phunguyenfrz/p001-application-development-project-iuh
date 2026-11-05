@@ -1,89 +1,153 @@
 package com.petshop.entity;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Thực thể biểu diễn Phiếu đổi trả hàng hóa (PhieuDoiTra).
+ * Thực thể Phiếu đổi trả (PhieuDoiTra) - Ánh xạ bảng dbo.PhieuDoiTra.
+ * Chuẩn hóa OOP:
+ * - Khóa ngoại sử dụng Object Reference: HoaDon hoaDon, NhanVien nhanVien, KhachHang khachHang.
+ * - Giữ lại các Delegate Getter/Setter để tương thích TableView.
+ * - Thuộc tính dẫn xuất (tienHoan, tienBu, tongTienHangTra, tongTienHangDoi) không lưu biến thành viên,
+ *   không đưa vào constructor, không có setter; tự tính toán qua phương thức kiểu double.
  */
 public class PhieuDoiTra {
 
     private String maPhieuDoiTra;
-    private String maHoaDon;
-    private String maNhanVien;
-    private String tenNhanVien;
-    private String maKhachHang;
-    private String tenKhachHang;
-    private String soDienThoaiKhachHang;
+    private HoaDon hoaDon;
+    private NhanVien nhanVien;
+    private KhachHang khachHang;
     private LocalDate ngayLap;
-    private String lyDo; // Lý do chính: "Lỗi sản phẩm", "Hết hạn", "Không phù hợp", "Khác"
-    private int soLuong; // Tổng số lượng hàng trả
-    private String loaiXuLy; // "Trả hàng, hoàn tiền" hoặc "Đổi sang sản phẩm khác"
-    private String hinhThucHoan; // "Tiền mặt", "Chuyển khoản", "Voucher"
-    private BigDecimal tienHoan; // Tiền hoàn lại cho khách
-    private BigDecimal tienBu; // Tiền khách bù thêm nếu đổi hàng giá cao hơn
-    private String trangThai; // "Chờ xử lý", "Hoàn thành", "Đã hoàn tiền", "Từ chối"
-    private String ghiChu;
+    private String lyDo;
+    private int soLuong;
+    private String loaiXuLy;       // "Hoàn tiền" | "Đổi hàng"
+    private String hinhThucHoan;   // "Tiền mặt" | "Chuyển khoản" | "Voucher"
+    private String trangThai;      // "Chờ xử lý" | "Đã duyệt" | "Từ chối"
 
-    // Danh sách mặt hàng chi tiết trong phiếu đổi trả
     private List<ChiTietPhieuDoiTra> danhSachSanPham = new ArrayList<>();
 
     public PhieuDoiTra() {
         this.ngayLap = LocalDate.now();
-        this.soLuong = 0;
-        this.loaiXuLy = "Trả hàng, hoàn tiền";
-        this.hinhThucHoan = "Tiền mặt";
-        this.tienHoan = BigDecimal.ZERO;
-        this.tienBu = BigDecimal.ZERO;
+        this.soLuong = 1;
+        this.loaiXuLy = "Hoàn tiền";
         this.trangThai = "Chờ xử lý";
     }
 
-    public PhieuDoiTra(String maPhieuDoiTra, String maHoaDon, String maNhanVien, String maKhachHang,
-                       LocalDate ngayLap, String lyDo, int soLuong, String loaiXuLy,
-                       BigDecimal tienHoan, BigDecimal tienBu, String trangThai) {
-        this();
+    public PhieuDoiTra(String maPhieuDoiTra, HoaDon hoaDon, NhanVien nhanVien, KhachHang khachHang,
+                       LocalDate ngayLap, String lyDo, int soLuong, String loaiXuLy, String trangThai) {
         this.maPhieuDoiTra = maPhieuDoiTra;
-        this.maHoaDon = maHoaDon;
-        this.maNhanVien = maNhanVien;
-        this.maKhachHang = maKhachHang;
+        this.hoaDon = hoaDon;
+        this.nhanVien = nhanVien;
+        this.khachHang = khachHang;
         this.ngayLap = ngayLap != null ? ngayLap : LocalDate.now();
         this.lyDo = lyDo;
         this.soLuong = soLuong;
-        this.loaiXuLy = loaiXuLy != null ? loaiXuLy : "Trả hàng, hoàn tiền";
-        this.tienHoan = tienHoan != null ? tienHoan : BigDecimal.ZERO;
-        this.tienBu = tienBu != null ? tienBu : BigDecimal.ZERO;
+        this.loaiXuLy = loaiXuLy != null ? loaiXuLy : "Hoàn tiền";
         this.trangThai = trangThai != null ? trangThai : "Chờ xử lý";
     }
 
-    // Tính tổng giá trị các mặt hàng khách trả lại
-    public BigDecimal tinhTongTienHangTra() {
-        BigDecimal tong = BigDecimal.ZERO;
-        if (danhSachSanPham != null && !danhSachSanPham.isEmpty()) {
+    public PhieuDoiTra(String maPhieuDoiTra, String maHoaDon, String maNhanVien, String maKhachHang,
+                       LocalDate ngayLap, String lyDo, int soLuong, String loaiXuLy, String trangThai) {
+        this();
+        this.maPhieuDoiTra = maPhieuDoiTra;
+        setMaHoaDon(maHoaDon);
+        setMaNhanVien(maNhanVien);
+        setMaKhachHang(maKhachHang);
+        this.ngayLap = ngayLap != null ? ngayLap : LocalDate.now();
+        this.lyDo = lyDo;
+        this.soLuong = soLuong;
+        this.loaiXuLy = loaiXuLy != null ? loaiXuLy : "Hoàn tiền";
+        this.trangThai = trangThai != null ? trangThai : "Chờ xử lý";
+    }
+
+    // =========================================================================
+    // CÁC PHƯƠNG THỨC TÍNH TOÁN DẪN XUẤT (KHÔNG LƯU BIẾN THÀNH VIÊN, KHÔNG SETTER)
+    // =========================================================================
+
+    /**
+     * Tính tổng giá trị các mặt hàng khách trả lại dựa trên danh sách chi tiết.
+     */
+    public double tinhTongTienHangTra() {
+        double tong = 0.0;
+        if (danhSachSanPham != null) {
             for (ChiTietPhieuDoiTra ct : danhSachSanPham) {
-                tong = tong.add(ct.tinhThanhTienTra());
+                tong += ct.tinhThanhTienTra();
             }
-            if (tong.compareTo(BigDecimal.ZERO) > 0) {
-                return tong;
-            }
-        }
-        if (tienHoan != null && tienHoan.compareTo(BigDecimal.ZERO) > 0) {
-            return tienHoan;
         }
         return tong;
     }
 
-    // Tính tổng giá trị các mặt hàng khách đổi lấy mới
-    public BigDecimal tinhTongTienHangDoi() {
-        BigDecimal tong = BigDecimal.ZERO;
+    /**
+     * Tính tổng giá trị các mặt hàng khách đổi lấy mới.
+     */
+    public double tinhTongTienHangDoi() {
+        double tong = 0.0;
         if (danhSachSanPham != null) {
             for (ChiTietPhieuDoiTra ct : danhSachSanPham) {
-                tong = tong.add(ct.tinhThanhTienDoi());
+                tong += ct.tinhThanhTienDoi();
             }
         }
         return tong;
     }
+
+    /**
+     * Tự động tính số tiền hoàn lại cho khách (double).
+     * - Nếu là Hoàn tiền: hoàn 100% tổng tiền hàng trả.
+     * - Nếu là Đổi hàng và tổng tiền hàng trả > tổng tiền hàng đổi: hoàn phần chênh lệch.
+     */
+    public double tinhTienHoan() {
+        double tongTra = tinhTongTienHangTra();
+        if (laDoiHang()) {
+            double tongDoi = tinhTongTienHangDoi();
+            if (tongDoi > 0 && tongTra > tongDoi) {
+                return tongTra - tongDoi;
+            }
+            return 0.0;
+        }
+        return tongTra;
+    }
+
+    /**
+     * Tự động tính số tiền khách phải bù thêm (double).
+     * - Chỉ phát sinh khi Đổi hàng và tổng tiền hàng đổi > tổng tiền hàng trả.
+     */
+    public double tinhTienBu() {
+        if (laDoiHang()) {
+            double tongTra = tinhTongTienHangTra();
+            double tongDoi = tinhTongTienHangDoi();
+            if (tongDoi > tongTra) {
+                return tongDoi - tongTra;
+            }
+        }
+        return 0.0;
+    }
+
+    private boolean laDoiHang() {
+        if (loaiXuLy == null) return false;
+        String lower = loaiXuLy.trim().toLowerCase();
+        return lower.contains("đổi") || lower.contains("doi");
+    }
+
+    // Delegate Getters cho TableView
+    public double getTienHoan() {
+        return tinhTienHoan();
+    }
+
+    public double getTienBu() {
+        return tinhTienBu();
+    }
+
+    public void themChiTiet(ChiTietPhieuDoiTra chiTiet) {
+        if (this.danhSachSanPham == null) {
+            this.danhSachSanPham = new ArrayList<>();
+        }
+        this.danhSachSanPham.add(chiTiet);
+    }
+
+    // =========================================================================
+    // OBJECT REFERENCES & DELEGATE GETTERS / SETTERS
+    // =========================================================================
 
     public String getMaPhieuDoiTra() {
         return maPhieuDoiTra;
@@ -93,52 +157,108 @@ public class PhieuDoiTra {
         this.maPhieuDoiTra = maPhieuDoiTra;
     }
 
+    public HoaDon getHoaDon() {
+        return hoaDon;
+    }
+
+    public void setHoaDon(HoaDon hoaDon) {
+        this.hoaDon = hoaDon;
+    }
+
     public String getMaHoaDon() {
-        return maHoaDon;
+        return hoaDon != null ? hoaDon.getMaHoaDon() : null;
     }
 
     public void setMaHoaDon(String maHoaDon) {
-        this.maHoaDon = maHoaDon;
+        if (maHoaDon == null) {
+            this.hoaDon = null;
+            return;
+        }
+        if (this.hoaDon == null) {
+            this.hoaDon = new HoaDon();
+        }
+        this.hoaDon.setMaHoaDon(maHoaDon);
+    }
+
+    public NhanVien getNhanVien() {
+        return nhanVien;
+    }
+
+    public void setNhanVien(NhanVien nhanVien) {
+        this.nhanVien = nhanVien;
     }
 
     public String getMaNhanVien() {
-        return maNhanVien;
+        return nhanVien != null ? nhanVien.getMaNhanVien() : null;
     }
 
     public void setMaNhanVien(String maNhanVien) {
-        this.maNhanVien = maNhanVien;
+        if (maNhanVien == null) {
+            this.nhanVien = null;
+            return;
+        }
+        if (this.nhanVien == null) {
+            this.nhanVien = new NhanVien();
+        }
+        this.nhanVien.setMaNhanVien(maNhanVien);
     }
 
     public String getTenNhanVien() {
-        return tenNhanVien;
+        return nhanVien != null ? nhanVien.getHoTen() : null;
     }
 
     public void setTenNhanVien(String tenNhanVien) {
-        this.tenNhanVien = tenNhanVien;
+        if (this.nhanVien == null) {
+            this.nhanVien = new NhanVien();
+        }
+        this.nhanVien.setHoTen(tenNhanVien);
+    }
+
+    public KhachHang getKhachHang() {
+        return khachHang;
+    }
+
+    public void setKhachHang(KhachHang khachHang) {
+        this.khachHang = khachHang;
     }
 
     public String getMaKhachHang() {
-        return maKhachHang;
+        return khachHang != null ? khachHang.getMaKhachHang() : null;
     }
 
     public void setMaKhachHang(String maKhachHang) {
-        this.maKhachHang = maKhachHang;
+        if (maKhachHang == null) {
+            if (this.khachHang != null) {
+                this.khachHang.setMaKhachHang(null);
+            }
+            return;
+        }
+        if (this.khachHang == null) {
+            this.khachHang = new KhachHang();
+        }
+        this.khachHang.setMaKhachHang(maKhachHang);
     }
 
     public String getTenKhachHang() {
-        return tenKhachHang;
+        return khachHang != null ? khachHang.getHoTen() : null;
     }
 
     public void setTenKhachHang(String tenKhachHang) {
-        this.tenKhachHang = tenKhachHang;
+        if (this.khachHang == null) {
+            this.khachHang = new KhachHang();
+        }
+        this.khachHang.setHoTen(tenKhachHang);
     }
 
     public String getSoDienThoaiKhachHang() {
-        return soDienThoaiKhachHang;
+        return khachHang != null ? khachHang.getSoDienThoai() : null;
     }
 
     public void setSoDienThoaiKhachHang(String soDienThoaiKhachHang) {
-        this.soDienThoaiKhachHang = soDienThoaiKhachHang;
+        if (this.khachHang == null) {
+            this.khachHang = new KhachHang();
+        }
+        this.khachHang.setSoDienThoai(soDienThoaiKhachHang);
     }
 
     public LocalDate getNgayLap() {
@@ -181,36 +301,12 @@ public class PhieuDoiTra {
         this.hinhThucHoan = hinhThucHoan;
     }
 
-    public BigDecimal getTienHoan() {
-        return tienHoan != null ? tienHoan : BigDecimal.ZERO;
-    }
-
-    public void setTienHoan(BigDecimal tienHoan) {
-        this.tienHoan = tienHoan != null ? tienHoan : BigDecimal.ZERO;
-    }
-
-    public BigDecimal getTienBu() {
-        return tienBu != null ? tienBu : BigDecimal.ZERO;
-    }
-
-    public void setTienBu(BigDecimal tienBu) {
-        this.tienBu = tienBu != null ? tienBu : BigDecimal.ZERO;
-    }
-
     public String getTrangThai() {
         return trangThai;
     }
 
     public void setTrangThai(String trangThai) {
         this.trangThai = trangThai;
-    }
-
-    public String getGhiChu() {
-        return ghiChu;
-    }
-
-    public void setGhiChu(String ghiChu) {
-        this.ghiChu = ghiChu;
     }
 
     public List<ChiTietPhieuDoiTra> getDanhSachSanPham() {
@@ -220,14 +316,4 @@ public class PhieuDoiTra {
     public void setDanhSachSanPham(List<ChiTietPhieuDoiTra> danhSachSanPham) {
         this.danhSachSanPham = danhSachSanPham != null ? danhSachSanPham : new ArrayList<>();
     }
-
-    public void themChiTiet(ChiTietPhieuDoiTra ct) {
-        if (this.danhSachSanPham == null) {
-            this.danhSachSanPham = new ArrayList<>();
-        }
-        if (ct != null) {
-            this.danhSachSanPham.add(ct);
-        }
-    }
 }
-

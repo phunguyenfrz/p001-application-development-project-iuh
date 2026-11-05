@@ -42,6 +42,10 @@ public class TimKiemLichHenView extends VBox {
     private final TableView<LichHen> tblDanhSach = new TableView<>();
 
     public TimKiemLichHenView() {
+        this(false);
+    }
+
+    public TimKiemLichHenView(boolean chiLocHomNay) {
         setSpacing(14);
         setPadding(new Insets(20, 24, 20, 24));
         getStyleClass().add("khung-phan-he");
@@ -60,6 +64,16 @@ public class TimKiemLichHenView extends VBox {
 
         getChildren().addAll(pnlTieuDe, taoKhungBoLoc(), pnlBang);
 
+        if (chiLocHomNay) {
+            dpTuNgay.setValue(LocalDate.now());
+            dpDenNgay.setValue(LocalDate.now());
+        }
+        xuLyTimKiem();
+    }
+
+    public void locLichHenHomNay() {
+        dpTuNgay.setValue(LocalDate.now());
+        dpDenNgay.setValue(LocalDate.now());
         xuLyTimKiem();
     }
 

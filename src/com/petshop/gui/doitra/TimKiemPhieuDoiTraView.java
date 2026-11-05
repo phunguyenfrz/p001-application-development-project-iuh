@@ -15,8 +15,6 @@ import javafx.stage.FileChooser;
 
 import java.io.File;
 import java.io.PrintWriter;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
@@ -25,9 +23,7 @@ import java.util.List;
 
 /**
  * Màn hình 3: Tìm kiếm & Tra cứu phiếu đổi trả (RET_SEARCH / DT_TIM_KIEM).
- * - Màn hình danh sách: Tra cứu theo từ khóa, ngày tháng, trạng thái, loại xử lý, thống kê KPI và bảng kết quả.
- * - Màn hình chi tiết: Khi ấn "Xem" hoặc nhấp đúp vào dòng, chuyển sang giao diện chi tiết đồng bộ hoàn toàn
- *   với màn hình cập nhật phiếu đổi trả (thông tin hóa đơn, bảng mặt hàng trả, thẻ hình thức xử lý, bảng sản phẩm đổi mới, thanh tóm tắt).
+ * Tuân thủ Bộ chỉ thị kỹ thuật IUH: 100% tiền tệ dùng kiểu nguyên thủy double.
  */
 public class TimKiemPhieuDoiTraView extends VBox {
 
@@ -36,13 +32,10 @@ public class TimKiemPhieuDoiTraView extends VBox {
 
     private final PhieuDoiTraBUS controller;
 
-    // Hai màn hình chính chuyển đổi linh hoạt
     private final VBox pnlManHinhDanhSach = new VBox(14);
     private final VBox pnlManHinhChiTiet = new VBox(12);
 
-    // ==========================================
-    // 1. CÁC THÀNH PHẦN MÀN HÌNH DANH SÁCH
-    // ==========================================
+    // 1. MÀN HÌNH DANH SÁCH
     private final TextField txtTuKhoa = new TextField();
     private final DatePicker dpTuNgay = new DatePicker();
     private final DatePicker dpDenNgay = new DatePicker();
@@ -56,19 +49,15 @@ public class TimKiemPhieuDoiTraView extends VBox {
     private final Button btnDatLai = new Button("Đặt lại");
     private final Button btnXuatExcel = new Button("Xuất file");
 
-    // Thẻ KPI thống kê nhanh
     private final Label lblKpiTongSoPhieu = new Label("0");
     private final Label lblKpiTongTienHoan = new Label("0 VNĐ");
     private final Label lblKpiTongTienBu = new Label("0 VNĐ");
     private final Label lblKpiTyLeHoanThanh = new Label("0%");
 
-    // Bảng kết quả tìm kiếm
     private final TableView<PhieuDoiTra> tblKetQua = new TableView<>();
     private final ObservableList<PhieuDoiTra> dsKetQua = FXCollections.observableArrayList();
 
-    // ==========================================
-    // 2. CÁC THÀNH PHẦN MÀN HÌNH XEM CHI TIẾT
-    // ==========================================
+    // 2. MÀN HÌNH XEM CHI TIẾT
     private PhieuDoiTra phieuDangXem = null;
 
     private final Button btnQuayLaiDanhSach = new Button("← Quay lại danh sách phiếu");
@@ -76,7 +65,6 @@ public class TimKiemPhieuDoiTraView extends VBox {
     private final Label lblBadgeTrangThai = new Label();
     private final Label lblBannerTrangThai = new Label();
 
-    // Card 1: Thông tin tóm tắt phiếu & hóa đơn
     private final Label lblMaPhieu = new Label();
     private final Label lblMaHoaDon = new Label();
     private final Label lblNgayLap = new Label();
@@ -85,11 +73,9 @@ public class TimKiemPhieuDoiTraView extends VBox {
     private final Label lblNhanVien = new Label();
     private final Label lblHinhThucXuLy = new Label();
 
-    // Card 2: Danh sách mặt hàng đổi trả
     private final TableView<ChiTietPhieuDoiTra> tblSanPhamTra = new TableView<>();
     private final ObservableList<ChiTietPhieuDoiTra> dsSanPhamTra = FXCollections.observableArrayList();
 
-    // Card 3: Hình thức xử lý đổi trả
     private final ToggleGroup grpHinhThuc = new ToggleGroup();
     private final RadioButton rdoTraHang = new RadioButton("Trả hàng, hoàn tiền");
     private final RadioButton rdoDoiHang = new RadioButton("Đổi sang sản phẩm khác");
@@ -102,7 +88,6 @@ public class TimKiemPhieuDoiTraView extends VBox {
     private final ObservableList<DongDoiHang> dsSanPhamDoiMoi = FXCollections.observableArrayList();
     private final Label lblDongChenhLech = new Label();
 
-    // Thanh tổng kết tài chính cố định
     private final Label lblTongTienHangTra = new Label("Tổng hàng trả: 0 VNĐ");
     private final Label lblTongTienHangDoi = new Label("Tổng hàng đổi: 0 VNĐ");
     private final Label lblChenhLechTaiChinh = new Label("Chênh lệch: 0 VNĐ");
@@ -123,13 +108,9 @@ public class TimKiemPhieuDoiTraView extends VBox {
         khoiTaoManHinhDanhSach();
         khoiTaoManHinhChiTiet();
 
-        // Mặc định hiển thị màn hình danh sách tìm kiếm
         this.getChildren().add(pnlManHinhDanhSach);
     }
 
-    // =========================================================================
-    // KHỞI TẠO MÀN HÌNH 1: DANH SÁCH TRA CỨU
-    // =========================================================================
     private void khoiTaoManHinhDanhSach() {
         pnlManHinhDanhSach.setSpacing(14);
         VBox.setVgrow(pnlManHinhDanhSach, Priority.ALWAYS);
@@ -141,13 +122,8 @@ public class TimKiemPhieuDoiTraView extends VBox {
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
         pnlTieuDe.getChildren().addAll(lblTieuDe, lblMoTa);
 
-        // 1. Bộ lọc
         VBox cardBoLoc = taoCardBoLoc();
-
-        // 2. KPI thống kê nhanh
         HBox pnlKpi = taoPnlKpi();
-
-        // 3. Bảng kết quả
         VBox cardBang = taoCardBangKetQua();
         VBox.setVgrow(cardBang, Priority.ALWAYS);
 
@@ -295,13 +271,11 @@ public class TimKiemPhieuDoiTraView extends VBox {
         colTongTien.setPrefWidth(95);
 
         TableColumn<PhieuDoiTra, String> colTienHoan = new TableColumn<>("Tiền hoàn");
-        colTienHoan.setCellValueFactory(d -> new SimpleStringProperty(
-                DINH_DANG_TIEN.format(d.getValue().getTienHoan() != null ? d.getValue().getTienHoan() : BigDecimal.ZERO)));
+        colTienHoan.setCellValueFactory(d -> new SimpleStringProperty(DINH_DANG_TIEN.format(d.getValue().tinhTienHoan())));
         colTienHoan.setPrefWidth(95);
 
         TableColumn<PhieuDoiTra, String> colTienBu = new TableColumn<>("Tiền bù");
-        colTienBu.setCellValueFactory(d -> new SimpleStringProperty(
-                DINH_DANG_TIEN.format(d.getValue().getTienBu() != null ? d.getValue().getTienBu() : BigDecimal.ZERO)));
+        colTienBu.setCellValueFactory(d -> new SimpleStringProperty(DINH_DANG_TIEN.format(d.getValue().tinhTienBu())));
         colTienBu.setPrefWidth(90);
 
         TableColumn<PhieuDoiTra, String> colTrangThai = new TableColumn<>("Trạng thái");
@@ -335,14 +309,10 @@ public class TimKiemPhieuDoiTraView extends VBox {
         return card;
     }
 
-    // =========================================================================
-    // KHỞI TẠO MÀN HÌNH 2: XEM CHI TIẾT (TƯƠNG TỰ MÀN CẬP NHẬT PHIẾU ĐỔI TRẢ)
-    // =========================================================================
     private void khoiTaoManHinhChiTiet() {
         pnlManHinhChiTiet.setSpacing(10);
         VBox.setVgrow(pnlManHinhChiTiet, Priority.ALWAYS);
 
-        // Header trên cùng: Nút Quay lại + Tiêu đề + Badge Trạng thái + Nút In
         HBox pnlHeader = new HBox(12);
         pnlHeader.setAlignment(Pos.CENTER_LEFT);
 
@@ -361,12 +331,10 @@ public class TimKiemPhieuDoiTraView extends VBox {
 
         pnlHeader.getChildren().addAll(btnQuayLaiDanhSach, lblTieuDeChiTiet, lblBadgeTrangThai, spacer, btnInTrenHeader);
 
-        // Banner ghi chú trạng thái
         lblBannerTrangThai.setPadding(new Insets(6, 12, 6, 12));
         lblBannerTrangThai.setStyle("-fx-background-color: #f1f5f9; -fx-border-color: #cbd5e1; -fx-border-radius: 4px; -fx-background-radius: 4px; -fx-font-style: italic;");
         lblBannerTrangThai.setMaxWidth(Double.MAX_VALUE);
 
-        // Scroll cuộn nội dung chi tiết
         VBox noiDungCuon = new VBox(12);
         noiDungCuon.setPadding(new Insets(2, 2, 10, 2));
 
@@ -381,7 +349,6 @@ public class TimKiemPhieuDoiTraView extends VBox {
         scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
-        // Thanh tổng kết tài chính cố định phía dưới
         HBox barTomTat = taoBarTomTatTaiChinh();
 
         pnlManHinhChiTiet.getChildren().addAll(pnlHeader, lblBannerTrangThai, scroll, barTomTat);
@@ -502,7 +469,6 @@ public class TimKiemPhieuDoiTraView extends VBox {
         HBox hangChon = new HBox(30, rdoTraHang, rdoDoiHang);
         hangChon.setAlignment(Pos.CENTER_LEFT);
 
-        // Thẻ 1: Hoàn tiền
         pnlTheHoanTien.setPadding(new Insets(10));
         pnlTheHoanTien.setStyle("-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 4px; -fx-background-radius: 4px;");
         HBox hangHoan = new HBox(16);
@@ -514,7 +480,6 @@ public class TimKiemPhieuDoiTraView extends VBox {
         );
         pnlTheHoanTien.getChildren().add(hangHoan);
 
-        // Thẻ 2: Đổi hàng
         pnlTheDoiHang.setPadding(new Insets(10));
         pnlTheDoiHang.setStyle("-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 4px; -fx-background-radius: 4px;");
 
@@ -545,7 +510,6 @@ public class TimKiemPhieuDoiTraView extends VBox {
         tblSanPhamDoiMoi.setItems(dsSanPhamDoiMoi);
 
         lblDongChenhLech.setStyle("-fx-font-weight: bold; -fx-font-size: 13px;");
-
         pnlTheDoiHang.getChildren().addAll(tblSanPhamDoiMoi, lblDongChenhLech);
 
         card.getChildren().addAll(lblTieuDe, hangChon, pnlTheHoanTien, pnlTheDoiHang);
@@ -575,9 +539,6 @@ public class TimKiemPhieuDoiTraView extends VBox {
         return bar;
     }
 
-    // =========================================================================
-    // XỬ LÝ CHUYỂN ĐỔI MÀN HÌNH & NẠP DỮ LIỆU CHI TIẾT
-    // =========================================================================
     private void chuyenManHinh(boolean sangChiTiet) {
         this.getChildren().clear();
         if (sangChiTiet) {
@@ -602,7 +563,6 @@ public class TimKiemPhieuDoiTraView extends VBox {
 
         this.phieuDangXem = phieu;
 
-        // Cập nhật Header
         lblMaPhieu.setText(phieu.getMaPhieuDoiTra());
         lblMaHoaDon.setText(phieu.getMaHoaDon() != null ? phieu.getMaHoaDon() : "--");
         lblNgayLap.setText(phieu.getNgayLap() != null ? phieu.getNgayLap().format(DINH_DANG_NGAY) : "--");
@@ -624,16 +584,16 @@ public class TimKiemPhieuDoiTraView extends VBox {
             lblBannerTrangThai.setText("Phiếu đổi trả đang [Chờ xử lý] duyệt từ người có thẩm quyền.");
         }
 
-        // Nạp danh sách hàng trả
         dsSanPhamTra.clear();
         if (phieu.getDanhSachSanPham() != null) {
             dsSanPhamTra.addAll(phieu.getDanhSachSanPham());
         }
 
-        // Nạp hình thức xử lý & hàng đổi
         dsSanPhamDoiMoi.clear();
-        BigDecimal tongHangTra = phieu.tinhTongTienHangTra();
-        BigDecimal tongHangDoi = BigDecimal.ZERO;
+        double tongHangTra = phieu.tinhTongTienHangTra();
+        double tongHangDoi = phieu.tinhTongTienHangDoi();
+        double tienHoan = phieu.tinhTienHoan();
+        double tienBu = phieu.tinhTienBu();
 
         boolean laDoiHang = "Đổi hàng".equalsIgnoreCase(phieu.getLoaiXuLy());
         if (laDoiHang) {
@@ -647,24 +607,17 @@ public class TimKiemPhieuDoiTraView extends VBox {
                 for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
                     if (ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().isBlank()) {
                         String tenDoi = ct.getTenSanPhamDoi() != null ? ct.getTenSanPhamDoi() : ct.getMaSanPhamDoi();
-                        BigDecimal giaDoi = ct.getDonGiaDoi() != null ? ct.getDonGiaDoi() : BigDecimal.ZERO;
-                        int slDoi = ct.getSoLuongDoi();
-                        BigDecimal ttDoi = ct.tinhThanhTienDoi();
-                        tongHangDoi = tongHangDoi.add(ttDoi);
-                        dsSanPhamDoiMoi.add(new DongDoiHang(tenDoi, giaDoi, slDoi, ttDoi));
+                        dsSanPhamDoiMoi.add(new DongDoiHang(tenDoi, ct.getDonGiaDoi(), ct.getSoLuongDoi(), ct.tinhThanhTienDoi()));
                     }
                 }
             }
 
-            BigDecimal tienBu = phieu.getTienBu() != null ? phieu.getTienBu() : BigDecimal.ZERO;
-            BigDecimal tienHoan = phieu.getTienHoan() != null ? phieu.getTienHoan() : BigDecimal.ZERO;
-
-            if (tienBu.compareTo(BigDecimal.ZERO) > 0) {
+            if (tienBu > 0) {
                 lblDongChenhLech.setText("Kết quả đổi trả: Khách bù thêm " + DINH_DANG_TIEN.format(tienBu));
                 lblDongChenhLech.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #0284c7;");
                 lblChenhLechTaiChinh.setText("Khách bù thêm: " + DINH_DANG_TIEN.format(tienBu));
                 lblChenhLechTaiChinh.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #0284c7;");
-            } else if (tienHoan.compareTo(BigDecimal.ZERO) > 0) {
+            } else if (tienHoan > 0) {
                 lblDongChenhLech.setText("Kết quả đổi trả: Hoàn lại cho khách " + DINH_DANG_TIEN.format(tienHoan));
                 lblDongChenhLech.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #dc2626;");
                 lblChenhLechTaiChinh.setText("Tiền hoàn lại: " + DINH_DANG_TIEN.format(tienHoan));
@@ -675,7 +628,6 @@ public class TimKiemPhieuDoiTraView extends VBox {
                 lblChenhLechTaiChinh.setText("Chênh lệch: 0 VNĐ");
                 lblChenhLechTaiChinh.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #16a34a;");
             }
-
         } else {
             rdoTraHang.setSelected(true);
             pnlTheHoanTien.setVisible(true);
@@ -683,7 +635,6 @@ public class TimKiemPhieuDoiTraView extends VBox {
             pnlTheDoiHang.setVisible(false);
             pnlTheDoiHang.setManaged(false);
 
-            BigDecimal tienHoan = phieu.getTienHoan() != null ? phieu.getTienHoan() : tongHangTra;
             lblTienHoanDuKien.setText(DINH_DANG_TIEN.format(tienHoan));
             lblChenhLechTaiChinh.setText("Tiền hoàn lại: " + DINH_DANG_TIEN.format(tienHoan));
             lblChenhLechTaiChinh.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #dc2626;");
@@ -707,9 +658,6 @@ public class TimKiemPhieuDoiTraView extends VBox {
         al.showAndWait();
     }
 
-    // =========================================================================
-    // CÁC SỰ KIỆN TÌM KIẾM & XUẤT EXCEL
-    // =========================================================================
     private void dangKySuKien() {
         btnTimKiem.setOnAction(e -> thucHienTimKiem());
         txtTuKhoa.setOnAction(e -> thucHienTimKiem());
@@ -768,17 +716,13 @@ public class TimKiemPhieuDoiTraView extends VBox {
 
     private void capNhatKpi() {
         int tongPhieu = dsKetQua.size();
-        BigDecimal tongHoan = BigDecimal.ZERO;
-        BigDecimal tongBu = BigDecimal.ZERO;
+        double tongHoan = 0.0;
+        double tongBu = 0.0;
         int demHoanThanh = 0;
 
         for (PhieuDoiTra p : dsKetQua) {
-            if (p.getTienHoan() != null) {
-                tongHoan = tongHoan.add(p.getTienHoan());
-            }
-            if (p.getTienBu() != null) {
-                tongBu = tongBu.add(p.getTienBu());
-            }
+            tongHoan += p.tinhTienHoan();
+            tongBu += p.tinhTienBu();
             if ("Đã duyệt".equalsIgnoreCase(p.getTrangThai()) || "Hoàn thành".equalsIgnoreCase(p.getTrangThai())) {
                 demHoanThanh++;
             }
@@ -789,10 +733,8 @@ public class TimKiemPhieuDoiTraView extends VBox {
         lblKpiTongTienBu.setText(DINH_DANG_TIEN.format(tongBu));
 
         if (tongPhieu > 0) {
-            BigDecimal tyLe = BigDecimal.valueOf(demHoanThanh)
-                    .multiply(BigDecimal.valueOf(100))
-                    .divide(BigDecimal.valueOf(tongPhieu), 1, RoundingMode.HALF_UP);
-            lblKpiTyLeHoanThanh.setText(tyLe + "%");
+            double tyLe = (demHoanThanh * 100.0) / tongPhieu;
+            lblKpiTyLeHoanThanh.setText(String.format("%.1f%%", tyLe));
         } else {
             lblKpiTyLeHoanThanh.setText("0%");
         }
@@ -819,16 +761,16 @@ public class TimKiemPhieuDoiTraView extends VBox {
                 pw.write('\ufeff');
                 pw.println("Mã phiếu,Mã hóa đơn,Ngày lập,Khách hàng,Số điện thoại,Loại xử lý,Tổng tiền hàng trả,Tiền hoàn,Tiền bù,Trạng thái");
                 for (PhieuDoiTra p : dsKetQua) {
-                    pw.println(String.format("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"",
+                    pw.println(String.format("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%.0f\",\"%.0f\",\"%.0f\",\"%s\"",
                             p.getMaPhieuDoiTra(),
                             p.getMaHoaDon() != null ? p.getMaHoaDon() : "",
                             p.getNgayLap() != null ? p.getNgayLap().format(DINH_DANG_NGAY) : "",
                             p.getTenKhachHang() != null ? p.getTenKhachHang().replace("\"", "\"\"") : "",
                             p.getSoDienThoaiKhachHang() != null ? p.getSoDienThoaiKhachHang() : "",
                             p.getLoaiXuLy() != null ? p.getLoaiXuLy() : "",
-                            p.tinhTongTienHangTra().toString(),
-                            p.getTienHoan() != null ? p.getTienHoan().toString() : "0",
-                            p.getTienBu() != null ? p.getTienBu().toString() : "0",
+                            p.tinhTongTienHangTra(),
+                            p.tinhTienHoan(),
+                            p.tinhTienBu(),
                             p.getTrangThai() != null ? p.getTrangThai() : ""
                     ));
                 }
@@ -846,25 +788,22 @@ public class TimKiemPhieuDoiTraView extends VBox {
         }
     }
 
-    /**
-     * Lớp dữ liệu hiển thị dòng sản phẩm đổi mới
-     */
     public static class DongDoiHang {
         private final String tenSanPham;
-        private final BigDecimal donGia;
+        private final double donGia;
         private final int soLuong;
-        private final BigDecimal thanhTien;
+        private final double thanhTien;
 
-        public DongDoiHang(String tenSanPham, BigDecimal donGia, int soLuong, BigDecimal thanhTien) {
+        public DongDoiHang(String tenSanPham, double donGia, int soLuong, double thanhTien) {
             this.tenSanPham = tenSanPham;
-            this.donGia = donGia != null ? donGia : BigDecimal.ZERO;
+            this.donGia = donGia;
             this.soLuong = soLuong;
-            this.thanhTien = thanhTien != null ? thanhTien : (this.donGia.multiply(BigDecimal.valueOf(soLuong)));
+            this.thanhTien = thanhTien > 0 ? thanhTien : (donGia * soLuong);
         }
 
         public String getTenSanPham() { return tenSanPham; }
-        public BigDecimal getDonGia() { return donGia; }
+        public double getDonGia() { return donGia; }
         public int getSoLuong() { return soLuong; }
-        public BigDecimal getThanhTien() { return thanhTien; }
+        public double getThanhTien() { return thanhTien; }
     }
 }

@@ -2,10 +2,12 @@ package com.petshop.bus;
 
 import com.petshop.dao.TaiKhoanDAO;
 import com.petshop.entity.TaiKhoan;
+import com.petshop.util.HashUtil;
 import com.petshop.util.SessionManager;
 
 /**
- * Lớp dịch vụ xử lý nghiệp vụ xác thực đăng nhập và kiểm tra quyền hạn tài khoản.
+ * Lớp dịch vụ xử lý nghiệp vụ xác thực đăng nhập, kiểm tra quyền hạn tài khoản và cấp lại mật khẩu.
+ * Tuân thủ tuyệt đối kiến trúc 3 tầng: 0% import javafx.*, 0% SQL.
  */
 public class XacThucBUS {
 
@@ -20,21 +22,68 @@ public class XacThucBUS {
     }
 
     /**
-     * Xác thực thông tin đăng nhập của người dùng.
+     * Xác thực thông tin đăng nhập của người dùng qua Mã nhân viên hoặc Tên đăng nhập.
+     * Mật khẩu được băm SHA-256 khi kiểm tra (Bộ chỉ thị kỹ thuật IUH - Điều 5).
      */
-    public TaiKhoan dangNhap(String tenDangNhap, String matKhau) {
-        if (tenDangNhap == null || tenDangNhap.isBlank() || matKhau == null || matKhau.isEmpty()) {
+    public TaiKhoan dangNhap(String maNhanVienHoacTenDangNhap, String matKhau) {
+        if (maNhanVienHoacTenDangNhap == null || maNhanVienHoacTenDangNhap.isBlank() || matKhau == null || matKhau.isEmpty()) {
             return null;
         }
 
-        TaiKhoan tk = taiKhoanDAO.dangNhap(tenDangNhap.trim(), matKhau);
+        TaiKhoan tk = taiKhoanDAO.dangNhap(maNhanVienHoacTenDangNhap.trim(), matKhau);
         if (tk != null) {
             SessionManager.dangNhap(tk);
         }
         return tk;
     }
-    public TaiKhoan xacThuc(String tenDangNhap, String matKhau) {
-        return dangNhap(tenDangNhap, matKhau);
+
+    public TaiKhoan xacThuc(String maNhanVienHoacTenDangNhap, String matKhau) {
+        return dangNhap(maNhanVienHoacTenDangNhap, matKhau);
+    }
+
+    /**
+     * Xử lý nghiệp vụ cấp lại mật khẩu (Quên mật khẩu).
+     * Ràng buộc nghiệp vụ:
+     * - Mã nhân viên không được để trống.
+     * - Số điện thoại bắt buộc 10 số bắt đầu bằng 0 (^0\\d{9}$).
+     * - Phải khớp thông tin nhân viên đang làm việc trong CSDL.
+     * - Mật khẩu mới tối thiểu 4 ký tự.
+     * - Xác nhận mật khẩu mới phải khớp.
+     * - Mật khẩu mới băm SHA-256 qua HashUtil.sha256() trước khi lưu.
+     */
+    public boolean datLaiMatKhau(String maNhanVien, String soDienThoai, String matKhauMoi, String xacNhanMatKhau) {
+        if (maNhanVien == null || maNhanVien.trim().isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng nhập mã nhân viên!");
+        }
+        if (soDienThoai == null || soDienThoai.trim().isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng nhập số điện thoại xác minh!");
+        }
+        String sdt = soDienThoai.trim();
+        if (!sdt.matches("^0\\d{9}$")) {
+            throw new IllegalArgumentException("Số điện thoại không hợp lệ! Phải gồm đúng 10 chữ số và bắt đầu bằng số 0 (VD: 0912345678).");
+        }
+        if (matKhauMoi == null || matKhauMoi.isEmpty()) {
+            throw new IllegalArgumentException("Mật khẩu mới không được để trống!");
+        }
+        if (matKhauMoi.length() < 4) {
+            throw new IllegalArgumentException("Mật khẩu mới phải có tối thiểu 4 ký tự!");
+        }
+        if (!matKhauMoi.equals(xacNhanMatKhau)) {
+            throw new IllegalArgumentException("Xác nhận mật khẩu mới không trùng khớp!");
+        }
+
+        String maNv = maNhanVien.trim();
+        boolean tonTai = taiKhoanDAO.kiemTraThongTinQuenMatKhau(maNv, sdt);
+        if (!tonTai) {
+            throw new IllegalArgumentException("Mã nhân viên hoặc Số điện thoại không khớp với hồ sơ nhân sự đang làm việc trong hệ thống!");
+        }
+
+        String matKhauHash = HashUtil.sha256(matKhauMoi);
+        boolean thanhCong = taiKhoanDAO.datLaiMatKhauTheoMaNhanVien(maNv, matKhauHash);
+        if (!thanhCong) {
+            throw new IllegalStateException("Không thể cập nhật mật khẩu mới! Vui lòng thử lại sau.");
+        }
+        return true;
     }
 
     /**
@@ -84,4 +133,3 @@ public class XacThucBUS {
         }
     }
 }
-

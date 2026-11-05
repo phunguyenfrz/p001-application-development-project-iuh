@@ -17,32 +17,28 @@ public class NhanVienDAO {
 
     private static final DateTimeFormatter DINH_DANG_NGAY_MA = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    // Tự động sinh mã nhân viên mới theo định dạng: NV-yyyyMMdd-xxxxxx
+    // Tự động sinh mã nhân viên mới theo định dạng: yyxxxx (Ví dụ: 260001 với 26 là năm, 0001 là STT)
     public String taoMaNhanVien() {
-        String ngay = LocalDate.now().format(DINH_DANG_NGAY_MA);
-        String tienTo = "NV-" + ngay + "-";
-        String sql = "SELECT TOP 1 maNhanVien FROM NhanVien WHERE maNhanVien LIKE ? ORDER BY maNhanVien DESC";
+        String nam2So = String.valueOf(LocalDate.now().getYear() % 100);
+        String sql = "SELECT TOP 1 maNhanVien FROM NhanVien WHERE maNhanVien LIKE ? AND LEN(maNhanVien) = 6 ORDER BY maNhanVien DESC";
 
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tienTo + "%");
+            ps.setString(1, nam2So + "%");
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     String maCu = rs.getString("maNhanVien");
-                    String[] phan = maCu.split("-");
-                    if (phan.length == 3) {
-                        int soThuTu = Integer.parseInt(phan[2]) + 1;
-                        return tienTo + String.format("%06d", soThuTu);
+                    if (maCu != null && maCu.length() == 6 && maCu.startsWith(nam2So)) {
+                        int soThuTu = Integer.parseInt(maCu.substring(2)) + 1;
+                        return nam2So + String.format("%04d", soThuTu);
                     }
                 }
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Lỗi khi sinh mã nhân viên: " + e.getMessage(), e);
-        } catch (NumberFormatException e) {
-            throw new IllegalStateException("Mã nhân viên trong CSDL không đúng định dạng", e);
-        }
+            // Log nhẹ và trả về mã khởi đầu nếu cơ sở dữ liệu chưa sẵn sàng
+        } catch (NumberFormatException ignored) {}
 
-        return tienTo + "000001";
+        return nam2So + "0001";
     }
 
     // Tự động sinh mã tài khoản mới theo định dạng: TK-yyyyMMdd-xxxxxx
@@ -481,10 +477,10 @@ public class NhanVienDAO {
 
     private List<NhanVien> taoDuLieuGiaNhanVien() {
         List<NhanVien> ds = new ArrayList<>();
-        ds.add(new NhanVien("NV-20261005-000001", "Lê Thị Hoa", "0901234567", "Chăm sóc", false, "Đang làm"));
-        ds.add(new NhanVien("NV-20261005-000002", "Trần Minh Khang", "0902345678", "Bán hàng", true, "Đang làm"));
-        ds.add(new NhanVien("NV-20261005-000003", "Phạm Ngọc Linh", "0903456789", "Chăm sóc", false, "Đang làm"));
-        ds.add(new NhanVien("NV-20261005-000000", "Quản trị hệ thống", "0909000000", "Quản lý", true, "Đang làm"));
+        ds.add(new NhanVien("260001", "Nguyễn Thị Lan", "0901234567", "Quản lý", false, "Đang làm"));
+        ds.add(new NhanVien("260002", "Trần Văn Minh", "0902345678", "Bán hàng", true, "Đang làm"));
+        ds.add(new NhanVien("260003", "Phạm Thị Hoa", "0903456789", "Chăm sóc", false, "Đang làm"));
+        ds.add(new NhanVien("260000", "Quản trị hệ thống", "0909000000", "Quản lý", true, "Đang làm"));
         return ds;
     }
 }

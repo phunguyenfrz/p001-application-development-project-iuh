@@ -42,6 +42,7 @@ public class TaiKhoan {
     private VaiTro phanQuyen;
     private boolean trangThai; // true: hoạt động, false: bị khóa
     private String hoTenNhanVien; // Tên nhân viên hiển thị trên giao diện
+    private NhanVien nhanVien; // Object Reference tới Nhân viên sở hữu tài khoản
 
     public TaiKhoan() {
     }
@@ -112,11 +113,36 @@ public class TaiKhoan {
     }
 
     public String getHoTenNhanVien() {
+        if (nhanVien != null && nhanVien.getHoTen() != null && !nhanVien.getHoTen().isBlank()) {
+            return nhanVien.getHoTen();
+        }
         return hoTenNhanVien;
     }
 
     public void setHoTenNhanVien(String hoTenNhanVien) {
         this.hoTenNhanVien = hoTenNhanVien;
+        if (this.nhanVien != null) {
+            this.nhanVien.setHoTen(hoTenNhanVien);
+        }
+    }
+
+    public NhanVien getNhanVien() {
+        if (nhanVien == null && maNhanVien != null && !maNhanVien.isBlank()) {
+            nhanVien = new NhanVien();
+            nhanVien.setMaNhanVien(maNhanVien);
+            nhanVien.setHoTen(hoTenNhanVien);
+        }
+        return nhanVien;
+    }
+
+    public void setNhanVien(NhanVien nhanVien) {
+        this.nhanVien = nhanVien;
+        if (nhanVien != null) {
+            this.maNhanVien = nhanVien.getMaNhanVien();
+            if (nhanVien.getHoTen() != null && !nhanVien.getHoTen().isBlank()) {
+                this.hoTenNhanVien = nhanVien.getHoTen();
+            }
+        }
     }
 
     // Các phương thức nghiệp vụ khớp với Class Diagram

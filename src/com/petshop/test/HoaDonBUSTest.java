@@ -491,8 +491,8 @@ public class HoaDonBUSTest {
         }
 
         @Override
-        public BigDecimal tinhSoTienGiam(String maKhuyenMai, BigDecimal tongHoaDon) {
-            return this.soTienGiam;
+        public double tinhSoTienGiam(String maKhuyenMai, double tongHoaDon) {
+            return this.soTienGiam == null ? 0.0 : this.soTienGiam.doubleValue();
         }
     }
 }

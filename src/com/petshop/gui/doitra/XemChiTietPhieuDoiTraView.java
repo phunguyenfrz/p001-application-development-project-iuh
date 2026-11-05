@@ -14,17 +14,12 @@ import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 
 /**
  * Hộp thoại Modal: Xem chi tiết phiếu đổi trả (chỉ đọc).
- * Thiết kế đồng bộ hoàn toàn với màn hình Cập nhật / Chi tiết phiếu đổi trả:
- * - Card thông tin tóm tắt phiếu & hóa đơn gốc.
- * - Card danh sách mặt hàng đổi trả.
- * - Card hình thức xử lý đổi trả (hoàn tiền hoặc bảng hàng đổi mới).
- * - Thanh tổng kết tài chính cố định ở dưới.
+ * Tuân thủ Bộ chỉ thị kỹ thuật IUH: 100% tiền tệ dùng kiểu nguyên thủy double.
  */
 public class XemChiTietPhieuDoiTraView extends Stage {
 
@@ -42,8 +37,8 @@ public class XemChiTietPhieuDoiTraView extends Stage {
         PhieuDoiTra phieuTam = phieuDauVao;
         if (phieuTam != null && (phieuTam.getDanhSachSanPham() == null || phieuTam.getDanhSachSanPham().isEmpty())) {
             try {
-                com.petshop.dao.PhieuDoiTraDAO dao = new com.petshop.dao.PhieuDoiTraDAO();
-                PhieuDoiTra phieuDayDu = dao.layPhieuDoiTraTheoMa(phieuTam.getMaPhieuDoiTra());
+                com.petshop.bus.PhieuDoiTraBUS bus = new com.petshop.bus.PhieuDoiTraBUS();
+                PhieuDoiTra phieuDayDu = bus.layPhieuDoiTraTheoMa(phieuTam.getMaPhieuDoiTra());
                 if (phieuDayDu != null && phieuDayDu.getDanhSachSanPham() != null && !phieuDayDu.getDanhSachSanPham().isEmpty()) {
                     phieuTam = phieuDayDu;
                 }
@@ -62,7 +57,6 @@ public class XemChiTietPhieuDoiTraView extends Stage {
             return;
         }
 
-        // Header trên cùng: Tiêu đề + Badge trạng thái
         HBox pnlHeader = new HBox(12);
         pnlHeader.setAlignment(Pos.CENTER_LEFT);
 
@@ -84,7 +78,6 @@ public class XemChiTietPhieuDoiTraView extends Stage {
 
         pnlHeader.getChildren().addAll(lblTieuDe, lblTrangThai, spacerH);
 
-        // Card 1: Thông tin tóm tắt phiếu & hóa đơn
         VBox cardThongTin = new VBox(8);
         cardThongTin.getStyleClass().add("hop-noi-dung");
 
@@ -123,7 +116,6 @@ public class XemChiTietPhieuDoiTraView extends Stage {
 
         cardThongTin.getChildren().addAll(lblTieuDeCard1, gridInfo);
 
-        // Card 2: Danh sách mặt hàng đổi trả
         VBox cardBangTra = new VBox(8);
         cardBangTra.getStyleClass().add("hop-noi-dung");
 
@@ -177,7 +169,6 @@ public class XemChiTietPhieuDoiTraView extends Stage {
 
         cardBangTra.getChildren().addAll(lblTieuDeCard2, tblTra);
 
-        // Card 3: Hình thức xử lý đổi trả
         VBox cardHinhThuc = new VBox(12);
         cardHinhThuc.getStyleClass().add("hop-noi-dung");
 
@@ -197,8 +188,10 @@ public class XemChiTietPhieuDoiTraView extends Stage {
         HBox hangChon = new HBox(30, rdoTra, rdoDoi);
         hangChon.setAlignment(Pos.CENTER_LEFT);
 
-        BigDecimal tongHangTra = phieu.tinhTongTienHangTra();
-        BigDecimal tongHangDoi = BigDecimal.ZERO;
+        double tongHangTra = phieu.tinhTongTienHangTra();
+        double tongHangDoi = phieu.tinhTongTienHangDoi();
+        double tienHoan = phieu.tinhTienHoan();
+        double tienBu = phieu.tinhTienBu();
         boolean laDoiHang = "Đổi hàng".equalsIgnoreCase(phieu.getLoaiXuLy());
 
         VBox pnlTheNoiDung = new VBox(10);
@@ -241,7 +234,6 @@ public class XemChiTietPhieuDoiTraView extends Stage {
             if (phieu.getDanhSachSanPham() != null) {
                 for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
                     if (ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().isBlank()) {
-                        tongHangDoi = tongHangDoi.add(ct.tinhThanhTienDoi());
                         dsDoi.add(ct);
                     }
                 }
@@ -250,13 +242,11 @@ public class XemChiTietPhieuDoiTraView extends Stage {
 
             Label lblKetLuanChenhLech = new Label();
             lblKetLuanChenhLech.setStyle("-fx-font-weight: bold; -fx-font-size: 13px;");
-            BigDecimal tienBu = phieu.getTienBu() != null ? phieu.getTienBu() : BigDecimal.ZERO;
-            BigDecimal tienHoan = phieu.getTienHoan() != null ? phieu.getTienHoan() : BigDecimal.ZERO;
 
-            if (tienBu.compareTo(BigDecimal.ZERO) > 0) {
+            if (tienBu > 0) {
                 lblKetLuanChenhLech.setText("Kết quả đổi trả: Khách bù thêm " + DINH_DANG_TIEN.format(tienBu));
                 lblKetLuanChenhLech.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #0284c7;");
-            } else if (tienHoan.compareTo(BigDecimal.ZERO) > 0) {
+            } else if (tienHoan > 0) {
                 lblKetLuanChenhLech.setText("Kết quả đổi trả: Hoàn lại cho khách " + DINH_DANG_TIEN.format(tienHoan));
                 lblKetLuanChenhLech.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #dc2626;");
             } else {
@@ -269,7 +259,7 @@ public class XemChiTietPhieuDoiTraView extends Stage {
             rdoTra.setSelected(true);
             HBox hangHoan = new HBox(16);
             hangHoan.setAlignment(Pos.CENTER_LEFT);
-            Label lblTienHoan = new Label(DINH_DANG_TIEN.format(phieu.getTienHoan() != null ? phieu.getTienHoan() : tongHangTra));
+            Label lblTienHoan = new Label(DINH_DANG_TIEN.format(tienHoan));
             lblTienHoan.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #b91c1c;");
             hangHoan.getChildren().addAll(
                     new Label("Hình thức hoàn:"), new Label("Tiền mặt"),
@@ -280,7 +270,6 @@ public class XemChiTietPhieuDoiTraView extends Stage {
 
         cardHinhThuc.getChildren().addAll(lblTieuDeCard3, hangChon, pnlTheNoiDung);
 
-        // Thanh tổng kết tài chính cố định ở dưới
         HBox barTomTat = new HBox(20);
         barTomTat.setPadding(new Insets(10, 14, 10, 14));
         barTomTat.setAlignment(Pos.CENTER_LEFT);
@@ -292,14 +281,12 @@ public class XemChiTietPhieuDoiTraView extends Stage {
         Label lblTongDoi = new Label("Tổng hàng đổi: " + DINH_DANG_TIEN.format(tongHangDoi));
         lblTongDoi.setStyle("-fx-font-size: 13.5px; -fx-font-weight: bold;");
 
-        BigDecimal tienBu = phieu.getTienBu() != null ? phieu.getTienBu() : BigDecimal.ZERO;
-        BigDecimal tienHoan = phieu.getTienHoan() != null ? phieu.getTienHoan() : BigDecimal.ZERO;
         Label lblChenhLech = new Label();
         lblChenhLech.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
-        if (tienBu.compareTo(BigDecimal.ZERO) > 0) {
+        if (tienBu > 0) {
             lblChenhLech.setText("Khách bù thêm: " + DINH_DANG_TIEN.format(tienBu));
             lblChenhLech.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #0284c7;");
-        } else if (tienHoan.compareTo(BigDecimal.ZERO) > 0) {
+        } else if (tienHoan > 0) {
             lblChenhLech.setText("Tiền hoàn lại: " + DINH_DANG_TIEN.format(tienHoan));
             lblChenhLech.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #dc2626;");
         } else {
