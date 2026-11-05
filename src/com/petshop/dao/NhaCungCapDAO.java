@@ -120,16 +120,42 @@ public class NhaCungCapDAO {
         }
     }
 
+        private static volatile String tenBangDonNhap = null;
+
+    private static String layTenBangDonNhap(Connection conn) {
+        if (tenBangDonNhap != null) return tenBangDonNhap;
+        synchronized (NhaCungCapDAO.class) {
+            if (tenBangDonNhap != null) return tenBangDonNhap;
+            if (conn != null && kiemTraBangTonTai(conn, "DonHang") && !kiemTraBangTonTai(conn, "DonNhapHang")) {
+                tenBangDonNhap = "DonHang";
+            } else {
+                tenBangDonNhap = "DonNhapHang";
+            }
+            return tenBangDonNhap;
+        }
+    }
+
+    private static boolean kiemTraBangTonTai(Connection conn, String tenBang) {
+        String sql = "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tenBang);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
     /** Xóa nhà cung cấp chỉ khi chưa liên kết sản phẩm hoặc phát sinh đơn nhập. */
     public boolean xoaNhaCungCap(String maNhaCungCap) {
-        String sql = """
-                DELETE FROM NhaCungCap
-                WHERE maNhaCungCap = ?
-                  AND NOT EXISTS (SELECT 1 FROM SanPham WHERE maNhaCungCap = ?)
-                  AND NOT EXISTS (SELECT 1 FROM DonHang WHERE maNhaCungCap = ?)
-                """;
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) return false;
+            String bangDH = layTenBangDonNhap(conn);
+            String sql = "DELETE FROM NhaCungCap\n" +
+                    "WHERE maNhaCungCap = ?\n" +
+                    "  AND NOT EXISTS (SELECT 1 FROM SanPham WHERE maNhaCungCap = ?)\n" +
+                    "  AND NOT EXISTS (SELECT 1 FROM " + bangDH + " WHERE maNhaCungCap = ?)";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, maNhaCungCap);
                 ps.setString(2, maNhaCungCap);

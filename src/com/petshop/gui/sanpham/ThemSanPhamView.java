@@ -9,7 +9,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
-import java.math.BigDecimal;
+
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
@@ -29,6 +29,7 @@ public class ThemSanPhamView extends VBox {
     private final TextField txtTenSanPham = new TextField();
     private final ComboBox<String> cboLoaiSanPham = new ComboBox<>();
     private final ComboBox<NhaCungCap> cboNhaCungCap = new ComboBox<>();
+    private final TextField txtGiaNhap = new TextField();
     private final TextField txtGiaBan = new TextField();
     private final TextField txtSoLuongTon = new TextField();
     private final TextField txtNguongTon = new TextField();
@@ -81,12 +82,14 @@ public class ThemSanPhamView extends VBox {
         cboNhaCungCap.setPromptText("-- Chọn nhà cung cấp (tùy chọn) --");
         cboNhaCungCap.setMaxWidth(Double.MAX_VALUE);
 
+        txtGiaNhap.setPromptText("Nhập giá nhập (giá vốn VNĐ)");
         txtGiaBan.setPromptText("Nhập giá bán (VNĐ)");
         txtSoLuongTon.setPromptText("Nhập số lượng tồn ban đầu (mặc định 0)");
         txtNguongTon.setPromptText("Nhập ngưỡng an toàn (mặc định 10)");
 
         chanNhapSoNguyen(txtSoLuongTon);
         chanNhapSoNguyen(txtNguongTon);
+        ganDinhDangTienChoO(txtGiaNhap);
         ganDinhDangTienChoO(txtGiaBan);
 
         pnlLuoi.add(new Label("Mã sản phẩm:"), 0, 0);
@@ -101,14 +104,17 @@ public class ThemSanPhamView extends VBox {
         pnlLuoi.add(new Label("Nhà cung cấp:"), 0, 3);
         pnlLuoi.add(cboNhaCungCap, 1, 3);
 
-        pnlLuoi.add(new Label("Giá bán (VNĐ) (*):"), 0, 4);
-        pnlLuoi.add(txtGiaBan, 1, 4);
+        pnlLuoi.add(new Label("Giá nhập (VNĐ) (*):"), 0, 4);
+        pnlLuoi.add(txtGiaNhap, 1, 4);
 
-        pnlLuoi.add(new Label("Số lượng tồn ban đầu:"), 0, 5);
-        pnlLuoi.add(txtSoLuongTon, 1, 5);
+        pnlLuoi.add(new Label("Giá bán (VNĐ) (*):"), 0, 5);
+        pnlLuoi.add(txtGiaBan, 1, 5);
 
-        pnlLuoi.add(new Label("Ngưỡng an toàn (*):"), 0, 6);
-        pnlLuoi.add(txtNguongTon, 1, 6);
+        pnlLuoi.add(new Label("Số lượng tồn ban đầu:"), 0, 6);
+        pnlLuoi.add(txtSoLuongTon, 1, 6);
+
+        pnlLuoi.add(new Label("Ngưỡng an toàn (*):"), 0, 7);
+        pnlLuoi.add(txtNguongTon, 1, 7);
 
         ColumnConstraints colNhan = new ColumnConstraints();
         colNhan.setMinWidth(170);
@@ -207,13 +213,25 @@ public class ThemSanPhamView extends VBox {
             throw new IllegalArgumentException("Vui lòng chọn loại sản phẩm!");
         }
 
-        String chuoiGia = boKyTuDinhDangTien(txtGiaBan.getText());
-        if (chuoiGia.isEmpty()) {
+        String chuoiGiaNhap = boKyTuDinhDangTien(txtGiaNhap.getText());
+        if (chuoiGiaNhap.isEmpty()) {
+            throw new IllegalArgumentException("Giá nhập không được để trống!");
+        }
+        double giaNhap = Double.parseDouble(chuoiGiaNhap);
+        if (giaNhap < 0) {
+            throw new IllegalArgumentException("Giá nhập phải lớn hơn hoặc bằng 0!");
+        }
+
+        String chuoiGiaBan = boKyTuDinhDangTien(txtGiaBan.getText());
+        if (chuoiGiaBan.isEmpty()) {
             throw new IllegalArgumentException("Giá bán không được để trống!");
         }
-        BigDecimal gia = new BigDecimal(chuoiGia);
-        if (gia.compareTo(BigDecimal.ZERO) < 0) {
+        double giaBan = Double.parseDouble(chuoiGiaBan);
+        if (giaBan < 0) {
             throw new IllegalArgumentException("Giá bán phải lớn hơn hoặc bằng 0!");
+        }
+        if (giaBan < giaNhap) {
+            throw new IllegalArgumentException("Giá bán phải lớn hơn hoặc bằng giá nhập!");
         }
 
         int ton = 0;
@@ -234,7 +252,8 @@ public class ThemSanPhamView extends VBox {
         sp.setMaSanPham(maSp);
         sp.setTenSanPham(ten);
         sp.setMaVach(maVach);
-        sp.setGiaBan(gia);
+        sp.setGiaNhap(giaNhap);
+        sp.setGiaBan(giaBan);
         sp.setSoLuongTon(ton);
         sp.setNguongTonToiThieu(nguong);
         sp.setDonViTinh(loaiSp);
@@ -248,6 +267,7 @@ public class ThemSanPhamView extends VBox {
         txtMaSanPham.setText(sanPhamController.taoMaSanPham());
         txtTenSanPham.clear();
         cboLoaiSanPham.setValue("Lọ");
+        txtGiaNhap.clear();
         txtGiaBan.clear();
         txtSoLuongTon.setText("0");
         txtNguongTon.setText("10");

@@ -1,6 +1,6 @@
 package com.petshop.entity;
 
-import java.math.BigDecimal;
+import java.util.Objects;
 
 /**
  * Thực thể Chi tiết đơn nhập hàng.
@@ -11,51 +11,53 @@ import java.math.BigDecimal;
  * - soLuongThucNhan INT NULL CHECK (soLuongThucNhan >= 0)
  * - donGia DECIMAL(18,2) NOT NULL CHECK (donGia >= 0)
  * - PRIMARY KEY (maDonHang, maSanPham)
+ *
+ * Tuân thủ quy chuẩn kỹ thuật:
+ * - Dùng Object Reference: SanPham sanPham
+ * - Tiền tệ dùng kiểu số thực double (không dùng BigDecimal)
+ * - Thuộc tính dẫn xuất (thanhTien) được tính bằng hàm tinhThanhTien()
  */
 public class ChiTietDonNhap {
 
     private String maDonHang;
-    private String maSanPham;
+    private SanPham sanPham;
     private int soLuong;
     private Integer soLuongThucNhan;
-    private BigDecimal donGia;
-
-    // Các trường hiển thị bổ trợ (JOIN view)
-    private String tenSanPham;
-    private String donViTinh;
+    private double donGia;
 
     public ChiTietDonNhap() {
+        this.sanPham = new SanPham();
         this.soLuong = 1;
         this.soLuongThucNhan = 1;
-        this.donGia = BigDecimal.ZERO;
+        this.donGia = 0.0;
     }
 
-    public ChiTietDonNhap(String maDonHang, String maSanPham, int soLuong, BigDecimal donGia) {
+    public ChiTietDonNhap(String maDonHang, SanPham sanPham, int soLuong, double donGia) {
         this.maDonHang = maDonHang;
-        this.maSanPham = maSanPham;
+        this.sanPham = sanPham != null ? sanPham : new SanPham();
         this.soLuong = soLuong;
         this.soLuongThucNhan = soLuong;
-        this.donGia = donGia != null ? donGia : BigDecimal.ZERO;
+        this.donGia = Math.max(0.0, donGia);
     }
 
-    public ChiTietDonNhap(String maDonHang, String maSanPham, String tenSanPham, String donViTinh, int soLuong, BigDecimal donGia) {
+    public ChiTietDonNhap(String maDonHang, String maSanPham, int soLuong, double donGia) {
         this.maDonHang = maDonHang;
-        this.maSanPham = maSanPham;
-        this.tenSanPham = tenSanPham;
-        this.donViTinh = donViTinh;
+        this.sanPham = new SanPham();
+        this.sanPham.setMaSanPham(maSanPham);
         this.soLuong = soLuong;
         this.soLuongThucNhan = soLuong;
-        this.donGia = donGia != null ? donGia : BigDecimal.ZERO;
+        this.donGia = Math.max(0.0, donGia);
     }
 
-    public ChiTietDonNhap(String maDonHang, String maSanPham, String tenSanPham, String donViTinh, int soLuong, Integer soLuongThucNhan, BigDecimal donGia) {
-        this.maDonHang = maDonHang;
-        this.maSanPham = maSanPham;
-        this.tenSanPham = tenSanPham;
-        this.donViTinh = donViTinh;
-        this.soLuong = soLuong;
+    public ChiTietDonNhap(String maDonHang, String maSanPham, String tenSanPham, String donViTinh, int soLuong, double donGia) {
+        this(maDonHang, maSanPham, soLuong, donGia);
+        this.sanPham.setTenSanPham(tenSanPham);
+        this.sanPham.setDonViTinh(donViTinh);
+    }
+
+    public ChiTietDonNhap(String maDonHang, String maSanPham, String tenSanPham, String donViTinh, int soLuong, Integer soLuongThucNhan, double donGia) {
+        this(maDonHang, maSanPham, tenSanPham, donViTinh, soLuong, donGia);
         this.soLuongThucNhan = soLuongThucNhan != null ? soLuongThucNhan : soLuong;
-        this.donGia = donGia != null ? donGia : BigDecimal.ZERO;
     }
 
     public String getMaDonHang() {
@@ -74,12 +76,45 @@ public class ChiTietDonNhap {
         this.maDonHang = maDonNhap;
     }
 
+    public SanPham getSanPham() {
+        return sanPham;
+    }
+
+    public void setSanPham(SanPham sanPham) {
+        this.sanPham = sanPham != null ? sanPham : new SanPham();
+    }
+
     public String getMaSanPham() {
-        return maSanPham;
+        return sanPham != null ? sanPham.getMaSanPham() : null;
     }
 
     public void setMaSanPham(String maSanPham) {
-        this.maSanPham = maSanPham;
+        if (this.sanPham == null) {
+            this.sanPham = new SanPham();
+        }
+        this.sanPham.setMaSanPham(maSanPham);
+    }
+
+    public String getTenSanPham() {
+        return sanPham != null ? sanPham.getTenSanPham() : null;
+    }
+
+    public void setTenSanPham(String tenSanPham) {
+        if (this.sanPham == null) {
+            this.sanPham = new SanPham();
+        }
+        this.sanPham.setTenSanPham(tenSanPham);
+    }
+
+    public String getDonViTinh() {
+        return sanPham != null ? sanPham.getDonViTinh() : null;
+    }
+
+    public void setDonViTinh(String donViTinh) {
+        if (this.sanPham == null) {
+            this.sanPham = new SanPham();
+        }
+        this.sanPham.setDonViTinh(donViTinh);
     }
 
     public int getSoLuong() {
@@ -101,62 +136,73 @@ public class ChiTietDonNhap {
         this.soLuongThucNhan = soLuongThucNhan;
     }
 
-    public BigDecimal getDonGia() {
+    public double getDonGia() {
         return donGia;
     }
 
-    public void setDonGia(BigDecimal donGia) {
-        this.donGia = donGia != null ? donGia : BigDecimal.ZERO;
-    }
-
-    public String getTenSanPham() {
-        return tenSanPham;
-    }
-
-    public void setTenSanPham(String tenSanPham) {
-        this.tenSanPham = tenSanPham;
-    }
-
-    public String getDonViTinh() {
-        return donViTinh;
-    }
-
-    public void setDonViTinh(String donViTinh) {
-        this.donViTinh = donViTinh;
+    public void setDonGia(double donGia) {
+        this.donGia = Math.max(0.0, donGia);
     }
 
     /**
-     * Thành tiền theo số lượng đặt = soLuong * donGia.
+     * Thành tiền theo số lượng đặt = soLuong * donGia (thuộc tính dẫn xuất).
      */
-    public BigDecimal getThanhTien() {
-        if (donGia == null || soLuong <= 0) {
-            return BigDecimal.ZERO;
+    public double tinhThanhTien() {
+        if (soLuong <= 0 || donGia <= 0.0) {
+            return 0.0;
         }
-        return donGia.multiply(BigDecimal.valueOf(soLuong));
+        return soLuong * donGia;
     }
 
     /**
-     * Thành tiền thực nhận = soLuongThucNhan * donGia.
+     * Thành tiền thực nhận = soLuongThucNhan * donGia (thuộc tính dẫn xuất).
      */
-    public BigDecimal getThanhTienThucNhan() {
+    public double tinhThanhTienThucNhan() {
         int thucNhan = getSoLuongThucNhan();
-        if (donGia == null || thucNhan <= 0) {
-            return BigDecimal.ZERO;
+        if (thucNhan <= 0 || donGia <= 0.0) {
+            return 0.0;
         }
-        return donGia.multiply(BigDecimal.valueOf(thucNhan));
+        return thucNhan * donGia;
+    }
+
+    /**
+     * Getter ủy quyền tương thích TableView PropertyValueFactory("thanhTien").
+     */
+    public double getThanhTien() {
+        return tinhThanhTien();
+    }
+
+    /**
+     * Getter ủy quyền tương thích TableView PropertyValueFactory("thanhTienThucNhan").
+     */
+    public double getThanhTienThucNhan() {
+        return tinhThanhTienThucNhan();
     }
 
     @Override
     public String toString() {
         return "ChiTietDonNhap{" +
                 "maDonHang='" + maDonHang + '\'' +
-                ", maSanPham='" + maSanPham + '\'' +
-                ", tenSanPham='" + tenSanPham + '\'' +
+                ", maSanPham='" + getMaSanPham() + '\'' +
+                ", tenSanPham='" + getTenSanPham() + '\'' +
                 ", soLuong=" + soLuong +
                 ", soLuongThucNhan=" + soLuongThucNhan +
                 ", donGia=" + donGia +
-                ", thanhTien=" + getThanhTien() +
-                ", thanhTienThucNhan=" + getThanhTienThucNhan() +
+                ", thanhTien=" + tinhThanhTien() +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ChiTietDonNhap that = (ChiTietDonNhap) o;
+        return Objects.equals(maDonHang, that.maDonHang) &&
+                Objects.equals(getMaSanPham(), that.getMaSanPham());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maDonHang, getMaSanPham());
     }
 }

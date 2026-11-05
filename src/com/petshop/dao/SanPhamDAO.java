@@ -54,8 +54,8 @@ public class SanPhamDAO {
      */
     public boolean themSanPham(SanPham sp) {
         String sql = """
-                INSERT INTO SanPham (maSanPham, maNhaCungCap, tenSanPham, maVach, giaBan, soLuongTon, nguongTonToiThieu, donViTinh, trangThai)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO SanPham (maSanPham, maNhaCungCap, tenSanPham, maVach, giaNhap, giaBan, soLuongTon, nguongTonToiThieu, donViTinh, trangThai)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection conn = DatabaseManager.getConnection();
@@ -68,11 +68,12 @@ public class SanPhamDAO {
             }
             ps.setString(3, sp.getTenSanPham());
             ps.setString(4, sp.getMaVach());
-            ps.setBigDecimal(5, sp.getGiaBan());
-            ps.setInt(6, sp.getSoLuongTon());
-            ps.setInt(7, sp.getNguongTonToiThieu());
-            ps.setString(8, sp.getDonViTinh());
-            ps.setBoolean(9, sp.isTrangThai());
+            ps.setDouble(5, sp.getGiaNhap());
+            ps.setDouble(6, sp.getGiaBan());
+            ps.setInt(7, sp.getSoLuongTon());
+            ps.setInt(8, sp.getNguongTonToiThieu());
+            ps.setString(9, sp.getDonViTinh());
+            ps.setBoolean(10, sp.isTrangThai());
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -86,7 +87,7 @@ public class SanPhamDAO {
     public boolean capNhatSanPham(SanPham sp) {
         String sql = """
                 UPDATE SanPham
-                SET maNhaCungCap = ?, tenSanPham = ?, maVach = ?, giaBan = ?,
+                SET maNhaCungCap = ?, tenSanPham = ?, maVach = ?, giaNhap = ?, giaBan = ?,
                     soLuongTon = ?, nguongTonToiThieu = ?, donViTinh = ?, trangThai = ?
                 WHERE maSanPham = ?
                 """;
@@ -100,12 +101,13 @@ public class SanPhamDAO {
             }
             ps.setString(2, sp.getTenSanPham());
             ps.setString(3, sp.getMaVach());
-            ps.setBigDecimal(4, sp.getGiaBan());
-            ps.setInt(5, sp.getSoLuongTon());
-            ps.setInt(6, sp.getNguongTonToiThieu());
-            ps.setString(7, sp.getDonViTinh());
-            ps.setBoolean(8, sp.isTrangThai());
-            ps.setString(9, sp.getMaSanPham());
+            ps.setDouble(4, sp.getGiaNhap());
+            ps.setDouble(5, sp.getGiaBan());
+            ps.setInt(6, sp.getSoLuongTon());
+            ps.setInt(7, sp.getNguongTonToiThieu());
+            ps.setString(8, sp.getDonViTinh());
+            ps.setBoolean(9, sp.isTrangThai());
+            ps.setString(10, sp.getMaSanPham());
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -128,16 +130,42 @@ public class SanPhamDAO {
         }
     }
 
+        private static volatile String tenBangChiTiet = null;
+
+    private static String layTenBangChiTiet(Connection conn) {
+        if (tenBangChiTiet != null) return tenBangChiTiet;
+        synchronized (SanPhamDAO.class) {
+            if (tenBangChiTiet != null) return tenBangChiTiet;
+            if (conn != null && kiemTraBangTonTai(conn, "ChiTietDonHang") && !kiemTraBangTonTai(conn, "ChiTietDonNhap")) {
+                tenBangChiTiet = "ChiTietDonHang";
+            } else {
+                tenBangChiTiet = "ChiTietDonNhap";
+            }
+            return tenBangChiTiet;
+        }
+    }
+
+    private static boolean kiemTraBangTonTai(Connection conn, String tenBang) {
+        String sql = "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tenBang);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
     /** Chỉ xóa vật lý khi hàng tồn bằng 0 và chưa có giao dịch tham chiếu. */
     public boolean xoaSanPham(String maSanPham) {
-        String sql = """
-                DELETE FROM SanPham
-                WHERE maSanPham = ? AND soLuongTon = 0
-                  AND NOT EXISTS (SELECT 1 FROM ChiTietDonHang WHERE maSanPham = ?)
-                  AND NOT EXISTS (SELECT 1 FROM ChiTietHoaDon_SanPham WHERE maSanPham = ?)
-                """;
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) return false;
+            String bangCT = layTenBangChiTiet(conn);
+            String sql = "DELETE FROM SanPham\n" +
+                    "WHERE maSanPham = ? AND soLuongTon = 0\n" +
+                    "  AND NOT EXISTS (SELECT 1 FROM " + bangCT + " WHERE maSanPham = ?)\n" +
+                    "  AND NOT EXISTS (SELECT 1 FROM ChiTietHoaDon_SanPham WHERE maSanPham = ?)";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, maSanPham);
                 ps.setString(2, maSanPham);
@@ -167,7 +195,7 @@ public class SanPhamDAO {
     public List<SanPham> layDanhSachSanPham() {
         List<SanPham> danhSach = new ArrayList<>();
         String sql = """
-                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaBan,
+                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaNhap, sp.giaBan,
                        sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
                        ncc.tenNhaCungCap
                 FROM SanPham sp
@@ -197,7 +225,7 @@ public class SanPhamDAO {
     public List<SanPham> layTheoNhaCungCap(String maNhaCungCap) {
         List<SanPham> danhSach = new ArrayList<>();
         String sql = """
-                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaBan,
+                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaNhap, sp.giaBan,
                        sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
                        ncc.tenNhaCungCap
                 FROM SanPham sp
@@ -229,7 +257,7 @@ public class SanPhamDAO {
      */
     public SanPham layTheoMa(String maSanPham) {
         String sql = """
-                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaBan,
+                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaNhap, sp.giaBan,
                        sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
                        ncc.tenNhaCungCap
                 FROM SanPham sp
@@ -261,7 +289,7 @@ public class SanPhamDAO {
     public List<SanPham> timKiemSanPham(String tuKhoa, Boolean trangThai) {
         List<SanPham> danhSach = new ArrayList<>();
         StringBuilder sql = new StringBuilder("""
-                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaBan,
+                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaNhap, sp.giaBan,
                        sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
                        ncc.tenNhaCungCap
                 FROM SanPham sp
@@ -311,7 +339,7 @@ public class SanPhamDAO {
     public List<SanPham> layDanhSachSanPhamSapHet() {
         List<SanPham> danhSach = new ArrayList<>();
         String sql = """
-                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaBan,
+                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaNhap, sp.giaBan,
                        sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
                        ncc.tenNhaCungCap
                 FROM SanPham sp
@@ -424,7 +452,8 @@ public class SanPhamDAO {
                 rs.getString("maNhaCungCap"),
                 rs.getString("tenSanPham"),
                 rs.getString("maVach"),
-                rs.getBigDecimal("giaBan"),
+                rs.getDouble("giaNhap"),
+                rs.getDouble("giaBan"),
                 rs.getInt("soLuongTon"),
                 rs.getInt("nguongTonToiThieu"),
                 donViTinh,

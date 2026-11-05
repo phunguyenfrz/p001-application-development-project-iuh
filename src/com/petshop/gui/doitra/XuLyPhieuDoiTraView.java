@@ -113,14 +113,14 @@ public class XuLyPhieuDoiTraView extends VBox {
         public DongDoiHang(SanPham sanPham, int soLuong) {
             this.sanPham = sanPham;
             this.soLuong = soLuong;
-            this.thanhTien = sanPham.getGiaBan().multiply(BigDecimal.valueOf(soLuong));
+            this.thanhTien = BigDecimal.valueOf(sanPham.getGiaBan() * soLuong);
         }
 
         public SanPham getSanPham() { return sanPham; }
         public int getSoLuong() { return soLuong; }
         public void setSoLuong(int soLuong) {
             this.soLuong = soLuong;
-            this.thanhTien = sanPham.getGiaBan().multiply(BigDecimal.valueOf(soLuong));
+            this.thanhTien = BigDecimal.valueOf(sanPham.getGiaBan() * soLuong);
         }
         public BigDecimal getThanhTien() { return thanhTien; }
     }
@@ -1103,7 +1103,7 @@ public class XuLyPhieuDoiTraView extends VBox {
                     SanPham spDoi = new SanPham();
                     spDoi.setMaSanPham(ct.getMaSanPhamDoi());
                     spDoi.setTenSanPham(ct.getTenSanPhamDoi() != null ? ct.getTenSanPhamDoi() : ct.getMaSanPhamDoi());
-                    spDoi.setGiaBan(ct.getDonGiaDoi() != null ? ct.getDonGiaDoi() : BigDecimal.ZERO);
+                    spDoi.setGiaBan(ct.getDonGiaDoi() != null ? ct.getDonGiaDoi().doubleValue() : 0);
                     spDoi.setSoLuongTon(9999);
                     dsSanPhamDoiMoi.add(new DongDoiHang(spDoi, ct.getSoLuongDoi()));
                 }
@@ -1205,7 +1205,7 @@ public class XuLyPhieuDoiTraView extends VBox {
                 ctDau.setMaSanPhamDoi(doiDau.getSanPham().getMaSanPham());
                 ctDau.setTenSanPhamDoi(doiDau.getSanPham().getTenSanPham());
                 ctDau.setSoLuongDoi(doiDau.getSoLuong());
-                ctDau.setDonGiaDoi(doiDau.getSanPham().getGiaBan());
+                ctDau.setDonGiaDoi(BigDecimal.valueOf(doiDau.getSanPham().getGiaBan()));
             }
         }
 

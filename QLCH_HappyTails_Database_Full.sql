@@ -45,7 +45,9 @@ IF OBJECT_ID('HoaDon', 'U') IS NOT NULL DROP TABLE HoaDon;
 IF OBJECT_ID('ChiTietPhieuDichVu', 'U') IS NOT NULL DROP TABLE ChiTietPhieuDichVu;
 IF OBJECT_ID('PhieuDichVu', 'U') IS NOT NULL DROP TABLE PhieuDichVu;
 IF OBJECT_ID('KhuyenMai', 'U') IS NOT NULL DROP TABLE KhuyenMai;
+IF OBJECT_ID('ChiTietDonNhap', 'U') IS NOT NULL DROP TABLE ChiTietDonNhap;
 IF OBJECT_ID('ChiTietDonHang', 'U') IS NOT NULL DROP TABLE ChiTietDonHang;
+IF OBJECT_ID('DonNhapHang', 'U') IS NOT NULL DROP TABLE DonNhapHang;
 IF OBJECT_ID('DonHang', 'U') IS NOT NULL DROP TABLE DonHang;
 IF OBJECT_ID('SanPham', 'U') IS NOT NULL DROP TABLE SanPham;
 IF OBJECT_ID('NhaCungCap', 'U') IS NOT NULL DROP TABLE NhaCungCap;
@@ -262,38 +264,49 @@ CREATE TABLE SanPham (
     maNhaCungCap VARCHAR(20),
     tenSanPham NVARCHAR(150) NOT NULL CHECK (LEN(LTRIM(RTRIM(tenSanPham))) > 0),
     maVach VARCHAR(50) NOT NULL UNIQUE CHECK (LEN(LTRIM(RTRIM(maVach))) > 0),
+    giaNhap DECIMAL(18,2) NOT NULL DEFAULT 0 CHECK (giaNhap >= 0),
     giaBan DECIMAL(18,2) NOT NULL DEFAULT 0 CHECK (giaBan >= 0),
     soLuongTon INT NOT NULL DEFAULT 0 CHECK (soLuongTon >= 0),
     nguongTonToiThieu INT NOT NULL DEFAULT 10 CHECK (nguongTonToiThieu >= 0),
     donViTinh NVARCHAR(30) NOT NULL CHECK (LEN(LTRIM(RTRIM(donViTinh))) > 0),
     trangThai BIT NOT NULL DEFAULT 1,
+    CONSTRAINT CK_SanPham_GiaBan_LonHonHoacBang_GiaNhap CHECK (giaBan >= giaNhap),
     CONSTRAINT FK_SanPham_NhaCungCap FOREIGN KEY (maNhaCungCap) REFERENCES NhaCungCap(maNhaCungCap)
 );
 GO
 
 -- Đơn nhập hàng
-CREATE TABLE DonHang (
+CREATE TABLE DonNhapHang (
     maDonHang VARCHAR(20) PRIMARY KEY CHECK (maDonHang LIKE 'DH-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]'),
     maNhaCungCap VARCHAR(20) NOT NULL,
     maNhanVien VARCHAR(20) NOT NULL,
     ngayLap DATE NOT NULL,
+    gioLap TIME(0) NULL,
     tongTien DECIMAL(18,2) NOT NULL DEFAULT 0 CHECK (tongTien >= 0),
     trangThai NVARCHAR(30) NOT NULL DEFAULT N'Chờ nhận hàng' 
         CHECK (trangThai IN (N'Chờ nhận hàng', N'Hoàn tất', N'Đã hủy')),
-    CONSTRAINT FK_DonHang_NhaCungCap FOREIGN KEY (maNhaCungCap) REFERENCES NhaCungCap(maNhaCungCap),
-    CONSTRAINT FK_DonHang_NhanVien FOREIGN KEY (maNhanVien) REFERENCES NhanVien(maNhanVien)
+    tongTienThucNhan DECIMAL(18,2) NULL,
+    maNhanVienNhan VARCHAR(20) NULL,
+    ngayGioNhan DATETIME2 NULL,
+    maNhanVienHuy VARCHAR(20) NULL,
+    lyDoHuy NVARCHAR(255) NULL,
+    CONSTRAINT FK_DonNhapHang_NhaCungCap FOREIGN KEY (maNhaCungCap) REFERENCES NhaCungCap(maNhaCungCap),
+    CONSTRAINT FK_DonNhapHang_NhanVien FOREIGN KEY (maNhanVien) REFERENCES NhanVien(maNhanVien),
+    CONSTRAINT FK_DonNhapHang_NhanVienNhan FOREIGN KEY (maNhanVienNhan) REFERENCES NhanVien(maNhanVien),
+    CONSTRAINT FK_DonNhapHang_NhanVienHuy FOREIGN KEY (maNhanVienHuy) REFERENCES NhanVien(maNhanVien)
 );
 GO
 
 -- Chi tiết đơn nhập hàng
-CREATE TABLE ChiTietDonHang (
+CREATE TABLE ChiTietDonNhap (
     maDonHang VARCHAR(20) NOT NULL,
     maSanPham VARCHAR(20) NOT NULL,
     soLuong INT NOT NULL CHECK (soLuong > 0),
+    soLuongThucNhan INT NULL CHECK (soLuongThucNhan >= 0),
     donGia DECIMAL(18,2) NOT NULL CHECK (donGia >= 0),
     PRIMARY KEY (maDonHang, maSanPham),
-    CONSTRAINT FK_CTDonHang_DonHang FOREIGN KEY (maDonHang) REFERENCES DonHang(maDonHang),
-    CONSTRAINT FK_CTDonHang_SanPham FOREIGN KEY (maSanPham) REFERENCES SanPham(maSanPham)
+    CONSTRAINT FK_CTDonNhap_DonNhapHang FOREIGN KEY (maDonHang) REFERENCES DonNhapHang(maDonHang),
+    CONSTRAINT FK_CTDonNhap_SanPham FOREIGN KEY (maSanPham) REFERENCES SanPham(maSanPham)
 );
 GO
 
@@ -496,21 +509,21 @@ VALUES
 ('NCC-20261005-000001', N'Công ty CP Thức Ăn Thú Cưng Royal Canin VN', '0283812345', N'KCN Tân Bình, TP.HCM', 'contact@royalcanin.vn', 1),
 ('NCC-20261005-000002', N'Nhà phân phối Phụ kiện thú cưng PetCare',     '0283898765', N'Quận 10, TP.HCM',      'support@petcare.vn',    1);
 
-INSERT INTO SanPham (maSanPham, maNhaCungCap, tenSanPham, maVach, giaBan, soLuongTon, nguongTonToiThieu, donViTinh, trangThai)
+INSERT INTO SanPham (maSanPham, maNhaCungCap, tenSanPham, maVach, giaNhap, giaBan, soLuongTon, nguongTonToiThieu, donViTinh, trangThai)
 VALUES 
-('SP-20261005-000001', 'NCC-20261005-000001', N'Hạt Royal Canin Indoor 2kg', '893123456701', 350000, 45, 10, N'Gói', 1),
-('SP-20261005-000002', 'NCC-20261005-000001', N'Pate Whiskas Cá Biển 85g',   '893123456702', 20000,  120, 20, N'Gói', 1),
-('SP-20261005-000003', 'NCC-20261005-000002', N'Cát vệ sinh Cature gỗ 6L',   '893123456703', 140000, 30, 10, N'Túi', 1),
-('SP-20261005-000004', 'NCC-20261005-000002', N'Dây dắt kèm yếm ngực size M', '893123456704', 85000,  15, 5,  N'Cái', 1),
-('SP-20261005-000005', 'NCC-20261005-000002', N'Sữa tắm thú cưng SOS 530ml', '893123456705', 120000, 25, 8,  N'Chai', 1);
+('SP-20261005-000001', 'NCC-20261005-000001', N'Hạt Royal Canin Indoor 2kg', '893123456701', 245000, 350000, 45, 10, N'Gói', 1),
+('SP-20261005-000002', 'NCC-20261005-000001', N'Pate Whiskas Cá Biển 85g',   '893123456702', 14000,  20000,  120, 20, N'Gói', 1),
+('SP-20261005-000003', 'NCC-20261005-000002', N'Cát vệ sinh Cature gỗ 6L',   '893123456703', 98000,  140000, 30, 10, N'Túi', 1),
+('SP-20261005-000004', 'NCC-20261005-000002', N'Dây dắt kèm yếm ngực size M', '893123456704', 59500,  85000,  15, 5,  N'Cái', 1),
+('SP-20261005-000005', 'NCC-20261005-000002', N'Sữa tắm thú cưng SOS 530ml', '893123456705', 84000,  120000, 25, 8,  N'Chai', 1);
 
-INSERT INTO DonHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai)
+INSERT INTO DonNhapHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, gioLap, tongTien, trangThai)
 VALUES
-('DH-20261005-000001', 'NCC-20261005-000001', 'NV-20261005-000001', '2026-10-02', 17500000, N'Hoàn tất');
+('DH-20261005-000001', 'NCC-20261005-000001', 'NV-20261005-000001', '2026-10-02', '08:30:00', 12250000, N'Hoàn tất');
 
-INSERT INTO ChiTietDonHang (maDonHang, maSanPham, soLuong, donGia)
+INSERT INTO ChiTietDonNhap (maDonHang, maSanPham, soLuong, soLuongThucNhan, donGia)
 VALUES
-('DH-20261005-000001', 'SP-20261005-000001', 50, 350000);
+('DH-20261005-000001', 'SP-20261005-000001', 50, 50, 245000);
 
 INSERT INTO KhuyenMai (maKhuyenMai, tenChuongTrinh, phanTramGiam, ngayBatDau, ngayKetThuc, trangThai)
 VALUES 
@@ -582,13 +595,13 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ChiTietPDV_MaDichVu' 
 
 -- Sản phẩm & Đơn nhập hàng
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_SanPham_TrangThai' AND object_id = OBJECT_ID(N'dbo.SanPham'))
-    CREATE NONCLUSTERED INDEX IX_SanPham_TrangThai ON dbo.SanPham (trangThai) INCLUDE (tenSanPham, giaBan, soLuongTon, nguongTonToiThieu);
+    CREATE NONCLUSTERED INDEX IX_SanPham_TrangThai ON dbo.SanPham (trangThai) INCLUDE (tenSanPham, giaNhap, giaBan, soLuongTon, nguongTonToiThieu);
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_SanPham_MaNhaCungCap' AND object_id = OBJECT_ID(N'dbo.SanPham'))
     CREATE NONCLUSTERED INDEX IX_SanPham_MaNhaCungCap ON dbo.SanPham (maNhaCungCap);
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_DonHang_NgayLap' AND object_id = OBJECT_ID(N'dbo.DonHang'))
-    CREATE NONCLUSTERED INDEX IX_DonHang_NgayLap ON dbo.DonHang (ngayLap DESC, trangThai) INCLUDE (maNhaCungCap, maNhanVien, tongTien);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_DonNhapHang_NgayLap' AND object_id = OBJECT_ID(N'dbo.DonNhapHang'))
+    CREATE NONCLUSTERED INDEX IX_DonNhapHang_NgayLap ON dbo.DonNhapHang (ngayLap DESC, trangThai) INCLUDE (maNhaCungCap, maNhanVien, tongTien);
 
 -- Hóa đơn & Phiếu đổi trả
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_HoaDon_NgayLap' AND object_id = OBJECT_ID(N'dbo.HoaDon'))

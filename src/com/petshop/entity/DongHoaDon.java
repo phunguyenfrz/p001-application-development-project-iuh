@@ -53,7 +53,7 @@ public class DongHoaDon {
                 sp.getTenSanPham(),
                 sp.getDonViTinh() != null ? sp.getDonViTinh() : "Cái",
                 soLuong,
-                sp.getGiaBan(),
+                BigDecimal.valueOf(sp.getGiaBan()),
                 ""
         );
     }

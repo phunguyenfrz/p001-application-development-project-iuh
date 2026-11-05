@@ -50,4 +50,59 @@ public class SanPhamTest {
 
         assertEquals("Ngừng kinh doanh", sp.getTrangThaiHienThi(), "Khi ngừng kinh doanh thì ưu tiên hiển thị 'Ngừng kinh doanh'");
     }
+
+    @Test
+    void testGiaNhapVaGiaBanKhoiTaoMacDinh() {
+        SanPham sp = new SanPham();
+        assertEquals(0.0, sp.getGiaNhap(), 0.001, "Giá nhập mặc định phải bằng 0");
+        assertEquals(0.0, sp.getGiaBan(), 0.001, "Giá bán mặc định phải bằng 0");
+    }
+
+    @Test
+    void testGiaNhapVaGiaBanSetter() {
+        SanPham sp = new SanPham();
+        sp.setGiaNhap(150000.0);
+        sp.setGiaBan(220000.0);
+        assertEquals(150000.0, sp.getGiaNhap(), 0.001);
+        assertEquals(220000.0, sp.getGiaBan(), 0.001);
+    }
+
+    @Test
+    void testPhanLoaiTinhTrangTonKho() {
+        SanPham sp = new SanPham();
+        sp.setNguongTonToiThieu(10);
+
+        // Trường hợp 1: Tồn kho <= 0 -> Hết hàng
+        sp.setSoLuongTon(0);
+        assertTrue(sp.isHetHang());
+        assertFalse(sp.isSapHetHang());
+        assertFalse(sp.isConHang());
+        assertEquals("Hết hàng", sp.getTinhTrangTonKho());
+
+        // Trường hợp 2: 0 < Tồn kho <= Ngưỡng -> Sắp hết hàng
+        sp.setSoLuongTon(10);
+        assertFalse(sp.isHetHang());
+        assertTrue(sp.isSapHetHang());
+        assertFalse(sp.isConHang());
+        assertEquals("Sắp hết hàng", sp.getTinhTrangTonKho());
+
+        sp.setSoLuongTon(5);
+        assertFalse(sp.isHetHang());
+        assertTrue(sp.isSapHetHang());
+        assertFalse(sp.isConHang());
+        assertEquals("Sắp hết hàng", sp.getTinhTrangTonKho());
+
+        // Trường hợp 3: Tồn kho > Ngưỡng -> Còn hàng
+        sp.setSoLuongTon(11);
+        assertFalse(sp.isHetHang());
+        assertFalse(sp.isSapHetHang());
+        assertTrue(sp.isConHang());
+        assertEquals("Còn hàng", sp.getTinhTrangTonKho());
+
+        sp.setSoLuongTon(100);
+        assertFalse(sp.isHetHang());
+        assertFalse(sp.isSapHetHang());
+        assertTrue(sp.isConHang());
+        assertEquals("Còn hàng", sp.getTinhTrangTonKho());
+    }
 }

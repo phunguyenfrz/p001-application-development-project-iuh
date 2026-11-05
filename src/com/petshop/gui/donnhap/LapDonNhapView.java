@@ -22,7 +22,6 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.StringConverter;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -292,7 +291,7 @@ public class LapDonNhapView extends VBox {
         });
 
         // Cột đơn giá (chỉnh sửa bằng TextField)
-        TableColumn<ChiTietDonNhap, BigDecimal> cotDonGia = new TableColumn<>("Đơn giá");
+        TableColumn<ChiTietDonNhap, Double> cotDonGia = new TableColumn<>("Đơn giá");
         cotDonGia.setMinWidth(130);
         cotDonGia.setStyle("-fx-alignment: CENTER-RIGHT;");
         cotDonGia.setCellValueFactory(new PropertyValueFactory<>("donGia"));
@@ -321,26 +320,26 @@ public class LapDonNhapView extends VBox {
             }
 
             @Override
-            protected void updateItem(BigDecimal item, boolean empty) {
+            protected void updateItem(Double item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setGraphic(null);
                 } else {
-                    txtGia.setText(item.toBigInteger().toString());
+                    txtGia.setText(String.valueOf((long) Math.round(item)));
                     setGraphic(txtGia);
                 }
             }
         });
 
         // Cột thành tiền
-        TableColumn<ChiTietDonNhap, BigDecimal> cotThanhTien = new TableColumn<>("Thành tiền");
+        TableColumn<ChiTietDonNhap, Double> cotThanhTien = new TableColumn<>("Thành tiền");
         cotThanhTien.setMinWidth(130);
         cotThanhTien.setStyle("-fx-alignment: CENTER-RIGHT;");
         cotThanhTien.setCellValueFactory(cellData ->
-                new ReadOnlyObjectWrapper<>(cellData.getValue().getThanhTien()));
+                new ReadOnlyObjectWrapper<>(cellData.getValue().tinhThanhTien()));
         cotThanhTien.setCellFactory(col -> new TableCell<>() {
             @Override
-            protected void updateItem(BigDecimal item, boolean empty) {
+            protected void updateItem(Double item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
@@ -395,12 +394,12 @@ public class LapDonNhapView extends VBox {
     private void capNhatDonGia(ChiTietDonNhap chiTiet, String giaText) {
         try {
             if (giaText == null || giaText.trim().isEmpty()) {
-                chiTiet.setDonGia(BigDecimal.ZERO);
+                chiTiet.setDonGia(0.0);
             } else {
-                chiTiet.setDonGia(new BigDecimal(giaText.trim()));
+                chiTiet.setDonGia(Double.parseDouble(giaText.trim()));
             }
         } catch (NumberFormatException ex) {
-            chiTiet.setDonGia(BigDecimal.ZERO);
+            chiTiet.setDonGia(0.0);
         }
         capNhatTongTien();
         bangChiTiet.refresh();
@@ -492,7 +491,7 @@ public class LapDonNhapView extends VBox {
         chiTietMoi.setDonViTinh(sanPhamDuocChon.getDonViTinh());
         chiTietMoi.setSoLuong(1);
         // Đơn giá nhập mặc định lấy giá bán làm gợi ý
-        chiTietMoi.setDonGia(sanPhamDuocChon.getGiaBan() != null ? sanPhamDuocChon.getGiaBan() : BigDecimal.ZERO);
+        chiTietMoi.setDonGia(sanPhamDuocChon.getGiaNhap() > 0 ? sanPhamDuocChon.getGiaNhap() : sanPhamDuocChon.getGiaBan());
 
         danhSachChiTiet.add(chiTietMoi);
         nhaCungCapTheoSanPham.put(sanPhamDuocChon.getMaSanPham(), sanPhamDuocChon.getMaNhaCungCap());
@@ -519,7 +518,7 @@ public class LapDonNhapView extends VBox {
                 hienThiLoi("Số lượng sản phẩm \"" + ct.getTenSanPham() + "\" phải lớn hơn 0.");
                 return;
             }
-            if (ct.getDonGia() == null || ct.getDonGia().compareTo(BigDecimal.ZERO) <= 0) {
+            if (ct.getDonGia() <= 0.0) {
                 hienThiLoi("Đơn giá sản phẩm \"" + ct.getTenSanPham() + "\" phải lớn hơn 0.");
                 return;
             }
@@ -614,9 +613,9 @@ public class LapDonNhapView extends VBox {
      * Cập nhật nhãn tổng tiền.
      */
     private void capNhatTongTien() {
-        BigDecimal tongTien = BigDecimal.ZERO;
+        double tongTien = 0.0;
         for (ChiTietDonNhap ct : danhSachChiTiet) {
-            tongTien = tongTien.add(ct.getThanhTien());
+            tongTien += ct.tinhThanhTien();
         }
         lblTongTien.setText("Tổng tiền: " + DINH_DANG_TIEN.format(tongTien) + " đ");
     }
@@ -837,11 +836,18 @@ public class LapDonNhapView extends VBox {
             colDVT.setStyle("-fx-alignment: CENTER;");
             colDVT.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getDonViTinh()));
 
+            TableColumn<SanPham, String> colGiaNhap = new TableColumn<>("Giá nhập");
+            colGiaNhap.setPrefWidth(120);
+            colGiaNhap.setStyle("-fx-alignment: CENTER-RIGHT;");
+            colGiaNhap.setCellValueFactory(d -> new SimpleStringProperty(
+                    dinhDangTien.format(d.getValue().getGiaNhap())
+            ));
+
             TableColumn<SanPham, String> colGia = new TableColumn<>("Giá bán");
             colGia.setPrefWidth(120);
             colGia.setStyle("-fx-alignment: CENTER-RIGHT;");
             colGia.setCellValueFactory(d -> new SimpleStringProperty(
-                    d.getValue().getGiaBan() != null ? dinhDangTien.format(d.getValue().getGiaBan()) : "0"
+                    dinhDangTien.format(d.getValue().getGiaBan())
             ));
 
             TableColumn<SanPham, String> colTon = new TableColumn<>("SL Tồn");
@@ -851,7 +857,7 @@ public class LapDonNhapView extends VBox {
                     String.valueOf(d.getValue().getSoLuongTon())
             ));
 
-            tblSanPham.getColumns().setAll(List.of(colMa, colTen, colNhaCungCap, colTrangThaiNhaCungCap, colDVT, colGia, colTon));
+            tblSanPham.getColumns().setAll(List.of(colMa, colTen, colNhaCungCap, colTrangThaiNhaCungCap, colDVT, colGiaNhap, colGia, colTon));
         }
 
         /**

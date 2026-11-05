@@ -169,14 +169,14 @@ public class LapPhieuDoiTraView extends VBox {
         public DongDoiHang(SanPham sanPham, int soLuong) {
             this.sanPham = sanPham;
             this.soLuong = soLuong;
-            this.thanhTien = sanPham.getGiaBan().multiply(BigDecimal.valueOf(soLuong));
+            this.thanhTien = BigDecimal.valueOf(sanPham.getGiaBan() * soLuong);
         }
 
         public SanPham getSanPham() { return sanPham; }
         public int getSoLuong() { return soLuong; }
         public void setSoLuong(int soLuong) {
             this.soLuong = soLuong;
-            this.thanhTien = sanPham.getGiaBan().multiply(BigDecimal.valueOf(soLuong));
+            this.thanhTien = BigDecimal.valueOf(sanPham.getGiaBan() * soLuong);
         }
         public BigDecimal getThanhTien() { return thanhTien; }
     }
@@ -1071,7 +1071,7 @@ public class LapPhieuDoiTraView extends VBox {
                 ctDau.setMaSanPhamDoi(doiDau.getSanPham().getMaSanPham());
                 ctDau.setTenSanPhamDoi(doiDau.getSanPham().getTenSanPham());
                 ctDau.setSoLuongDoi(doiDau.getSoLuong());
-                ctDau.setDonGiaDoi(doiDau.getSanPham().getGiaBan());
+                ctDau.setDonGiaDoi(BigDecimal.valueOf(doiDau.getSanPham().getGiaBan()));
             }
         }
 

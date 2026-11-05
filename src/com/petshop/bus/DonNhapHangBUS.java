@@ -5,7 +5,6 @@ import com.petshop.entity.ChiTietDonNhap;
 import com.petshop.entity.DonNhapHang;
 import com.petshop.entity.TaiKhoan;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -123,7 +122,7 @@ public class DonNhapHangBUS {
             }
         }
 
-        BigDecimal tongTien = BigDecimal.ZERO;
+        double tongTien = 0.0;
         Set<String> sanPhamDaCo = new HashSet<>();
 
         for (ChiTietDonNhap ct : danhSachChiTiet) {
@@ -136,15 +135,15 @@ public class DonNhapHangBUS {
             if (ct.getSoLuong() <= 0) {
                 throw new IllegalArgumentException("Số lượng của sản phẩm " + ct.getMaSanPham() + " phải lớn hơn 0!");
             }
-            if (ct.getDonGia() == null || ct.getDonGia().compareTo(BigDecimal.ZERO) < 0) {
+            if (ct.getDonGia() < 0.0) {
                 throw new IllegalArgumentException("Đơn giá của sản phẩm " + ct.getMaSanPham() + " không được âm!");
             }
 
             ct.setMaDonHang(donHang.getMaDonHang());
-            tongTien = tongTien.add(ct.getThanhTien());
+            tongTien += ct.tinhThanhTien();
         }
 
-        donHang.setTongTien(tongTien);
+        donHang.setDanhSachChiTiet(danhSachChiTiet);
         donHang.setTrangThai(DonNhapHang.TRANG_THAI_CHO_NHAN);
         if (donHang.getNgayLap() == null) {
             donHang.setNgayLap(LocalDate.now());
@@ -188,7 +187,7 @@ public class DonNhapHangBUS {
             if (donHang.getNgayLap() == null) donHang.setNgayLap(LocalDate.now());
             if (donHang.getGioLap() == null) donHang.setGioLap(LocalTime.now().withNano(0));
 
-            BigDecimal tongTien = BigDecimal.ZERO;
+            double tongTien = 0.0;
             for (ChiTietDonNhap ct : donHang.getDanhSachChiTiet()) {
                 if (ct == null || ct.getMaSanPham() == null || ct.getMaSanPham().isBlank()) {
                     throw new IllegalArgumentException("Sản phẩm trong đơn nhập không hợp lệ.");
@@ -199,12 +198,12 @@ public class DonNhapHangBUS {
                 if (ct.getSoLuong() <= 0) {
                     throw new IllegalArgumentException("Số lượng sản phẩm " + ct.getMaSanPham() + " phải lớn hơn 0.");
                 }
-                if (ct.getDonGia() == null || ct.getDonGia().compareTo(BigDecimal.ZERO) < 0) {
+                if (ct.getDonGia() < 0.0) {
                     throw new IllegalArgumentException("Đơn giá sản phẩm " + ct.getMaSanPham() + " không hợp lệ.");
                 }
-                tongTien = tongTien.add(ct.getThanhTien());
+                tongTien += ct.tinhThanhTien();
             }
-            donHang.setTongTien(tongTien);
+            // tongTien tinh tu dong qua tinhTongTien()
             donHang.setTrangThai(DonNhapHang.TRANG_THAI_CHO_NHAN);
         }
         return donNhapHangDAO.themNhieuDonNhapHang(danhSachDonHang);
@@ -275,7 +274,7 @@ public class DonNhapHangBUS {
         }
 
         boolean coItNhatMotSanPhamThucNhan = false;
-        BigDecimal tongTienThucNhan = BigDecimal.ZERO;
+        double tongTienThucNhan = 0.0;
         List<ChiTietDonNhap> dsHangThieu = new ArrayList<>();
         int tongSoLuongThieu = 0;
 
@@ -291,7 +290,7 @@ public class DonNhapHangBUS {
             if (thucNhan > 0) {
                 coItNhatMotSanPhamThucNhan = true;
             }
-            tongTienThucNhan = tongTienThucNhan.add(ct.getThanhTienThucNhan());
+            tongTienThucNhan += ct.tinhThanhTienThucNhan();
 
             int thieu = ct.getSoLuong() - thucNhan;
             if (thieu > 0) {
@@ -326,11 +325,6 @@ public class DonNhapHangBUS {
                 donNhapBu.setLyDoHuy("Đơn nhập bù cho " + maDonHang + " (thiếu " + tongSoLuongThieu + " sp)");
                 donNhapBu.setDanhSachChiTiet(dsHangThieu);
 
-                BigDecimal tongTienBu = BigDecimal.ZERO;
-                for (ChiTietDonNhap b : dsHangThieu) {
-                    tongTienBu = tongTienBu.add(b.getThanhTien());
-                }
-                donNhapBu.setTongTien(tongTienBu);
 
                 ghiChuGhiNhan = "Giao thiếu " + tongSoLuongThieu + " sp. Đã tách đơn nhập bù.";
             } else {

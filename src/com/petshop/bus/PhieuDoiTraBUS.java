@@ -308,8 +308,8 @@ public class PhieuDoiTraBUS {
                     }
                     if (ct.getDonGiaDoi() == null || ct.getDonGiaDoi().compareTo(BigDecimal.ZERO) <= 0) {
                         SanPham spDoi = sanPhamDAO.layTheoMa(ct.getMaSanPhamDoi());
-                        if (spDoi != null && spDoi.getGiaBan() != null) {
-                            ct.setDonGiaDoi(spDoi.getGiaBan());
+                        if (spDoi != null) {
+                            ct.setDonGiaDoi(BigDecimal.valueOf(spDoi.getGiaBan()));
                         }
                     }
                     tongTienDoi = tongTienDoi.add(ct.tinhThanhTienDoi());
@@ -406,8 +406,8 @@ public class PhieuDoiTraBUS {
             if (laDoiHang(phieu.getLoaiXuLy()) && ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().trim().isEmpty()) {
                 if (ct.getDonGiaDoi() == null || ct.getDonGiaDoi().compareTo(BigDecimal.ZERO) <= 0) {
                     SanPham spDoi = sanPhamDAO.layTheoMa(ct.getMaSanPhamDoi());
-                    if (spDoi != null && spDoi.getGiaBan() != null) {
-                        ct.setDonGiaDoi(spDoi.getGiaBan());
+                    if (spDoi != null) {
+                        ct.setDonGiaDoi(BigDecimal.valueOf(spDoi.getGiaBan()));
                     }
                 }
                 tongTienDoi = tongTienDoi.add(ct.tinhThanhTienDoi());

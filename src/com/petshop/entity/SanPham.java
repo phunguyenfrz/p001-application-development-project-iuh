@@ -1,10 +1,11 @@
 package com.petshop.entity;
 
-import java.math.BigDecimal;
+import java.util.Objects;
 
 /**
  * Thực thể Sản phẩm (hàng hóa) trong cửa hàng Happy Tails.
  * Khớp bảng SanPham trong CSDL SQL Server.
+ * Tuân thủ quy định: sử dụng kiểu double cho tiền tệ.
  */
 public class SanPham {
 
@@ -12,7 +13,8 @@ public class SanPham {
     private String maNhaCungCap;
     private String tenSanPham;
     private String maVach;
-    private BigDecimal giaBan;
+    private double giaNhap;
+    private double giaBan;
     private int soLuongTon;
     private int nguongTonToiThieu;
     private String donViTinh;
@@ -22,19 +24,21 @@ public class SanPham {
     private String tenNhaCungCap;
 
     public SanPham() {
-        this.giaBan = BigDecimal.ZERO;
+        this.giaNhap = 0;
+        this.giaBan = 0;
         this.soLuongTon = 0;
         this.nguongTonToiThieu = 10;
         this.trangThai = true;
     }
 
     public SanPham(String maSanPham, String maNhaCungCap, String tenSanPham, String maVach,
-                   BigDecimal giaBan, int soLuongTon, int nguongTonToiThieu, String donViTinh, boolean trangThai) {
+                   double giaNhap, double giaBan, int soLuongTon, int nguongTonToiThieu, String donViTinh, boolean trangThai) {
         this.maSanPham = maSanPham;
         this.maNhaCungCap = maNhaCungCap;
         this.tenSanPham = tenSanPham;
         this.maVach = maVach;
-        this.giaBan = giaBan != null ? giaBan : BigDecimal.ZERO;
+        this.giaNhap = giaNhap;
+        this.giaBan = giaBan;
         this.soLuongTon = soLuongTon;
         this.nguongTonToiThieu = nguongTonToiThieu;
         this.donViTinh = donViTinh;
@@ -73,12 +77,20 @@ public class SanPham {
         this.maVach = maVach;
     }
 
-    public BigDecimal getGiaBan() {
+    public double getGiaNhap() {
+        return giaNhap;
+    }
+
+    public void setGiaNhap(double giaNhap) {
+        this.giaNhap = giaNhap;
+    }
+
+    public double getGiaBan() {
         return giaBan;
     }
 
-    public void setGiaBan(BigDecimal giaBan) {
-        this.giaBan = giaBan != null ? giaBan : BigDecimal.ZERO;
+    public void setGiaBan(double giaBan) {
+        this.giaBan = giaBan;
     }
 
     public int getSoLuongTon() {
@@ -129,11 +141,32 @@ public class SanPham {
         return this.soLuongTon <= 0;
     }
 
+    public boolean isConHang() {
+        return this.soLuongTon > this.nguongTonToiThieu;
+    }
+
+    /**
+     * Tình trạng tồn kho theo 3 mức chuẩn (Task Tồn kho):
+     * - "Hết hàng": số lượng tồn <= 0
+     * - "Sắp hết hàng": 0 < số lượng tồn <= ngưỡng tồn tối thiểu
+     * - "Còn hàng": số lượng tồn > ngưỡng tồn tối thiểu
+     */
+    public String getTinhTrangTonKho() {
+        if (isHetHang()) {
+            return "Hết hàng";
+        }
+        if (isSapHetHang()) {
+            return "Sắp hết hàng";
+        }
+        return "Còn hàng";
+    }
+
     /**
      * Trạng thái hiển thị sản phẩm:
      * - Nếu trangThai == false: "Ngừng kinh doanh"
      * - Nếu trangThai == true và soLuongTon <= 0: "Hết hàng"
-     * - Nếu trangThai == true và soLuongTon > 0: "Đang kinh doanh"
+     * - Nếu trangThai == true và soLuongTon > 0 và <= nguong: "Sắp hết hàng"
+     * - Nếu trangThai == true và soLuongTon > nguong: "Đang kinh doanh"
      */
     public String getTrangThaiHienThi() {
         if (!this.trangThai) {
@@ -147,5 +180,31 @@ public class SanPham {
         }
         return "Đang kinh doanh";
     }
-}
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SanPham sanPham = (SanPham) o;
+        return Objects.equals(maSanPham, sanPham.maSanPham);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maSanPham);
+    }
+
+    @Override
+    public String toString() {
+        return "SanPham{" +
+                "maSanPham='" + maSanPham + '\'' +
+                ", tenSanPham='" + tenSanPham + '\'' +
+                ", giaNhap=" + giaNhap +
+                ", giaBan=" + giaBan +
+                ", soLuongTon=" + soLuongTon +
+                ", nguongTonToiThieu=" + nguongTonToiThieu +
+                ", donViTinh='" + donViTinh + '\'' +
+                ", trangThai=" + trangThai +
+                '}';
+    }
+}

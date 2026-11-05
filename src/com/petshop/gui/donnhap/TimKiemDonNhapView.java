@@ -13,7 +13,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -207,8 +206,8 @@ public class TimKiemDonNhapView extends VBox {
         colTongTien.setPrefWidth(120);
         colTongTien.setStyle("-fx-alignment: CENTER-RIGHT;");
         colTongTien.setCellValueFactory(d -> {
-            BigDecimal tien = d.getValue().getTongTien();
-            return new SimpleStringProperty(tien != null ? DINH_DANG_TIEN.format(tien) : "0");
+            double tien = d.getValue().getTongTien();
+            return new SimpleStringProperty(DINH_DANG_TIEN.format(tien));
         });
 
         // Cột trạng thái (có tô màu)
