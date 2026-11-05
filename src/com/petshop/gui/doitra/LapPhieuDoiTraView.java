@@ -115,6 +115,11 @@ public class LapPhieuDoiTraView extends VBox {
             }
         }
 
+        public DongTraHang(String maSanPham, String tenSanPham, double donGia,
+                           int soLuongDaMua, int soLuongDaTraTruoc, boolean laDichVu) {
+            this(maSanPham, tenSanPham, BigDecimal.valueOf(donGia), soLuongDaMua, soLuongDaTraTruoc, laDichVu);
+        }
+
         public BooleanProperty chonProperty() { return chon; }
         public boolean isChon() { return chon.get(); }
         public void setChon(boolean val) { chon.set(val); }
@@ -320,7 +325,7 @@ public class LapPhieuDoiTraView extends VBox {
                 String khach = hd.getTenKhachHang() != null ? hd.getTenKhachHang() : "Khách vãng lai";
                 String sdt = hd.getSoDienThoaiKhachHang() != null && !hd.getSoDienThoaiKhachHang().isBlank()
                         ? " (" + hd.getSoDienThoaiKhachHang() + ")" : "";
-                String tien = hd.getTongTien() != null ? DINH_DANG_TIEN.format(hd.getTongTien()) : "0 VNĐ";
+                String tien = DINH_DANG_TIEN.format(hd.getTongTien());
                 return hd.getMaHoaDon() + " | Ngày: " + ngay + " | " + khach + sdt + " | " + tien;
             }
 

@@ -114,8 +114,16 @@ public class PhieuDichVu {
         return ngayTiepNhan;
     }
 
+    public LocalDate getNgayLap() {
+        return ngayTiepNhan;
+    }
+
     public void setNgayTiepNhan(LocalDate ngayTiepNhan) {
         this.ngayTiepNhan = ngayTiepNhan;
+    }
+
+    public void setNgayLap(LocalDate ngayLap) {
+        this.ngayTiepNhan = ngayLap;
     }
 
     public LocalTime getGioTiepNhan() {

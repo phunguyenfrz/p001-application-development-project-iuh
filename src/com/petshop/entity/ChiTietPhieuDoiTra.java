@@ -69,6 +69,12 @@ public class ChiTietPhieuDoiTra {
         this.ghiChu = ghiChu;
     }
 
+    public ChiTietPhieuDoiTra(String maPhieuDoiTra, String maHoaDon, String maSanPham, String tenSanPham,
+                              int soLuong, double donGia, String lyDo, String tinhTrang,
+                              String huongXuLy, String ghiChu) {
+        this(maPhieuDoiTra, maHoaDon, maSanPham, tenSanPham, soLuong, BigDecimal.valueOf(donGia), lyDo, tinhTrang, huongXuLy, ghiChu);
+    }
+
     /**
      * Tự động gợi ý hướng xử lý hàng nhận lại theo Quy tắc QL26:
      * - Nguyên vẹn + Không phù hợp/Khác -> Nhập lại kho bán.

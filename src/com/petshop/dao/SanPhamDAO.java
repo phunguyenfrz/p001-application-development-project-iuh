@@ -256,6 +256,37 @@ public class SanPhamDAO {
     }
 
     /**
+     * Lấy sản phẩm theo mã sản phẩm hoặc mã vạch (phục vụ quét mã POS nhanh).
+     */
+    public SanPham layTheoMaHoacMaVach(String input) {
+        if (input == null || input.isBlank()) return null;
+        String sql = """
+                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaBan,
+                       sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
+                       ncc.tenNhaCungCap
+                FROM SanPham sp
+                LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
+                WHERE sp.maSanPham = ? OR sp.maVach = ?
+                """;
+
+        try (Connection conn = DatabaseManager.getConnection()) {
+            if (conn == null) return null;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, input.trim());
+                ps.setString(2, input.trim());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return docDongSanPham(rs);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi tìm sản phẩm theo mã hoặc mã vạch: " + e.getMessage(), e);
+        }
+        return null;
+    }
+
+    /**
      * Tìm kiếm sản phẩm theo từ khóa (mã, tên hoặc mã vạch).
      */
     public List<SanPham> timKiemSanPham(String tuKhoa, Boolean trangThai) {

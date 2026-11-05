@@ -77,8 +77,16 @@ public class SanPham {
         return giaBan;
     }
 
+    public double getGiaBanDouble() {
+        return giaBan != null ? giaBan.doubleValue() : 0.0;
+    }
+
     public void setGiaBan(BigDecimal giaBan) {
         this.giaBan = giaBan != null ? giaBan : BigDecimal.ZERO;
+    }
+
+    public void setGiaBan(double giaBan) {
+        this.giaBan = BigDecimal.valueOf(giaBan);
     }
 
     public int getSoLuongTon() {

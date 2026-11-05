@@ -7,11 +7,7 @@ import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
@@ -19,11 +15,15 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 /**
  * Màn hình Đăng nhập hệ thống (DangNhapView).
- * Hỗ trợ inline validation tách riêng cho từng trường, viền đỏ và thông báo chi tiết bằng CSS.
+ * Tuân thủ Điều 5 IUH:
+ * - Đăng nhập bằng Mã nhân viên (maNhanVien).
+ * - Tích hợp link "Quên mật khẩu?" khôi phục mật khẩu chuẩn theo Mã NV + SĐT + Email.
+ * - Hỗ trợ inline validation tách riêng cho từng trường, viền đỏ và thông báo chi tiết bằng CSS.
  */
 public class DangNhapView extends StackPane {
 
@@ -44,6 +44,7 @@ public class DangNhapView extends StackPane {
     private static final String SVG_MAT_MO = "M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z";
     private static final String SVG_MAT_GACH = "M9.88 9.88a3 3 0 1 0 4.24 4.24 M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68 M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61 M2 2l20 20";
 
+    private final Hyperlink lnkQuenMatKhau = new Hyperlink("Quên mật khẩu?");
     private final Button btnDangNhap = new Button("Đăng nhập");
 
     private final XacThucBUS dangNhapController = new XacThucBUS();
@@ -87,18 +88,20 @@ public class DangNhapView extends StackPane {
         pnlLuoiNhap.setAlignment(Pos.CENTER);
 
         ColumnConstraints colNhan = new ColumnConstraints();
-        colNhan.setMinWidth(115);
-        colNhan.setPrefWidth(120);
+        colNhan.setMinWidth(135);
+        colNhan.setPrefWidth(140);
         ColumnConstraints colNhap = new ColumnConstraints();
         colNhap.setHgrow(Priority.ALWAYS);
         pnlLuoiNhap.getColumnConstraints().addAll(colNhan, colNhap);
 
         lblTenDangNhap.getStyleClass().add("nhan-nhap-lieu");
+        lblTenDangNhap.setWrapText(false);
         lblTenDangNhap.setMinWidth(Region.USE_PREF_SIZE);
         lblMatKhau.getStyleClass().add("nhan-nhap-lieu");
+        lblMatKhau.setWrapText(false);
         lblMatKhau.setMinWidth(Region.USE_PREF_SIZE);
 
-        txtTenDangNhap.setPromptText("Nhập tên đăng nhập");
+        txtTenDangNhap.setPromptText("Nhập tên đăng nhập hoặc Mã NV");
         txtTenDangNhap.setPrefWidth(260);
         txtTenDangNhap.setMaxWidth(Double.MAX_VALUE);
 
@@ -117,7 +120,7 @@ public class DangNhapView extends StackPane {
         // Đồng bộ dữ liệu 2 chiều giữa PasswordField và TextField
         txtMatKhauHien.textProperty().bindBidirectional(pwdMatKhau.textProperty());
 
-        // Cấu hình icon mắt chuẩn vector (mắt thường khi ẩn, mắt gạch chéo khi hiện)
+        // Cấu hình icon mắt chuẩn vector
         iconMatKhau.setContent(SVG_MAT_MO);
         iconMatKhau.setFill(Color.TRANSPARENT);
         iconMatKhau.setStroke(Color.web("#64748b"));
@@ -173,13 +176,19 @@ public class DangNhapView extends StackPane {
         pnlLuoiNhap.add(lblLoiMatKhau, 1, 3);
 
         HBox pnlNutThaoTac = new HBox(12);
-        pnlNutThaoTac.setAlignment(Pos.CENTER_RIGHT);
+        pnlNutThaoTac.setAlignment(Pos.CENTER_LEFT);
+
+        lnkQuenMatKhau.setStyle("-fx-font-size: 12.5px; -fx-text-fill: #0284c7; -fx-cursor: hand; -fx-underline: false;");
+        lnkQuenMatKhau.setOnAction(e -> moDialogQuenMatKhau());
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
         btnDangNhap.getStyleClass().add("nut-chinh");
         btnDangNhap.setPrefWidth(110);
         btnDangNhap.setOnAction(e -> xuLyDangNhap());
 
-        pnlNutThaoTac.getChildren().add(btnDangNhap);
+        pnlNutThaoTac.getChildren().addAll(lnkQuenMatKhau, spacer, btnDangNhap);
 
         pnlHopDangNhap.getChildren().addAll(
                 pnlTieuDe,
@@ -235,13 +244,13 @@ public class DangNhapView extends StackPane {
         xoaLoiTenDangNhap();
         xoaLoiMatKhau();
 
-        String tenDangNhap = txtTenDangNhap.getText() != null ? txtTenDangNhap.getText().trim() : "";
+        String maNhanVien = txtTenDangNhap.getText() != null ? txtTenDangNhap.getText().trim() : "";
         String matKhau = pwdMatKhau.getText() != null ? pwdMatKhau.getText() : "";
 
         boolean coLoi = false;
         
-        if (tenDangNhap.isEmpty()) {
-            hienLoiTenDangNhap("Vui lòng nhập tên đăng nhập");
+        if (maNhanVien.isEmpty()) {
+            hienLoiTenDangNhap("Vui lòng nhập mã nhân viên");
             txtTenDangNhap.requestFocus();
             coLoi = true;
         }
@@ -262,26 +271,22 @@ public class DangNhapView extends StackPane {
 
         TaiKhoan taiKhoan;
         try {
-            taiKhoan = dangNhapController.xacThuc(tenDangNhap, matKhau);
+            taiKhoan = dangNhapController.xacThuc(maNhanVien, matKhau);
         } catch (IllegalStateException ex) {
-            hienThiCanhBao("Lỗi hệ thống", "Lỗi kết nối cơ sở dữ liệu SQL Server!");
+            hienThiCanhBao("Lỗi hệ thống", "Lỗi kết nối cơ sở dữ liệu SQL Server: " + ex.getMessage());
             return;
         }
 
         // Sai thông tin đăng nhập
         if (taiKhoan == null) {
-            // 1. Phải clear mật khẩu trước để nó kích hoạt xóa lỗi cũ (nếu có)
             pwdMatKhau.clear(); 
             
-            // 2. Sau đó mới bôi đỏ viền ô Tên đăng nhập
             if (!txtTenDangNhap.getStyleClass().contains("o-nhap-loi")) {
                 txtTenDangNhap.getStyleClass().add("o-nhap-loi");
             }
             
-            // 3. Hiện lỗi và bôi đỏ ô Mật khẩu
-            hienLoiMatKhau("Tên đăng nhập hoặc mật khẩu không chính xác");
+            hienLoiMatKhau("Mã nhân viên hoặc mật khẩu không chính xác");
             
-            // 4. Đưa con trỏ chuột vào ô mật khẩu
             if (txtMatKhauHien.isVisible()) {
                 txtMatKhauHien.requestFocus();
             } else {
@@ -302,6 +307,105 @@ public class DangNhapView extends StackPane {
         stage.setScene(scene);
         stage.setResizable(true);
         stage.setMaximized(true);
+    }
+
+    /**
+     * Mở Dialog Quên mật khẩu cho nhân viên (Điều 5 IUH).
+     * Nhập Mã NV + SĐT + Email khớp thì cấp lại mật khẩu mặc định (123456) băm SHA-256.
+     */
+    private void moDialogQuenMatKhau() {
+        Stage dlg = new Stage();
+        dlg.initModality(Modality.APPLICATION_MODAL);
+        dlg.initOwner(stage);
+        dlg.setTitle("Khôi phục mật khẩu nhân viên");
+
+        VBox root = new VBox(14);
+        root.setPadding(new Insets(20, 24, 20, 24));
+        root.setStyle("-fx-background-color: #ffffff;");
+
+        Label lblTieuDeDlg = new Label("QUÊN MẬT KHẨU NHÂN VIÊN");
+        lblTieuDeDlg.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #0284c7;");
+
+        Label lblHuongDan = new Label("Nhập chính xác Mã nhân viên, Số điện thoại và Email đã đăng ký hồ sơ để cấp lại mật khẩu mặc định (123456).");
+        lblHuongDan.setWrapText(true);
+        lblHuongDan.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+
+        Label lblMaNv = new Label("Mã nhân viên:");
+        lblMaNv.setStyle("-fx-font-weight: 600; -fx-font-size: 12.5px; -fx-text-fill: #334155;");
+        TextField txtMaNv = new TextField();
+        txtMaNv.setPromptText("Ví dụ: NV-20261005-000000");
+        txtMaNv.setPrefWidth(260);
+
+        Label lblSdt = new Label("Số điện thoại:");
+        lblSdt.setStyle("-fx-font-weight: 600; -fx-font-size: 12.5px; -fx-text-fill: #334155;");
+        TextField txtSdt = new TextField();
+        txtSdt.setPromptText("10 chữ số (bắt đầu bằng 0)");
+
+        Label lblEmail = new Label("Địa chỉ Email:");
+        lblEmail.setStyle("-fx-font-weight: 600; -fx-font-size: 12.5px; -fx-text-fill: #334155;");
+        TextField txtEmail = new TextField();
+        txtEmail.setPromptText("nhanvien@happytails.com");
+
+        Label lblThongBao = new Label();
+        lblThongBao.setWrapText(true);
+        lblThongBao.setStyle("-fx-text-fill: #dc2626; -fx-font-size: 12px;");
+        lblThongBao.setVisible(false);
+
+        grid.add(lblMaNv, 0, 0);
+        grid.add(txtMaNv, 1, 0);
+        grid.add(lblSdt, 0, 1);
+        grid.add(txtSdt, 1, 1);
+        grid.add(lblEmail, 0, 2);
+        grid.add(txtEmail, 1, 2);
+
+        HBox pnlNut = new HBox(10);
+        pnlNut.setAlignment(Pos.CENTER_RIGHT);
+
+        Button btnHuy = new Button("Đóng");
+        btnHuy.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #475569; -fx-font-weight: bold; -fx-background-radius: 4; -fx-padding: 6 16;");
+        btnHuy.setOnAction(e -> dlg.close());
+
+        Button btnXacNhan = new Button("Cấp lại mật khẩu");
+        btnXacNhan.getStyleClass().add("nut-chinh");
+        btnXacNhan.setStyle("-fx-background-color: #0284c7; -fx-text-fill: #ffffff; -fx-font-weight: bold; -fx-background-radius: 4; -fx-padding: 6 16;");
+
+        btnXacNhan.setOnAction(e -> {
+            lblThongBao.setVisible(false);
+            try {
+                dangNhapController.quenMatKhau(txtMaNv.getText(), txtSdt.getText(), txtEmail.getText());
+
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Khôi phục thành công");
+                alert.setHeaderText("Cấp lại mật khẩu thành công!");
+                alert.setContentText("Mật khẩu cho nhân viên [" + txtMaNv.getText().trim() + "] đã được đặt lại về mặc định: "
+                        + XacThucBUS.MAT_KHAU_MAC_DINH_RESET + "\n\nVui lòng đăng nhập và đổi mật khẩu mới ngay để bảo mật tài khoản.");
+                alert.showAndWait();
+                dlg.close();
+
+                // Tự động điền mã nhân viên vào form đăng nhập
+                txtTenDangNhap.setText(txtMaNv.getText().trim());
+                pwdMatKhau.clear();
+                pwdMatKhau.requestFocus();
+            } catch (IllegalArgumentException ex) {
+                lblThongBao.setText(ex.getMessage());
+                lblThongBao.setVisible(true);
+            } catch (Exception ex) {
+                lblThongBao.setText("Lỗi xử lý: " + ex.getMessage());
+                lblThongBao.setVisible(true);
+            }
+        });
+
+        pnlNut.getChildren().addAll(btnHuy, btnXacNhan);
+        root.getChildren().addAll(lblTieuDeDlg, lblHuongDan, grid, lblThongBao, pnlNut);
+
+        Scene scene = new Scene(root, 440, 290);
+        dlg.setScene(scene);
+        dlg.setResizable(false);
+        dlg.showAndWait();
     }
 
     private void hienThiCanhBao(String tieuDe, String noiDung) {

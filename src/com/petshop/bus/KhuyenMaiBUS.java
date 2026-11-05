@@ -94,6 +94,19 @@ public class KhuyenMaiBUS {
     }
 
     // Hàm hỗ trợ tính giảm giá trên tổng hóa đơn; một hóa đơn chỉ áp dụng tối đa một mã.
+    public double tinhSoTienGiam(String maKhuyenMai, double tongHoaDon) {
+        if (tongHoaDon <= 0) {
+            throw new IllegalArgumentException("Tổng hóa đơn phải lớn hơn 0!");
+        }
+        if (!kiemTraKhuyenMaiHopLe(maKhuyenMai)) {
+            throw new IllegalArgumentException("Khuyến mãi không hợp lệ hoặc đã hết thời gian áp dụng!");
+        }
+        KhuyenMai khuyenMai = khuyenMaiDAO.layKhuyenMaiTheoMa(maKhuyenMai.trim());
+        double phanTram = (khuyenMai != null && khuyenMai.getPhanTramGiam() != null)
+                ? khuyenMai.getPhanTramGiam().doubleValue() : 0.0;
+        return tongHoaDon * (phanTram / 100.0);
+    }
+
     public BigDecimal tinhSoTienGiam(String maKhuyenMai, BigDecimal tongHoaDon) {
         if (tongHoaDon == null || tongHoaDon.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Tổng hóa đơn phải lớn hơn 0!");
