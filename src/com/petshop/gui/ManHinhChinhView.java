@@ -597,7 +597,50 @@ public class ManHinhChinhView extends BorderPane {
         if (btnTongQuan != null) {
             chonNut(btnTongQuan);
         }
-        pnlNoiDung.getChildren().setAll(new TongQuanView());
+        pnlNoiDung.getChildren().setAll(new TongQuanView(
+                this::moManHinhThongKeDoanhThuTuDashboard,
+                this::moManHinhTimKiemLichHenHomNayTuDashboard,
+                this::moManHinhTheoDoiTonKhoSapHetTuDashboard
+        ));
+    }
+
+    /**
+     * Điều hướng nhanh từ thẻ KPI "DOANH THU HÔM NAY" sang màn hình Thống kê doanh thu hóa đơn.
+     */
+    public void moManHinhThongKeDoanhThuTuDashboard() {
+        maNhomDangChon = "HOA_DON";
+        maChucNangDangChon = "HD_DOANH_THU";
+        hienThiThanhDieuHuong();
+        if (lblDuongDan != null) {
+            lblDuongDan.setText(layTenVaiTroHienTai() + " / Quản lý hóa đơn / Thống kê doanh thu");
+        }
+        pnlNoiDung.getChildren().setAll(new BaoCaoDoanhThuHoaDonView());
+    }
+
+    /**
+     * Điều hướng nhanh từ thẻ KPI "LỊCH HẸN HÔM NAY" sang màn hình Tìm kiếm lịch hẹn (lọc hôm nay).
+     */
+    public void moManHinhTimKiemLichHenHomNayTuDashboard() {
+        maNhomDangChon = "LICH_HEN";
+        maChucNangDangChon = "LH_TIM_KIEM";
+        hienThiThanhDieuHuong();
+        if (lblDuongDan != null) {
+            lblDuongDan.setText(layTenVaiTroHienTai() + " / Quản lý lịch hẹn / Tìm kiếm lịch hẹn (Hôm nay)");
+        }
+        pnlNoiDung.getChildren().setAll(new TimKiemLichHenView(true));
+    }
+
+    /**
+     * Điều hướng nhanh từ thẻ KPI "SẢN PHẨM CẦN NHẬP THÊM" sang màn hình Theo dõi tồn kho (lọc hàng sắp hết).
+     */
+    public void moManHinhTheoDoiTonKhoSapHetTuDashboard() {
+        maNhomDangChon = "SAN_PHAM";
+        maChucNangDangChon = "PRD_INVENTORY";
+        hienThiThanhDieuHuong();
+        if (lblDuongDan != null) {
+            lblDuongDan.setText(layTenVaiTroHienTai() + " / Quản lý sản phẩm / Theo dõi tồn kho (Sắp hết)");
+        }
+        pnlNoiDung.getChildren().setAll(new TheoDoiTonKhoView(true));
     }
 
     private String layTenVaiTroHienTai() {

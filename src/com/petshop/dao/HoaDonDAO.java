@@ -112,7 +112,7 @@ public class HoaDonDAO {
                 psHd.setString(7, hoaDon.getHinhThucThanhToan());
                 psHd.setString(8, hoaDon.getTrangThaiThanhToan() != null ? hoaDon.getTrangThaiThanhToan() : "Đã thanh toán");
                 psHd.setString(9, hoaDon.getMaKhuyenMai());
-                psHd.setBigDecimal(10, hoaDon.getTongTien());
+                psHd.setDouble(10, hoaDon.getTongTien());
                 psHd.executeUpdate();
             }
 
@@ -126,7 +126,7 @@ public class HoaDonDAO {
                         psCtSp.setString(1, hoaDon.getMaHoaDon());
                         psCtSp.setString(2, sp.getMaSanPham());
                         psCtSp.setInt(3, sp.getSoLuong());
-                        psCtSp.setBigDecimal(4, sp.getDonGia());
+                        psCtSp.setDouble(4, sp.getDonGia());
                         psCtSp.executeUpdate();
 
                         // Trừ tồn kho
@@ -150,7 +150,7 @@ public class HoaDonDAO {
                         psCtDv.setString(1, hoaDon.getMaHoaDon());
                         psCtDv.setString(2, dv.getMaDichVu());
                         psCtDv.setInt(3, 1); // Ràng buộc soLuong = 1
-                        psCtDv.setBigDecimal(4, dv.getDonGia());
+                        psCtDv.setDouble(4, dv.getDonGia());
                         psCtDv.executeUpdate();
                     }
                 }
@@ -240,7 +240,7 @@ public class HoaDonDAO {
                 psLaySp.setString(1, maHoaDon);
                 try (ResultSet rsSp = psLaySp.executeQuery()) {
                     while (rsSp.next()) {
-                        dsSp.add(new ChiTietHoaDonSanPham(maHoaDon, rsSp.getString("maSanPham"), rsSp.getInt("soLuong"), BigDecimal.ZERO));
+                        dsSp.add(new ChiTietHoaDonSanPham(maHoaDon, rsSp.getString("maSanPham"), rsSp.getInt("soLuong"), 0.0));
                     }
                 }
             }
@@ -262,9 +262,9 @@ public class HoaDonDAO {
                 try (ResultSet rsKh = psKh.executeQuery()) {
                     if (rsKh.next()) {
                         String maKh = rsKh.getString("maKhachHang");
-                        BigDecimal tongTienHd = rsKh.getBigDecimal("tongTien");
-                        if (maKh != null && !maKh.isBlank() && tongTienHd != null) {
-                            long tien = tongTienHd.longValue();
+                        double tongTienHd = rsKh.getDouble("tongTien");
+                        if (maKh != null && !maKh.isBlank() && tongTienHd > 0) {
+                            long tien = (long) tongTienHd;
                             int diemDaCong = (int) ((tien / 100_000L) * (tien >= 1_000_000L ? 10L : 5L));
                             if (diemDaCong > 0) {
                                 String sqlTruDiem = """
@@ -309,6 +309,12 @@ public class HoaDonDAO {
      * Toàn bộ thao tác thực thi trong một JDBC Transaction toàn vẹn.
      */
     public boolean capNhatHoaDon(HoaDon hoaDonCu, HoaDon hoaDonMoi, BigDecimal tienThanhToanThem, BigDecimal tienHoanLai) {
+        return capNhatHoaDon(hoaDonCu, hoaDonMoi,
+                tienThanhToanThem != null ? tienThanhToanThem.doubleValue() : 0.0,
+                tienHoanLai != null ? tienHoanLai.doubleValue() : 0.0);
+    }
+
+    public boolean capNhatHoaDon(HoaDon hoaDonCu, HoaDon hoaDonMoi, double tienThanhToanThem, double tienHoanLai) {
         String sqlXoaSanPham = "DELETE FROM dbo.ChiTietHoaDon_SanPham WHERE maHoaDon = ?";
         String sqlChenSanPham = """
                 INSERT INTO dbo.ChiTietHoaDon_SanPham (maHoaDon, maSanPham, soLuong, donGia)
@@ -399,7 +405,7 @@ public class HoaDonDAO {
                         psChenSp.setString(1, hoaDonMoi.getMaHoaDon());
                         psChenSp.setString(2, sp.getMaSanPham());
                         psChenSp.setInt(3, sp.getSoLuong());
-                        psChenSp.setBigDecimal(4, sp.getDonGia());
+                        psChenSp.setDouble(4, sp.getDonGia());
                         psChenSp.executeUpdate();
                     }
                 }
@@ -407,7 +413,7 @@ public class HoaDonDAO {
 
             // 3. Cập nhật tổng tiền hóa đơn trong CSDL
             try (PreparedStatement psHd = conn.prepareStatement(sqlCapNhatHoaDon)) {
-                psHd.setBigDecimal(1, hoaDonMoi.getTongTien());
+                psHd.setDouble(1, hoaDonMoi.getTongTien());
                 psHd.setString(2, hoaDonMoi.getHinhThucThanhToan());
                 psHd.setString(3, hoaDonMoi.getMaHoaDon());
                 psHd.executeUpdate();
@@ -498,7 +504,7 @@ public class HoaDonDAO {
                                         rsSp.getString("tenSanPham"),
                                         rsSp.getString("donViTinh"),
                                         rsSp.getInt("soLuong"),
-                                        rsSp.getBigDecimal("donGia")
+                                        rsSp.getDouble("donGia")
                                 ));
                             }
                         }
@@ -515,7 +521,7 @@ public class HoaDonDAO {
                                         rsDv.getString("tenDichVu"),
                                         null,
                                         null,
-                                        rsDv.getBigDecimal("donGia")
+                                        rsDv.getDouble("donGia")
                                 ));
                             }
                         }
@@ -523,29 +529,29 @@ public class HoaDonDAO {
 
                     // Tính chi tiết tiền giảm KM và điểm tích lũy
                     HoaDon cached = boNhoHoaDon.get(maHoaDon);
-                    BigDecimal tongGoc = hd.tinhTongTienGoc();
-                    BigDecimal tongChenhLech = tongGoc.subtract(hd.getTongTien()).max(BigDecimal.ZERO);
-                    if (tongChenhLech.compareTo(BigDecimal.ZERO) > 0) {
-                        BigDecimal tienGiamKm = BigDecimal.ZERO;
+                    double tongGoc = hd.tinhTongTienGoc();
+                    double tongChenhLech = Math.max(0.0, tongGoc - hd.getTongTien());
+                    if (tongChenhLech > 0.0) {
+                        double tienGiamKm = 0.0;
                         if (hd.getMaKhuyenMai() != null) {
-                            BigDecimal phanTram = rs.getBigDecimal("phanTramGiam");
-                            if (phanTram != null && phanTram.compareTo(BigDecimal.ZERO) > 0) {
-                                tienGiamKm = tongGoc.multiply(phanTram).divide(BigDecimal.valueOf(100), 0, java.math.RoundingMode.HALF_UP);
-                                if (tienGiamKm.compareTo(tongChenhLech) > 0) {
+                            double phanTram = rs.getDouble("phanTramGiam");
+                            if (phanTram > 0.0) {
+                                tienGiamKm = Math.round(tongGoc * phanTram / 100.0);
+                                if (tienGiamKm > tongChenhLech) {
                                     tienGiamKm = tongChenhLech;
                                 }
                             }
                         }
-                        BigDecimal tienGiamDiem = tongChenhLech.subtract(tienGiamKm);
+                        double tienGiamDiem = tongChenhLech - tienGiamKm;
                         hd.setTienGiam(tienGiamKm);
-                        if (tienGiamDiem.compareTo(BigDecimal.ZERO) > 0) {
-                            int diemDung = tienGiamDiem.divide(BigDecimal.valueOf(1000), 0, java.math.RoundingMode.CEILING).intValue();
+                        if (tienGiamDiem > 0.0) {
+                            int diemDung = (int) Math.ceil(tienGiamDiem / 1000.0);
                             hd.setDiemTichLuySuDung(diemDung);
                         }
                     }
 
                     if (cached != null) {
-                        if (cached.getTienGiam() != null && cached.getTienGiam().compareTo(BigDecimal.ZERO) > 0) {
+                        if (cached.getTienGiam() > 0.0) {
                             hd.setTienGiam(cached.getTienGiam());
                         }
                         if (cached.getDiemTichLuySuDung() > 0) {
@@ -905,7 +911,7 @@ public class HoaDonDAO {
         hd.setHinhThucThanhToan(rs.getString("hinhThucThanhToan"));
         hd.setTrangThaiThanhToan(rs.getString("trangThaiThanhToan"));
         hd.setMaKhuyenMai(rs.getString("maKhuyenMai"));
-        hd.setTongTien(rs.getBigDecimal("tongTien"));
+        hd.setTongTienDb(rs.getDouble("tongTien"));
 
         hd.setTenNhanVien(rs.getString("tenNhanVien"));
         hd.setTenKhachHang(rs.getString("tenKhachHang"));
@@ -922,30 +928,30 @@ public class HoaDonDAO {
         }
 
         try {
-            BigDecimal tongGoc = rs.getBigDecimal("tongTienGoc");
-            if (tongGoc != null) {
-                hd.setTongTienGoc(tongGoc);
+            double tongGoc = rs.getDouble("tongTienGoc");
+            if (tongGoc > 0.0) {
+                hd.setTongTienGocDb(tongGoc);
                 // Nếu chưa có tiền giảm (hoặc bằng 0), khôi phục từ tổng tiền gốc và tổng tiền thực tế
-                if (hd.getTongTienGiam().compareTo(BigDecimal.ZERO) == 0) {
-                    BigDecimal tongTien = hd.getTongTien() != null ? hd.getTongTien() : BigDecimal.ZERO;
-                    BigDecimal tongChenhLech = tongGoc.subtract(tongTien).max(BigDecimal.ZERO);
-                    if (tongChenhLech.compareTo(BigDecimal.ZERO) > 0) {
-                        BigDecimal tienGiamKm = BigDecimal.ZERO;
+                if (hd.getTongTienGiam() == 0.0) {
+                    double tongTien = hd.getTongTien();
+                    double tongChenhLech = Math.max(0.0, tongGoc - tongTien);
+                    if (tongChenhLech > 0.0) {
+                        double tienGiamKm = 0.0;
                         if (hd.getMaKhuyenMai() != null) {
                             try {
-                                BigDecimal phanTram = rs.getBigDecimal("phanTramGiam");
-                                if (phanTram != null && phanTram.compareTo(BigDecimal.ZERO) > 0) {
-                                    tienGiamKm = tongGoc.multiply(phanTram).divide(BigDecimal.valueOf(100), 0, java.math.RoundingMode.HALF_UP);
-                                    if (tienGiamKm.compareTo(tongChenhLech) > 0) {
+                                double phanTram = rs.getDouble("phanTramGiam");
+                                if (phanTram > 0.0) {
+                                    tienGiamKm = Math.round(tongGoc * phanTram / 100.0);
+                                    if (tienGiamKm > tongChenhLech) {
                                         tienGiamKm = tongChenhLech;
                                     }
                                 }
                             } catch (SQLException ignored) {}
                         }
-                        BigDecimal tienGiamDiem = tongChenhLech.subtract(tienGiamKm);
+                        double tienGiamDiem = tongChenhLech - tienGiamKm;
                         hd.setTienGiam(tienGiamKm);
-                        if (tienGiamDiem.compareTo(BigDecimal.ZERO) > 0) {
-                            int diemDung = (int) Math.ceil(tienGiamDiem.doubleValue() / 1000.0);
+                        if (tienGiamDiem > 0.0) {
+                            int diemDung = (int) Math.ceil(tienGiamDiem / 1000.0);
                             hd.setDiemTichLuySuDung(diemDung);
                             hd.setTienGiamTuDiem(tienGiamDiem);
                         }

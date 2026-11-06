@@ -112,6 +112,16 @@ public class SanPhamBUS {
     }
 
     /**
+     * Lấy thông tin sản phẩm theo mã sản phẩm hoặc mã vạch (phục vụ quét mã POS).
+     */
+    public SanPham layTheoMaHoacMaVach(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return null;
+        }
+        return sanPhamDAO.layTheoMaHoacMaVach(input.trim());
+    }
+
+    /**
      * Tìm kiếm sản phẩm theo từ khóa và trạng thái (Quyền SP_TIM_KIEM).
      */
     public List<SanPham> timKiemSanPham(String tuKhoa, Boolean trangThai) {

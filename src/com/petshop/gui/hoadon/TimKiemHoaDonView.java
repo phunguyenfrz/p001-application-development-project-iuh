@@ -324,13 +324,11 @@ public class TimKiemHoaDonView extends VBox {
             List<HoaDon> kq = controller.timKiemHoaDon(tuKhoa, tuNgay, denNgay, hinhThuc, trangThai);
             dsHoaDon.setAll(kq);
 
-            long tongTien = 0;
+            double tongTien = 0.0;
             int soDonDaHuy = 0;
             for (HoaDon h : kq) {
                 if ("Đã thanh toán".equalsIgnoreCase(h.getTrangThaiThanhToan())) {
-                    if (h.getTongTien() != null) {
-                        tongTien += h.getTongTien().longValue();
-                    }
+                    tongTien += h.getTongTien();
                 } else if ("Đã hủy".equalsIgnoreCase(h.getTrangThaiThanhToan())) {
                     soDonDaHuy++;
                 }

@@ -16,12 +16,15 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+import java.text.DecimalFormat;
 import java.util.List;
 
 /**
  * Màn hình tìm kiếm khuyến mãi theo mã, tên và trạng thái.
  */
 public class TimKiemKhuyenMaiView extends VBox {
+
+    private static final DecimalFormat DINH_DANG_PHAN_TRAM = new DecimalFormat("0.##");
 
     private final KhuyenMaiBUS controller = new KhuyenMaiBUS();
     private final TextField txtMa = new TextField();
@@ -83,7 +86,7 @@ public class TimKiemKhuyenMaiView extends VBox {
         colTen.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTenChuongTrinh()));
         TableColumn<KhuyenMai, String> colGiam = new TableColumn<>("Mức giảm");
         colGiam.setPrefWidth(100);
-        colGiam.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getPhanTramGiam().stripTrailingZeros().toPlainString() + "%"));
+        colGiam.setCellValueFactory(d -> new SimpleStringProperty(DINH_DANG_PHAN_TRAM.format(d.getValue().getPhanTramGiam()) + "%"));
         TableColumn<KhuyenMai, String> colBatDau = new TableColumn<>("Ngày bắt đầu");
         colBatDau.setPrefWidth(130);
         colBatDau.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getNgayBatDau().toString()));

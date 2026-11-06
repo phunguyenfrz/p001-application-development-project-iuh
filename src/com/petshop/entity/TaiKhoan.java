@@ -2,6 +2,8 @@ package com.petshop.entity;
 
 /**
  * Lớp thực thể Tài khoản hệ thống (khớp bảng TaiKhoan trong CSDL và Class Diagram).
+ * Tuân thủ Điều 2 & Điều 5 IUH: Khóa ngoại dùng Object Reference (NhanVien nhanVien),
+ * tự động lấy nhân viên qua SessionManager.
  */
 public class TaiKhoan {
 
@@ -36,13 +38,13 @@ public class TaiKhoan {
     }
 
     private String maTaiKhoan;
+    private NhanVien nhanVien; // Object Reference nhân viên sở hữu tài khoản (Điều 2 & 5 IUH)
     private String maNhanVien;
     private String tenDangNhap;
     private String matKhau;
     private VaiTro phanQuyen;
     private boolean trangThai; // true: hoạt động, false: bị khóa
     private String hoTenNhanVien; // Tên nhân viên hiển thị trên giao diện
-    private NhanVien nhanVien; // Tham chiếu đối tượng Nhân viên sở hữu tài khoản
 
     public TaiKhoan() {
     }
@@ -64,12 +66,39 @@ public class TaiKhoan {
         this.trangThai = true;
     }
 
+    public TaiKhoan(NhanVien nhanVien, String tenDangNhap, String matKhau, VaiTro phanQuyen) {
+        this.setNhanVien(nhanVien);
+        this.tenDangNhap = tenDangNhap;
+        this.matKhau = matKhau;
+        this.phanQuyen = phanQuyen;
+        this.trangThai = true;
+    }
+
     public String getMaTaiKhoan() {
         return maTaiKhoan;
     }
 
     public void setMaTaiKhoan(String maTaiKhoan) {
         this.maTaiKhoan = maTaiKhoan;
+    }
+
+    public NhanVien getNhanVien() {
+        if (nhanVien == null && maNhanVien != null && !maNhanVien.isBlank()) {
+            nhanVien = new NhanVien();
+            nhanVien.setMaNhanVien(maNhanVien);
+            nhanVien.setHoTen(hoTenNhanVien);
+        }
+        return nhanVien;
+    }
+
+    public void setNhanVien(NhanVien nhanVien) {
+        this.nhanVien = nhanVien;
+        if (nhanVien != null) {
+            this.maNhanVien = nhanVien.getMaNhanVien();
+            if (nhanVien.getHoTen() != null && !nhanVien.getHoTen().isBlank()) {
+                this.hoTenNhanVien = nhanVien.getHoTen();
+            }
+        }
     }
 
     public String getMaNhanVien() {
@@ -116,33 +145,16 @@ public class TaiKhoan {
     }
 
     public String getHoTenNhanVien() {
-        return nhanVien != null ? nhanVien.getHoTen() : hoTenNhanVien;
+        if (nhanVien != null && nhanVien.getHoTen() != null && !nhanVien.getHoTen().isBlank()) {
+            return nhanVien.getHoTen();
+        }
+        return hoTenNhanVien;
     }
 
     public void setHoTenNhanVien(String hoTenNhanVien) {
         this.hoTenNhanVien = hoTenNhanVien;
         if (this.nhanVien != null) {
             this.nhanVien.setHoTen(hoTenNhanVien);
-        }
-    }
-
-    public NhanVien getNhanVien() {
-        if (nhanVien == null && maNhanVien != null && !maNhanVien.isBlank()) {
-            nhanVien = new NhanVien();
-            nhanVien.setMaNhanVien(maNhanVien);
-            nhanVien.setHoTen(hoTenNhanVien != null ? hoTenNhanVien : "Nhân viên");
-            if (phanQuyen != null) {
-                nhanVien.setChucVu(phanQuyen.getTenHienThi());
-            }
-        }
-        return nhanVien;
-    }
-
-    public void setNhanVien(NhanVien nhanVien) {
-        this.nhanVien = nhanVien;
-        if (nhanVien != null) {
-            this.maNhanVien = nhanVien.getMaNhanVien();
-            this.hoTenNhanVien = nhanVien.getHoTen();
         }
     }
 

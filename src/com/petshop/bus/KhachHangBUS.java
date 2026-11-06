@@ -62,6 +62,10 @@ public class KhachHangBUS {
         return khachHangDAO.timTheoMa(maKhachHang);
     }
 
+    public KhachHang layTheoMa(String maKhachHang) {
+        return layKhachHangTheoMa(maKhachHang);
+    }
+
     /**
      * Tra cứu khách hàng theo số điện thoại.
      */

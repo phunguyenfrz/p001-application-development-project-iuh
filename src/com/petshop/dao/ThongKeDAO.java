@@ -1,253 +1,222 @@
 package com.petshop.dao;
 
-import com.petshop.entity.HoatDongGanDay;
 import com.petshop.entity.ThongKeTongQuan;
 import com.petshop.util.DatabaseManager;
 
-import java.math.BigDecimal;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
- * Lớp DAO truy vấn dữ liệu thống kê tổng quan và hoạt động từ CSDL SQL Server.
+ * Truy xuất các chỉ số thống kê nhanh và dữ liệu biểu đồ cho màn hình Tổng quan (Dashboard).
+ * Tuân thủ Bộ chỉ thị kỹ thuật IUH: tiền tệ sử dụng kiểu nguyên thủy double (0% BigDecimal).
  */
 public class ThongKeDAO {
 
-    private static final DecimalFormat DINH_DANG_TIEN = new DecimalFormat("#,##0 VNĐ");
+    private static final DateTimeFormatter DINH_DANG_NGAY_NGAN = DateTimeFormatter.ofPattern("dd/MM");
 
-    /**
-     * Lấy các số liệu tổng quan cho thẻ KPI:
-     * - Doanh thu hôm nay (đã trừ tiền hoàn đổi trả trong ngày và cộng thẳng tiền khách bù đổi trả vào doanh thu)
-     * - Lịch hẹn hôm nay
-     * - Sản phẩm cần nhập thêm (tồn <= ngưỡng tối thiểu)
-     */
-    public ThongKeTongQuan layThongKeTongQuan() {
-        // Đảm bảo dữ liệu tiền hoàn / tiền bù của phiếu đổi trả đã được đồng bộ chuẩn trong CSDL
-        new PhieuDoiTraDAO();
+    public ThongKeTongQuan layThongKeHomNay() {
+        ThongKeTongQuan thongKe = new ThongKeTongQuan();
+        LocalDate homNay = LocalDate.now();
 
-        BigDecimal doanhThu = BigDecimal.ZERO;
-        int soLichHen = 0;
-        int soSanPhamSapHet = 0;
-
-        // 1. Tính tổng doanh thu hôm nay từ HoaDon trừ đi tiền hoàn đổi trả trong ngày và cộng thẳng tiền khách bù
-        String sqlDoanhThu = """
-                SELECT COALESCE(
-                    (SELECT SUM(tongTien) FROM dbo.HoaDon WHERE ngayLap = CAST(GETDATE() AS DATE) AND trangThaiThanhToan = N'Đã thanh toán'), 0
-                ) - COALESCE(
-                    (SELECT SUM(tienHoan) FROM dbo.PhieuDoiTra WHERE ngayLap = CAST(GETDATE() AS DATE) AND trangThai IN (N'Đã duyệt', N'Hoàn thành')), 0
-                ) + COALESCE(
-                    (SELECT SUM(tienBu) FROM dbo.PhieuDoiTra WHERE ngayLap = CAST(GETDATE() AS DATE) AND trangThai IN (N'Đã duyệt', N'Hoàn thành')), 0
-                ) AS doanhThu
+        String sqlHoaDon = """
+                SELECT COUNT(*) AS soHoaDon,
+                       ISNULL(SUM(tongTien), 0) AS tongDoanhThu
+                FROM HoaDon
+                WHERE ngayLap = ?
+                  AND trangThaiThanhToan = N'Đã thanh toán'
                 """;
 
-        // 2. Đếm số lịch hẹn hôm nay (chưa bị hủy)
+        String sqlDoiTra = """
+                SELECT ISNULL(SUM(tienHoan), 0) AS tongTienHoan,
+                       ISNULL(SUM(tienBu), 0) AS tongTienBu
+                FROM PhieuDoiTra
+                WHERE ngayLap = ?
+                  AND trangThai IN (N'Đã duyệt', N'Hoàn thành')
+                """;
+
         String sqlLichHen = """
-                SELECT COUNT(*) AS soLuong
-                FROM dbo.LichHen
-                WHERE ngayHen = CAST(GETDATE() AS DATE)
-                  AND trangThai != N'Đã hủy'
+                SELECT COUNT(*) AS tongLichHen,
+                       SUM(CASE WHEN trangThai IN (N'Đã đặt', N'Đã xác nhận', N'Đang thực hiện') THEN 1 ELSE 0 END) AS choXuLy
+                FROM LichHen
+                WHERE ngayHen = ?
+                  AND trangThai <> N'Đã hủy'
                 """;
 
-        // 3. Đếm sản phẩm có tồn kho <= ngưỡng tồn tối thiểu
-        String sqlSanPham = """
-                SELECT COUNT(*) AS soLuong
-                FROM dbo.SanPham
-                WHERE soLuongTon <= nguongTonToiThieu
-                  AND trangThai = 1
+        String sqlTonKho = """
+                SELECT COUNT(*) AS soSapHet
+                FROM SanPham
+                WHERE trangThai = 1
+                  AND soLuongTon <= nguongTonToiThieu
                 """;
 
         try (Connection conn = DatabaseManager.getConnection()) {
-            if (conn == null) {
-                return new ThongKeTongQuan(doanhThu, soLichHen, soSanPhamSapHet);
-            }
+            double doanhThuHomNay = 0.0;
 
-            try (PreparedStatement ps = conn.prepareStatement(sqlDoanhThu);
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    doanhThu = rs.getBigDecimal("doanhThu");
-                    if (doanhThu == null || doanhThu.compareTo(BigDecimal.ZERO) < 0) {
-                        doanhThu = BigDecimal.ZERO;
+            try (PreparedStatement ps = conn.prepareStatement(sqlHoaDon)) {
+                ps.setDate(1, Date.valueOf(homNay));
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        thongKe.setSoHoaDonHomNay(rs.getInt("soHoaDon"));
+                        doanhThuHomNay = rs.getDouble("tongDoanhThu");
                     }
                 }
-            } catch (Exception ex) {
-                // Fallback nếu chưa có cột tienHoan/tienBu
-                try (PreparedStatement psFallback = conn.prepareStatement(
-                        "SELECT ISNULL(SUM(tongTien), 0) AS doanhThu FROM dbo.HoaDon WHERE ngayLap = CAST(GETDATE() AS DATE) AND trangThaiThanhToan = N'Đã thanh toán'")) {
-                    try (ResultSet rsFb = psFallback.executeQuery()) {
-                        if (rsFb.next()) doanhThu = rsFb.getBigDecimal("doanhThu");
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(sqlDoiTra)) {
+                ps.setDate(1, Date.valueOf(homNay));
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        double tienHoan = rs.getDouble("tongTienHoan");
+                        double tienBu = rs.getDouble("tongTienBu");
+                        doanhThuHomNay = Math.max(0.0, doanhThuHomNay - tienHoan + tienBu);
                     }
-                } catch (Exception ignored) {}
+                }
+            } catch (SQLException ignored) {
+                // Bỏ qua nếu bảng PhieuDoiTra chưa có cột tienHoan/tienBu
             }
 
-            try (PreparedStatement ps = conn.prepareStatement(sqlLichHen);
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    soLichHen = rs.getInt("soLuong");
+            thongKe.setDoanhThuHomNay(doanhThuHomNay);
+
+            try (PreparedStatement ps = conn.prepareStatement(sqlLichHen)) {
+                ps.setDate(1, Date.valueOf(homNay));
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        thongKe.setTongSoLichHenHomNay(rs.getInt("tongLichHen"));
+                        thongKe.setSoLichHenChoXuLy(rs.getInt("choXuLy"));
+                    }
                 }
             }
 
-            try (PreparedStatement ps = conn.prepareStatement(sqlSanPham);
+            try (PreparedStatement ps = conn.prepareStatement(sqlTonKho);
                  ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    soSanPhamSapHet = rs.getInt("soLuong");
+                    thongKe.setSoSanPhamSapHet(rs.getInt("soSapHet"));
                 }
             }
-
         } catch (SQLException e) {
-            throw new IllegalStateException("Lỗi khi truy vấn thống kê tổng quan: " + e.getMessage(), e);
+            throw new IllegalStateException("Không thể tải dữ liệu thống kê tổng quan từ cơ sở dữ liệu", e);
         }
 
-        return new ThongKeTongQuan(doanhThu, soLichHen, soSanPhamSapHet);
+        return thongKe;
     }
 
     /**
-     * Lấy danh sách lịch hẹn và hoạt động phát sinh trong ngày:
-     * - Lịch hẹn chăm sóc thú cưng
-     * - Hóa đơn thanh toán phát sinh trong ngày
-     * - Phiếu đổi trả hàng phát sinh trong ngày
+     * Lấy thống kê doanh thu thuần 7 ngày gần nhất để vẽ biểu đồ cột (BarChart).
+     * Key: Ngày định dạng "dd/MM", Value: Doanh thu (double).
      */
-    public List<HoatDongGanDay> layHoatDongGanDay() {
-        new PhieuDoiTraDAO();
-        List<HoatDongGanDay> danhSach = new ArrayList<>();
+    public Map<String, Double> layDoanhThu7NgayGanNhat() {
+        Map<String, Double> ketQua = new LinkedHashMap<>();
+        LocalDate homNay = LocalDate.now();
+        LocalDate tuNgay = homNay.minusDays(6);
 
-        try (Connection conn = DatabaseManager.getConnection()) {
-            if (conn == null) {
-                return danhSach;
-            }
-
-            // 1. Lịch hẹn dịch vụ hôm nay
-            String sqlLichHen = """
-                    SELECT TOP 10
-                           lh.maLichHen,
-                           COALESCE(CONVERT(VARCHAR(5), lh.gioHen, 108), 'Hôm nay') AS thoiGian,
-                           N'Lịch hẹn dịch vụ' AS loaiHoatDong,
-                           kh.hoTen AS tenKhach,
-                           tc.tenThuCung,
-                           lh.trangThai AS trangThai
-                    FROM dbo.LichHen lh
-                    LEFT JOIN dbo.KhachHang kh ON kh.maKhachHang = lh.maKhachHang
-                    LEFT JOIN dbo.ThuCung tc ON tc.maThuCung = lh.maThuCung
-                    WHERE lh.ngayHen = CAST(GETDATE() AS DATE)
-                    ORDER BY lh.gioHen ASC
-                    """;
-            try (PreparedStatement ps = conn.prepareStatement(sqlLichHen);
-                 ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    String tg = rs.getString("thoiGian");
-                    String khach = rs.getString("tenKhach");
-                    String pet = rs.getString("tenThuCung");
-                    String maLh = rs.getString("maLichHen");
-                    String tt = rs.getString("trangThai");
-
-                    String doiTuong = pet != null ? pet + (khach != null ? " (" + khach + ")" : "") : (khach != null ? khach : "Khách hàng");
-                    String chiTiet = "Lịch hẹn " + maLh;
-
-                    danhSach.add(new HoatDongGanDay(
-                            tg != null ? tg : "Hôm nay",
-                            "Lịch hẹn dịch vụ",
-                            doiTuong,
-                            chiTiet,
-                            tt != null ? tt : "Đang chờ"
-                    ));
-                }
-            } catch (Exception ignored) {}
-
-            // 2. Hóa đơn thanh toán hôm nay
-            String sqlHoaDon = """
-                    SELECT TOP 10
-                           hd.maHoaDon,
-                           hd.hinhThucThanhToan,
-                           hd.tongTien,
-                           hd.trangThaiThanhToan,
-                           kh.hoTen AS tenKhach,
-                           kh.soDienThoai
-                    FROM dbo.HoaDon hd
-                    LEFT JOIN dbo.KhachHang kh ON kh.maKhachHang = hd.maKhachHang
-                    WHERE hd.ngayLap = CAST(GETDATE() AS DATE)
-                    ORDER BY hd.maHoaDon DESC
-                    """;
-            try (PreparedStatement ps = conn.prepareStatement(sqlHoaDon);
-                 ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    String maHd = rs.getString("maHoaDon");
-                    String ht = rs.getString("hinhThucThanhToan");
-                    BigDecimal tien = rs.getBigDecimal("tongTien");
-                    String tt = rs.getString("trangThaiThanhToan");
-                    String khach = rs.getString("tenKhach");
-                    String sdt = rs.getString("soDienThoai");
-
-                    String doiTuong = khach != null ? khach + (sdt != null ? " (" + sdt + ")" : "") : "Khách vãng lai";
-                    String tienChuoi = tien != null ? DINH_DANG_TIEN.format(tien) : "0 VNĐ";
-                    String chiTiet = maHd + (ht != null ? " - " + ht : "") + " (" + tienChuoi + ")";
-
-                    danhSach.add(new HoatDongGanDay(
-                            "Hôm nay",
-                            "Hóa đơn thanh toán",
-                            doiTuong,
-                            chiTiet,
-                            tt != null ? tt : "Đã thanh toán"
-                    ));
-                }
-            } catch (Exception ignored) {}
-
-            // 3. Phiếu đổi trả hàng hôm nay
-            String sqlDoiTra = """
-                    SELECT TOP 10
-                           pdt.maPhieuDoiTra,
-                           pdt.maHoaDon,
-                           pdt.lyDo,
-                           pdt.tienHoan,
-                           pdt.tienBu,
-                           pdt.loaiXuLy,
-                           pdt.trangThai,
-                           kh.hoTen AS tenKhach,
-                           kh.soDienThoai
-                    FROM dbo.PhieuDoiTra pdt
-                    LEFT JOIN dbo.KhachHang kh ON kh.maKhachHang = pdt.maKhachHang
-                    WHERE pdt.ngayLap = CAST(GETDATE() AS DATE)
-                    ORDER BY pdt.maPhieuDoiTra DESC
-                    """;
-            try (PreparedStatement ps = conn.prepareStatement(sqlDoiTra);
-                 ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    String maPhieu = rs.getString("maPhieuDoiTra");
-                    String maHd = rs.getString("maHoaDon");
-                    String lyDo = rs.getString("lyDo");
-                    BigDecimal tienHoan = rs.getBigDecimal("tienHoan");
-                    BigDecimal tienBu = rs.getBigDecimal("tienBu");
-                    String tt = rs.getString("trangThai");
-                    String khach = rs.getString("tenKhach");
-                    String sdt = rs.getString("soDienThoai");
-
-                    String doiTuong = khach != null ? khach + (sdt != null ? " (" + sdt + ")" : "") : "Khách hàng";
-                    if (lyDo == null || lyDo.isBlank()) lyDo = "Đổi trả hàng";
-
-                    String chiTiet = maPhieu + " (HĐ: " + (maHd != null ? maHd : "--") + ") - " + lyDo;
-                    if (tienHoan != null && tienHoan.compareTo(BigDecimal.ZERO) > 0) {
-                        chiTiet += " [Hoàn: " + DINH_DANG_TIEN.format(tienHoan) + "]";
-                    } else if (tienBu != null && tienBu.compareTo(BigDecimal.ZERO) > 0) {
-                        chiTiet += " [Khách bù: " + DINH_DANG_TIEN.format(tienBu) + "]";
-                    }
-
-                    danhSach.add(new HoatDongGanDay(
-                            "Hôm nay",
-                            "Phiếu đổi trả",
-                            doiTuong,
-                            chiTiet,
-                            tt != null ? tt : "Đã duyệt"
-                    ));
-                }
-            } catch (Exception ignored) {}
-
-        } catch (SQLException e) {
-            throw new IllegalStateException("Lỗi khi truy vấn hoạt động gần đây: " + e.getMessage(), e);
+        for (int i = 0; i < 7; i++) {
+            LocalDate ngay = tuNgay.plusDays(i);
+            ketQua.put(ngay.format(DINH_DANG_NGAY_NGAN), 0.0);
         }
 
-        return danhSach;
+        String sqlHoaDon = """
+                SELECT ngayLap, ISNULL(SUM(tongTien), 0) AS doanhThu
+                FROM HoaDon
+                WHERE ngayLap BETWEEN ? AND ?
+                  AND trangThaiThanhToan = N'Đã thanh toán'
+                GROUP BY ngayLap
+                """;
+
+        String sqlDoiTra = """
+                SELECT ngayLap,
+                       ISNULL(SUM(tienHoan), 0) AS tongHoan,
+                       ISNULL(SUM(tienBu), 0) AS tongBu
+                FROM PhieuDoiTra
+                WHERE ngayLap BETWEEN ? AND ?
+                  AND trangThai IN (N'Đã duyệt', N'Hoàn thành')
+                GROUP BY ngayLap
+                """;
+
+        try (Connection conn = DatabaseManager.getConnection()) {
+            if (conn == null) return ketQua;
+
+            try (PreparedStatement ps = conn.prepareStatement(sqlHoaDon)) {
+                ps.setDate(1, Date.valueOf(tuNgay));
+                ps.setDate(2, Date.valueOf(homNay));
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Date d = rs.getDate("ngayLap");
+                        if (d != null) {
+                            String nhanNgay = d.toLocalDate().format(DINH_DANG_NGAY_NGAN);
+                            ketQua.put(nhanNgay, rs.getDouble("doanhThu"));
+                        }
+                    }
+                }
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(sqlDoiTra)) {
+                ps.setDate(1, Date.valueOf(tuNgay));
+                ps.setDate(2, Date.valueOf(homNay));
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Date d = rs.getDate("ngayLap");
+                        if (d != null) {
+                            String nhanNgay = d.toLocalDate().format(DINH_DANG_NGAY_NGAN);
+                            double hienTai = ketQua.getOrDefault(nhanNgay, 0.0);
+                            double dieuChinh = hienTai - rs.getDouble("tongHoan") + rs.getDouble("tongBu");
+                            ketQua.put(nhanNgay, Math.max(0.0, dieuChinh));
+                        }
+                    }
+                }
+            } catch (SQLException ignored) {}
+        } catch (SQLException ignored) {}
+
+        return ketQua;
+    }
+
+    /**
+     * Lấy cơ cấu doanh thu Bán hàng (Sản phẩm) vs Dịch vụ Spa để vẽ biểu đồ tròn (PieChart).
+     */
+    public Map<String, Double> layCoCauDoanhThuBanHangVaDichVu() {
+        Map<String, Double> coCau = new LinkedHashMap<>();
+        double doanhThuBanHang = 0.0;
+        double doanhThuDichVu = 0.0;
+
+        String sqlBanHang = """
+                SELECT ISNULL(SUM(ct.soLuong * ct.donGia), 0) AS tongBanHang
+                FROM ChiTietHoaDon_SanPham ct
+                JOIN HoaDon hd ON ct.maHoaDon = hd.maHoaDon
+                WHERE hd.trangThaiThanhToan = N'Đã thanh toán'
+                """;
+
+        String sqlDichVu = """
+                SELECT ISNULL(SUM(ct.soLuong * ct.donGia), 0) AS tongDichVu
+                FROM ChiTietHoaDon_DichVu ct
+                JOIN HoaDon hd ON ct.maHoaDon = hd.maHoaDon
+                WHERE hd.trangThaiThanhToan = N'Đã thanh toán'
+                """;
+
+        try (Connection conn = DatabaseManager.getConnection()) {
+            if (conn != null) {
+                try (PreparedStatement ps = conn.prepareStatement(sqlBanHang);
+                     ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        doanhThuBanHang = rs.getDouble("tongBanHang");
+                    }
+                }
+                try (PreparedStatement ps = conn.prepareStatement(sqlDichVu);
+                     ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        doanhThuDichVu = rs.getDouble("tongDichVu");
+                    }
+                }
+            }
+        } catch (SQLException ignored) {}
+
+        coCau.put("Bán hàng", Math.max(0.0, doanhThuBanHang));
+        coCau.put("Dịch vụ Spa", Math.max(0.0, doanhThuDichVu));
+        return coCau;
     }
 }

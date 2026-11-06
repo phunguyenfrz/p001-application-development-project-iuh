@@ -25,7 +25,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,6 +33,8 @@ import java.util.Optional;
  * Màn hình danh sách, cập nhật thông tin và ngừng chương trình khuyến mãi.
  */
 public class CapNhatKhuyenMaiView extends VBox {
+
+    private static final DecimalFormat DINH_DANG_PHAN_TRAM = new DecimalFormat("0.##");
 
     private final KhuyenMaiBUS controller = new KhuyenMaiBUS();
     private final TableView<KhuyenMai> tblDanhSach = new TableView<>();
@@ -93,7 +95,7 @@ public class CapNhatKhuyenMaiView extends VBox {
         colTen.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTenChuongTrinh()));
         TableColumn<KhuyenMai, String> colGiam = new TableColumn<>("Mức giảm");
         colGiam.setPrefWidth(100);
-        colGiam.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getPhanTramGiam().stripTrailingZeros().toPlainString() + "%"));
+        colGiam.setCellValueFactory(d -> new SimpleStringProperty(DINH_DANG_PHAN_TRAM.format(d.getValue().getPhanTramGiam()) + "%"));
         TableColumn<KhuyenMai, String> colBatDau = new TableColumn<>("Ngày bắt đầu");
         colBatDau.setPrefWidth(130);
         colBatDau.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getNgayBatDau().toString()));
@@ -137,7 +139,7 @@ public class CapNhatKhuyenMaiView extends VBox {
         luoi.setHgap(12);
         luoi.setVgap(10);
         TextField txtTen = new TextField(chon.getTenChuongTrinh());
-        TextField txtGiam = new TextField(chon.getPhanTramGiam().stripTrailingZeros().toPlainString());
+        TextField txtGiam = new TextField(DINH_DANG_PHAN_TRAM.format(chon.getPhanTramGiam()));
         DatePicker dpBatDau = new DatePicker(chon.getNgayBatDau());
         DatePicker dpKetThuc = new DatePicker(chon.getNgayKetThuc());
         ComboBox<String> cboTrangThai = new ComboBox<>(FXCollections.observableArrayList("Đang áp dụng", "Ngừng áp dụng"));
@@ -177,9 +179,9 @@ public class CapNhatKhuyenMaiView extends VBox {
                            DatePicker dpKetThuc, ComboBox<String> cboTrangThai) {
         try {
             String ten = txtTen.getText() == null ? "" : txtTen.getText().trim();
-            BigDecimal giam;
+            double giam;
             try {
-                giam = new BigDecimal(txtGiam.getText().trim());
+                giam = Double.parseDouble(txtGiam.getText().trim());
             } catch (Exception e) {
                 throw new IllegalArgumentException("Mức giảm phải là số hợp lệ!");
             }

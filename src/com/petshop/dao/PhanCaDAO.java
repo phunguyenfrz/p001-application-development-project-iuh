@@ -326,29 +326,29 @@ public class PhanCaDAO {
         LocalDate t2 = LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
 
         // Thứ Hai
-        ds.add(taoPhanCaGia("PC-20261019-000001", "NV-20261005-000001", "Lê Thị Hoa", "CA-01", "Ca sáng", LocalTime.of(8, 0), LocalTime.of(16, 0), t2));
-        ds.add(taoPhanCaGia("PC-20261019-000002", "NV-20261005-000002", "Trần Minh Khang", "CA-02", "Ca chiều", LocalTime.of(16, 0), LocalTime.of(22, 0), t2));
+        ds.add(taoPhanCaGia("PC-20261019-000001", "260001", "Nguyễn Thị Lan", "CA-01", "Ca sáng", LocalTime.of(8, 0), LocalTime.of(16, 0), t2));
+        ds.add(taoPhanCaGia("PC-20261019-000002", "260002", "Trần Văn Minh", "CA-02", "Ca chiều", LocalTime.of(16, 0), LocalTime.of(22, 0), t2));
 
         // Thứ Ba
-        ds.add(taoPhanCaGia("PC-20261019-000003", "NV-20261005-000003", "Phạm Ngọc Linh", "CA-01", "Ca sáng", LocalTime.of(8, 0), LocalTime.of(16, 0), t2.plusDays(1)));
-        ds.add(taoPhanCaGia("PC-20261019-000004", "NV-20261005-000001", "Lê Thị Hoa", "CA-02", "Ca chiều", LocalTime.of(16, 0), LocalTime.of(22, 0), t2.plusDays(1)));
+        ds.add(taoPhanCaGia("PC-20261019-000003", "260003", "Phạm Thị Hoa", "CA-01", "Ca sáng", LocalTime.of(8, 0), LocalTime.of(16, 0), t2.plusDays(1)));
+        ds.add(taoPhanCaGia("PC-20261019-000004", "260001", "Nguyễn Thị Lan", "CA-02", "Ca chiều", LocalTime.of(16, 0), LocalTime.of(22, 0), t2.plusDays(1)));
 
         // Thứ Tư
-        ds.add(taoPhanCaGia("PC-20261019-000005", "NV-20261005-000002", "Trần Minh Khang", "CA-01", "Ca sáng", LocalTime.of(8, 0), LocalTime.of(16, 0), t2.plusDays(2)));
+        ds.add(taoPhanCaGia("PC-20261019-000005", "260002", "Trần Văn Minh", "CA-01", "Ca sáng", LocalTime.of(8, 0), LocalTime.of(16, 0), t2.plusDays(2)));
 
         // Thứ Năm
-        ds.add(taoPhanCaGia("PC-20261019-000006", "NV-20261005-000001", "Lê Thị Hoa", "CA-01", "Ca sáng", LocalTime.of(8, 0), LocalTime.of(16, 0), t2.plusDays(3)));
-        ds.add(taoPhanCaGia("PC-20261019-000007", "NV-20261005-000003", "Phạm Ngọc Linh", "CA-02", "Ca chiều", LocalTime.of(16, 0), LocalTime.of(22, 0), t2.plusDays(3)));
+        ds.add(taoPhanCaGia("PC-20261019-000006", "260001", "Nguyễn Thị Lan", "CA-01", "Ca sáng", LocalTime.of(8, 0), LocalTime.of(16, 0), t2.plusDays(3)));
+        ds.add(taoPhanCaGia("PC-20261019-000007", "260003", "Phạm Thị Hoa", "CA-02", "Ca chiều", LocalTime.of(16, 0), LocalTime.of(22, 0), t2.plusDays(3)));
 
         // Thứ Sáu
-        ds.add(taoPhanCaGia("PC-20261019-000008", "NV-20261005-000003", "Phạm Ngọc Linh", "CA-01", "Ca sáng", LocalTime.of(8, 0), LocalTime.of(16, 0), t2.plusDays(4)));
-        ds.add(taoPhanCaGia("PC-20261019-000009", "NV-20261005-000002", "Trần Minh Khang", "CA-02", "Ca chiều", LocalTime.of(16, 0), LocalTime.of(22, 0), t2.plusDays(4)));
+        ds.add(taoPhanCaGia("PC-20261019-000008", "260003", "Phạm Thị Hoa", "CA-01", "Ca sáng", LocalTime.of(8, 0), LocalTime.of(16, 0), t2.plusDays(4)));
+        ds.add(taoPhanCaGia("PC-20261019-000009", "260002", "Trần Văn Minh", "CA-02", "Ca chiều", LocalTime.of(16, 0), LocalTime.of(22, 0), t2.plusDays(4)));
 
         // Thứ Bảy
-        ds.add(taoPhanCaGia("PC-20261019-000010", "NV-20261005-000001", "Lê Thị Hoa", "CA-02", "Ca chiều", LocalTime.of(16, 0), LocalTime.of(22, 0), t2.plusDays(5)));
+        ds.add(taoPhanCaGia("PC-20261019-000010", "260001", "Nguyễn Thị Lan", "CA-02", "Ca chiều", LocalTime.of(16, 0), LocalTime.of(22, 0), t2.plusDays(5)));
 
         // Chủ nhật
-        ds.add(taoPhanCaGia("PC-20261019-000011", "NV-20261005-000002", "Trần Minh Khang", "CA-01", "Ca sáng", LocalTime.of(8, 0), LocalTime.of(16, 0), t2.plusDays(6)));
+        ds.add(taoPhanCaGia("PC-20261019-000011", "260002", "Trần Văn Minh", "CA-01", "Ca sáng", LocalTime.of(8, 0), LocalTime.of(16, 0), t2.plusDays(6)));
 
         return ds;
     }
