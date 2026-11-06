@@ -1,6 +1,7 @@
 package com.petshop.entity;
 
-import java.math.BigDecimal;
+import java.util.Objects;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -10,7 +11,7 @@ import java.util.List;
 /**
  * Thực thể Đơn nhập hàng.
  * Khớp với bảng DonNhapHang trong CSDL SQL Server:
- * - maDonHang VARCHAR(20) PRIMARY KEY (PN-YYYYMMDD-XXXXXX hoặc DH-YYYYMMDD-XXXXXX)
+ * - maDonHang VARCHAR(20) PRIMARY KEY (DH-YYYYMMDD-XXXXXX)
  * - maNhaCungCap VARCHAR(20) NOT NULL
  * - maNhanVien VARCHAR(20) NOT NULL
  * - ngayLap DATE NOT NULL, gioLap TIME NOT NULL
@@ -19,6 +20,12 @@ import java.util.List;
  * - trangThai NVARCHAR(30) NOT NULL (Chờ nhận hàng, Hoàn tất, Đã hủy)
  * - maNhanVienNhan VARCHAR(20) NULL, ngayGioNhan DATETIME2 NULL
  * - maNhanVienHuy VARCHAR(20) NULL, lyDoHuy NVARCHAR(255) NULL
+ *
+ * Tuân thủ quy chuẩn kỹ thuật:
+ * - Object Reference: nhaCungCap, nhanVien, nhanVienNhan, nhanVienHuy
+ * - Tiền tệ dùng kiểu số thực double
+ * - Thuộc tính dẫn xuất tongTien không lưu trữ thành biến thành viên,
+ *   tự tính toán qua phương thức tinhTongTien() từ danhSachChiTiet
  */
 public class DonNhapHang {
 
@@ -27,44 +34,49 @@ public class DonNhapHang {
     public static final String TRANG_THAI_DA_HUY = "Đã hủy";
 
     private String maDonHang;
-    private String maNhaCungCap;
-    private String maNhanVien;
+    private NhaCungCap nhaCungCap;
+    private NhanVien nhanVien;
     private LocalDate ngayLap;
     private LocalTime gioLap;
-    private BigDecimal tongTien;
-    private BigDecimal tongTienThucNhan;
     private String trangThai;
 
-    // Truy vết người nhận và thời gian nhận
-    private String maNhanVienNhan;
-    private String tenNhanVienNhan;
+    // Truy vết người nhận và thời gian nhận (Object Reference)
+    private NhanVien nhanVienNhan;
     private LocalDateTime ngayGioNhan;
 
-    // Truy vết người hủy và lý do hủy
-    private String maNhanVienHuy;
-    private String tenNhanVienHuy;
+    // Truy vết người hủy và lý do hủy (Object Reference)
+    private NhanVien nhanVienHuy;
     private String lyDoHuy;
 
-    // Các trường hiển thị bổ trợ (JOIN view)
-    private String tenNhaCungCap;
-    private String tenNhanVien;
+    // Danh sách dòng chi tiết và chuỗi tên mặt hàng hiển thị
+    private double tongTien;
+    private double tongTienThucNhan;
     private String tenHang;
     private List<ChiTietDonNhap> danhSachChiTiet = new ArrayList<>();
 
     public DonNhapHang() {
+        this.nhaCungCap = new NhaCungCap();
+        this.nhanVien = new NhanVien();
         this.ngayLap = LocalDate.now();
         this.gioLap = LocalTime.now().withNano(0);
-        this.tongTien = BigDecimal.ZERO;
         this.trangThai = TRANG_THAI_CHO_NHAN;
     }
 
-    public DonNhapHang(String maDonHang, String maNhaCungCap, String maNhanVien, LocalDate ngayLap, BigDecimal tongTien, String trangThai) {
+    public DonNhapHang(String maDonHang, NhaCungCap nhaCungCap, NhanVien nhanVien, LocalDate ngayLap, String trangThai) {
         this.maDonHang = maDonHang;
-        this.maNhaCungCap = maNhaCungCap;
-        this.maNhanVien = maNhanVien;
+        this.nhaCungCap = nhaCungCap != null ? nhaCungCap : new NhaCungCap();
+        this.nhanVien = nhanVien != null ? nhanVien : new NhanVien();
         this.ngayLap = ngayLap != null ? ngayLap : LocalDate.now();
         this.gioLap = LocalTime.now().withNano(0);
-        this.tongTien = tongTien != null ? tongTien : BigDecimal.ZERO;
+        this.trangThai = trangThai != null ? trangThai : TRANG_THAI_CHO_NHAN;
+    }
+
+    public DonNhapHang(String maDonHang, String maNhaCungCap, String maNhanVien, LocalDate ngayLap, String trangThai) {
+        this.maDonHang = maDonHang;
+        this.nhaCungCap = new NhaCungCap(maNhaCungCap, null);
+        this.nhanVien = new NhanVien(maNhanVien, null, null, null, true, "Đang làm");
+        this.ngayLap = ngayLap != null ? ngayLap : LocalDate.now();
+        this.gioLap = LocalTime.now().withNano(0);
         this.trangThai = trangThai != null ? trangThai : TRANG_THAI_CHO_NHAN;
     }
 
@@ -84,20 +96,134 @@ public class DonNhapHang {
         this.maDonHang = maDonNhap;
     }
 
+    // --- Object Reference: NhaCungCap ---
+    public NhaCungCap getNhaCungCap() {
+        return nhaCungCap;
+    }
+
+    public void setNhaCungCap(NhaCungCap nhaCungCap) {
+        this.nhaCungCap = nhaCungCap != null ? nhaCungCap : new NhaCungCap();
+    }
+
     public String getMaNhaCungCap() {
-        return maNhaCungCap;
+        return nhaCungCap != null ? nhaCungCap.getMaNhaCungCap() : null;
     }
 
     public void setMaNhaCungCap(String maNhaCungCap) {
-        this.maNhaCungCap = maNhaCungCap;
+        if (this.nhaCungCap == null) {
+            this.nhaCungCap = new NhaCungCap();
+        }
+        this.nhaCungCap.setMaNhaCungCap(maNhaCungCap);
+    }
+
+    public String getTenNhaCungCap() {
+        return nhaCungCap != null ? nhaCungCap.getTenNhaCungCap() : null;
+    }
+
+    public void setTenNhaCungCap(String tenNhaCungCap) {
+        if (this.nhaCungCap == null) {
+            this.nhaCungCap = new NhaCungCap();
+        }
+        this.nhaCungCap.setTenNhaCungCap(tenNhaCungCap);
+    }
+
+    // --- Object Reference: NhanVien ---
+    public NhanVien getNhanVien() {
+        return nhanVien;
+    }
+
+    public void setNhanVien(NhanVien nhanVien) {
+        this.nhanVien = nhanVien != null ? nhanVien : new NhanVien();
     }
 
     public String getMaNhanVien() {
-        return maNhanVien;
+        return nhanVien != null ? nhanVien.getMaNhanVien() : null;
     }
 
     public void setMaNhanVien(String maNhanVien) {
-        this.maNhanVien = maNhanVien;
+        if (this.nhanVien == null) {
+            this.nhanVien = new NhanVien();
+        }
+        this.nhanVien.setMaNhanVien(maNhanVien);
+    }
+
+    public String getTenNhanVien() {
+        return nhanVien != null ? nhanVien.getHoTen() : null;
+    }
+
+    public void setTenNhanVien(String tenNhanVien) {
+        if (this.nhanVien == null) {
+            this.nhanVien = new NhanVien();
+        }
+        this.nhanVien.setHoTen(tenNhanVien);
+    }
+
+    // --- Object Reference: NhanVienNhan ---
+    public NhanVien getNhanVienNhan() {
+        return nhanVienNhan;
+    }
+
+    public void setNhanVienNhan(NhanVien nhanVienNhan) {
+        this.nhanVienNhan = nhanVienNhan;
+    }
+
+    public String getMaNhanVienNhan() {
+        return nhanVienNhan != null ? nhanVienNhan.getMaNhanVien() : null;
+    }
+
+    public void setMaNhanVienNhan(String maNhanVienNhan) {
+        if (maNhanVienNhan == null || maNhanVienNhan.isBlank()) {
+            this.nhanVienNhan = null;
+        } else {
+            if (this.nhanVienNhan == null) {
+                this.nhanVienNhan = new NhanVien();
+            }
+            this.nhanVienNhan.setMaNhanVien(maNhanVienNhan);
+        }
+    }
+
+    public String getTenNhanVienNhan() {
+        return nhanVienNhan != null ? nhanVienNhan.getHoTen() : null;
+    }
+
+    public void setTenNhanVienNhan(String tenNhanVienNhan) {
+        if (this.nhanVienNhan != null) {
+            this.nhanVienNhan.setHoTen(tenNhanVienNhan);
+        }
+    }
+
+    // --- Object Reference: NhanVienHuy ---
+    public NhanVien getNhanVienHuy() {
+        return nhanVienHuy;
+    }
+
+    public void setNhanVienHuy(NhanVien nhanVienHuy) {
+        this.nhanVienHuy = nhanVienHuy;
+    }
+
+    public String getMaNhanVienHuy() {
+        return nhanVienHuy != null ? nhanVienHuy.getMaNhanVien() : null;
+    }
+
+    public void setMaNhanVienHuy(String maNhanVienHuy) {
+        if (maNhanVienHuy == null || maNhanVienHuy.isBlank()) {
+            this.nhanVienHuy = null;
+        } else {
+            if (this.nhanVienHuy == null) {
+                this.nhanVienHuy = new NhanVien();
+            }
+            this.nhanVienHuy.setMaNhanVien(maNhanVienHuy);
+        }
+    }
+
+    public String getTenNhanVienHuy() {
+        return nhanVienHuy != null ? nhanVienHuy.getHoTen() : null;
+    }
+
+    public void setTenNhanVienHuy(String tenNhanVienHuy) {
+        if (this.nhanVienHuy != null) {
+            this.nhanVienHuy.setHoTen(tenNhanVienHuy);
+        }
     }
 
     public LocalDate getNgayLap() {
@@ -116,44 +242,12 @@ public class DonNhapHang {
         this.gioLap = gioLap;
     }
 
-    public BigDecimal getTongTien() {
-        return tongTien;
-    }
-
-    public void setTongTien(BigDecimal tongTien) {
-        this.tongTien = tongTien != null ? tongTien : BigDecimal.ZERO;
-    }
-
-    public BigDecimal getTongTienThucNhan() {
-        return tongTienThucNhan;
-    }
-
-    public void setTongTienThucNhan(BigDecimal tongTienThucNhan) {
-        this.tongTienThucNhan = tongTienThucNhan;
-    }
-
     public String getTrangThai() {
         return trangThai;
     }
 
     public void setTrangThai(String trangThai) {
         this.trangThai = trangThai;
-    }
-
-    public String getMaNhanVienNhan() {
-        return maNhanVienNhan;
-    }
-
-    public void setMaNhanVienNhan(String maNhanVienNhan) {
-        this.maNhanVienNhan = maNhanVienNhan;
-    }
-
-    public String getTenNhanVienNhan() {
-        return tenNhanVienNhan;
-    }
-
-    public void setTenNhanVienNhan(String tenNhanVienNhan) {
-        this.tenNhanVienNhan = tenNhanVienNhan;
     }
 
     public LocalDateTime getNgayGioNhan() {
@@ -164,44 +258,12 @@ public class DonNhapHang {
         this.ngayGioNhan = ngayGioNhan;
     }
 
-    public String getMaNhanVienHuy() {
-        return maNhanVienHuy;
-    }
-
-    public void setMaNhanVienHuy(String maNhanVienHuy) {
-        this.maNhanVienHuy = maNhanVienHuy;
-    }
-
-    public String getTenNhanVienHuy() {
-        return tenNhanVienHuy;
-    }
-
-    public void setTenNhanVienHuy(String tenNhanVienHuy) {
-        this.tenNhanVienHuy = tenNhanVienHuy;
-    }
-
     public String getLyDoHuy() {
         return lyDoHuy;
     }
 
     public void setLyDoHuy(String lyDoHuy) {
         this.lyDoHuy = lyDoHuy;
-    }
-
-    public String getTenNhaCungCap() {
-        return tenNhaCungCap;
-    }
-
-    public void setTenNhaCungCap(String tenNhaCungCap) {
-        this.tenNhaCungCap = tenNhaCungCap;
-    }
-
-    public String getTenNhanVien() {
-        return tenNhanVien;
-    }
-
-    public void setTenNhanVien(String tenNhanVien) {
-        this.tenNhanVien = tenNhanVien;
     }
 
     public List<ChiTietDonNhap> getDanhSachChiTiet() {
@@ -220,21 +282,85 @@ public class DonNhapHang {
         this.tenHang = tenHang;
     }
 
+    /**
+     * Phương thức tự tính toán tổng tiền đặt theo danh sách chi tiết (Điều 2.3).
+     * Tuyệt đối không lưu biến thành viên tongTien.
+     */
+    public double tinhTongTien() {
+        if (danhSachChiTiet != null && !danhSachChiTiet.isEmpty()) {
+            double sum = 0.0;
+            for (ChiTietDonNhap ct : danhSachChiTiet) {
+                sum += ct.tinhThanhTien();
+            }
+            return sum;
+        }
+        return tongTien;
+    }
+
+    /**
+     * Getter ủy quyền tương thích TableView PropertyValueFactory("tongTien").
+     */
+    public double getTongTien() {
+        return tinhTongTien();
+    }
+
+    public void setTongTien(double tongTien) {
+        this.tongTien = tongTien;
+    }
+
+    /**
+     * Phương thức tự tính toán tổng tiền thực nhận theo danh sách chi tiết (Điều 2.3).
+     */
+    public double tinhTongTienThucNhan() {
+        if (danhSachChiTiet != null && !danhSachChiTiet.isEmpty()) {
+            double sum = 0.0;
+            for (ChiTietDonNhap ct : danhSachChiTiet) {
+                sum += ct.tinhThanhTienThucNhan();
+            }
+            if (sum > 0.0) return sum;
+        }
+        return tongTienThucNhan;
+    }
+
+    /**
+     * Getter ủy quyền tương thích TableView PropertyValueFactory("tongTienThucNhan").
+     */
+    public double getTongTienThucNhan() {
+        return tinhTongTienThucNhan();
+    }
+
+    public void setTongTienThucNhan(double tongTienThucNhan) {
+        this.tongTienThucNhan = tongTienThucNhan;
+    }
+
     @Override
     public String toString() {
         return "DonNhapHang{" +
                 "maDonHang='" + maDonHang + '\'' +
-                ", maNhaCungCap='" + maNhaCungCap + '\'' +
-                ", maNhanVien='" + maNhanVien + '\'' +
+                ", maNhaCungCap='" + getMaNhaCungCap() + '\'' +
+                ", maNhanVien='" + getMaNhanVien() + '\'' +
                 ", ngayLap=" + ngayLap +
                 ", gioLap=" + gioLap +
-                ", tongTien=" + tongTien +
-                ", tongTienThucNhan=" + tongTienThucNhan +
+                ", tongTien=" + tinhTongTien() +
+                ", tongTienThucNhan=" + tinhTongTienThucNhan() +
                 ", trangThai='" + trangThai + '\'' +
-                ", maNhanVienNhan='" + maNhanVienNhan + '\'' +
+                ", maNhanVienNhan='" + getMaNhanVienNhan() + '\'' +
                 ", ngayGioNhan=" + ngayGioNhan +
-                ", maNhanVienHuy='" + maNhanVienHuy + '\'' +
+                ", maNhanVienHuy='" + getMaNhanVienHuy() + '\'' +
                 ", lyDoHuy='" + lyDoHuy + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DonNhapHang that = (DonNhapHang) o;
+        return Objects.equals(maDonHang, that.maDonHang);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maDonHang);
     }
 }

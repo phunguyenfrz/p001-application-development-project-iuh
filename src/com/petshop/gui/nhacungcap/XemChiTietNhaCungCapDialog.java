@@ -3,6 +3,7 @@ package com.petshop.gui.nhacungcap;
 import com.petshop.bus.SanPhamBUS;
 import com.petshop.entity.NhaCungCap;
 import com.petshop.entity.SanPham;
+import com.petshop.gui.sanpham.ThemSanPhamView;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
@@ -103,11 +104,19 @@ public final class XemChiTietNhaCungCapDialog {
         donVi.setCellValueFactory(d -> new SimpleStringProperty(hoacGach(d.getValue().getDonViTinh())));
         TableColumn<SanPham, String> tonKho = new TableColumn<>("Tồn kho");
         tonKho.setCellValueFactory(d -> new SimpleStringProperty(String.valueOf(d.getValue().getSoLuongTon())));
+        TableColumn<SanPham, String> giaNhap = new TableColumn<>("Giá nhập");
+        giaNhap.setStyle("-fx-alignment: CENTER-RIGHT;");
+        giaNhap.setCellValueFactory(d -> new SimpleStringProperty(ThemSanPhamView.dinhDangTien(d.getValue().getGiaNhap())));
+
+        TableColumn<SanPham, String> giaBan = new TableColumn<>("Giá bán");
+        giaBan.setStyle("-fx-alignment: CENTER-RIGHT;");
+        giaBan.setCellValueFactory(d -> new SimpleStringProperty(ThemSanPhamView.dinhDangTien(d.getValue().getGiaBan())));
+
         TableColumn<SanPham, String> trangThai = new TableColumn<>("Trạng thái");
         trangThai.setCellValueFactory(d -> new SimpleStringProperty(
                 d.getValue().isTrangThai() ? "Đang kinh doanh" : "Ngừng kinh doanh"));
 
-        table.getColumns().setAll(List.of(ma, ten, donVi, tonKho, trangThai));
+        table.getColumns().setAll(List.of(ma, ten, donVi, giaNhap, giaBan, tonKho, trangThai));
         table.setItems(FXCollections.observableArrayList(sanPham));
         return table;
     }

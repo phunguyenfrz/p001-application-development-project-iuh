@@ -120,16 +120,42 @@ public class NhaCungCapDAO {
         }
     }
 
+        private static volatile String tenBangDonNhap = null;
+
+    private static String layTenBangDonNhap(Connection conn) {
+        if (tenBangDonNhap != null) return tenBangDonNhap;
+        synchronized (NhaCungCapDAO.class) {
+            if (tenBangDonNhap != null) return tenBangDonNhap;
+            if (conn != null && kiemTraBangTonTai(conn, "DonHang") && !kiemTraBangTonTai(conn, "DonNhapHang")) {
+                tenBangDonNhap = "DonHang";
+            } else {
+                tenBangDonNhap = "DonNhapHang";
+            }
+            return tenBangDonNhap;
+        }
+    }
+
+    private static boolean kiemTraBangTonTai(Connection conn, String tenBang) {
+        String sql = "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tenBang);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
     /** Xóa nhà cung cấp chỉ khi chưa liên kết sản phẩm hoặc phát sinh đơn nhập. */
     public boolean xoaNhaCungCap(String maNhaCungCap) {
-        String sql = """
-                DELETE FROM NhaCungCap
-                WHERE maNhaCungCap = ?
-                  AND NOT EXISTS (SELECT 1 FROM SanPham WHERE maNhaCungCap = ?)
-                  AND NOT EXISTS (SELECT 1 FROM DonHang WHERE maNhaCungCap = ?)
-                """;
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) return false;
+            String bangDH = layTenBangDonNhap(conn);
+            String sql = "DELETE FROM NhaCungCap\n" +
+                    "WHERE maNhaCungCap = ?\n" +
+                    "  AND NOT EXISTS (SELECT 1 FROM SanPham WHERE maNhaCungCap = ?)\n" +
+                    "  AND NOT EXISTS (SELECT 1 FROM " + bangDH + " WHERE maNhaCungCap = ?)";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, maNhaCungCap);
                 ps.setString(2, maNhaCungCap);
@@ -312,6 +338,44 @@ public class NhaCungCapDAO {
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Lỗi khi kiểm tra trùng số điện thoại: " + e.getMessage(), e);
+        }
+
+        return false;
+    }
+
+    /**
+     * Kiểm tra tên nhà cung cấp có bị trùng với nhà cung cấp khác hay không.
+     * So sánh không phân biệt hoa thường và loại bỏ khoảng trắng thừa hai đầu.
+     * @param tenNhaCungCap Tên nhà cung cấp cần kiểm tra
+     * @param maLoaiTru Mã nhà cung cấp bỏ qua (khi cập nhật), có thể null khi thêm mới
+     */
+    public boolean kiemTraTrungTenNhaCungCap(String tenNhaCungCap, String maLoaiTru) {
+        if (tenNhaCungCap == null || tenNhaCungCap.trim().isEmpty()) {
+            return false;
+        }
+
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM NhaCungCap WHERE LOWER(LTRIM(RTRIM(tenNhaCungCap))) = LOWER(?)");
+        boolean coLoaiTru = maLoaiTru != null && !maLoaiTru.trim().isEmpty();
+        if (coLoaiTru) {
+            sql.append(" AND maNhaCungCap <> ?");
+        }
+
+        try (Connection conn = DatabaseManager.getConnection()) {
+            if (conn == null) return false;
+
+            try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                ps.setString(1, tenNhaCungCap.trim());
+                if (coLoaiTru) {
+                    ps.setString(2, maLoaiTru.trim());
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1) > 0;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi kiểm tra trùng tên nhà cung cấp: " + e.getMessage(), e);
         }
 
         return false;

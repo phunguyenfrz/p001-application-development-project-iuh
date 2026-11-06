@@ -18,7 +18,6 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -135,8 +134,8 @@ public class XemChiTietDonNhapView extends Stage {
         // Hàng 3: Tổng tiền đặt và Trạng thái
         HBox hang3 = new HBox(20);
         hang3.getChildren().addAll(
-                taoNhan("Tổng tiền đặt:", donHang.getTongTien() != null
-                        ? DINH_DANG_TIEN.format(donHang.getTongTien()) + " đ" : "0 đ"),
+                taoNhan("Tổng tiền đặt:", DINH_DANG_TIEN.format(donHang.getTongTien()) + " đ"),
+
                 taoNhanTrangThai("Trạng thái:", donHang.getTrangThai())
         );
 
@@ -177,7 +176,7 @@ public class XemChiTietDonNhapView extends Stage {
             String nguoiNhan = donHang.getTenNhanVienNhan() != null ? donHang.getTenNhanVienNhan()
                     : (donHang.getMaNhanVienNhan() != null ? donHang.getMaNhanVienNhan() : "Không xác định");
             String gioNhan = donHang.getNgayGioNhan() != null ? donHang.getNgayGioNhan().format(DINH_DANG_NGAY_GIO) : "Chưa ghi nhận";
-            BigDecimal ttTN = donHang.getTongTienThucNhan() != null ? donHang.getTongTienThucNhan() : donHang.getTongTien();
+            double ttTN = donHang.getTongTienThucNhan() > 0 ? donHang.getTongTienThucNhan() : donHang.getTongTien();
 
             hangNhan.getChildren().addAll(
                     taoNhan("Người nhận hàng:", nguoiNhan),
@@ -327,8 +326,8 @@ public class XemChiTietDonNhapView extends Stage {
         cotDonGia.setMinWidth(110);
         cotDonGia.setStyle("-fx-alignment: CENTER-RIGHT;");
         cotDonGia.setCellValueFactory(cellData -> {
-            BigDecimal donGia = cellData.getValue().getDonGia();
-            return new SimpleStringProperty(donGia != null ? DINH_DANG_TIEN.format(donGia) : "0");
+            double donGia = cellData.getValue().getDonGia();
+            return new SimpleStringProperty(DINH_DANG_TIEN.format(donGia));
         });
 
         // Cột thành tiền
@@ -336,8 +335,8 @@ public class XemChiTietDonNhapView extends Stage {
         cotThanhTien.setMinWidth(120);
         cotThanhTien.setStyle("-fx-alignment: CENTER-RIGHT;");
         cotThanhTien.setCellValueFactory(cellData -> {
-            BigDecimal tt = cellData.getValue().getThanhTien();
-            return new SimpleStringProperty(tt != null ? DINH_DANG_TIEN.format(tt) : "0");
+            double tt = cellData.getValue().getThanhTien();
+            return new SimpleStringProperty(DINH_DANG_TIEN.format(tt));
         });
 
         // Thêm các cột vào bảng

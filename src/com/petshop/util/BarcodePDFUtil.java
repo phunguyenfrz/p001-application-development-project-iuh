@@ -91,10 +91,7 @@ public final class BarcodePDFUtil {
                 tenSP = tenSP.substring(0, 29) + "...";
             }
 
-            double giaBan = 0.0;
-            if (sp.getGiaBan() != null) {
-                giaBan = sp.getGiaBan().doubleValue();
-            }
+            double giaBan = sp.getGiaBan();
 
             // Tạo mã vạch Code 128 từ chính maSanPham
             Barcode128 code128 = new Barcode128();

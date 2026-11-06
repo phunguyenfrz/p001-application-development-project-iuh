@@ -45,7 +45,7 @@ public class DongHoaDon {
     }
 
     public static DongHoaDon tuSanPham(int stt, SanPham sp, int soLuong) {
-        double gia = (sp != null && sp.getGiaBan() != null) ? sp.getGiaBan().doubleValue() : 0.0;
+        double gia = sp != null ? sp.getGiaBan() : 0.0;
         return new DongHoaDon(
                 stt,
                 LoaiDong.SAN_PHAM,

@@ -5,3 +5,6 @@ node_modules/
 /build
 target/
 *.log
+.vscode/
+scratch/
+*.class
