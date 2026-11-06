@@ -30,6 +30,10 @@ public class TheoDoiTonKhoView extends VBox {
     private List<SanPham> danhSachGoc = new ArrayList<>();
 
     public TheoDoiTonKhoView() {
+        this(false);
+    }
+
+    public TheoDoiTonKhoView(boolean chiLocSapHet) {
         setSpacing(14);
         getStyleClass().add("khung-phan-he");
 
@@ -51,7 +55,15 @@ public class TheoDoiTonKhoView extends VBox {
         pnlKhungChinh.getChildren().addAll(pnlThanhCongCu, pnlBang);
         getChildren().addAll(pnlTieuDeMan, pnlKhungChinh);
 
+        if (chiLocSapHet) {
+            cboLocTinhTrang.setValue("Cần nhập (Hết + Sắp hết)");
+        }
         taiDuLieu();
+    }
+
+    public void locHangSapHet() {
+        cboLocTinhTrang.setValue("Cần nhập (Hết + Sắp hết)");
+        locDuLieu();
     }
 
     private HBox taoThanhCongCu() {

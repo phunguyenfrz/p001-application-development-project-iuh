@@ -342,14 +342,12 @@ public class TaiKhoanDangNhapView extends VBox {
         TextField txtTenDangNhap = new TextField();
         txtTenDangNhap.setPromptText("Nhập tên đăng nhập...");
         if (cboNhanVien.getValue() != null) {
-            String sdt = cboNhanVien.getValue().getSoDienThoai();
-            txtTenDangNhap.setText(sdt != null && !sdt.isBlank() ? sdt.trim() : cboNhanVien.getValue().getMaNhanVien());
+            txtTenDangNhap.setText(cboNhanVien.getValue().getMaNhanVien());
         }
 
         cboNhanVien.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
-                String sdt = newVal.getSoDienThoai();
-                txtTenDangNhap.setText(sdt != null && !sdt.isBlank() ? sdt.trim() : newVal.getMaNhanVien());
+                txtTenDangNhap.setText(newVal.getMaNhanVien());
                 capNhatTheThongTin(pnlTheNhanVien, newVal);
             }
         });

@@ -5,8 +5,10 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Thực thể Phân ca làm việc cho nhân viên theo ngày.
- * Tương ứng bảng PhanCa trong cơ sở dữ liệu.
+ * Thực thể Phân công ca trực cho nhân viên (bảng PhanCa).
+ * Chuẩn hóa OOP:
+ * - Khóa ngoại sử dụng Object Reference: NhanVien nhanVien, Ca ca.
+ * - Giữ lại các Delegate Getter/Setter (getMaNhanVien, getTenNhanVien, getMaCa, getTenCa...) để tương thích TableView.
  */
 public class PhanCa {
 
@@ -17,25 +19,29 @@ public class PhanCa {
     private static final DateTimeFormatter DINH_DANG_GIO = DateTimeFormatter.ofPattern("HH:mm");
 
     private String maPhanCa;
-    private String maNhanVien;
-    private String tenNhanVien;
-    private String maCa;
-    private String tenCa;
-    private LocalTime gioBatDau;
-    private LocalTime gioKetThuc;
+    private NhanVien nhanVien;
+    private Ca ca;
     private LocalDate ngayLam;
-    private String trangThai; // "Đã phân công" hoặc "Đã hủy"
+    private String trangThai;
 
     public PhanCa() {
         this.trangThai = TRANG_THAI_DA_PHAN_CONG;
     }
 
+    public PhanCa(String maPhanCa, NhanVien nhanVien, Ca ca, LocalDate ngayLam, String trangThai) {
+        this.maPhanCa = maPhanCa;
+        this.nhanVien = nhanVien;
+        this.ca = ca;
+        this.ngayLam = ngayLam;
+        this.trangThai = trangThai;
+    }
+
     public PhanCa(String maPhanCa, String maNhanVien, String maCa, LocalDate ngayLam, String trangThai) {
         this.maPhanCa = maPhanCa;
-        this.maNhanVien = maNhanVien;
-        this.maCa = maCa;
+        setMaNhanVien(maNhanVien);
+        setMaCa(maCa);
         this.ngayLam = ngayLam;
-        this.trangThai = (trangThai == null || trangThai.isBlank()) ? TRANG_THAI_DA_PHAN_CONG : trangThai;
+        this.trangThai = trangThai;
     }
 
     public String getMaPhanCa() {
@@ -46,52 +52,94 @@ public class PhanCa {
         this.maPhanCa = maPhanCa;
     }
 
+    public NhanVien getNhanVien() {
+        return nhanVien;
+    }
+
+    public void setNhanVien(NhanVien nhanVien) {
+        this.nhanVien = nhanVien;
+    }
+
     public String getMaNhanVien() {
-        return maNhanVien;
+        return nhanVien != null ? nhanVien.getMaNhanVien() : null;
     }
 
     public void setMaNhanVien(String maNhanVien) {
-        this.maNhanVien = maNhanVien;
+        if (maNhanVien == null) {
+            this.nhanVien = null;
+            return;
+        }
+        if (this.nhanVien == null) {
+            this.nhanVien = new NhanVien();
+        }
+        this.nhanVien.setMaNhanVien(maNhanVien);
     }
 
     public String getTenNhanVien() {
-        return tenNhanVien;
+        return nhanVien != null ? nhanVien.getHoTen() : null;
     }
 
     public void setTenNhanVien(String tenNhanVien) {
-        this.tenNhanVien = tenNhanVien;
+        if (this.nhanVien == null) {
+            this.nhanVien = new NhanVien();
+        }
+        this.nhanVien.setHoTen(tenNhanVien);
+    }
+
+    public Ca getCa() {
+        return ca;
+    }
+
+    public void setCa(Ca ca) {
+        this.ca = ca;
     }
 
     public String getMaCa() {
-        return maCa;
+        return ca != null ? ca.getMaCa() : null;
     }
 
     public void setMaCa(String maCa) {
-        this.maCa = maCa;
+        if (maCa == null) {
+            this.ca = null;
+            return;
+        }
+        if (this.ca == null) {
+            this.ca = new Ca();
+        }
+        this.ca.setMaCa(maCa);
     }
 
     public String getTenCa() {
-        return tenCa;
+        return ca != null ? ca.getTenCa() : null;
     }
 
     public void setTenCa(String tenCa) {
-        this.tenCa = tenCa;
+        if (this.ca == null) {
+            this.ca = new Ca();
+        }
+        this.ca.setTenCa(tenCa);
     }
 
     public LocalTime getGioBatDau() {
-        return gioBatDau;
+        return ca != null ? ca.getGioBatDau() : null;
     }
 
     public void setGioBatDau(LocalTime gioBatDau) {
-        this.gioBatDau = gioBatDau;
+        if (this.ca == null) {
+            this.ca = new Ca();
+        }
+        this.ca.setGioBatDau(gioBatDau);
     }
 
     public LocalTime getGioKetThuc() {
-        return gioKetThuc;
+        return ca != null ? ca.getGioKetThuc() : null;
     }
 
     public void setGioKetThuc(LocalTime gioKetThuc) {
-        this.gioKetThuc = gioKetThuc;
+        if (this.ca == null) {
+            this.ca = new Ca();
+        }
+        this.ca.setGioKetThuc(gioKetThuc);
     }
 
     public LocalDate getNgayLam() {
@@ -110,24 +158,18 @@ public class PhanCa {
         this.trangThai = trangThai;
     }
 
-    public boolean isDaPhanCong() {
-        return TRANG_THAI_DA_PHAN_CONG.equalsIgnoreCase(trangThai);
-    }
-
     public String getNgayLamDinhDang() {
         return ngayLam != null ? ngayLam.format(DINH_DANG_NGAY) : "";
     }
 
     public String getKhungGio() {
-        if (gioBatDau != null && gioKetThuc != null) {
-            return gioBatDau.format(DINH_DANG_GIO) + " - " + gioKetThuc.format(DINH_DANG_GIO);
-        }
-        return "";
+        LocalTime bd = getGioBatDau();
+        LocalTime kt = getGioKetThuc();
+        if (bd == null || kt == null) return "";
+        return bd.format(DINH_DANG_GIO) + " - " + kt.format(DINH_DANG_GIO);
     }
 
-    @Override
-    public String toString() {
-        return (tenCa != null ? tenCa : maCa) + " - " + (tenNhanVien != null ? tenNhanVien : maNhanVien) + " (" + getNgayLamDinhDang() + ")";
+    public boolean isDaPhanCong() {
+        return TRANG_THAI_DA_PHAN_CONG.equalsIgnoreCase(trangThai);
     }
 }
-

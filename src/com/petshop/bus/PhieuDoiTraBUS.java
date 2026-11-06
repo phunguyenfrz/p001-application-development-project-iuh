@@ -5,7 +5,6 @@ import com.petshop.dao.PhieuDoiTraDAO;
 import com.petshop.dao.SanPhamDAO;
 import com.petshop.entity.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -13,18 +12,16 @@ import java.util.List;
 
 /**
  * Lớp nghiệp vụ cho Phiếu đổi trả (PhieuDoiTraBUS).
- * Quản lý quy tắc nghiệp vụ:
- * - QL4, QL6: Hóa đơn hợp lệ (phải thanh toán, trong 7 ngày, chỉ đổi trả sản phẩm).
- * - QL5: Ma trận kiểm tra Lý do & Tình trạng hàng.
- * - QL5a, QL5b: Ràng buộc ghi chú giải thích.
- * - QL17: Tính toán tiền hoàn / tiền bù.
- * - QL26: Gợi ý hướng xử lý hàng nhận lại.
- * - Phân quyền: RET_CREATE, RET_CONFIRM, RET_SEARCH.
+ * Tuân thủ Bộ chỉ thị kỹ thuật IUH:
+ * - 100% tiền tệ dùng kiểu nguyên thủy double (0% BigDecimal).
+ * - Không import javafx.* trong BUS.
+ * - Kiểm tra điều kiện: Hóa đơn trong 7 ngày, trạng thái "Đã thanh toán", chỉ đổi trả sản phẩm (không đổi trả dịch vụ).
+ * - Khi duyệt đổi trả: tự động hoàn tồn kho (soLuongTon + ?) và trừ điểm tích lũy của khách hàng.
  */
 public class PhieuDoiTraBUS {
 
     public static final int SO_NGAY_DOI_TRA_TOI_DA = 7;
-    public static final BigDecimal NGUONG_DUYET_QUAN_LY = new BigDecimal("2000000");
+    public static final double NGUONG_DUYET_QUAN_LY = 2_000_000.0;
 
     private final PhieuDoiTraDAO phieuDoiTraDAO;
     private final HoaDonDAO hoaDonDAO;
@@ -39,16 +36,13 @@ public class PhieuDoiTraBUS {
     }
 
     public PhieuDoiTraBUS(PhieuDoiTraDAO phieuDoiTraDAO, HoaDonDAO hoaDonDAO,
-                             SanPhamDAO sanPhamDAO, XacThucBUS xacThucService) {
+                          SanPhamDAO sanPhamDAO, XacThucBUS xacThucService) {
         this.phieuDoiTraDAO = phieuDoiTraDAO;
         this.hoaDonDAO = hoaDonDAO;
         this.sanPhamDAO = sanPhamDAO;
         this.xacThucService = xacThucService;
     }
 
-    /**
-     * Sinh mã phiếu đổi trả tự động.
-     */
     public String sinhMaPhieu() {
         return phieuDoiTraDAO.sinhMaPhieu();
     }
@@ -81,7 +75,7 @@ public class PhieuDoiTraBUS {
     }
 
     /**
-     * Lấy danh sách tất cả hóa đơn hợp lệ trong 7 ngày gần nhất để hiển thị trong danh sách xổ xuống.
+     * Lấy danh sách hóa đơn hợp lệ trong 7 ngày gần nhất.
      */
     public List<HoaDon> layDanhSachHoaDonTrong7Ngay() {
         kiemTraQuyenDoiTra("RET_CREATE");
@@ -102,13 +96,13 @@ public class PhieuDoiTraBUS {
     }
 
     /**
-     * Tra cứu tất cả hóa đơn hợp lệ trong 7 ngày gần nhất theo từ khóa (Mã HĐ, SĐT, Tên KH, Mã KH).
+     * Tra cứu hóa đơn trực tiếp dưới CSDL theo từ khóa (Mã HĐ, SĐT khách hàng ^0\d{9}$, Tên KH).
      */
     public List<HoaDon> traCuuDanhSachHoaDonDeDoiTra(String tuKhoa) {
         kiemTraQuyenDoiTra("RET_CREATE");
 
         if (tuKhoa == null || tuKhoa.trim().isEmpty()) {
-            throw new IllegalArgumentException("Vui lòng nhập Mã hóa đơn, Số điện thoại hoặc Mã khách hàng để tìm kiếm!");
+            throw new IllegalArgumentException("Vui lòng nhập Mã hóa đơn hoặc Số điện thoại khách hàng để tra cứu!");
         }
 
         String keyword = tuKhoa.trim();
@@ -157,41 +151,40 @@ public class PhieuDoiTraBUS {
         return dsHopLe;
     }
 
-    /**
-     * Tra cứu và kiểm tra hóa đơn gốc để lập phiếu đổi trả.
-     */
     public HoaDon traCuuHoaDonDeDoiTra(String tuKhoa) {
         List<HoaDon> ds = traCuuDanhSachHoaDonDeDoiTra(tuKhoa);
         return ds.get(0);
     }
 
     /**
-     * Kiểm tra điều kiện hóa đơn có được phép đổi trả hay không.
+     * Kiểm tra điều kiện hóa đơn có được phép đổi trả hay không:
+     * 1. Phải ở trạng thái "Đã thanh toán".
+     * 2. Phải nằm trong vòng 7 ngày kể từ ngày lập.
+     * 3. Chỉ đổi trả sản phẩm (hóa đơn thuần dịch vụ chăm sóc không được đổi trả).
      */
     public void kiemTraDieuKienHoaDon(HoaDon hd) {
+        if (hd == null) {
+            throw new IllegalArgumentException("Hóa đơn gốc không tồn tại!");
+        }
         if (!"Đã thanh toán".equalsIgnoreCase(hd.getTrangThaiThanhToan())) {
             throw new IllegalArgumentException("Hóa đơn '" + hd.getMaHoaDon() + "' chưa hoàn tất thanh toán hoặc đã bị hủy, không thể đổi trả!");
         }
 
         if (hd.getNgayLap() != null) {
             long soNgay = ChronoUnit.DAYS.between(hd.getNgayLap(), LocalDate.now());
-            if (soNgay > SO_NGAY_DOI_TRA_TOI_DA) {
+            if (soNgay < 0 || soNgay > SO_NGAY_DOI_TRA_TOI_DA) {
                 throw new IllegalArgumentException("Hóa đơn '" + hd.getMaHoaDon() + "' đã mua cách đây " + soNgay
                         + " ngày, đã vượt quá thời hạn đổi trả quy định (" + SO_NGAY_DOI_TRA_TOI_DA + " ngày)!");
             }
         }
 
         if (hd.getDanhSachSanPham() == null || hd.getDanhSachSanPham().isEmpty()) {
-            throw new IllegalArgumentException("Hóa đơn '" + hd.getMaHoaDon() + "' là hóa đơn dịch vụ chăm sóc thú cưng, không có sản phẩm nào để đổi trả!");
+            throw new IllegalArgumentException("Hóa đơn '" + hd.getMaHoaDon() + "' là hóa đơn dịch vụ chăm sóc thú cưng, chỉ cho phép đổi trả sản phẩm!");
         }
     }
 
     /**
-     * Kiểm tra ma trận quy tắc đổi trả QL5 cho từng dòng sản phẩm:
-     * - "Lỗi sản phẩm" hoặc "Hết hạn": cho phép ở mọi tình trạng (Nguyên vẹn, Đã mở, Hư hỏng).
-     * - "Không phù hợp" hoặc "Khác": chỉ cho phép khi tình trạng là "Nguyên vẹn".
-     * - QL5a: Khi lý do là "Khác" -> bắt buộc có ghi chú giải thích.
-     * - QL5b: Khi lý do là "Lỗi sản phẩm" mà đã mở/hư hỏng -> bắt buộc có ghi chú giải thích.
+     * Kiểm tra ma trận quy tắc đổi trả QL5, QL5a, QL5b.
      */
     public void kiemTraQuyTacMaTran(String lyDo, String tinhTrang, String ghiChu) {
         if (lyDo == null || lyDo.trim().isEmpty()) {
@@ -219,19 +212,16 @@ public class PhieuDoiTraBUS {
         }
     }
 
-    /**
-     * Kiểm tra hợp lệ chi tiết mặt hàng theo đối tượng ChiTietPhieuDoiTra.
-     */
     public void kiemTraHopLeChiTiet(ChiTietPhieuDoiTra ct) {
         if (ct == null) {
             throw new IllegalArgumentException("Mặt hàng đổi trả không được để trống!");
         }
+        if (ct.getMaSanPham() != null && ct.getMaSanPham().toUpperCase().startsWith("DV")) {
+            throw new IllegalArgumentException("Không được phép đổi trả dịch vụ chăm sóc thú cưng!");
+        }
         kiemTraQuyTacMaTran(ct.getLyDo(), ct.getTinhTrang(), ct.getGhiChu());
     }
 
-    /**
-     * Lấy số lượng sản phẩm đã đổi trả trước đó trong hóa đơn.
-     */
     public int laySoLuongDaDoiTra(String maHoaDon, String maSanPham) {
         return phieuDoiTraDAO.laySoLuongDaDoiTra(maHoaDon, maSanPham);
     }
@@ -260,30 +250,29 @@ public class PhieuDoiTraBUS {
         }
 
         int tongSoLuongTra = 0;
-        BigDecimal tongTienTra = BigDecimal.ZERO;
-        BigDecimal tongTienDoi = BigDecimal.ZERO;
-        BigDecimal tienBuTruoc = phieu.getTienBu() != null ? phieu.getTienBu() : BigDecimal.ZERO;
-        BigDecimal tienHoanTruoc = phieu.getTienHoan() != null ? phieu.getTienHoan() : BigDecimal.ZERO;
 
         for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
+            if (ct.getMaSanPham() != null && ct.getMaSanPham().toUpperCase().startsWith("DV")) {
+                throw new IllegalArgumentException("Chỉ cho phép đổi trả sản phẩm, không đổi trả dịch vụ!");
+            }
             if (ct.getSoLuong() <= 0) {
                 throw new IllegalArgumentException("Số lượng đổi trả của sản phẩm '" + ct.getTenSanPham() + "' phải lớn hơn 0!");
             }
 
-            // Kiểm tra theo ma trận QL5, QL5a, QL5b
             kiemTraQuyTacMaTran(ct.getLyDo(), ct.getTinhTrang(), ct.getGhiChu());
 
-            // Tự động gán hướng xử lý hàng nhận lại theo QL26 nếu chưa có
             if (ct.getHuongXuLy() == null || ct.getHuongXuLy().trim().isEmpty()) {
                 ct.setHuongXuLy(ChiTietPhieuDoiTra.tuDongGoiYHuongXuLy(ct.getLyDo(), ct.getTinhTrang()));
             }
 
-            // Kiểm tra không vượt quá số lượng đã mua trừ đi số lượng đã đổi trả trước đó
             int soLuongDaMua = 0;
             for (ChiTietHoaDonSanPham spMua : hdGoc.getDanhSachSanPham()) {
                 if (spMua.getMaSanPham().equalsIgnoreCase(ct.getMaSanPham())) {
                     soLuongDaMua += spMua.getSoLuong();
                 }
+            }
+            if (soLuongDaMua <= 0) {
+                throw new IllegalArgumentException("Sản phẩm '" + ct.getTenSanPham() + "' không thuộc danh sách sản phẩm của hóa đơn gốc!");
             }
 
             int soLuongDaTraTruoc = phieuDoiTraDAO.laySoLuongDaDoiTra(phieu.getMaHoaDon(), ct.getMaSanPham());
@@ -295,7 +284,6 @@ public class PhieuDoiTraBUS {
                         + ") vượt quá số lượng tối đa được phép đổi trả (" + soLuongToiDaConLai + ")!");
             }
 
-            // Nếu là đổi hàng, kiểm tra tồn kho sản phẩm đổi mới
             if (laDoiHang(phieu.getLoaiXuLy())) {
                 if (ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().trim().isEmpty()) {
                     if (ct.getSoLuongDoi() <= 0) {
@@ -306,52 +294,19 @@ public class PhieuDoiTraBUS {
                         throw new IllegalArgumentException("Sản phẩm đổi mới '" + ct.getTenSanPhamDoi() + "' chỉ còn tồn kho "
                                 + tonKho + ", không đủ số lượng đổi (" + ct.getSoLuongDoi() + ")!");
                     }
-                    if (ct.getDonGiaDoi() == null || ct.getDonGiaDoi().compareTo(BigDecimal.ZERO) <= 0) {
+                    if (ct.getDonGiaDoi() <= 0) {
                         SanPham spDoi = sanPhamDAO.layTheoMa(ct.getMaSanPhamDoi());
                         if (spDoi != null) {
-                            ct.setDonGiaDoi(BigDecimal.valueOf(spDoi.getGiaBan()));
+                            ct.setDonGiaDoi(spDoi.getGiaBan());
                         }
                     }
-                    tongTienDoi = tongTienDoi.add(ct.tinhThanhTienDoi());
                 }
             }
 
             tongSoLuongTra += ct.getSoLuong();
-            tongTienTra = tongTienTra.add(ct.tinhThanhTienTra());
         }
 
         phieu.setSoLuong(tongSoLuongTra);
-
-        // Tính toán tiền hoàn / tiền bù
-        if (laDoiHang(phieu.getLoaiXuLy())) {
-            if (tongTienDoi.compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal chenhLech = tongTienDoi.subtract(tongTienTra);
-                if (chenhLech.compareTo(BigDecimal.ZERO) > 0) {
-                    // Khách cần bù thêm tiền (nếu giao diện truyền vào tổng tiền bù lớn hơn do chọn nhiều SP đổi thì giữ mức lớn hơn)
-                    phieu.setTienBu(chenhLech.max(tienBuTruoc));
-                    phieu.setTienHoan(BigDecimal.ZERO);
-                } else if (chenhLech.compareTo(BigDecimal.ZERO) < 0) {
-                    // Cửa hàng hoàn lại tiền cho khách
-                    if (tienBuTruoc.compareTo(BigDecimal.ZERO) > 0) {
-                        phieu.setTienBu(tienBuTruoc);
-                        phieu.setTienHoan(BigDecimal.ZERO);
-                    } else {
-                        phieu.setTienHoan(chenhLech.abs());
-                        phieu.setTienBu(BigDecimal.ZERO);
-                    }
-                } else {
-                    phieu.setTienHoan(BigDecimal.ZERO);
-                    phieu.setTienBu(tienBuTruoc);
-                }
-            } else {
-                phieu.setTienBu(tienBuTruoc);
-                phieu.setTienHoan(tienBuTruoc.compareTo(BigDecimal.ZERO) > 0 ? BigDecimal.ZERO : tienHoanTruoc);
-            }
-        } else {
-            // Trả hàng hoàn tiền 100% giá trị hàng trả
-            phieu.setTienHoan(tongTienTra);
-            phieu.setTienBu(BigDecimal.ZERO);
-        }
 
         if (phieu.getMaPhieuDoiTra() == null || phieu.getMaPhieuDoiTra().trim().isEmpty()) {
             phieu.setMaPhieuDoiTra(sinhMaPhieu());
@@ -362,7 +317,6 @@ public class PhieuDoiTraBUS {
 
     /**
      * Cập nhật thông tin phiếu đổi trả khi ở trạng thái Chờ xử lý.
-     * Phiếu đã duyệt/từ chối thì không được sửa đổi.
      */
     public boolean capNhatPhieuDoiTra(PhieuDoiTra phieu) {
         kiemTraQuyenDoiTra("RET_CREATE");
@@ -386,11 +340,6 @@ public class PhieuDoiTraBUS {
         }
 
         int tongSoLuongTra = 0;
-        BigDecimal tongTienTra = BigDecimal.ZERO;
-        BigDecimal tongTienDoi = BigDecimal.ZERO;
-        BigDecimal tienBuTruoc = phieu.getTienBu() != null ? phieu.getTienBu() : BigDecimal.ZERO;
-        BigDecimal tienHoanTruoc = phieu.getTienHoan() != null ? phieu.getTienHoan() : BigDecimal.ZERO;
-
         for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
             if (ct.getSoLuong() <= 0) {
                 throw new IllegalArgumentException("Số lượng trả của '" + ct.getTenSanPham() + "' phải > 0!");
@@ -402,59 +351,31 @@ public class PhieuDoiTraBUS {
             }
 
             tongSoLuongTra += ct.getSoLuong();
-            tongTienTra = tongTienTra.add(ct.tinhThanhTienTra());
             if (laDoiHang(phieu.getLoaiXuLy()) && ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().trim().isEmpty()) {
-                if (ct.getDonGiaDoi() == null || ct.getDonGiaDoi().compareTo(BigDecimal.ZERO) <= 0) {
+                if (ct.getDonGiaDoi() <= 0) {
                     SanPham spDoi = sanPhamDAO.layTheoMa(ct.getMaSanPhamDoi());
                     if (spDoi != null) {
-                        ct.setDonGiaDoi(BigDecimal.valueOf(spDoi.getGiaBan()));
+                        ct.setDonGiaDoi(spDoi.getGiaBan());
                     }
                 }
-                tongTienDoi = tongTienDoi.add(ct.tinhThanhTienDoi());
             }
         }
 
         phieu.setSoLuong(tongSoLuongTra);
-        if (laDoiHang(phieu.getLoaiXuLy())) {
-            if (tongTienDoi.compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal chenhLech = tongTienDoi.subtract(tongTienTra);
-                if (chenhLech.compareTo(BigDecimal.ZERO) > 0) {
-                    phieu.setTienBu(chenhLech.max(tienBuTruoc));
-                    phieu.setTienHoan(BigDecimal.ZERO);
-                } else if (chenhLech.compareTo(BigDecimal.ZERO) < 0) {
-                    if (tienBuTruoc.compareTo(BigDecimal.ZERO) > 0) {
-                        phieu.setTienBu(tienBuTruoc);
-                        phieu.setTienHoan(BigDecimal.ZERO);
-                    } else {
-                        phieu.setTienHoan(chenhLech.abs());
-                        phieu.setTienBu(BigDecimal.ZERO);
-                    }
-                } else {
-                    phieu.setTienHoan(BigDecimal.ZERO);
-                    phieu.setTienBu(tienBuTruoc);
-                }
-            } else {
-                phieu.setTienBu(tienBuTruoc);
-                phieu.setTienHoan(tienBuTruoc.compareTo(BigDecimal.ZERO) > 0 ? BigDecimal.ZERO : tienHoanTruoc);
-            }
-        } else {
-            phieu.setTienHoan(tongTienTra);
-            phieu.setTienBu(BigDecimal.ZERO);
-        }
-
         return phieuDoiTraDAO.capNhatPhieuDoiTra(phieu);
     }
 
     /**
      * Duyệt phiếu đổi trả (RET_CONFIRM).
-     * Phiếu giá trị lớn (> 2.000.000 VNĐ) bắt buộc vai trò Quản lý / ADMIN duyệt.
      */
     public boolean duyetPhieuDoiTra(String maPhieuDoiTra) {
         return duyetPhieuDoiTra(maPhieuDoiTra, null);
     }
 
     /**
-     * Duyệt phiếu đổi trả kèm tùy chọn xử lý sản phẩm khi hoàn ("Thu lại vào kho" hoặc "Hủy bỏ").
+     * Duyệt phiếu đổi trả kèm tùy chọn xử lý sản phẩm khi hoàn ("Thu lại vào kho" hoặc "Hủy bỏ"):
+     * - Tự động hoàn tồn kho (soLuongTon + ?) cho sản phẩm thu lại vào kho.
+     * - Tự động trừ điểm tích lũy của khách hàng tương ứng với số tiền hoàn trả.
      */
     public boolean duyetPhieuDoiTra(String maPhieuDoiTra, String huongXuLySanPham) {
         kiemTraQuyenDoiTra("RET_CONFIRM");
@@ -469,9 +390,8 @@ public class PhieuDoiTraBUS {
                     + phieu.getTrangThai() + "', không thể duyệt lại!");
         }
 
-        // Kiểm tra ngưỡng giá trị lớn
-        BigDecimal tongGiaTri = phieu.getTienHoan().add(phieu.getTienBu());
-        if (tongGiaTri.compareTo(NGUONG_DUYET_QUAN_LY) > 0) {
+        double tongGiaTri = phieu.tinhTienHoan() + phieu.tinhTienBu();
+        if (tongGiaTri > NGUONG_DUYET_QUAN_LY) {
             TaiKhoan tk = xacThucService.getTaiKhoanHienTai();
             if (tk != null && tk.getPhanQuyen() == TaiKhoan.VaiTro.BAN_HANG) {
                 throw new SecurityException("Phiếu đổi trả có giá trị trên 2.000.000 VNĐ cần Quản lý duyệt!");
@@ -484,22 +404,34 @@ public class PhieuDoiTraBUS {
             }
         }
 
-        // Đồng bộ tồn kho và cập nhật tài chính hóa đơn ngay khi duyệt
-        phieuDoiTraDAO.capNhatTonKhoKhiHoanTat(phieu);
-
-        return phieuDoiTraDAO.capNhatTrangThai(maPhieuDoiTra, "Đã duyệt", null);
+        int soDiemTru = tinhSoDiemTichLuyCanTru(phieu);
+        return phieuDoiTraDAO.capNhatTonKhoKhiHoanTat(phieu, soDiemTru);
     }
 
     /**
-     * Hoàn tất phiếu đổi trả (tương thích ngược với chức năng duyệt phiếu).
+     * Tính số điểm tích lũy cần trừ của khách hàng khi duyệt đổi trả:
+     * Dựa trên giá trị tiền hoàn lại cho khách (mỗi 100.000 VNĐ tương ứng 5 điểm, hoặc 10 điểm nếu >= 1.000.000 VNĐ).
      */
+    public int tinhSoDiemTichLuyCanTru(PhieuDoiTra phieu) {
+        if (phieu == null || phieu.getMaKhachHang() == null || phieu.getMaKhachHang().isBlank()) {
+            return 0;
+        }
+        double giaTriTinhDiem = phieu.tinhTienHoan();
+        if (giaTriTinhDiem <= 0) {
+            return 0;
+        }
+        long soBlock100k = (long) (giaTriTinhDiem / 100_000.0);
+        if (giaTriTinhDiem >= 1_000_000.0) {
+            return (int) (soBlock100k * 10L);
+        }
+        int diem = (int) (soBlock100k * 5L);
+        return (diem == 0 && giaTriTinhDiem >= 20_000.0) ? 1 : diem;
+    }
+
     public boolean hoanTatPhieuDoiTra(String maPhieuDoiTra) {
         return duyetPhieuDoiTra(maPhieuDoiTra);
     }
 
-    /**
-     * Từ chối phiếu đổi trả (RET_CONFIRM) - bắt buộc nhập lý do từ chối.
-     */
     public boolean tuChoiPhieuDoiTra(String maPhieuDoiTra, String lyDoTuChoi) {
         kiemTraQuyenDoiTra("RET_CONFIRM");
 
@@ -520,29 +452,46 @@ public class PhieuDoiTraBUS {
         return phieuDoiTraDAO.capNhatTrangThai(maPhieuDoiTra, "Từ chối", lyDoTuChoi.trim());
     }
 
-    /**
-     * Lấy danh sách tất cả các phiếu đổi trả (RET_SEARCH).
-     */
     public List<PhieuDoiTra> layTatCaPhieuDoiTra() {
         kiemTraQuyenDoiTra("RET_SEARCH");
         return phieuDoiTraDAO.layTatCaPhieuDoiTra();
     }
 
-    /**
-     * Tra cứu phiếu đổi trả theo bộ lọc nâng cao (RET_SEARCH).
-     */
     public List<PhieuDoiTra> timKiemPhieuDoiTra(String tuKhoa, LocalDate tuNgay, LocalDate denNgay,
                                                 String trangThai, String loaiXuLy) {
         kiemTraQuyenDoiTra("RET_SEARCH");
         return phieuDoiTraDAO.timKiemPhieuDoiTra(tuKhoa, tuNgay, denNgay, trangThai, loaiXuLy);
     }
 
-    /**
-     * Đọc chi tiết một phiếu đổi trả (RET_SEARCH).
-     */
     public PhieuDoiTra layPhieuDoiTraTheoMa(String maPhieuDoiTra) {
         kiemTraQuyenDoiTra("RET_SEARCH");
         return phieuDoiTraDAO.layPhieuDoiTraTheoMa(maPhieuDoiTra);
+    }
+
+    /**
+     * Tra cứu trực tiếp sản phẩm đổi mới theo mã vạch / mã sản phẩm hoặc từ khóa dưới CSDL (tránh nạp toàn bộ CSDL lên ComboBox).
+     */
+    public SanPham timSanPhamTheoMaVachHoacTuKhoa(String maHoacTuKhoa) {
+        if (maHoacTuKhoa == null || maHoacTuKhoa.trim().isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng nhập mã vạch hoặc mã/tên sản phẩm cần đổi!");
+        }
+        String kw = maHoacTuKhoa.trim();
+        SanPham exact = sanPhamDAO.layTheoMa(kw);
+        if (exact != null && exact.isTrangThai()) {
+            return exact;
+        }
+        List<SanPham> ds = sanPhamDAO.timKiemSanPham(kw, true);
+        if (ds != null && !ds.isEmpty()) {
+            return ds.get(0);
+        }
+        throw new IllegalArgumentException("Không tìm thấy sản phẩm đang kinh doanh khớp với mã/từ khóa: " + kw);
+    }
+
+    public List<SanPham> timDanhSachSanPhamDoiTheoTuKhoa(String tuKhoa) {
+        if (tuKhoa == null || tuKhoa.trim().isEmpty()) {
+            return List.of();
+        }
+        return sanPhamDAO.timKiemSanPham(tuKhoa.trim(), true);
     }
 
     public List<SanPham> layDanhSachSanPhamDangKinhDoanh() {

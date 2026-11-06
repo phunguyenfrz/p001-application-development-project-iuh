@@ -63,7 +63,7 @@ public class HoaDonBUS {
             if (!khuyenMaiService.kiemTraKhuyenMaiHopLe(maKm)) {
                 throw new IllegalArgumentException("Mã khuyến mãi '" + maKm + "' không hợp lệ hoặc đã hết hạn!");
             }
-            BigDecimal soTienGiam = khuyenMaiService.tinhSoTienGiam(maKm, tongGoc);
+            BigDecimal soTienGiam = BigDecimal.valueOf(khuyenMaiService.tinhSoTienGiam(maKm, tongGoc.doubleValue()));
             hoaDon.setTienGiam(soTienGiam);
             tienSauKm = tongGoc.subtract(soTienGiam).max(BigDecimal.ZERO);
         } else {
@@ -373,6 +373,7 @@ public class HoaDonBUS {
     }
 
     public BigDecimal tinhSoTienGiam(String maKhuyenMai, BigDecimal tongTienGoc) {
-        return khuyenMaiService.tinhSoTienGiam(maKhuyenMai, tongTienGoc);
+        double goc = tongTienGoc == null ? 0.0 : tongTienGoc.doubleValue();
+        return BigDecimal.valueOf(khuyenMaiService.tinhSoTienGiam(maKhuyenMai, goc));
     }
 }

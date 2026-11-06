@@ -1,105 +1,93 @@
 package com.petshop.entity;
 
-import java.math.BigDecimal;
-
 /**
- * Thực thể chi tiết mặt hàng trong Phiếu đổi trả (ChiTietPhieuDoiTra).
+ * Thực thể Chi tiết phiếu đổi trả (ChiTietPhieuDoiTra) - Ánh xạ bảng dbo.ChiTietPhieuDoiTra.
+ * Chuẩn hóa OOP:
+ * - Khóa ngoại sử dụng Object Reference: HoaDon hoaDon, SanPham sanPham, SanPham sanPhamDoi.
+ * - Tiền tệ sử dụng kiểu nguyên thủy double (donGia, donGiaDoi).
+ * - Thuộc tính dẫn xuất thành tiền tự tính qua phương thức tinhThanhTienTra(), tinhThanhTienDoi().
  */
 public class ChiTietPhieuDoiTra {
 
     private String maPhieuDoiTra;
-    private String maHoaDon;
-    private String maSanPham; // Mã sản phẩm khách trả lại
-    private String tenSanPham;
-    private String donViTinh;
-    private BigDecimal donGia; // Đơn giá khi mua
-    private int soLuongMua; // Số lượng khách đã mua trong hóa đơn gốc
-    private int soLuongDaDoiTraTruoc; // Số lượng đã đổi trả trước đó
-    private int soLuong; // Số lượng trả lại lần này
-    private String lyDo; // "Lỗi sản phẩm", "Hết hạn", "Không phù hợp", "Khác"
-    private String tinhTrang; // "Nguyên vẹn", "Đã mở", "Hư hỏng"
-    private String ghiChu; // Bắt buộc khi lý do là "Khác" hoặc "Lỗi sản phẩm" bị mở/hư hỏng
-    private String huongXuLy; // "Nhập lại kho bán", "Trả nhà cung cấp", "Tiêu hủy"
+    private HoaDon hoaDon;
+    private SanPham sanPham;
+    private int soLuong;
+    private double donGia;
 
-    // Thông tin sản phẩm đổi lấy mới (nếu có)
-    private String maSanPhamDoi;
-    private String tenSanPhamDoi;
-    private BigDecimal donGiaDoi;
+    // Các thuộc tính nghiệp vụ kiểm tra hàng hoàn trả
+    private String lyDo;           // "Lỗi sản phẩm", "Hết hạn", "Không phù hợp", "Khác"
+    private String tinhTrang;      // "Nguyên vẹn", "Đã mở", "Hư hỏng"
+    private String huongXuLy;      // "Thu lại vào kho", "Nhập lại kho bán", "Hủy bỏ", "Trả nhà cung cấp", "Tiêu hủy"
+    private String ghiChu;
+
+    // Thông tin mặt hàng đổi mới (khi chọn hình thức Đổi sang sản phẩm khác)
+    private SanPham sanPhamDoi;
     private int soLuongDoi;
+    private double donGiaDoi;
 
     public ChiTietPhieuDoiTra() {
-        this.donGia = BigDecimal.ZERO;
-        this.donGiaDoi = BigDecimal.ZERO;
         this.soLuong = 1;
-        this.soLuongDoi = 0;
-        this.lyDo = "Lỗi sản phẩm";
+        this.donGia = 0.0;
         this.tinhTrang = "Nguyên vẹn";
-        this.huongXuLy = "Trả nhà cung cấp";
-    }
-
-    public ChiTietPhieuDoiTra(String maPhieuDoiTra, String maHoaDon, String maSanPham,
-                              int soLuong, BigDecimal donGia, String lyDo, String tinhTrang,
-                              String maSanPhamDoi, int soLuongDoi) {
-        this();
-        this.maPhieuDoiTra = maPhieuDoiTra;
-        this.maHoaDon = maHoaDon;
-        this.maSanPham = maSanPham;
-        this.soLuong = soLuong;
-        this.donGia = donGia != null ? donGia : BigDecimal.ZERO;
-        this.lyDo = lyDo != null ? lyDo : "Lỗi sản phẩm";
-        this.tinhTrang = tinhTrang != null ? tinhTrang : "Nguyên vẹn";
-        this.maSanPhamDoi = maSanPhamDoi;
-        this.soLuongDoi = soLuongDoi;
-        this.huongXuLy = tuDongGoiYHuongXuLy(this.lyDo, this.tinhTrang);
+        this.soLuongDoi = 0;
+        this.donGiaDoi = 0.0;
     }
 
     public ChiTietPhieuDoiTra(String maPhieuDoiTra, String maHoaDon, String maSanPham, String tenSanPham,
-                              int soLuong, BigDecimal donGia, String lyDo, String tinhTrang,
+                              int soLuong, double donGia, String lyDo, String tinhTrang,
                               String huongXuLy, String ghiChu) {
         this();
         this.maPhieuDoiTra = maPhieuDoiTra;
-        this.maHoaDon = maHoaDon;
-        this.maSanPham = maSanPham;
-        this.tenSanPham = tenSanPham;
+        setMaHoaDon(maHoaDon);
+        setMaSanPham(maSanPham);
+        setTenSanPham(tenSanPham);
         this.soLuong = soLuong;
-        this.donGia = donGia != null ? donGia : BigDecimal.ZERO;
-        this.lyDo = lyDo != null ? lyDo : "Lỗi sản phẩm";
+        this.donGia = donGia;
+        this.lyDo = lyDo;
         this.tinhTrang = tinhTrang != null ? tinhTrang : "Nguyên vẹn";
-        this.huongXuLy = huongXuLy != null ? huongXuLy : tuDongGoiYHuongXuLy(this.lyDo, this.tinhTrang);
+        this.huongXuLy = huongXuLy != null ? huongXuLy : tuDongGoiYHuongXuLy(lyDo, this.tinhTrang);
         this.ghiChu = ghiChu;
     }
 
     /**
-     * Tự động gợi ý hướng xử lý hàng nhận lại theo Quy tắc QL26:
-     * - Nguyên vẹn + Không phù hợp/Khác -> Nhập lại kho bán.
-     * - Lỗi sản phẩm -> Trả nhà cung cấp.
-     * - Hết hạn, hoặc tình trạng Hư hỏng -> Tiêu hủy.
+     * Tính thành tiền của dòng sản phẩm khách trả lại (double).
+     */
+    public double tinhThanhTienTra() {
+        if (soLuong <= 0 || donGia <= 0) return 0.0;
+        return donGia * soLuong;
+    }
+
+    /**
+     * Tính thành tiền của dòng sản phẩm khách đổi mới (double).
+     */
+    public double tinhThanhTienDoi() {
+        if (soLuongDoi <= 0 || donGiaDoi <= 0) return 0.0;
+        return donGiaDoi * soLuongDoi;
+    }
+
+    /**
+     * Tự động gợi ý hướng xử lý hàng nhận lại theo quy tắc QL26:
+     * - Hàng Nguyên vẹn + Lý do Không phù hợp/Khác -> "Nhập lại kho bán"
+     * - Hàng Lỗi sản phẩm -> "Trả nhà cung cấp"
+     * - Hàng Hết hạn hoặc Hư hỏng -> "Tiêu hủy"
      */
     public static String tuDongGoiYHuongXuLy(String lyDo, String tinhTrang) {
-        if ("Hết hạn".equalsIgnoreCase(lyDo) || "Hư hỏng".equalsIgnoreCase(tinhTrang)) {
-            return "Tiêu hủy";
-        }
         if ("Lỗi sản phẩm".equalsIgnoreCase(lyDo)) {
             return "Trả nhà cung cấp";
         }
-        if ("Nguyên vẹn".equalsIgnoreCase(tinhTrang) &&
-                ("Không phù hợp".equalsIgnoreCase(lyDo) || "Khác".equalsIgnoreCase(lyDo))) {
+        if ("Hết hạn".equalsIgnoreCase(lyDo) || "Hư hỏng".equalsIgnoreCase(tinhTrang)) {
+            return "Tiêu hủy";
+        }
+        if ("Nguyên vẹn".equalsIgnoreCase(tinhTrang)) {
             return "Nhập lại kho bán";
         }
-        return "Trả nhà cung cấp";
+        return "Tiêu hủy";
     }
 
-    // Tính thành tiền của mặt hàng trả lại
-    public BigDecimal tinhThanhTienTra() {
-        if (donGia == null || soLuong <= 0) return BigDecimal.ZERO;
-        return donGia.multiply(BigDecimal.valueOf(soLuong));
-    }
-
-    // Tính thành tiền của mặt hàng đổi lấy mới
-    public BigDecimal tinhThanhTienDoi() {
-        if (donGiaDoi == null || soLuongDoi <= 0) return BigDecimal.ZERO;
-        return donGiaDoi.multiply(BigDecimal.valueOf(soLuongDoi));
-    }
+    // =========================================================================
+    // OBJECT REFERENCES & DELEGATE GETTERS / SETTERS
+    // =========================================================================
 
     public String getMaPhieuDoiTra() {
         return maPhieuDoiTra;
@@ -109,60 +97,72 @@ public class ChiTietPhieuDoiTra {
         this.maPhieuDoiTra = maPhieuDoiTra;
     }
 
+    public HoaDon getHoaDon() {
+        return hoaDon;
+    }
+
+    public void setHoaDon(HoaDon hoaDon) {
+        this.hoaDon = hoaDon;
+    }
+
     public String getMaHoaDon() {
-        return maHoaDon;
+        return hoaDon != null ? hoaDon.getMaHoaDon() : null;
     }
 
     public void setMaHoaDon(String maHoaDon) {
-        this.maHoaDon = maHoaDon;
+        if (maHoaDon == null) {
+            this.hoaDon = null;
+            return;
+        }
+        if (this.hoaDon == null) {
+            this.hoaDon = new HoaDon();
+        }
+        this.hoaDon.setMaHoaDon(maHoaDon);
+    }
+
+    public SanPham getSanPham() {
+        return sanPham;
+    }
+
+    public void setSanPham(SanPham sanPham) {
+        this.sanPham = sanPham;
     }
 
     public String getMaSanPham() {
-        return maSanPham;
+        return sanPham != null ? sanPham.getMaSanPham() : null;
     }
 
     public void setMaSanPham(String maSanPham) {
-        this.maSanPham = maSanPham;
+        if (maSanPham == null) {
+            this.sanPham = null;
+            return;
+        }
+        if (this.sanPham == null) {
+            this.sanPham = new SanPham();
+        }
+        this.sanPham.setMaSanPham(maSanPham);
     }
 
     public String getTenSanPham() {
-        return tenSanPham;
+        return sanPham != null ? sanPham.getTenSanPham() : null;
     }
 
     public void setTenSanPham(String tenSanPham) {
-        this.tenSanPham = tenSanPham;
+        if (this.sanPham == null) {
+            this.sanPham = new SanPham();
+        }
+        this.sanPham.setTenSanPham(tenSanPham);
     }
 
     public String getDonViTinh() {
-        return donViTinh;
+        return sanPham != null ? sanPham.getDonViTinh() : null;
     }
 
     public void setDonViTinh(String donViTinh) {
-        this.donViTinh = donViTinh;
-    }
-
-    public BigDecimal getDonGia() {
-        return donGia != null ? donGia : BigDecimal.ZERO;
-    }
-
-    public void setDonGia(BigDecimal donGia) {
-        this.donGia = donGia != null ? donGia : BigDecimal.ZERO;
-    }
-
-    public int getSoLuongMua() {
-        return soLuongMua;
-    }
-
-    public void setSoLuongMua(int soLuongMua) {
-        this.soLuongMua = soLuongMua;
-    }
-
-    public int getSoLuongDaDoiTraTruoc() {
-        return soLuongDaDoiTraTruoc;
-    }
-
-    public void setSoLuongDaDoiTraTruoc(int soLuongDaDoiTraTruoc) {
-        this.soLuongDaDoiTraTruoc = soLuongDaDoiTraTruoc;
+        if (this.sanPham == null) {
+            this.sanPham = new SanPham();
+        }
+        this.sanPham.setDonViTinh(donViTinh);
     }
 
     public int getSoLuong() {
@@ -171,6 +171,14 @@ public class ChiTietPhieuDoiTra {
 
     public void setSoLuong(int soLuong) {
         this.soLuong = soLuong;
+    }
+
+    public double getDonGia() {
+        return donGia;
+    }
+
+    public void setDonGia(double donGia) {
+        this.donGia = donGia;
     }
 
     public String getLyDo() {
@@ -189,14 +197,6 @@ public class ChiTietPhieuDoiTra {
         this.tinhTrang = tinhTrang;
     }
 
-    public String getGhiChu() {
-        return ghiChu;
-    }
-
-    public void setGhiChu(String ghiChu) {
-        this.ghiChu = ghiChu;
-    }
-
     public String getHuongXuLy() {
         return huongXuLy;
     }
@@ -205,28 +205,47 @@ public class ChiTietPhieuDoiTra {
         this.huongXuLy = huongXuLy;
     }
 
+    public String getGhiChu() {
+        return ghiChu;
+    }
+
+    public void setGhiChu(String ghiChu) {
+        this.ghiChu = ghiChu;
+    }
+
+    public SanPham getSanPhamDoi() {
+        return sanPhamDoi;
+    }
+
+    public void setSanPhamDoi(SanPham sanPhamDoi) {
+        this.sanPhamDoi = sanPhamDoi;
+    }
+
     public String getMaSanPhamDoi() {
-        return maSanPhamDoi;
+        return sanPhamDoi != null ? sanPhamDoi.getMaSanPham() : null;
     }
 
     public void setMaSanPhamDoi(String maSanPhamDoi) {
-        this.maSanPhamDoi = maSanPhamDoi;
+        if (maSanPhamDoi == null || maSanPhamDoi.isBlank()) {
+            this.sanPhamDoi = null;
+            return;
+        }
+        if (this.sanPhamDoi == null) {
+            this.sanPhamDoi = new SanPham();
+        }
+        this.sanPhamDoi.setMaSanPham(maSanPhamDoi);
     }
 
     public String getTenSanPhamDoi() {
-        return tenSanPhamDoi;
+        return sanPhamDoi != null ? sanPhamDoi.getTenSanPham() : null;
     }
 
     public void setTenSanPhamDoi(String tenSanPhamDoi) {
-        this.tenSanPhamDoi = tenSanPhamDoi;
-    }
-
-    public BigDecimal getDonGiaDoi() {
-        return donGiaDoi != null ? donGiaDoi : BigDecimal.ZERO;
-    }
-
-    public void setDonGiaDoi(BigDecimal donGiaDoi) {
-        this.donGiaDoi = donGiaDoi != null ? donGiaDoi : BigDecimal.ZERO;
+        if (tenSanPhamDoi == null) return;
+        if (this.sanPhamDoi == null) {
+            this.sanPhamDoi = new SanPham();
+        }
+        this.sanPhamDoi.setTenSanPham(tenSanPhamDoi);
     }
 
     public int getSoLuongDoi() {
@@ -236,5 +255,12 @@ public class ChiTietPhieuDoiTra {
     public void setSoLuongDoi(int soLuongDoi) {
         this.soLuongDoi = soLuongDoi;
     }
-}
 
+    public double getDonGiaDoi() {
+        return donGiaDoi;
+    }
+
+    public void setDonGiaDoi(double donGiaDoi) {
+        this.donGiaDoi = donGiaDoi;
+    }
+}
