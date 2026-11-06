@@ -254,7 +254,9 @@ CREATE TABLE NhaCungCap (
     soDienThoai VARCHAR(10) NOT NULL CHECK (soDienThoai LIKE '0[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'),
     diaChi NVARCHAR(255),
     email NVARCHAR(100) NULL,
-    trangThai BIT NOT NULL DEFAULT 1
+    trangThai BIT NOT NULL DEFAULT 1,
+    CONSTRAINT UQ_NhaCungCap_Ten UNIQUE (tenNhaCungCap),
+    CONSTRAINT UQ_NhaCungCap_SDT UNIQUE (soDienThoai)
 );
 GO
 

@@ -149,7 +149,7 @@ public class ThemSanPhamView extends VBox {
 
     private void ganDinhDangTienChoO(TextField txt) {
         txt.textProperty().addListener((obs, cu, moi) -> {
-            if (moi != null && !moi.matches("[\\d.\\sđ]*")) {
+            if (moi != null && !moi.matches("[\\d.,\\sđ₫VNĐvnd]*")) {
                 txt.setText(cu);
             }
         });

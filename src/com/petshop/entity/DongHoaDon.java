@@ -79,6 +79,10 @@ public class DongHoaDon {
         return donGia.multiply(BigDecimal.valueOf(soLuong));
     }
 
+    public BigDecimal tinhThanhTien() {
+        return getThanhTien();
+    }
+
     public String getTenLoai() {
         return loai != null ? loai.getNhan() : "";
     }

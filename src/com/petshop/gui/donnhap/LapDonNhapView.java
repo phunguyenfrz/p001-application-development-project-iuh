@@ -290,43 +290,21 @@ public class LapDonNhapView extends VBox {
             }
         });
 
-        // Cột đơn giá (chỉnh sửa bằng TextField)
-        TableColumn<ChiTietDonNhap, Double> cotDonGia = new TableColumn<>("Đơn giá");
+        // Cột giá nhập (chỉ xem, lấy tự động từ thông tin sản phẩm đã thiết lập)
+        TableColumn<ChiTietDonNhap, Double> cotDonGia = new TableColumn<>("Giá nhập");
         cotDonGia.setMinWidth(130);
         cotDonGia.setStyle("-fx-alignment: CENTER-RIGHT;");
         cotDonGia.setCellValueFactory(new PropertyValueFactory<>("donGia"));
         cotDonGia.setCellFactory(col -> new TableCell<>() {
-            private final TextField txtGia = new TextField();
-
-            {
-                txtGia.setPrefWidth(110);
-                // Chỉ cho phép nhập số
-                txtGia.textProperty().addListener((obs, cu, moi) -> {
-                    if (moi != null && !moi.matches("\\d*")) {
-                        txtGia.setText(cu);
-                    }
-                });
-                txtGia.focusedProperty().addListener((obs, cu, moi) -> {
-                    if (!moi && getTableRow() != null && getTableRow().getItem() != null) {
-                        // Khi mất focus, cập nhật đơn giá
-                        capNhatDonGia(getTableRow().getItem(), txtGia.getText());
-                    }
-                });
-                txtGia.setOnAction(e -> {
-                    if (getTableRow() != null && getTableRow().getItem() != null) {
-                        capNhatDonGia(getTableRow().getItem(), txtGia.getText());
-                    }
-                });
-            }
-
             @Override
             protected void updateItem(Double item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
-                    setGraphic(null);
+                    setText(null);
+                    setStyle("");
                 } else {
-                    txtGia.setText(String.valueOf((long) Math.round(item)));
-                    setGraphic(txtGia);
+                    setText(DINH_DANG_TIEN.format(item));
+                    setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
                 }
             }
         });

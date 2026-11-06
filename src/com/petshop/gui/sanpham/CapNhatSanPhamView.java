@@ -335,8 +335,10 @@ row.setOnMouseClicked(event -> {
             cboNcc.getItems().clear();
         }
 
-        TextField txtGiaNhap = new TextField(ThemSanPhamView.dinhDangTien(spChon.getGiaNhap()));
+        TextField txtGiaNhap = new TextField(spChon.getGiaNhap() > 0 ? ThemSanPhamView.dinhDangTien(spChon.getGiaNhap()) : "0 đ");
+        txtGiaNhap.setPromptText("Nhập giá nhập (VNĐ)");
         TextField txtGiaBan = new TextField(ThemSanPhamView.dinhDangTien(spChon.getGiaBan()));
+        txtGiaBan.setPromptText("Nhập giá bán (VNĐ)");
         TextField txtSoLuongTon = new TextField(String.valueOf(spChon.getSoLuongTon()));
         TextField txtNguongTon = new TextField(String.valueOf(spChon.getNguongTonToiThieu()));
 
@@ -558,7 +560,7 @@ row.setOnMouseClicked(event -> {
 
     private void ganDinhDangTienChoO(TextField txt) {
         txt.textProperty().addListener((obs, cu, moi) -> {
-            if (moi != null && !moi.matches("[\\d.\\sđ]*")) {
+            if (moi != null && !moi.matches("[\\d.,\\sđ₫VNĐvnd]*")) {
                 txt.setText(cu);
             }
         });
