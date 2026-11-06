@@ -6,3 +6,5 @@ node_modules/
 target/
 *.log
 .vscode/
+scratch/
+*.class
