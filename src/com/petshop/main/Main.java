@@ -18,7 +18,7 @@ public class Main extends Application {
             }
         } catch (Exception ignored) {}
 
-        Scene scene = new Scene(new DangNhapView(stage), 540, 420);
+        Scene scene = new Scene(new DangNhapView(stage), 580, 450);
         scene.getStylesheets().addAll(
                 getClass().getResource("/com/petshop/gui/css/chung.css").toExternalForm(),
                 getClass().getResource("/com/petshop/gui/css/dangnhap.css").toExternalForm()

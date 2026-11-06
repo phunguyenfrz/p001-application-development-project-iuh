@@ -7,14 +7,21 @@ import com.petshop.util.SessionManager;
 
 /**
  * Lớp dịch vụ xử lý nghiệp vụ xác thực đăng nhập, kiểm tra quyền hạn tài khoản và cấp lại mật khẩu.
- * Tuân thủ tuyệt đối kiến trúc 3 tầng: 0% import javafx.*, 0% SQL.
+ * Tuân thủ Điều 3, 5, 6 Bộ chỉ thị kỹ thuật IUH:
+ * - Đăng nhập bằng Mã nhân viên hoặc Tên đăng nhập.
+ * - Mật khẩu băm SHA-256 qua HashUtil.sha256().
+ * - Quên mật khẩu: Validate regex SĐT 10 số, ném IllegalArgumentException nếu sai.
  */
 public class XacThucBUS {
+
+    private static final String REGEX_SDT = "^0\\d{9}$";
+    private static final String REGEX_EMAIL = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$";
+    public static final String MAT_KHAU_MAC_DINH_RESET = "123456";
 
     private final TaiKhoanDAO taiKhoanDAO;
 
     public XacThucBUS() {
-        this.taiKhoanDAO = new TaiKhoanDAO();
+        this(new TaiKhoanDAO());
     }
 
     public XacThucBUS(TaiKhoanDAO taiKhoanDAO) {
@@ -39,6 +46,36 @@ public class XacThucBUS {
 
     public TaiKhoan xacThuc(String maNhanVienHoacTenDangNhap, String matKhau) {
         return dangNhap(maNhanVienHoacTenDangNhap, matKhau);
+    }
+
+    /**
+     * Xử lý khôi phục mật khẩu (Quên mật khẩu).
+     * Yêu cầu nhập Mã NV + SĐT + Email khớp quy chuẩn, sau đó đặt lại mật khẩu về 123456.
+     *
+     * @param maNhanVien Mã nhân viên (bắt buộc)
+     * @param soDienThoai Số điện thoại (10 chữ số, bắt đầu bằng 0)
+     * @param email Địa chỉ email hợp lệ
+     * @return true nếu cấp lại mật khẩu thành công
+     */
+    public boolean quenMatKhau(String maNhanVien, String soDienThoai, String email) {
+        if (maNhanVien == null || maNhanVien.isBlank()) {
+            throw new IllegalArgumentException("Mã nhân viên không được để trống!");
+        }
+
+        if (soDienThoai == null || !soDienThoai.trim().matches(REGEX_SDT)) {
+            throw new IllegalArgumentException("Số điện thoại không hợp lệ! Phải gồm đúng 10 chữ số và bắt đầu bằng số 0.");
+        }
+
+        if (email == null || !email.trim().matches(REGEX_EMAIL)) {
+            throw new IllegalArgumentException("Địa chỉ email không đúng định dạng (ví dụ: nhanvien@happytails.com)!");
+        }
+
+        boolean ketQua = taiKhoanDAO.khoiPhucMatKhau(maNhanVien.trim(), soDienThoai.trim(), MAT_KHAU_MAC_DINH_RESET);
+        if (!ketQua) {
+            throw new IllegalArgumentException("Thông tin Mã nhân viên hoặc Số điện thoại không khớp với hồ sơ nhân sự đang làm việc!");
+        }
+
+        return true;
     }
 
     /**

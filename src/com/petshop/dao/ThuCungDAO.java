@@ -382,8 +382,14 @@ public class ThuCungDAO {
                        kh.hoTen AS tenKhachHang, kh.soDienThoai AS soDienThoaiKhachHang
                 FROM dbo.ThuCung tc
                 LEFT JOIN dbo.KhachHang kh ON tc.maKhachHang = kh.maKhachHang
-                INNER JOIN dbo.LichHen lh ON tc.maThuCung = lh.maThuCung
-                WHERE lh.trangThai = N'Hoàn thành'
+                WHERE (
+                    tc.maThuCung IN (SELECT lh.maThuCung FROM dbo.LichHen lh WHERE lh.trangThai = N'Hoàn thành')
+                    OR tc.maThuCung IN (
+                        SELECT ct.maThuCung FROM dbo.ChiTietPhieuDichVu ct
+                        INNER JOIN dbo.PhieuDichVu pdv ON ct.maPhieuDichVu = pdv.maPhieuDichVu
+                        WHERE pdv.trangThai = N'Hoàn thành'
+                    )
+                )
                 ORDER BY tc.maThuCung DESC
                 """;
 
@@ -412,8 +418,14 @@ public class ThuCungDAO {
                        kh.hoTen AS tenKhachHang, kh.soDienThoai AS soDienThoaiKhachHang
                 FROM dbo.ThuCung tc
                 LEFT JOIN dbo.KhachHang kh ON tc.maKhachHang = kh.maKhachHang
-                INNER JOIN dbo.LichHen lh ON tc.maThuCung = lh.maThuCung
-                WHERE lh.trangThai = N'Hoàn thành'
+                WHERE (
+                    tc.maThuCung IN (SELECT lh.maThuCung FROM dbo.LichHen lh WHERE lh.trangThai = N'Hoàn thành')
+                    OR tc.maThuCung IN (
+                        SELECT ct.maThuCung FROM dbo.ChiTietPhieuDichVu ct
+                        INNER JOIN dbo.PhieuDichVu pdv ON ct.maPhieuDichVu = pdv.maPhieuDichVu
+                        WHERE pdv.trangThai = N'Hoàn thành'
+                    )
+                )
                   AND (
                       LOWER(tc.maThuCung) LIKE LOWER(?) OR
                       LOWER(tc.tenThuCung) LIKE LOWER(?) OR

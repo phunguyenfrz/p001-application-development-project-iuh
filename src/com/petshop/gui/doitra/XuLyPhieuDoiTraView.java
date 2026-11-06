@@ -1073,7 +1073,7 @@ public class XuLyPhieuDoiTraView extends VBox {
             }
         }
 
-        double donGiaGoc = spGoc.getDonGia() != null ? spGoc.getDonGia().doubleValue() : 0.0;
+        double donGiaGoc = spGoc.getDonGia();
         ChiTietPhieuDoiTra dongMoi = new ChiTietPhieuDoiTra(
                 phieuDangChon.getMaPhieuDoiTra(), phieuDangChon.getMaHoaDon(),
                 spGoc.getMaSanPham(), spGoc.getTenSanPham(), slThem, donGiaGoc,

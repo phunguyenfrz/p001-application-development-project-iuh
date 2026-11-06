@@ -1,10 +1,9 @@
 package com.petshop.entity;
 
-import java.math.BigDecimal;
-
 /**
  * Thực thể ánh xạ bảng ChiTietHoaDon_DichVu trong cơ sở dữ liệu.
  * Lưu thông tin từng dòng dịch vụ chăm sóc thú cưng thuộc hóa đơn.
+ * Tuân thủ Điều 1 và Điều 2 IUH: Kiểu double, phương thức tinhThanhTien().
  */
 public class ChiTietHoaDonDichVu {
 
@@ -14,30 +13,36 @@ public class ChiTietHoaDonDichVu {
     private String maThuCung;
     private String tenThuCung;
     private int soLuong; // Mặc định là 1 theo ràng buộc CHECK (soLuong = 1)
-    private BigDecimal donGia;
+    private double donGia;
 
     public ChiTietHoaDonDichVu() {
         this.soLuong = 1;
-        this.donGia = BigDecimal.ZERO;
+        this.donGia = 0.0;
     }
 
-    public ChiTietHoaDonDichVu(String maHoaDon, String maDichVu, int soLuong, BigDecimal donGia) {
+    public ChiTietHoaDonDichVu(String maHoaDon, String maDichVu, int soLuong, double donGia) {
         this.maHoaDon = maHoaDon;
         this.maDichVu = maDichVu;
         this.soLuong = 1;
-        this.donGia = donGia != null ? donGia : BigDecimal.ZERO;
+        this.donGia = donGia;
     }
 
-    public ChiTietHoaDonDichVu(String maHoaDon, String maDichVu, String tenDichVu, String maThuCung, String tenThuCung, BigDecimal donGia) {
+    public ChiTietHoaDonDichVu(String maHoaDon, String maDichVu, String tenDichVu, String maThuCung, String tenThuCung, double donGia) {
         this(maHoaDon, maDichVu, 1, donGia);
         this.tenDichVu = tenDichVu;
         this.maThuCung = maThuCung;
         this.tenThuCung = tenThuCung;
     }
 
-    public BigDecimal getThanhTien() {
-        if (donGia == null) return BigDecimal.ZERO;
-        return donGia.multiply(BigDecimal.valueOf(soLuong));
+    /**
+     * Phương thức tự tính thành tiền dẫn xuất: soLuong * donGia (Điều 2 IUH).
+     */
+    public double tinhThanhTien() {
+        return this.soLuong * this.donGia;
+    }
+
+    public double getThanhTien() {
+        return tinhThanhTien();
     }
 
     // Getters and Setters
@@ -59,7 +64,7 @@ public class ChiTietHoaDonDichVu {
     public int getSoLuong() { return soLuong; }
     public void setSoLuong(int soLuong) { this.soLuong = soLuong; }
 
-    public BigDecimal getDonGia() { return donGia; }
-    public void setDonGia(BigDecimal donGia) { this.donGia = donGia; }
+    public double getDonGia() { return donGia; }
+    public void setDonGia(double donGia) { this.donGia = donGia; }
+    public void setDonGia(java.math.BigDecimal donGia) { this.donGia = (donGia != null ? donGia.doubleValue() : 0.0); }
 }
-

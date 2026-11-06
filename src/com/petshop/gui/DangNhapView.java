@@ -89,18 +89,20 @@ public class DangNhapView extends StackPane {
         pnlLuoiNhap.setAlignment(Pos.CENTER);
 
         ColumnConstraints colNhan = new ColumnConstraints();
-        colNhan.setMinWidth(115);
-        colNhan.setPrefWidth(120);
+        colNhan.setMinWidth(135);
+        colNhan.setPrefWidth(140);
         ColumnConstraints colNhap = new ColumnConstraints();
         colNhap.setHgrow(Priority.ALWAYS);
         pnlLuoiNhap.getColumnConstraints().addAll(colNhan, colNhap);
 
         lblTenDangNhap.getStyleClass().add("nhan-nhap-lieu");
+        lblTenDangNhap.setWrapText(false);
         lblTenDangNhap.setMinWidth(Region.USE_PREF_SIZE);
         lblMatKhau.getStyleClass().add("nhan-nhap-lieu");
+        lblMatKhau.setWrapText(false);
         lblMatKhau.setMinWidth(Region.USE_PREF_SIZE);
 
-        txtTenDangNhap.setPromptText("Nhập mã nhân viên (VD: 260001)");
+        txtTenDangNhap.setPromptText("Nhập mã nhân viên hoặc tên đăng nhập");
         txtTenDangNhap.setPrefWidth(260);
         txtTenDangNhap.setMaxWidth(Double.MAX_VALUE);
 
@@ -119,7 +121,7 @@ public class DangNhapView extends StackPane {
         // Đồng bộ dữ liệu 2 chiều giữa PasswordField và TextField
         txtMatKhauHien.textProperty().bindBidirectional(pwdMatKhau.textProperty());
 
-        // Cấu hình icon mắt chuẩn vector (mắt thường khi ẩn, mắt gạch chéo khi hiện)
+        // Cấu hình icon mắt chuẩn vector
         iconMatKhau.setContent(SVG_MAT_MO);
         iconMatKhau.setFill(Color.TRANSPARENT);
         iconMatKhau.setStroke(Color.web("#64748b"));
@@ -244,12 +246,12 @@ public class DangNhapView extends StackPane {
         xoaLoiTenDangNhap();
         xoaLoiMatKhau();
 
-        String tenDangNhap = txtTenDangNhap.getText() != null ? txtTenDangNhap.getText().trim() : "";
+        String maNhanVien = txtTenDangNhap.getText() != null ? txtTenDangNhap.getText().trim() : "";
         String matKhau = pwdMatKhau.getText() != null ? pwdMatKhau.getText() : "";
 
         boolean coLoi = false;
         
-        if (tenDangNhap.isEmpty()) {
+        if (maNhanVien.isEmpty()) {
             hienLoiTenDangNhap("Vui lòng nhập mã nhân viên");
             txtTenDangNhap.requestFocus();
             coLoi = true;
@@ -271,9 +273,9 @@ public class DangNhapView extends StackPane {
 
         TaiKhoan taiKhoan;
         try {
-            taiKhoan = dangNhapController.xacThuc(tenDangNhap, matKhau);
+            taiKhoan = dangNhapController.xacThuc(maNhanVien, matKhau);
         } catch (IllegalStateException ex) {
-            hienThiCanhBao("Lỗi hệ thống", "Lỗi kết nối cơ sở dữ liệu SQL Server!");
+            hienThiCanhBao("Lỗi hệ thống", "Lỗi kết nối cơ sở dữ liệu SQL Server: " + ex.getMessage());
             return;
         }
 

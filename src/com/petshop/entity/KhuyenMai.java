@@ -50,8 +50,16 @@ public class KhuyenMai {
         return tenChuongTrinh;
     }
 
+    public String getTenKhuyenMai() {
+        return tenChuongTrinh;
+    }
+
     public void setTenChuongTrinh(String tenChuongTrinh) {
         this.tenChuongTrinh = tenChuongTrinh;
+    }
+
+    public void setTenKhuyenMai(String tenKhuyenMai) {
+        this.tenChuongTrinh = tenKhuyenMai;
     }
 
     public double getPhanTramGiam() {

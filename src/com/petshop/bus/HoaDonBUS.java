@@ -56,18 +56,18 @@ public class HoaDonBUS {
         kiemTraHopLeHoaDon(hoaDon);
 
         // Áp dụng khuyến mãi nếu có
-        BigDecimal tongGoc = hoaDon.tinhTongTienGoc();
-        BigDecimal tienSauKm = tongGoc;
+        double tongGoc = hoaDon.tinhTongTienGoc();
+        double tienSauKm = tongGoc;
         if (hoaDon.getMaKhuyenMai() != null && !hoaDon.getMaKhuyenMai().trim().isEmpty()) {
             String maKm = hoaDon.getMaKhuyenMai().trim();
             if (!khuyenMaiService.kiemTraKhuyenMaiHopLe(maKm)) {
                 throw new IllegalArgumentException("Mã khuyến mãi '" + maKm + "' không hợp lệ hoặc đã hết hạn!");
             }
-            BigDecimal soTienGiam = BigDecimal.valueOf(khuyenMaiService.tinhSoTienGiam(maKm, tongGoc.doubleValue()));
+            double soTienGiam = khuyenMaiService.tinhSoTienGiam(maKm, tongGoc);
             hoaDon.setTienGiam(soTienGiam);
-            tienSauKm = tongGoc.subtract(soTienGiam).max(BigDecimal.ZERO);
+            tienSauKm = Math.max(0.0, tongGoc - soTienGiam);
         } else {
-            hoaDon.setTienGiam(BigDecimal.ZERO);
+            hoaDon.setTienGiam(0.0);
         }
 
         // Áp dụng điểm tích lũy nếu có (1 điểm = 1.000 VNĐ)
@@ -77,19 +77,18 @@ public class HoaDonBUS {
                 throw new IllegalArgumentException("Khách vãng lai không thể sử dụng điểm tích lũy!");
             }
             // Làm tròn lên số điểm để có thể lấn át toàn bộ tiền thanh toán về 0đ
-            int diemToiDa = (int) Math.ceil(tienSauKm.doubleValue() / 1000.0);
+            int diemToiDa = (int) Math.ceil(tienSauKm / 1000.0);
             if (hoaDon.getDiemTichLuySuDung() > diemToiDa) {
                 hoaDon.setDiemTichLuySuDung(diemToiDa);
             }
-            BigDecimal giaTriDiem = BigDecimal.valueOf(hoaDon.getDiemTichLuySuDung() * 1000L);
-            BigDecimal tienGiamTuDiem = tienSauKm.min(giaTriDiem);
+            double giaTriDiem = hoaDon.getDiemTichLuySuDung() * 1000.0;
+            double tienGiamTuDiem = Math.min(tienSauKm, giaTriDiem);
             hoaDon.setTienGiamTuDiem(tienGiamTuDiem);
         } else {
-            hoaDon.setTienGiamTuDiem(BigDecimal.ZERO);
+            hoaDon.setTienGiamTuDiem(0.0);
         }
 
-        BigDecimal tongThucThu = tienSauKm.subtract(hoaDon.getTienGiamTuDiem()).max(BigDecimal.ZERO);
-        hoaDon.setTongTien(tongThucThu);
+        double tongThucThu = Math.max(0.0, tienSauKm - hoaDon.getTienGiamTuDiem());
 
         // Tính điểm tích lũy mới được cộng (Chỉ tính cho khách hàng chính thức, khách vãng lai = 0)
         int diemCong = tinhDiemTichLuy(tongThucThu, laKhachHang);
@@ -105,17 +104,21 @@ public class HoaDonBUS {
      *   + Hóa đơn < 1.000.000 VNĐ: cứ 100k tính 5 điểm
      *   + Hóa đơn >= 1.000.000 VNĐ: cứ 100k tính 10 điểm
      */
-    public int tinhDiemTichLuy(BigDecimal soTien, boolean laKhachHang) {
-        if (!laKhachHang || soTien == null || soTien.compareTo(BigDecimal.ZERO) <= 0) {
+    public int tinhDiemTichLuy(double soTien, boolean laKhachHang) {
+        if (!laKhachHang || soTien <= 0.0) {
             return 0;
         }
-        long tien = soTien.longValue();
+        long tien = (long) soTien;
         long soBlock100k = tien / 100_000L;
         if (tien >= 1_000_000L) {
             return (int) (soBlock100k * 10L);
         } else {
             return (int) (soBlock100k * 5L);
         }
+    }
+
+    public int tinhDiemTichLuy(BigDecimal soTien, boolean laKhachHang) {
+        return tinhDiemTichLuy(soTien != null ? soTien.doubleValue() : 0.0, laKhachHang);
     }
 
     /**
@@ -146,6 +149,12 @@ public class HoaDonBUS {
      * Yêu cầu quyền: HD_CAP_NHAT.
      */
     public boolean capNhatHoaDon(HoaDon hoaDonCu, HoaDon hoaDonMoi, BigDecimal tienThanhToanThem, BigDecimal tienHoanLai) {
+        return capNhatHoaDon(hoaDonCu, hoaDonMoi,
+                tienThanhToanThem != null ? tienThanhToanThem.doubleValue() : 0.0,
+                tienHoanLai != null ? tienHoanLai.doubleValue() : 0.0);
+    }
+
+    public boolean capNhatHoaDon(HoaDon hoaDonCu, HoaDon hoaDonMoi, double tienThanhToanThem, double tienHoanLai) {
         kiemTraQuyenHoaDon("HD_CAP_NHAT");
 
         if (hoaDonCu == null || hoaDonMoi == null) {
@@ -290,7 +299,7 @@ public class HoaDonBUS {
                 if (sp.getSoLuong() <= 0) {
                     throw new IllegalArgumentException("Số lượng mua cho sản phẩm '" + sp.getMaSanPham() + "' phải lớn hơn 0!");
                 }
-                if (sp.getDonGia() == null || sp.getDonGia().compareTo(BigDecimal.ZERO) < 0) {
+                if (sp.getDonGia() < 0) {
                     throw new IllegalArgumentException("Đơn giá sản phẩm '" + sp.getMaSanPham() + "' không được âm!");
                 }
 
@@ -306,7 +315,7 @@ public class HoaDonBUS {
         // Kiểm tra từng dịch vụ
         if (coDichVu) {
             for (ChiTietHoaDonDichVu dv : hoaDon.getDanhSachDichVu()) {
-                if (dv.getDonGia() == null || dv.getDonGia().compareTo(BigDecimal.ZERO) < 0) {
+                if (dv.getDonGia() < 0) {
                     throw new IllegalArgumentException("Đơn giá dịch vụ '" + dv.getMaDichVu() + "' không được âm!");
                 }
             }
@@ -372,8 +381,23 @@ public class HoaDonBUS {
         return khuyenMaiService.kiemTraKhuyenMaiHopLe(maKhuyenMai);
     }
 
-    public BigDecimal tinhSoTienGiam(String maKhuyenMai, BigDecimal tongTienGoc) {
-        double goc = tongTienGoc == null ? 0.0 : tongTienGoc.doubleValue();
-        return BigDecimal.valueOf(khuyenMaiService.tinhSoTienGiam(maKhuyenMai, goc));
+    public SanPham timSanPhamTheoMaHoacMaVach(String input) {
+        return sanPhamService.layTheoMaHoacMaVach(input);
+    }
+
+    /**
+     * Tìm kiếm gợi ý sản phẩm theo mã hoặc tên (phục vụ thanh tìm kiếm / quét POS có autocomplete).
+     * Chỉ lấy sản phẩm đang kinh doanh và giới hạn tối đa 15 kết quả phản hồi nhanh.
+     */
+    public List<SanPham> timKiemSanPhamGoiY(String tuKhoa) {
+        if (tuKhoa == null || tuKhoa.trim().isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        List<SanPham> ketQua = sanPhamService.timKiemSanPham(tuKhoa.trim(), true);
+        return ketQua.stream().limit(15).toList();
+    }
+
+    public double tinhSoTienGiam(String maKhuyenMai, double tongTienGoc) {
+        return khuyenMaiService.tinhSoTienGiam(maKhuyenMai, tongTienGoc);
     }
 }
