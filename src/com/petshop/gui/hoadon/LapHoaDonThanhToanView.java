@@ -22,9 +22,11 @@ import javafx.stage.Stage;
 
 import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Giao diện Lập hóa đơn và thanh toán bán lẻ POS (com.petshop.gui).
@@ -86,6 +88,12 @@ public class LapHoaDonThanhToanView extends VBox {
     private final Popup popupGoiYSP = new Popup();
     private final ListView<SanPham> lstGoiYSP = new ListView<>();
     private boolean dangChonGoiY = false;
+
+    // Quản lý đơn hàng tạm (Hold Orders - xử lý khách thiếu tiền / đổi ý)
+    private final ObservableList<DonHangTam> dsDonTam = FXCollections.observableArrayList();
+    private int demDonTam = 1;
+    private final Button btnLuuTam = new Button("⏸ Lưu tạm (F6)");
+    private final Button btnDonTam = new Button("📂 Đơn tạm (0)");
 
     // 3. Bảng chi tiết bán hàng
     private final TableView<DongHoaDon> bangChiTiet = new TableView<>();
@@ -150,7 +158,7 @@ public class LapHoaDonThanhToanView extends VBox {
         VBox pnlTieuDe = new VBox(3);
         Label lblTieuDe = new Label("LẬP HÓA ĐƠN & THANH TOÁN BÁN LẺ (POS)");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-        Label lblMoTa = new Label("Bán hàng siêu tốc: Quét mã vạch SP (F4), tra cứu SĐT khách trực tiếp (F2), tự động nạp phiếu dịch vụ, thanh toán & in bill A6 (F9).");
+        Label lblMoTa = new Label("Bán hàng siêu tốc: Quét mã vạch SP (F4), tra cứu SĐT khách (F2), Lưu tạm đơn (F6), Đơn tạm (F7), thanh toán & in bill A6 (F9).");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
         pnlTieuDe.getChildren().addAll(lblTieuDe, lblMoTa);
 
@@ -285,6 +293,14 @@ public class LapHoaDonThanhToanView extends VBox {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
+        btnLuuTam.getStyleClass().add("nut-phu");
+        btnLuuTam.setStyle("-fx-font-size: 11.5px; -fx-font-weight: bold; -fx-text-fill: #b45309; -fx-background-color: #fef3c7; -fx-border-color: #f59e0b; -fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;");
+        btnLuuTam.setOnAction(e -> xuLyLuuTamDonHang());
+
+        btnDonTam.getStyleClass().add("nut-phu");
+        btnDonTam.setStyle("-fx-font-size: 11.5px; -fx-font-weight: bold; -fx-text-fill: #0369a1; -fx-background-color: #e0f2fe; -fx-border-color: #38bdf8; -fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;");
+        btnDonTam.setOnAction(e -> moCuaSoDonHangTam());
+
         Button btnXoaDong = new Button("✕ Xóa dòng");
         btnXoaDong.getStyleClass().add("nut-xoa");
         btnXoaDong.setOnAction(e -> xoaDongDangChon());
@@ -300,7 +316,7 @@ public class LapHoaDonThanhToanView extends VBox {
             }
         });
 
-        hangQuet.getChildren().addAll(lblPos, txtMaVachSanPham, btnQuetMaVach, spacer, btnXoaDong, btnXoaTatCa);
+        hangQuet.getChildren().addAll(lblPos, txtMaVachSanPham, btnQuetMaVach, spacer, btnLuuTam, btnDonTam, btnXoaDong, btnXoaTatCa);
         pnl.getChildren().add(hangQuet);
         return pnl;
     }
@@ -741,6 +757,12 @@ public class LapHoaDonThanhToanView extends VBox {
                         event.consume();
                     } else if (event.getCode() == KeyCode.F5) {
                         lamMoiToanBoForm();
+                        event.consume();
+                    } else if (event.getCode() == KeyCode.F6) {
+                        xuLyLuuTamDonHang();
+                        event.consume();
+                    } else if (event.getCode() == KeyCode.F7) {
+                        moCuaSoDonHangTam();
                         event.consume();
                     } else if (event.getCode() == KeyCode.F9) {
                         xuLyThanhToan(true);
@@ -1224,6 +1246,347 @@ public class LapHoaDonThanhToanView extends VBox {
         dlg.showAndWait();
     }
 
+    /**
+     * Lưu tạm giỏ hàng hiện tại vào hàng đợi đơn tạm (Hold Order).
+     * Giải quyết tình huống khách chưa đủ tiền / đổi ý / cần thời gian chuyển khoản mà không làm nghẽn quầy POS.
+     */
+    private void xuLyLuuTamDonHang() {
+        if (dsDongHang.isEmpty()) {
+            hienThiCanhBao("Giỏ hàng đang trống, không có mặt hàng nào để lưu tạm!");
+            return;
+        }
+
+        String maDon = "DT-" + String.format("%02d", demDonTam++);
+        String tenKh = (khachHangHienTai != null) ? khachHangHienTai.getHoTen() : "Khách vãng lai";
+        String sdt = (khachHangHienTai != null) ? khachHangHienTai.getSoDienThoai() : "";
+        String maKm = (cboKhuyenMai.getValue() != null) ? cboKhuyenMai.getValue().getMaKhuyenMai() : null;
+        int diem = (chkDungDiem.isSelected() && spnDiemDung.getValue() != null) ? spnDiemDung.getValue() : 0;
+        String ghiChu = (khachHangHienTai != null ? "Khách: " + khachHangHienTai.getHoTen() : "Khách vãng lai");
+
+        DonHangTam donTam = new DonHangTam(
+                maDon,
+                khachHangHienTai,
+                tenKh,
+                sdt,
+                new ArrayList<>(dsDongHang),
+                tongTienHangHienTai,
+                tongThanhToanHienTai,
+                maKm,
+                diem,
+                ghiChu,
+                maPhieuDichVuDaNap
+        );
+
+        dsDonTam.add(donTam);
+        capNhatNhanNutDonTam();
+
+        // Làm mới form để sẵn sàng phục vụ khách tiếp theo
+        lamMoiToanBoForm();
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Lưu tạm đơn thành công");
+        alert.setHeaderText("Đã lưu tạm đơn hàng [" + maDon + "]!");
+        alert.setContentText("Toàn bộ " + donTam.getSoLuongMatHang() + " mặt hàng của '" + tenKh + "' đã được đưa vào danh sách chờ.\n"
+                + "Quầy POS sẵn sàng phục vụ khách tiếp theo.\n"
+                + "Khi khách quay lại, nhấn 'Đơn tạm (" + dsDonTam.size() + ")' hoặc phím F7 để khôi phục ngay.");
+        alert.showAndWait();
+    }
+
+    private void capNhatNhanNutDonTam() {
+        int sl = dsDonTam.size();
+        btnDonTam.setText("📂 Đơn tạm (" + sl + ")");
+        if (sl > 0) {
+            btnDonTam.setStyle("-fx-font-size: 11.5px; -fx-font-weight: bold; -fx-text-fill: #ffffff; -fx-background-color: #0284c7; -fx-border-color: #0369a1; -fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;");
+        } else {
+            btnDonTam.setStyle("-fx-font-size: 11.5px; -fx-font-weight: bold; -fx-text-fill: #0369a1; -fx-background-color: #e0f2fe; -fx-border-color: #38bdf8; -fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;");
+        }
+    }
+
+    /**
+     * Mở cửa sổ danh sách đơn hàng lưu tạm (Hold Orders) và hỗ trợ tải lại từ hóa đơn cũ / đã hủy.
+     */
+    public void moCuaSoDonHangTam() {
+        Stage dlg = new Stage();
+        dlg.initModality(Modality.APPLICATION_MODAL);
+        dlg.initOwner(getScene() != null ? getScene().getWindow() : null);
+        dlg.setTitle("Đơn hàng lưu tạm & Khôi phục hóa đơn POS - Happy Tails");
+
+        VBox root = new VBox(12);
+        root.setPadding(new Insets(16));
+        root.getStyleClass().add("khung-phan-he");
+
+        Label lblTieuDe = new Label("DANH SÁCH ĐƠN HÀNG LƯU TẠM (HOLD ORDERS)");
+        lblTieuDe.getStyleClass().add("tieu-de-phan-he");
+
+        Label lblHuongDan = new Label("Chọn đơn hàng tạm trong danh sách rồi nhấn 'Khôi phục vào POS' (hoặc click đúp) khi khách quay lại thanh toán.");
+        lblHuongDan.getStyleClass().add("mo-ta-phan-he");
+
+        // Bảng danh sách đơn hàng tạm
+        TableView<DonHangTam> bangDonTam = new TableView<>();
+        bangDonTam.getStyleClass().add("bang-du-lieu");
+        bangDonTam.setItems(dsDonTam);
+        bangDonTam.setPlaceholder(new Label("Hiện không có đơn hàng nào đang lưu tạm."));
+        bangDonTam.setPrefHeight(260);
+
+        TableColumn<DonHangTam, String> colMa = new TableColumn<>("Mã đơn tạm");
+        colMa.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getMaDonTam()));
+        colMa.setPrefWidth(90);
+
+        TableColumn<DonHangTam, String> colGio = new TableColumn<>("Giờ lưu");
+        colGio.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getThoiGianLuuStr()));
+        colGio.setPrefWidth(85);
+
+        TableColumn<DonHangTam, String> colKhach = new TableColumn<>("Khách hàng");
+        colKhach.setCellValueFactory(d -> {
+            String sdt = d.getValue().getSoDienThoai();
+            String ten = d.getValue().getTenKhachHang();
+            return new SimpleStringProperty(ten + (sdt != null && !sdt.isBlank() ? " (" + sdt + ")" : ""));
+        });
+        colKhach.setPrefWidth(180);
+
+        TableColumn<DonHangTam, Integer> colSoMon = new TableColumn<>("Số món");
+        colSoMon.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().getSoLuongMatHang()));
+        colSoMon.setPrefWidth(70);
+
+        TableColumn<DonHangTam, String> colTongTien = new TableColumn<>("Tổng thanh toán");
+        colTongTien.setCellValueFactory(d -> new SimpleStringProperty(DINH_DANG_TIEN.format(d.getValue().getTongThanhToan()) + " VNĐ"));
+        colTongTien.setPrefWidth(130);
+        colTongTien.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
+
+        TableColumn<DonHangTam, String> colGhiChu = new TableColumn<>("Ghi chú");
+        colGhiChu.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getGhiChu() != null ? d.getValue().getGhiChu() : ""));
+        colGhiChu.setPrefWidth(140);
+
+        bangDonTam.getColumns().addAll(colMa, colGio, colKhach, colSoMon, colTongTien, colGhiChu);
+
+        // Hàng nút thao tác
+        HBox pnlNut = new HBox(10);
+        pnlNut.setAlignment(Pos.CENTER_RIGHT);
+
+        Button btnXoaDon = new Button("✕ Xóa đơn này");
+        btnXoaDon.getStyleClass().add("nut-xoa");
+        btnXoaDon.setDisable(true);
+
+        Button btnXoaTatCa = new Button("✕ Xóa tất cả đơn tạm");
+        btnXoaTatCa.getStyleClass().add("nut-phu");
+        btnXoaTatCa.setStyle("-fx-text-fill: #dc2626;");
+        btnXoaTatCa.setDisable(dsDonTam.isEmpty());
+
+        Button btnDong = new Button("Đóng");
+        btnDong.getStyleClass().add("nut-phu");
+        btnDong.setOnAction(e -> dlg.close());
+
+        Button btnKhoiPhuc = new Button("🛒 Khôi phục vào POS");
+        btnKhoiPhuc.getStyleClass().add("nut-chinh");
+        btnKhoiPhuc.setStyle("-fx-background-color: #16a34a; -fx-font-weight: bold;");
+        btnKhoiPhuc.setDisable(true);
+
+        bangDonTam.getSelectionModel().selectedItemProperty().addListener((obs, cu, moi) -> {
+            boolean coChon = (moi != null);
+            btnKhoiPhuc.setDisable(!coChon);
+            btnXoaDon.setDisable(!coChon);
+        });
+
+        Runnable thucHienKhoiPhuc = () -> {
+            DonHangTam chon = bangDonTam.getSelectionModel().getSelectedItem();
+            if (chon == null) {
+                hienThiCanhBao("Vui lòng chọn một đơn tạm để khôi phục!");
+                return;
+            }
+
+            if (!dsDongHang.isEmpty()) {
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                confirm.setTitle("Xác nhận giỏ hàng");
+                confirm.setHeaderText("Quầy POS đang có " + dsDongHang.size() + " mặt hàng.");
+                confirm.setContentText("Bạn có muốn lưu tạm đơn hiện tại trước khi khôi phục đơn [" + chon.getMaDonTam() + "] không?");
+                ButtonType btnLuu = new ButtonType("Lưu tạm đơn hiện tại");
+                ButtonType btnBo = new ButtonType("Bỏ qua & Ghi đè");
+                ButtonType btnHuy = new ButtonType("Hủy", ButtonBar.ButtonData.CANCEL_CLOSE);
+                confirm.getButtonTypes().setAll(btnLuu, btnBo, btnHuy);
+
+                Optional<ButtonType> luaChon = confirm.showAndWait();
+                if (luaChon.isEmpty() || luaChon.get() == btnHuy) return;
+                if (luaChon.get() == btnLuu) {
+                    xuLyLuuTamDonHang();
+                }
+            }
+
+            khoiPhucDonTam(chon);
+            dsDonTam.remove(chon);
+            capNhatNhanNutDonTam();
+            dlg.close();
+
+            txtMaVachSanPham.requestFocus();
+        };
+
+        btnKhoiPhuc.setOnAction(e -> thucHienKhoiPhuc.run());
+
+        bangDonTam.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2 && bangDonTam.getSelectionModel().getSelectedItem() != null) {
+                thucHienKhoiPhuc.run();
+            }
+        });
+
+        btnXoaDon.setOnAction(e -> {
+            DonHangTam chon = bangDonTam.getSelectionModel().getSelectedItem();
+            if (chon != null) {
+                dsDonTam.remove(chon);
+                capNhatNhanNutDonTam();
+                btnXoaTatCa.setDisable(dsDonTam.isEmpty());
+            }
+        });
+
+        btnXoaTatCa.setOnAction(e -> {
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Bạn có chắc chắn muốn xóa toàn bộ " + dsDonTam.size() + " đơn tạm không?", ButtonType.YES, ButtonType.NO);
+            confirm.setHeaderText(null);
+            if (confirm.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+                dsDonTam.clear();
+                capNhatNhanNutDonTam();
+                btnXoaTatCa.setDisable(true);
+            }
+        });
+
+        Region spacerNut = new Region();
+        HBox.setHgrow(spacerNut, Priority.ALWAYS);
+
+        pnlNut.getChildren().addAll(btnXoaDon, btnXoaTatCa, spacerNut, btnDong, btnKhoiPhuc);
+
+        root.getChildren().addAll(lblTieuDe, lblHuongDan, bangDonTam, pnlNut);
+
+        Scene scene = new Scene(root, 720, 420);
+        try {
+            scene.getStylesheets().add(getClass().getResource(CSS_CHUNG).toExternalForm());
+        } catch (Exception ignored) {}
+
+        dlg.setScene(scene);
+        dlg.showAndWait();
+    }
+
+    private void khoiPhucDonTam(DonHangTam donTam) {
+        if (donTam == null) return;
+
+        lamMoiToanBoForm();
+
+        // 1. Phục hồi khách hàng
+        if (donTam.getKhachHang() != null) {
+            dongBoThongTinKhachHang(donTam.getKhachHang());
+            txtTimKhach.setText(donTam.getKhachHang().getSoDienThoai());
+        } else {
+            datKhachVangLai();
+        }
+
+        // 2. Phục hồi mặt hàng
+        for (DongHoaDon d : donTam.getDsMatHang()) {
+            DongHoaDon copy = new DongHoaDon(
+                    dsDongHang.size() + 1,
+                    d.getLoai(),
+                    d.getMaHang(),
+                    d.getTenHang(),
+                    d.getDonViTinh(),
+                    d.getSoLuong(),
+                    d.getDonGia(),
+                    d.getGhiChu()
+            );
+            copy.setMaThuCung(d.getMaThuCung());
+            copy.setTenThuCung(d.getTenThuCung());
+            dsDongHang.add(copy);
+        }
+
+        // 3. Phục hồi Phiếu dịch vụ nếu có
+        if (donTam.getMaPhieuDichVu() != null && !donTam.getMaPhieuDichVu().isBlank()) {
+            try {
+                PhieuDichVu p = controller.layPhieuDichVuDeThanhToan(donTam.getMaPhieuDichVu());
+                if (p != null) {
+                    napPhieuDichVuVaoHoaDon(p);
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // 4. Phục hồi Khuyến mãi
+        if (donTam.getMaKhuyenMai() != null) {
+            for (KhuyenMai km : cboKhuyenMai.getItems()) {
+                if (km != null && donTam.getMaKhuyenMai().equalsIgnoreCase(km.getMaKhuyenMai())) {
+                    cboKhuyenMai.setValue(km);
+                    break;
+                }
+            }
+        }
+
+        bangChiTiet.refresh();
+        capNhatTongTienThanhToan();
+    }
+
+    public void napLaiHoaDonVaoPOS(HoaDon hd) {
+        if (hd == null) return;
+
+        lamMoiToanBoForm();
+
+        // 1. Phục hồi thông tin khách hàng
+        if (hd.getKhachHang() != null) {
+            dongBoThongTinKhachHang(hd.getKhachHang());
+            txtTimKhach.setText(hd.getKhachHang().getSoDienThoai());
+        } else if (hd.getSoDienThoaiKhachHang() != null && !hd.getSoDienThoaiKhachHang().isBlank()) {
+            KhachHang kh = controller.timKhachHangTheoSoDienThoai(hd.getSoDienThoaiKhachHang().trim());
+            if (kh != null) {
+                dongBoThongTinKhachHang(kh);
+                txtTimKhach.setText(kh.getSoDienThoai());
+            } else {
+                datKhachVangLai();
+            }
+        } else {
+            datKhachVangLai();
+        }
+
+        // 2. Nạp sản phẩm
+        if (hd.getDanhSachSanPham() != null) {
+            for (ChiTietHoaDonSanPham sp : hd.getDanhSachSanPham()) {
+                DongHoaDon dong = new DongHoaDon(
+                        dsDongHang.size() + 1,
+                        DongHoaDon.LoaiDong.SAN_PHAM,
+                        sp.getMaSanPham(),
+                        sp.getTenSanPham() != null ? sp.getTenSanPham() : sp.getMaSanPham(),
+                        sp.getDonViTinh() != null ? sp.getDonViTinh() : "Cái",
+                        sp.getSoLuong(),
+                        sp.getDonGia(),
+                        ""
+                );
+                dsDongHang.add(dong);
+            }
+        }
+
+        // 3. Nạp dịch vụ
+        if (hd.getDanhSachDichVu() != null) {
+            for (ChiTietHoaDonDichVu dv : hd.getDanhSachDichVu()) {
+                DongHoaDon dong = new DongHoaDon(
+                        dsDongHang.size() + 1,
+                        DongHoaDon.LoaiDong.DICH_VU,
+                        dv.getMaDichVu(),
+                        dv.getTenDichVu() != null ? dv.getTenDichVu() : dv.getMaDichVu(),
+                        "Lần",
+                        dv.getSoLuong(),
+                        dv.getDonGia(),
+                        dv.getTenThuCung() != null ? "Thú cưng: " + dv.getTenThuCung() : ""
+                );
+                dong.setMaThuCung(dv.getMaThuCung());
+                dong.setTenThuCung(dv.getTenThuCung());
+                dsDongHang.add(dong);
+            }
+        }
+
+        // 4. Khuyến mãi nếu có
+        if (hd.getMaKhuyenMai() != null) {
+            for (KhuyenMai km : cboKhuyenMai.getItems()) {
+                if (km != null && hd.getMaKhuyenMai().equalsIgnoreCase(km.getMaKhuyenMai())) {
+                    cboKhuyenMai.setValue(km);
+                    break;
+                }
+            }
+        }
+
+        bangChiTiet.refresh();
+        capNhatTongTienThanhToan();
+    }
+
     // =========================================================================
     // TÍNH TOÁN TIỀN TỆ & ĐIỂM TÍCH LŨY (Điều 1 & 2 IUH: 100% double)
     // =========================================================================
@@ -1508,5 +1871,71 @@ public class LapHoaDonThanhToanView extends VBox {
         alert.setTitle("Lỗi");
         alert.setHeaderText(null);
         alert.showAndWait();
+    }
+
+    /**
+     * Lớp lưu trữ thông tin đơn hàng tạm (Hold Order) trong phiên làm việc POS.
+     * Tuân thủ Điều 1 và Điều 2 IUH: Kiểu double nguyên thủy, tham chiếu đối tượng.
+     */
+    public static class DonHangTam {
+        private final String maDonTam;
+        private final LocalTime thoiGianLuu;
+        private final KhachHang khachHang;
+        private final String tenKhachHang;
+        private final String soDienThoai;
+        private final List<DongHoaDon> dsMatHang;
+        private final double tongTienHang;
+        private final double tongThanhToan;
+        private final String maKhuyenMai;
+        private final int diemDung;
+        private final String ghiChu;
+        private final String maPhieuDichVu;
+
+        public DonHangTam(String maDonTam, KhachHang khachHang, String tenKhachHang, String soDienThoai,
+                          List<DongHoaDon> dsMatHang, double tongTienHang, double tongThanhToan,
+                          String maKhuyenMai, int diemDung, String ghiChu, String maPhieuDichVu) {
+            this.maDonTam = maDonTam;
+            this.thoiGianLuu = LocalTime.now();
+            this.khachHang = khachHang;
+            this.tenKhachHang = tenKhachHang;
+            this.soDienThoai = soDienThoai;
+            this.dsMatHang = new ArrayList<>();
+            for (DongHoaDon d : dsMatHang) {
+                DongHoaDon copy = new DongHoaDon(
+                        d.getStt(),
+                        d.getLoai(),
+                        d.getMaHang(),
+                        d.getTenHang(),
+                        d.getDonViTinh(),
+                        d.getSoLuong(),
+                        d.getDonGia(),
+                        d.getGhiChu()
+                );
+                copy.setMaThuCung(d.getMaThuCung());
+                copy.setTenThuCung(d.getTenThuCung());
+                this.dsMatHang.add(copy);
+            }
+            this.tongTienHang = tongTienHang;
+            this.tongThanhToan = tongThanhToan;
+            this.maKhuyenMai = maKhuyenMai;
+            this.diemDung = diemDung;
+            this.ghiChu = ghiChu;
+            this.maPhieuDichVu = maPhieuDichVu;
+        }
+
+        public String getMaDonTam() { return maDonTam; }
+        public LocalTime getThoiGianLuu() { return thoiGianLuu; }
+        public String getThoiGianLuuStr() { return thoiGianLuu.format(DateTimeFormatter.ofPattern("HH:mm:ss")); }
+        public KhachHang getKhachHang() { return khachHang; }
+        public String getTenKhachHang() { return tenKhachHang; }
+        public String getSoDienThoai() { return soDienThoai; }
+        public List<DongHoaDon> getDsMatHang() { return dsMatHang; }
+        public int getSoLuongMatHang() { return dsMatHang.size(); }
+        public double getTongTienHang() { return tongTienHang; }
+        public double getTongThanhToan() { return tongThanhToan; }
+        public String getMaKhuyenMai() { return maKhuyenMai; }
+        public int getDiemDung() { return diemDung; }
+        public String getGhiChu() { return ghiChu; }
+        public String getMaPhieuDichVu() { return maPhieuDichVu; }
     }
 }
