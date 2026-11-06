@@ -5,7 +5,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * Tiện ích băm mật khẩu bảo mật chuẩn SHA-256 (Bộ chỉ thị kỹ thuật IUH - Điều 5).
+ * Tiện ích mã hóa bảo mật cho hệ thống Happy Tails.
+ * Tuân thủ Điều 5 Bộ chỉ thị kỹ thuật IUH: Băm mật khẩu bằng thuật toán SHA-256.
  */
 public final class HashUtil {
 
@@ -13,10 +14,10 @@ public final class HashUtil {
     }
 
     /**
-     * Băm chuỗi văn bản bằng thuật toán SHA-256 và trả về chuỗi Hexadecimal viết thường.
+     * Băm chuỗi đầu vào bằng thuật toán SHA-256 ra chuỗi Hex 64 ký tự.
      *
-     * @param input Chuỗi văn bản cần băm (mật khẩu)
-     * @return Chuỗi Hex 64 ký tự, hoặc rỗng nếu input null
+     * @param input Chuỗi văn bản thuần (mật khẩu)
+     * @return Chuỗi băm SHA-256 dạng hex thường (64 ký tự), hoặc chuỗi rỗng nếu input null
      */
     public static String sha256(String input) {
         if (input == null) {
@@ -24,9 +25,9 @@ public final class HashUtil {
         }
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] encodedhash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
-            StringBuilder hexString = new StringBuilder(2 * encodedhash.length);
-            for (byte b : encodedhash) {
+            byte[] encodedHash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder(2 * encodedHash.length);
+            for (byte b : encodedHash) {
                 String hex = Integer.toHexString(0xff & b);
                 if (hex.length() == 1) {
                     hexString.append('0');
@@ -35,8 +36,7 @@ public final class HashUtil {
             }
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Lỗi thuật toán mã hóa SHA-256: " + e.getMessage(), e);
+            throw new IllegalStateException("Hệ thống không hỗ trợ thuật toán SHA-256: " + e.getMessage(), e);
         }
     }
 }
-

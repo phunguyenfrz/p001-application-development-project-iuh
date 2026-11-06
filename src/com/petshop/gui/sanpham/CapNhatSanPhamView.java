@@ -11,10 +11,11 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-
+import java.io.File;
 import java.net.URL;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +33,7 @@ public class CapNhatSanPhamView extends VBox {
     private final Button btnCapNhat = new Button("Cập nhật");
     private final Button btnXoa = new Button("Xóa");
     private final Button btnTrangThai = new Button("Ngừng kinh doanh");
+    private final Button btnXuatBarcode = new Button("🏷 Xuất Barcode PDF");
     private final Button btnLamMoi = new Button("Làm mới");
 
     private final TableView<SanPham> tblDanhSach = new TableView<>();
@@ -80,10 +82,13 @@ public class CapNhatSanPhamView extends VBox {
         btnTrangThai.getStyleClass().add("nut-phu");
         btnTrangThai.setOnAction(e -> xuLyDoiTrangThai());
 
+        btnXuatBarcode.getStyleClass().add("nut-phu");
+        btnXuatBarcode.setOnAction(e -> xuLyXuatBarcode());
+
         btnLamMoi.getStyleClass().add("nut-phu");
         btnLamMoi.setOnAction(e -> xuLyLamMoi());
 
-        pnlThanhNut.getChildren().addAll(lblDanhSach, pnlKhoangTrong, btnThemMoi, btnCapNhat, btnTrangThai, btnXoa, btnLamMoi);
+        pnlThanhNut.getChildren().addAll(lblDanhSach, pnlKhoangTrong, btnThemMoi, btnCapNhat, btnTrangThai, btnXuatBarcode, btnXoa, btnLamMoi);
         return pnlThanhNut;
     }
 
@@ -602,6 +607,53 @@ row.setOnMouseClicked(event -> {
         alert.setHeaderText(null);
         alert.setContentText(noiDung);
         alert.showAndWait();
+    }
+
+    private void xuLyXuatBarcode() {
+        List<SanPham> ds = tblDanhSach.getItems();
+        if (ds == null || ds.isEmpty()) {
+            hienThiCanhBao("Không có sản phẩm nào trong bảng để xuất mã vạch!");
+            return;
+        }
+
+        SanPham spChon = tblDanhSach.getSelectionModel().getSelectedItem();
+        List<SanPham> danhSachXuat;
+        if (spChon != null) {
+            ButtonType btnChon = new ButtonType("Chỉ mã " + spChon.getMaSanPham());
+            ButtonType btnTatCa = new ButtonType("Toàn bộ danh sách (" + ds.size() + " SP)");
+            ButtonType btnHuy = new ButtonType("Hủy", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+            Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION, "Bạn muốn xuất tem barcode cho sản phẩm nào?", btnChon, btnTatCa, btnHuy);
+            xacNhan.setTitle("Tùy chọn xuất tem mã vạch Barcode");
+            xacNhan.setHeaderText(null);
+            Optional<ButtonType> opt = xacNhan.showAndWait();
+            if (opt.isEmpty() || opt.get() == btnHuy) {
+                return;
+            }
+            if (opt.get() == btnChon) {
+                danhSachXuat = List.of(spChon);
+            } else {
+                danhSachXuat = ds;
+            }
+        } else {
+            danhSachXuat = ds;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Lưu file tem mã vạch Barcode PDF");
+        fileChooser.setInitialFileName("Tem_Barcode_SanPham_HappyTails.pdf");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Tệp PDF (*.pdf)", "*.pdf"));
+
+        Stage stage = getScene() != null ? (Stage) getScene().getWindow() : null;
+        File file = fileChooser.showSaveDialog(stage);
+        if (file != null) {
+            try {
+                com.petshop.util.BarcodePDFUtil.xuatDanhSachMaVachPDF(danhSachXuat, file);
+                hienThiThongBao("Đã xuất " + danhSachXuat.size() + " tem mã vạch thành công!\nĐường dẫn: " + file.getAbsolutePath());
+            } catch (Exception ex) {
+                hienThiLoi("Lỗi khi xuất file PDF mã vạch: " + ex.getMessage());
+            }
+        }
     }
 
     private void hienThiLoi(String noiDung) {

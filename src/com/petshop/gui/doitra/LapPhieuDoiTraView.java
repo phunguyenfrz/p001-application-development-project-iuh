@@ -116,6 +116,8 @@ public class LapPhieuDoiTraView extends VBox {
             }
         }
 
+
+
         public BooleanProperty chonProperty() { return chon; }
         public boolean isChon() { return chon.get(); }
         public void setChon(boolean val) { chon.set(val); }
@@ -280,7 +282,7 @@ public class LapPhieuDoiTraView extends VBox {
 
         TableColumn<HoaDon, String> colTongTien = new TableColumn<>("Tổng tiền");
         colTongTien.setCellValueFactory(d -> new SimpleStringProperty(
-                DINH_DANG_TIEN.format(d.getValue().getTongTien() != null ? d.getValue().getTongTien().doubleValue() : 0.0)));
+                DINH_DANG_TIEN.format(d.getValue().getTongTien())));
         colTongTien.setPrefWidth(110);
 
         TableColumn<HoaDon, String> colTrangThai = new TableColumn<>("Trạng thái");
@@ -302,6 +304,7 @@ public class LapPhieuDoiTraView extends VBox {
         card.getChildren().addAll(lblTieuDe, hangTim, lblBannerLoiHoaDon, tblKetQuaHoaDon, pnlThongTinHoaDonChon);
         return card;
     }
+
 
     private VBox taoVungBChonSanPham() {
         VBox card = new VBox(10);
@@ -650,7 +653,7 @@ public class LapPhieuDoiTraView extends VBox {
                     daTra = controller.laySoLuongDaDoiTra(hd.getMaHoaDon(), maHang);
                 }
 
-                double donGiaSp = ct.getDonGia() != null ? ct.getDonGia().doubleValue() : 0.0;
+                double donGiaSp = ct.getDonGia();
                 DongTraHang dong = new DongTraHang(maHang, tenHang, donGiaSp, ct.getSoLuong(), daTra, false);
 
                 dong.getSpnSoLuongTra().valueProperty().addListener((obs, o, n) -> {
@@ -679,7 +682,7 @@ public class LapPhieuDoiTraView extends VBox {
 
         if (hd.getDanhSachDichVu() != null) {
             for (ChiTietHoaDonDichVu ct : hd.getDanhSachDichVu()) {
-                double donGiaDv = ct.getDonGia() != null ? ct.getDonGia().doubleValue() : 0.0;
+                double donGiaDv = ct.getDonGia();
                 DongTraHang dong = new DongTraHang(ct.getMaDichVu(), ct.getTenDichVu() + " (Dịch vụ - không đổi trả)",
                         donGiaDv, ct.getSoLuong(), 0, true);
                 dsSanPhamDoiTra.add(dong);

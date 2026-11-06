@@ -110,12 +110,12 @@ public class XemChiTietHoaDonView extends Stage {
         luoiTongKet.setAlignment(Pos.CENTER_RIGHT);
         luoiTongKet.setPadding(new Insets(8, 12, 8, 12));
 
-        BigDecimal tongGoc = hoaDon.tinhTongTienGoc();
+        double tongGoc = hoaDon.tinhTongTienGoc();
         int row = 0;
         luoiTongKet.add(new Label("Tổng tiền hàng:"), 0, row);
         luoiTongKet.add(new Label(DINH_DANG_TIEN.format(tongGoc)), 1, row++);
 
-        if (hoaDon.getTienGiam() != null && hoaDon.getTienGiam().compareTo(BigDecimal.ZERO) > 0) {
+        if (hoaDon.getTienGiam() > 0.0) {
             String kmStr = "Giảm giá (" + (hoaDon.getMaKhuyenMai() != null ? hoaDon.getMaKhuyenMai() : "KM") + "):";
             luoiTongKet.add(new Label(kmStr), 0, row);
             Label lblGiam = new Label("-" + DINH_DANG_TIEN.format(hoaDon.getTienGiam()));

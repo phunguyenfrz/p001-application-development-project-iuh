@@ -2,6 +2,8 @@ package com.petshop.entity;
 
 /**
  * Lớp thực thể Tài khoản hệ thống (khớp bảng TaiKhoan trong CSDL và Class Diagram).
+ * Tuân thủ Điều 2 & Điều 5 IUH: Khóa ngoại dùng Object Reference (NhanVien nhanVien),
+ * tự động lấy nhân viên qua SessionManager.
  */
 public class TaiKhoan {
 
@@ -36,13 +38,13 @@ public class TaiKhoan {
     }
 
     private String maTaiKhoan;
+    private NhanVien nhanVien; // Object Reference nhân viên sở hữu tài khoản (Điều 2 & 5 IUH)
     private String maNhanVien;
     private String tenDangNhap;
     private String matKhau;
     private VaiTro phanQuyen;
     private boolean trangThai; // true: hoạt động, false: bị khóa
     private String hoTenNhanVien; // Tên nhân viên hiển thị trên giao diện
-    private NhanVien nhanVien; // Object Reference tới Nhân viên sở hữu tài khoản
 
     public TaiKhoan() {
     }
@@ -64,6 +66,14 @@ public class TaiKhoan {
         this.trangThai = true;
     }
 
+    public TaiKhoan(NhanVien nhanVien, String tenDangNhap, String matKhau, VaiTro phanQuyen) {
+        this.setNhanVien(nhanVien);
+        this.tenDangNhap = tenDangNhap;
+        this.matKhau = matKhau;
+        this.phanQuyen = phanQuyen;
+        this.trangThai = true;
+    }
+
     public String getMaTaiKhoan() {
         return maTaiKhoan;
     }
@@ -72,8 +82,29 @@ public class TaiKhoan {
         this.maTaiKhoan = maTaiKhoan;
     }
 
+    public NhanVien getNhanVien() {
+        if (nhanVien == null && maNhanVien != null && !maNhanVien.isBlank()) {
+            nhanVien = new NhanVien();
+            nhanVien.setMaNhanVien(maNhanVien);
+            nhanVien.setHoTen(hoTenNhanVien);
+        }
+        return nhanVien;
+    }
+
+    public void setNhanVien(NhanVien nhanVien) {
+        this.nhanVien = nhanVien;
+        if (nhanVien != null) {
+            this.maNhanVien = nhanVien.getMaNhanVien();
+            if (nhanVien.getHoTen() != null && !nhanVien.getHoTen().isBlank()) {
+                this.hoTenNhanVien = nhanVien.getHoTen();
+            }
+        }
+    }
+
+
+
     public String getMaNhanVien() {
-        return maNhanVien;
+        return nhanVien != null ? nhanVien.getMaNhanVien() : maNhanVien;
     }
 
     public void setMaNhanVien(String maNhanVien) {
@@ -126,24 +157,7 @@ public class TaiKhoan {
         }
     }
 
-    public NhanVien getNhanVien() {
-        if (nhanVien == null && maNhanVien != null && !maNhanVien.isBlank()) {
-            nhanVien = new NhanVien();
-            nhanVien.setMaNhanVien(maNhanVien);
-            nhanVien.setHoTen(hoTenNhanVien);
-        }
-        return nhanVien;
-    }
 
-    public void setNhanVien(NhanVien nhanVien) {
-        this.nhanVien = nhanVien;
-        if (nhanVien != null) {
-            this.maNhanVien = nhanVien.getMaNhanVien();
-            if (nhanVien.getHoTen() != null && !nhanVien.getHoTen().isBlank()) {
-                this.hoTenNhanVien = nhanVien.getHoTen();
-            }
-        }
-    }
 
     // Các phương thức nghiệp vụ khớp với Class Diagram
     public void doiMatKhau(String matKhauMoi) {
@@ -166,4 +180,3 @@ public class TaiKhoan {
         this.matKhau = matKhauMacDinh;
     }
 }
-

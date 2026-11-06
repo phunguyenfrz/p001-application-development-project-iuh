@@ -284,8 +284,8 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
 
         TableColumn<HoaDon, String> colGiaGoc = new TableColumn<>("Giá gốc");
         colGiaGoc.setCellValueFactory(h -> {
-            BigDecimal giaGoc = h.getValue().getTongTienGoc();
-            return new SimpleStringProperty(DINH_DANG_TIEN.format(giaGoc != null ? giaGoc : BigDecimal.ZERO));
+            double giaGoc = h.getValue().getTongTienGoc();
+            return new SimpleStringProperty(DINH_DANG_TIEN.format(giaGoc));
         });
         colGiaGoc.setPrefWidth(110);
         colGiaGoc.setStyle("-fx-alignment: center-right; -fx-text-fill: #475569;");
@@ -295,8 +295,8 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
             if ("Đã hủy".equalsIgnoreCase(h.getValue().getTrangThaiThanhToan())) {
                 return new SimpleStringProperty("0 VNĐ");
             }
-            BigDecimal tongGiam = h.getValue().getTongTienGiam();
-            return new SimpleStringProperty(DINH_DANG_TIEN.format(tongGiam != null ? tongGiam : BigDecimal.ZERO));
+            double tongGiam = h.getValue().getTongTienGiam();
+            return new SimpleStringProperty(DINH_DANG_TIEN.format(tongGiam));
         });
         colGiamGia.setPrefWidth(100);
         colGiamGia.setStyle("-fx-alignment: center-right;");

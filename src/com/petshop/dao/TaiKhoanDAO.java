@@ -11,8 +11,11 @@ import java.util.List;
 
 /**
  * Lớp DAO truy xuất dữ liệu bảng TaiKhoan và NhanVien trong CSDL SQL Server.
- * Hỗ trợ xác thực đăng nhập qua Mã nhân viên, mật khẩu băm SHA-256 (IUH Chỉ thị 5),
- * và nghiệp vụ xác minh cấp lại mật khẩu (Quên mật khẩu).
+ * Tuân thủ Điều 3 và Điều 5 IUH:
+ * - Đăng nhập bằng Mã nhân viên (maNhanVien) hoặc tên đăng nhập.
+ * - Mật khẩu được băm bằng thuật toán SHA-256 qua HashUtil.sha256().
+ * - Tự động nạp Object Reference NhanVien vào TaiKhoan phục vụ SessionManager.
+ * - Hỗ trợ các nghiệp vụ xác minh cấp lại mật khẩu (Quên mật khẩu).
  */
 public class TaiKhoanDAO {
 
@@ -31,56 +34,130 @@ public class TaiKhoanDAO {
     public TaiKhoan dangNhap(String maNhanVienHoacTenDangNhap, String matKhau) {
         khoiTaoTaiKhoanAdmin();
 
-        String matKhauHash = HashUtil.sha256(matKhau);
+        if (maNhanVienHoacTenDangNhap == null || maNhanVienHoacTenDangNhap.isBlank() || matKhau == null) {
+            return null;
+        }
+
+        String input = maNhanVienHoacTenDangNhap.trim();
+        String passHash = HashUtil.sha256(matKhau);
+
         String sql = """
                 SELECT tk.maTaiKhoan, tk.maNhanVien, tk.tenDangNhap, tk.matKhau, tk.phanQuyen, tk.trangThai,
-                       nv.hoTen, nv.chucVu, nv.soDienThoai
+                       nv.hoTen, nv.soDienThoai, nv.chucVu, nv.ngaySinh, nv.gioiTinh, nv.trangThai AS trangThaiNhanVien
                 FROM TaiKhoan tk
                 JOIN NhanVien nv ON nv.maNhanVien = tk.maNhanVien
                 WHERE (LOWER(tk.maNhanVien) = LOWER(?) OR LOWER(tk.tenDangNhap) = LOWER(?))
-                  AND (tk.matKhau = ? OR tk.matKhau = ?)
                   AND tk.trangThai = 1 AND nv.trangThai = N'Đang làm'
                 """;
 
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, maNhanVienHoacTenDangNhap);
-            ps.setString(2, maNhanVienHoacTenDangNhap);
-            ps.setString(3, matKhauHash);
-            ps.setString(4, matKhau);
+            ps.setString(1, input);
+            ps.setString(2, input);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    String matKhauHienTai = rs.getString("matKhau");
-                    String maTaiKhoan = rs.getString("maTaiKhoan");
+                    String dbPass = rs.getString("matKhau");
+                    boolean passHopLe = false;
 
-                    // Tự động nâng cấp mật khẩu sang SHA-256 nếu trong DB vẫn là dạng thô
-                    if (matKhau.equals(matKhauHienTai) && !matKhauHash.equals(matKhauHienTai)) {
-                        doiMatKhau(maTaiKhoan, matKhauHash);
+                    // 1. So khớp mật khẩu băm SHA-256
+                    if (passHash.equalsIgnoreCase(dbPass)) {
+                        passHopLe = true;
+                    } 
+                    // 2. Tự động tương thích ngược dữ liệu demo cũ chưa băm và nâng cấp lên SHA-256
+                    else if (matKhau.equals(dbPass)) {
+                        passHopLe = true;
+                        nangCapMatKhauSha256(rs.getString("maTaiKhoan"), passHash);
                     }
 
-                    NhanVien nv = new NhanVien();
-                    nv.setMaNhanVien(rs.getString("maNhanVien"));
-                    nv.setHoTen(rs.getString("hoTen"));
-                    nv.setChucVu(rs.getString("chucVu"));
-                    nv.setSoDienThoai(rs.getString("soDienThoai"));
-                    nv.setTrangThai("Đang làm");
+                    if (passHopLe) {
+                        NhanVien nv = new NhanVien(
+                                rs.getString("maNhanVien"),
+                                rs.getString("hoTen"),
+                                rs.getString("soDienThoai"),
+                                rs.getString("chucVu"),
+                                rs.getDate("ngaySinh") != null ? rs.getDate("ngaySinh").toLocalDate() : null,
+                                rs.getBoolean("gioiTinh"),
+                                rs.getString("trangThaiNhanVien")
+                        );
 
-                    TaiKhoan tk = new TaiKhoan(
-                            rs.getString("maNhanVien"),
-                            rs.getString("tenDangNhap"),
-                            rs.getString("hoTen"),
-                            TaiKhoan.VaiTro.tuTenHienThi(rs.getString("phanQuyen"))
-                    );
-                    tk.setMaTaiKhoan(maTaiKhoan);
-                    tk.setTrangThai(rs.getBoolean("trangThai"));
-                    tk.setNhanVien(nv); // Object Reference
-                    return tk;
+                        TaiKhoan tk = new TaiKhoan(
+                                rs.getString("maNhanVien"),
+                                rs.getString("tenDangNhap"),
+                                rs.getString("hoTen"),
+                                TaiKhoan.VaiTro.tuTenHienThi(rs.getString("phanQuyen"))
+                        );
+                        tk.setMaTaiKhoan(rs.getString("maTaiKhoan"));
+                        tk.setTrangThai(rs.getBoolean("trangThai"));
+                        tk.setNhanVien(nv); // Gán Object Reference chuẩn Điều 2 & 5 IUH
+
+                        return tk;
+                    }
                 }
                 return null;
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Lỗi khi kết nối hoặc truy vấn cơ sở dữ liệu: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Nâng cấp mật khẩu dạng văn bản thuần sang chuỗi băm SHA-256 trong CSDL.
+     */
+    private void nangCapMatKhauSha256(String maTaiKhoan, String hashSha256) {
+        String sql = "UPDATE TaiKhoan SET matKhau = ? WHERE maTaiKhoan = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, hashSha256);
+            ps.setString(2, maTaiKhoan);
+            ps.executeUpdate();
+        } catch (SQLException ignored) {
+        }
+    }
+
+    /**
+     * Khôi phục mật khẩu (Quên mật khẩu): Xác thực Mã NV và Số điện thoại khớp trong CSDL
+     * rồi cấp lại mật khẩu mới được băm bằng SHA-256 (Điều 5 IUH).
+     */
+    public boolean khoiPhucMatKhau(String maNhanVien, String soDienThoai, String matKhauMoi) {
+        if (maNhanVien == null || soDienThoai == null || matKhauMoi == null) {
+            return false;
+        }
+
+        String sqlKiemTra = """
+                SELECT tk.maTaiKhoan
+                FROM TaiKhoan tk
+                JOIN NhanVien nv ON nv.maNhanVien = tk.maNhanVien
+                WHERE (LOWER(tk.maNhanVien) = LOWER(?) OR LOWER(tk.tenDangNhap) = LOWER(?))
+                  AND nv.soDienThoai = ?
+                  AND tk.trangThai = 1 AND nv.trangThai = N'Đang làm'
+                """;
+
+        try (Connection conn = DatabaseManager.getConnection()) {
+            String maTaiKhoan = null;
+            try (PreparedStatement ps = conn.prepareStatement(sqlKiemTra)) {
+                ps.setString(1, maNhanVien.trim());
+                ps.setString(2, maNhanVien.trim());
+                ps.setString(3, soDienThoai.trim());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        maTaiKhoan = rs.getString("maTaiKhoan");
+                    }
+                }
+            }
+
+            if (maTaiKhoan != null) {
+                String hashMoi = HashUtil.sha256(matKhauMoi);
+                String sqlUpdate = "UPDATE TaiKhoan SET matKhau = ? WHERE maTaiKhoan = ?";
+                try (PreparedStatement psUpdate = conn.prepareStatement(sqlUpdate)) {
+                    psUpdate.setString(1, hashMoi);
+                    psUpdate.setString(2, maTaiKhoan);
+                    return psUpdate.executeUpdate() > 0;
+                }
+            }
+            return false;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi khôi phục mật khẩu: " + e.getMessage(), e);
         }
     }
 
@@ -233,7 +310,7 @@ public class TaiKhoanDAO {
         if (adminDaKhoiTao) return;
         try (Connection conn = DatabaseManager.getConnection()) {
             // Kiểm tra tài khoản admin đã có chưa
-            String checkSql = "SELECT COUNT(*) FROM TaiKhoan WHERE LOWER(tenDangNhap) = 'admin' OR maNhanVien = '260000'";
+            String checkSql = "SELECT COUNT(*) FROM TaiKhoan WHERE LOWER(tenDangNhap) = 'admin' OR maNhanVien IN ('260000', 'NV-20261005-000000')";
             try (PreparedStatement ps = conn.prepareStatement(checkSql);
                  ResultSet rs = ps.executeQuery()) {
                 if (rs.next() && rs.getInt(1) > 0) {
@@ -247,24 +324,25 @@ public class TaiKhoanDAO {
                 IF NOT EXISTS (SELECT 1 FROM NhanVien WHERE maNhanVien IN ('260000', 'NV-20261005-000000'))
                 BEGIN
                     INSERT INTO NhanVien (maNhanVien, hoTen, soDienThoai, chucVu, ngaySinh, gioiTinh, trangThai)
-                    VALUES ('260000', N'Quản trị hệ thống', '0909000000', N'Quản lý', '1990-01-01', 1, N'Đang làm');
+                    VALUES ('NV-20261005-000000', N'Quản trị hệ thống', '0909000000', N'Quản lý', '1990-01-01', 1, N'Đang làm');
                 END
             """;
             try (Statement st = conn.createStatement()) {
                 st.executeUpdate(insertNv);
             }
 
-            // Tạo tài khoản admin với mật khẩu băm SHA-256 (admin123)
+            // Tạo tài khoản admin với mật khẩu băm SHA-256 (admin123 -> SHA-256)
             String hashAdmin = HashUtil.sha256("admin123");
-            String insertTk = String.format("""
+            String insertTk = """
                 IF NOT EXISTS (SELECT 1 FROM TaiKhoan WHERE tenDangNhap IN ('admin', '260000'))
                 BEGIN
                     INSERT INTO TaiKhoan (maTaiKhoan, maNhanVien, tenDangNhap, matKhau, phanQuyen, trangThai)
-                    VALUES ('TK-20261005-000000', '260000', '260000', '%s', N'Admin', 1);
+                    VALUES ('TK-20261005-000000', 'NV-20261005-000000', 'admin', ?, N'Admin', 1);
                 END
-            """, hashAdmin);
-            try (Statement st = conn.createStatement()) {
-                st.executeUpdate(insertTk);
+            """;
+            try (PreparedStatement ps = conn.prepareStatement(insertTk)) {
+                ps.setString(1, hashAdmin);
+                ps.executeUpdate();
             }
 
             adminDaKhoiTao = true;

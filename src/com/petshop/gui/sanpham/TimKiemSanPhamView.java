@@ -8,7 +8,12 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+
+import java.io.File;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -23,6 +28,7 @@ public class TimKiemSanPhamView extends VBox {
     private final ComboBox<String> cboLocTrangThai = new ComboBox<>();
     private final Button btnTimKiem = new Button("Tìm kiếm");
     private final Button btnLamMoi = new Button("Làm mới");
+    private final Button btnXuatBarcode = new Button("🏷 Xuất Barcode PDF");
     private final Label lblKetQua = new Label("Tổng số: 0 sản phẩm");
 
     private final TableView<SanPham> tblDanhSach = new TableView<>();
@@ -80,6 +86,9 @@ public class TimKiemSanPhamView extends VBox {
             xuLyTimKiem();
         });
 
+        btnXuatBarcode.getStyleClass().add("nut-phu");
+        btnXuatBarcode.setOnAction(e -> xuLyXuatBarcode());
+
         Region pnlKhoangCach = new Region();
         HBox.setHgrow(pnlKhoangCach, Priority.ALWAYS);
 
@@ -88,7 +97,7 @@ public class TimKiemSanPhamView extends VBox {
         pnlCongCu.getChildren().addAll(
                 lblTim, txtTuKhoa,
                 lblTrangThai, cboLocTrangThai,
-                btnTimKiem, btnLamMoi,
+                btnTimKiem, btnLamMoi, btnXuatBarcode,
                 pnlKhoangCach, lblKetQua
         );
         return pnlCongCu;
@@ -235,5 +244,60 @@ pnlBang.getChildren().add(tblDanhSach);
         alert.setHeaderText(null);
         alert.setContentText(noiDung);
         alert.showAndWait();
+    }
+
+    private void xuLyXuatBarcode() {
+        List<SanPham> ds = tblDanhSach.getItems();
+        if (ds == null || ds.isEmpty()) {
+            hienThiCanhBao("Không có sản phẩm nào trong kết quả tìm kiếm để xuất mã vạch!");
+            return;
+        }
+
+        SanPham spChon = tblDanhSach.getSelectionModel().getSelectedItem();
+        List<SanPham> danhSachXuat;
+        if (spChon != null) {
+            ButtonType btnChon = new ButtonType("Chỉ mã " + spChon.getMaSanPham());
+            ButtonType btnTatCa = new ButtonType("Toàn bộ danh sách (" + ds.size() + " SP)");
+            ButtonType btnHuy = new ButtonType("Hủy", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+            Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION, "Bạn muốn xuất tem barcode cho sản phẩm nào?", btnChon, btnTatCa, btnHuy);
+            xacNhan.setTitle("Tùy chọn xuất tem mã vạch Barcode");
+            xacNhan.setHeaderText(null);
+            Optional<ButtonType> opt = xacNhan.showAndWait();
+            if (opt.isEmpty() || opt.get() == btnHuy) {
+                return;
+            }
+            if (opt.get() == btnChon) {
+                danhSachXuat = List.of(spChon);
+            } else {
+                danhSachXuat = ds;
+            }
+        } else {
+            danhSachXuat = ds;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Lưu file tem mã vạch Barcode PDF");
+        fileChooser.setInitialFileName("Tem_Barcode_SanPham_HappyTails.pdf");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Tệp PDF (*.pdf)", "*.pdf"));
+
+        Stage stage = getScene() != null ? (Stage) getScene().getWindow() : null;
+        File file = fileChooser.showSaveDialog(stage);
+        if (file != null) {
+            try {
+                com.petshop.util.BarcodePDFUtil.xuatDanhSachMaVachPDF(danhSachXuat, file);
+                Alert thongBao = new Alert(Alert.AlertType.INFORMATION);
+                thongBao.setTitle("Thành công");
+                thongBao.setHeaderText(null);
+                thongBao.setContentText("Đã xuất " + danhSachXuat.size() + " tem mã vạch thành công!\nĐường dẫn: " + file.getAbsolutePath());
+                thongBao.showAndWait();
+            } catch (Exception ex) {
+                Alert err = new Alert(Alert.AlertType.ERROR);
+                err.setTitle("Lỗi");
+                err.setHeaderText(null);
+                err.setContentText("Lỗi khi xuất file PDF mã vạch: " + ex.getMessage());
+                err.showAndWait();
+            }
+        }
     }
 }

@@ -1,19 +1,20 @@
 package com.petshop.test;
 
+import com.petshop.bus.HoaDonBUS;
+import com.petshop.bus.KhuyenMaiBUS;
+import com.petshop.bus.PhieuDichVuBUS;
+import com.petshop.bus.SanPhamBUS;
 import com.petshop.dao.HoaDonDAO;
-import com.petshop.entity.*;
-import com.petshop.bus.*;
+import com.petshop.entity.ChiTietHoaDonSanPham;
+import com.petshop.entity.HoaDon;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Kiểm thử đơn vị (Unit Tests) cho HoaDonBUS kiểm thử các chức năng:
- * - INV_CREATE (HD_TAO): Lập hóa đơn, kiểm tra tồn kho, áp khuyến mãi, tính tiền
- * - INV_SEARCH (HD_TIM_KIEM): Tra cứu, lọc theo tiêu chí
- * - INV_CANCEL (HD_CAP_NHAT): Hủy hóa đơn và hoàn lại tồn kho
+ * Lớp kiểm thử đơn vị tự động (Unit Test) cho phân hệ Quản lý Hóa đơn & Bán lẻ POS (HoaDonBUS).
+ * Tuân thủ Bộ chỉ thị kỹ thuật IUH: 100% sử dụng double nguyên thủy, kiểm tra toàn vẹn nghiệp vụ.
  */
 public class HoaDonBUSTest {
 
@@ -21,9 +22,9 @@ public class HoaDonBUSTest {
     private static int soTestFail = 0;
 
     public static void main(String[] args) {
-        System.out.println("=================================================");
-        System.out.println("  BẮT ĐẦU KIỂM THỬ ĐƠN VỊ: HOADONSERVICE");
-        System.out.println("=================================================");
+        System.out.println("==========================================================================");
+        System.out.println("          BỘ TEST TỰ ĐỘNG NGHIỆP VỤ HÓA ĐƠN & BÁN LẺ POS (IUH)            ");
+        System.out.println("==========================================================================");
 
         testTaoHoaDon_ThanhCong();
         testTaoHoaDon_ApMaKhuyenMai();
@@ -39,15 +40,19 @@ public class HoaDonBUSTest {
         testCapNhatHoaDon_ThanhToanThem();
         testCapNhatHoaDon_HoanTienMat();
 
-        System.out.println("=================================================");
-        System.out.printf("  KẾT QUẢ KIỂM THỬ: %d PASSED, %d FAILED%n", soTestPass, soTestFail);
-        System.out.println("=================================================");
+        System.out.println("==========================================================================");
+        System.out.printf(" KẾT QUẢ KIỂM THỬ: TỔNG %d TEST | PASS: %d | FAIL: %d\n",
+                (soTestPass + soTestFail), soTestPass, soTestFail);
+        System.out.println("==========================================================================");
+
+        if (soTestFail > 0) {
+            System.exit(1);
+        }
     }
 
     private static void testTaoHoaDon_ThanhCong() {
-        System.out.print("[TEST 1] Lập hóa đơn bán sản phẩm hợp lệ: ");
+        System.out.print("[TEST 1] Lập hóa đơn bán lẻ thành công (INV_CREATE): ");
         try {
-            // Mock DAO
             HoaDonDAO mockDao = new MockHoaDonDAO();
             SanPhamBUS mockSpService = new MockSanPhamBUS(50);
             PhieuDichVuBUS mockPdvService = new PhieuDichVuBUS();
@@ -62,14 +67,14 @@ public class HoaDonBUSTest {
             hd.setHinhThucThanhToan("Tiền mặt");
 
             hd.getDanhSachSanPham().add(new ChiTietHoaDonSanPham(
-                    hd.getMaHoaDon(), "SP-000001", "Pate mèo Royal Canin", "Gói", 3, new BigDecimal("35000")
+                    hd.getMaHoaDon(), "SP-000001", "Pate mèo Royal Canin", "Gói", 3, 35000.0
             ));
 
             boolean kq = service.lapHoaDon(hd);
-            if (kq && hd.getTongTien().compareTo(new BigDecimal("105000")) == 0) {
+            if (kq && Math.abs(hd.getTongTien() - 105000.0) < 0.001) {
                 pass();
             } else {
-                fail("Tổng tiền tính toán không đúng kỳ vọng (105,000 VNĐ)!");
+                fail("Tổng tiền tính toán không đúng kỳ vọng (105,000 VNĐ)! Thực tế: " + hd.getTongTien());
             }
         } catch (Exception e) {
             fail(e.getMessage());
@@ -82,7 +87,7 @@ public class HoaDonBUSTest {
             HoaDonDAO mockDao = new MockHoaDonDAO();
             SanPhamBUS mockSpService = new MockSanPhamBUS(100);
             PhieuDichVuBUS mockPdvService = new PhieuDichVuBUS();
-            KhuyenMaiBUS mockKmService = new MockKhuyenMaiBUS(new BigDecimal("20000"));
+            KhuyenMaiBUS mockKmService = new MockKhuyenMaiBUS(20000.0);
 
             HoaDonBUS service = new HoaDonBUS(mockDao, mockSpService, mockPdvService, mockKmService, null);
 
@@ -93,14 +98,14 @@ public class HoaDonBUSTest {
             hd.setHinhThucThanhToan("Chuyển khoản");
 
             hd.getDanhSachSanPham().add(new ChiTietHoaDonSanPham(
-                    hd.getMaHoaDon(), "SP-000002", "Dầu tắm chó", "Chai", 1, new BigDecimal("150000")
+                    hd.getMaHoaDon(), "SP-000002", "Dầu tắm chó", "Chai", 1, 150000.0
             ));
 
             service.lapHoaDon(hd);
-            if (hd.getTongTien().compareTo(new BigDecimal("130000")) == 0 && hd.getTienGiam().compareTo(new BigDecimal("20000")) == 0) {
+            if (Math.abs(hd.getTongTien() - 130000.0) < 0.001 && Math.abs(hd.getTienGiam() - 20000.0) < 0.001) {
                 pass();
             } else {
-                fail("Số tiền giảm giá hoặc tổng tiền sau giảm không chính xác!");
+                fail("Số tiền giảm giá hoặc tổng tiền sau giảm không chính xác! Tổng: " + hd.getTongTien() + ", Giảm: " + hd.getTienGiam());
             }
         } catch (Exception e) {
             fail(e.getMessage());
@@ -139,7 +144,7 @@ public class HoaDonBUSTest {
             hd.setMaHoaDon("HD-20261101-000004");
             hd.setMaNhanVien("NV-20261005-000001");
             hd.setHinhThucThanhToan("Tiền mặt");
-            hd.getDanhSachSanPham().add(new ChiTietHoaDonSanPham(hd.getMaHoaDon(), "SP-000001", 0, new BigDecimal("35000")));
+            hd.getDanhSachSanPham().add(new ChiTietHoaDonSanPham(hd.getMaHoaDon(), "SP-000001", 0, 35000.0));
 
             service.lapHoaDon(hd);
             fail("Không ném ngoại lệ khi số lượng = 0!");
@@ -161,7 +166,7 @@ public class HoaDonBUSTest {
             hd.setMaHoaDon("HD-20261101-000005");
             hd.setMaNhanVien("NV-20261005-000001");
             hd.setHinhThucThanhToan("Tiền mặt");
-            hd.getDanhSachSanPham().add(new ChiTietHoaDonSanPham(hd.getMaHoaDon(), "SP-000001", 10, new BigDecimal("35000"))); // Mua 10 cái
+            hd.getDanhSachSanPham().add(new ChiTietHoaDonSanPham(hd.getMaHoaDon(), "SP-000001", 10, 35000.0)); // Mua 10 cái
 
             service.lapHoaDon(hd);
             fail("Không chặn khi số lượng bán vượt quá tồn kho khả dụng!");
@@ -235,28 +240,28 @@ public class HoaDonBUSTest {
             HoaDonBUS service = new HoaDonBUS(new MockHoaDonDAO(), new MockSanPhamBUS(50), new PhieuDichVuBUS(), new KhuyenMaiBUS(), null);
 
             // < 1tr: 500k -> 5 * 5 = 25đ
-            int diem1 = service.tinhDiemTichLuy(new BigDecimal("550000"), true);
+            int diem1 = service.tinhDiemTichLuy(550000.0, true);
             if (diem1 != 25) {
                 fail("Hóa đơn 550,000 VNĐ phải được 25 điểm, thực tế: " + diem1);
                 return;
             }
 
             // < 100k -> 0đ
-            int diem2 = service.tinhDiemTichLuy(new BigDecimal("99000"), true);
+            int diem2 = service.tinhDiemTichLuy(99000.0, true);
             if (diem2 != 0) {
                 fail("Hóa đơn 99,000 VNĐ phải được 0 điểm, thực tế: " + diem2);
                 return;
             }
 
             // >= 1tr: 1.250.000 VNĐ -> 12 * 10 = 120đ
-            int diem3 = service.tinhDiemTichLuy(new BigDecimal("1250000"), true);
+            int diem3 = service.tinhDiemTichLuy(1250000.0, true);
             if (diem3 != 120) {
                 fail("Hóa đơn 1,250,000 VNĐ phải được 120 điểm, thực tế: " + diem3);
                 return;
             }
 
             // Khách vãng lai -> 0đ
-            int diem4 = service.tinhDiemTichLuy(new BigDecimal("2000000"), false);
+            int diem4 = service.tinhDiemTichLuy(2000000.0, false);
             if (diem4 != 0) {
                 fail("Khách vãng lai không được tích điểm, thực tế: " + diem4);
                 return;
@@ -280,16 +285,16 @@ public class HoaDonBUSTest {
             hd.setMaKhachHang("KH-20261001-000001");
             hd.setHinhThucThanhToan("Tiền mặt");
             // Mua 5 món x 100.000 = 500.000
-            hd.getDanhSachSanPham().add(new ChiTietHoaDonSanPham(hd.getMaHoaDon(), "SP-000001", 5, new BigDecimal("100000")));
+            hd.getDanhSachSanPham().add(new ChiTietHoaDonSanPham(hd.getMaHoaDon(), "SP-000001", 5, 100000.0));
             // Dùng 50 điểm = 50.000 VNĐ
             hd.setDiemTichLuySuDung(50);
 
             service.lapHoaDon(hd);
 
             // Kiểm tra tiền giảm từ điểm = 50.000
-            boolean dungTienGiam = hd.getTienGiamTuDiem().compareTo(new BigDecimal("50000")) == 0;
+            boolean dungTienGiam = Math.abs(hd.getTienGiamTuDiem() - 50000.0) < 0.001;
             // Tổng tiền sau giảm = 450.000
-            boolean dungTongTien = hd.getTongTien().compareTo(new BigDecimal("450000")) == 0;
+            boolean dungTongTien = Math.abs(hd.getTongTien() - 450000.0) < 0.001;
             // Điểm mới tích lũy từ 450.000: 4 * 5 = 20 điểm
             boolean dungDiemCong = hd.getDiemTichLuyCong() == 20;
 
@@ -300,19 +305,19 @@ public class HoaDonBUSTest {
                 hdZero.setMaNhanVien("NV-20261005-000001");
                 hdZero.setMaKhachHang("KH-20261001-000001");
                 hdZero.setHinhThucThanhToan("Tiền mặt");
-                hdZero.getDanhSachSanPham().add(new ChiTietHoaDonSanPham(hdZero.getMaHoaDon(), "SP-000001", 1, new BigDecimal("72250")));
+                hdZero.getDanhSachSanPham().add(new ChiTietHoaDonSanPham(hdZero.getMaHoaDon(), "SP-000001", 1, 72250.0));
                 hdZero.setDiemTichLuySuDung(73);
                 service.lapHoaDon(hdZero);
 
-                if (hdZero.getTongTien().compareTo(BigDecimal.ZERO) == 0
-                        && hdZero.getTienGiamTuDiem().compareTo(new BigDecimal("72250")) == 0) {
+                if (Math.abs(hdZero.getTongTien()) < 0.001
+                        && Math.abs(hdZero.getTienGiamTuDiem() - 72250.0) < 0.001) {
                     pass();
                 } else {
-                    fail(String.format("Lỗi lấn át về 0đ! Tổng tiền: %s, Tiền giảm điểm: %s",
+                    fail(String.format("Lỗi lấn át về 0đ! Tổng tiền: %f, Tiền giảm điểm: %f",
                             hdZero.getTongTien(), hdZero.getTienGiamTuDiem()));
                 }
             } else {
-                fail(String.format("Kết quả sai! Tiền giảm điểm: %s, Tổng tiền: %s, Điểm cộng: %d",
+                fail(String.format("Kết quả sai! Tiền giảm điểm: %f, Tổng tiền: %f, Điểm cộng: %d",
                         hd.getTienGiamTuDiem(), hd.getTongTien(), hd.getDiemTichLuyCong()));
             }
         } catch (Exception e) {
@@ -325,7 +330,7 @@ public class HoaDonBUSTest {
         try {
             HoaDon hd = new HoaDon();
             hd.setMaKhuyenMai("KM-20261005-000002");
-            hd.setTienGiam(BigDecimal.valueOf(18000));
+            hd.setTienGiam(18000.0);
             hd.setDiemTichLuySuDung(5);
 
             String moTa = hd.getMoTaGiamGia();
@@ -345,23 +350,22 @@ public class HoaDonBUSTest {
         try {
             MockHoaDonDAO mockDao = new MockHoaDonDAO();
             HoaDonBUS service = new HoaDonBUS(mockDao, new MockSanPhamBUS(50), new PhieuDichVuBUS(),
-                    new MockKhuyenMaiBUS(BigDecimal.ZERO), null);
+                    new MockKhuyenMaiBUS(0.0), null);
 
             HoaDon hdCu = new HoaDon();
             hdCu.setMaHoaDon("HD-20261101-000001");
-            hdCu.setTongTien(BigDecimal.valueOf(100_000));
-            hdCu.getDanhSachSanPham().add(new ChiTietHoaDonSanPham("HD-20261101-000001", "SP01", 1, BigDecimal.valueOf(100_000)));
+            hdCu.setTongTienDb(100_000.0);
+            hdCu.getDanhSachSanPham().add(new ChiTietHoaDonSanPham("HD-20261101-000001", "SP01", 1, 100_000.0));
             mockDao.themHoaDonSan(hdCu);
 
             HoaDon hdMoi = new HoaDon();
             hdMoi.setMaHoaDon("HD-20261101-000001");
-            hdMoi.setTongTien(BigDecimal.valueOf(150_000));
-            hdMoi.getDanhSachSanPham().add(new ChiTietHoaDonSanPham("HD-20261101-000001", "SP01", 1, BigDecimal.valueOf(100_000)));
-            hdMoi.getDanhSachSanPham().add(new ChiTietHoaDonSanPham("HD-20261101-000001", "SP02", 1, BigDecimal.valueOf(50_000)));
+            hdMoi.getDanhSachSanPham().add(new ChiTietHoaDonSanPham("HD-20261101-000001", "SP01", 1, 100_000.0));
+            hdMoi.getDanhSachSanPham().add(new ChiTietHoaDonSanPham("HD-20261101-000001", "SP02", 1, 50_000.0));
 
-            BigDecimal tienTraThem = BigDecimal.valueOf(50_000);
-            boolean ok = service.capNhatHoaDon(hdCu, hdMoi, tienTraThem, BigDecimal.ZERO);
-            if (ok && hdMoi.getTongTien().compareTo(BigDecimal.valueOf(150_000)) == 0) {
+            double tienTraThem = 50_000.0;
+            boolean ok = service.capNhatHoaDon(hdCu, hdMoi, tienTraThem, 0.0);
+            if (ok && Math.abs(hdMoi.getTongTien() - 150_000.0) < 0.001) {
                 pass();
             } else {
                 fail("Cập nhật hóa đơn thất bại");
@@ -376,22 +380,21 @@ public class HoaDonBUSTest {
         try {
             MockHoaDonDAO mockDao = new MockHoaDonDAO();
             HoaDonBUS service = new HoaDonBUS(mockDao, new MockSanPhamBUS(50), new PhieuDichVuBUS(),
-                    new MockKhuyenMaiBUS(BigDecimal.ZERO), null);
+                    new MockKhuyenMaiBUS(0.0), null);
 
             HoaDon hdCu = new HoaDon();
             hdCu.setMaHoaDon("HD-20261101-000002");
-            hdCu.setTongTien(BigDecimal.valueOf(200_000));
-            hdCu.getDanhSachSanPham().add(new ChiTietHoaDonSanPham("HD-20261101-000002", "SP01", 2, BigDecimal.valueOf(100_000)));
+            hdCu.setTongTienDb(200_000.0);
+            hdCu.getDanhSachSanPham().add(new ChiTietHoaDonSanPham("HD-20261101-000002", "SP01", 2, 100_000.0));
             mockDao.themHoaDonSan(hdCu);
 
             HoaDon hdMoi = new HoaDon();
             hdMoi.setMaHoaDon("HD-20261101-000002");
-            hdMoi.setTongTien(BigDecimal.valueOf(100_000));
-            hdMoi.getDanhSachSanPham().add(new ChiTietHoaDonSanPham("HD-20261101-000002", "SP01", 1, BigDecimal.valueOf(100_000)));
+            hdMoi.getDanhSachSanPham().add(new ChiTietHoaDonSanPham("HD-20261101-000002", "SP01", 1, 100_000.0));
 
-            BigDecimal tienHoanLai = BigDecimal.valueOf(100_000);
-            boolean ok = service.capNhatHoaDon(hdCu, hdMoi, BigDecimal.ZERO, tienHoanLai);
-            if (ok && hdMoi.getTongTien().compareTo(BigDecimal.valueOf(100_000)) == 0) {
+            double tienHoanLai = 100_000.0;
+            boolean ok = service.capNhatHoaDon(hdCu, hdMoi, 0.0, tienHoanLai);
+            if (ok && Math.abs(hdMoi.getTongTien() - 100_000.0) < 0.001) {
                 pass();
             } else {
                 fail("Hoàn tiền hóa đơn thất bại");
@@ -445,7 +448,7 @@ public class HoaDonBUSTest {
         }
 
         @Override
-        public boolean capNhatHoaDon(HoaDon hoaDonCu, HoaDon hoaDonMoi, BigDecimal tienThanhToanThem, BigDecimal tienHoanLai) {
+        public boolean capNhatHoaDon(HoaDon hoaDonCu, HoaDon hoaDonMoi, double tienThanhToanThem, double tienHoanLai) {
             for (int i = 0; i < ds.size(); i++) {
                 if (ds.get(i).getMaHoaDon().equals(hoaDonCu.getMaHoaDon())) {
                     ds.set(i, hoaDonMoi);
@@ -479,9 +482,9 @@ public class HoaDonBUSTest {
     }
 
     private static class MockKhuyenMaiBUS extends KhuyenMaiBUS {
-        private final BigDecimal soTienGiam;
+        private final double soTienGiam;
 
-        public MockKhuyenMaiBUS(BigDecimal soTienGiam) {
+        public MockKhuyenMaiBUS(double soTienGiam) {
             this.soTienGiam = soTienGiam;
         }
 
@@ -492,8 +495,7 @@ public class HoaDonBUSTest {
 
         @Override
         public double tinhSoTienGiam(String maKhuyenMai, double tongHoaDon) {
-            return this.soTienGiam == null ? 0.0 : this.soTienGiam.doubleValue();
+            return this.soTienGiam;
         }
     }
 }
-

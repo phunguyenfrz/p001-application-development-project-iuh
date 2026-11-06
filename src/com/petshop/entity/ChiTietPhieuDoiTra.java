@@ -50,6 +50,8 @@ public class ChiTietPhieuDoiTra {
         this.ghiChu = ghiChu;
     }
 
+
+
     /**
      * Tính thành tiền của dòng sản phẩm khách trả lại (double).
      */
