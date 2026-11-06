@@ -122,8 +122,8 @@ public class ChiTietHoaDonSanPham {
         if (donGia > 0.0) {
             return donGia;
         }
-        if (sanPham != null && sanPham.getGiaBan() != null) {
-            return sanPham.getGiaBan().doubleValue();
+        if (sanPham != null) {
+            return sanPham.getGiaBan();
         }
         return 0.0;
     }

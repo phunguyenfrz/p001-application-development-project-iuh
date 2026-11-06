@@ -172,7 +172,7 @@ public class LapPhieuDoiTraView extends VBox {
             this.sanPham = sanPham;
             this.chiTietDoi = new ChiTietPhieuDoiTra();
             this.chiTietDoi.setSanPhamDoi(sanPham);
-            this.chiTietDoi.setDonGiaDoi(sanPham.getGiaBan() != null ? sanPham.getGiaBan().doubleValue() : 0.0);
+            this.chiTietDoi.setDonGiaDoi(sanPham != null ? sanPham.getGiaBan() : 0.0);
             this.chiTietDoi.setSoLuongDoi(soLuong);
         }
 
@@ -937,7 +937,7 @@ public class LapPhieuDoiTraView extends VBox {
             return;
         }
 
-        if (rdoDoiHang.isSelected() && !dsSanPhamDoiMoi.isEmpty()) {
+        if (rdoDoiHang.isSelected() && !dsSanPhamDoiMoi.isEmpty() && !dsChiTiet.isEmpty()) {
             DongDoiHang doiDau = dsSanPhamDoiMoi.get(0);
             ChiTietPhieuDoiTra ctDau = dsChiTiet.get(0);
             ctDau.setSanPhamDoi(doiDau.getSanPham());

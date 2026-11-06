@@ -827,7 +827,7 @@ public class LapHoaDonThanhToanView extends VBox {
                         lblTon.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #059669; -fx-min-width: 85px; -fx-alignment: center-right;");
                     }
 
-                    double gia = sp.getGiaBan() != null ? sp.getGiaBan().doubleValue() : 0.0;
+                    double gia = sp.getGiaBan();
                     lblGia.setText(DINH_DANG_TIEN.format(gia));
 
                     setGraphic(pnlDong);

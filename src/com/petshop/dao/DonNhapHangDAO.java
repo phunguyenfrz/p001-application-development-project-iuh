@@ -2,9 +2,10 @@ package com.petshop.dao;
 
 import com.petshop.entity.ChiTietDonNhap;
 import com.petshop.entity.DonNhapHang;
+import com.petshop.entity.NhaCungCap;
+import com.petshop.entity.NhanVien;
 import com.petshop.util.DatabaseManager;
 
-import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -51,10 +52,10 @@ public class DonNhapHangDAO {
         if (tenBangDonNhap != null) return tenBangDonNhap;
         synchronized (DonNhapHangDAO.class) {
             if (tenBangDonNhap != null) return tenBangDonNhap;
-            if (kiemTraBangTonTai(conn, "DonNhapHang")) {
-                tenBangDonNhap = "DonNhapHang";
-            } else {
+            if (conn != null && kiemTraBangTonTai(conn, "DonHang") && !kiemTraBangTonTai(conn, "DonNhapHang")) {
                 tenBangDonNhap = "DonHang";
+            } else {
+                tenBangDonNhap = "DonNhapHang";
             }
             return tenBangDonNhap;
         }
@@ -64,40 +65,16 @@ public class DonNhapHangDAO {
         if (tenBangChiTiet != null) return tenBangChiTiet;
         synchronized (DonNhapHangDAO.class) {
             if (tenBangChiTiet != null) return tenBangChiTiet;
-            if (kiemTraBangTonTai(conn, "ChiTietDonNhap")) {
-                tenBangChiTiet = "ChiTietDonNhap";
-            } else {
+            if (conn != null && kiemTraBangTonTai(conn, "ChiTietDonHang") && !kiemTraBangTonTai(conn, "ChiTietDonNhap")) {
                 tenBangChiTiet = "ChiTietDonHang";
+            } else {
+                tenBangChiTiet = "ChiTietDonNhap";
             }
             return tenBangChiTiet;
         }
     }
 
-    private static volatile boolean daDamBaoCauTruc = false;
-
-    private static void damBaoCauTrucBang(Connection conn) {
-        if (daDamBaoCauTruc) return;
-        synchronized (DonNhapHangDAO.class) {
-            if (daDamBaoCauTruc) return;
-            try (Statement st = conn.createStatement()) {
-                st.executeUpdate("IF COL_LENGTH('dbo.DonHang', 'gioLap') IS NULL ALTER TABLE dbo.DonHang ADD gioLap TIME(0) NULL;");
-                st.executeUpdate("IF COL_LENGTH('dbo.DonHang', 'tongTienThucNhan') IS NULL ALTER TABLE dbo.DonHang ADD tongTienThucNhan DECIMAL(18,2) NULL;");
-                st.executeUpdate("IF COL_LENGTH('dbo.DonHang', 'maNhanVienNhan') IS NULL ALTER TABLE dbo.DonHang ADD maNhanVienNhan VARCHAR(20) NULL;");
-                st.executeUpdate("IF COL_LENGTH('dbo.DonHang', 'ngayGioNhan') IS NULL ALTER TABLE dbo.DonHang ADD ngayGioNhan DATETIME2 NULL;");
-                st.executeUpdate("IF COL_LENGTH('dbo.DonHang', 'maNhanVienHuy') IS NULL ALTER TABLE dbo.DonHang ADD maNhanVienHuy VARCHAR(20) NULL;");
-                st.executeUpdate("IF COL_LENGTH('dbo.DonHang', 'lyDoHuy') IS NULL ALTER TABLE dbo.DonHang ADD lyDoHuy NVARCHAR(255) NULL;");
-                st.executeUpdate("IF COL_LENGTH('dbo.ChiTietDonHang', 'soLuongThucNhan') IS NULL ALTER TABLE dbo.ChiTietDonHang ADD soLuongThucNhan INT NULL;");
-                st.executeUpdate("UPDATE dbo.ChiTietDonHang SET soLuongThucNhan = soLuong WHERE soLuongThucNhan IS NULL;");
-                daDamBaoCauTruc = true;
-                coCotGioLap = true;
-                coCotThucNhan = true;
-                coCotTruyVet = true;
-            } catch (Exception ignored) {}
-        }
-    }
-
     private static boolean kiemTraCotTonTai(Connection conn, String tenBang, String tenCot) {
-        damBaoCauTrucBang(conn);
         String sql = "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? AND COLUMN_NAME = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, tenBang);
@@ -234,10 +211,10 @@ public class DonNhapHangDAO {
                 psDH.setDate(4, Date.valueOf(donHang.getNgayLap()));
                 if (coGio) {
                     psDH.setTime(5, Time.valueOf(donHang.getGioLap() != null ? donHang.getGioLap() : LocalTime.now().withNano(0)));
-                    psDH.setBigDecimal(6, donHang.getTongTien() != null ? donHang.getTongTien() : BigDecimal.ZERO);
+                    psDH.setDouble(6, donHang.tinhTongTien());
                     psDH.setNString(7, donHang.getTrangThai() != null ? donHang.getTrangThai() : DonNhapHang.TRANG_THAI_CHO_NHAN);
                 } else {
-                    psDH.setBigDecimal(5, donHang.getTongTien() != null ? donHang.getTongTien() : BigDecimal.ZERO);
+                    psDH.setDouble(5, donHang.tinhTongTien());
                     psDH.setNString(6, donHang.getTrangThai() != null ? donHang.getTrangThai() : DonNhapHang.TRANG_THAI_CHO_NHAN);
                 }
 
@@ -255,9 +232,9 @@ public class DonNhapHangDAO {
                     psCT.setInt(3, ct.getSoLuong());
                     if (coTN) {
                         psCT.setInt(4, ct.getSoLuongThucNhan() != null ? ct.getSoLuongThucNhan() : ct.getSoLuong());
-                        psCT.setBigDecimal(5, ct.getDonGia() != null ? ct.getDonGia() : BigDecimal.ZERO);
+                        psCT.setDouble(5, ct.getDonGia());
                     } else {
-                        psCT.setBigDecimal(4, ct.getDonGia() != null ? ct.getDonGia() : BigDecimal.ZERO);
+                        psCT.setDouble(4, ct.getDonGia());
                     }
                     psCT.addBatch();
                 }
@@ -317,10 +294,10 @@ public class DonNhapHangDAO {
                         ps.setDate(4, Date.valueOf(donHang.getNgayLap()));
                         if (coGio) {
                             ps.setTime(5, Time.valueOf(donHang.getGioLap() != null ? donHang.getGioLap() : LocalTime.now().withNano(0)));
-                            ps.setBigDecimal(6, donHang.getTongTien());
+                            ps.setDouble(6, donHang.tinhTongTien());
                             ps.setNString(7, donHang.getTrangThai());
                         } else {
-                            ps.setBigDecimal(5, donHang.getTongTien());
+                            ps.setDouble(5, donHang.tinhTongTien());
                             ps.setNString(6, donHang.getTrangThai());
                         }
                         ps.executeUpdate();
@@ -333,9 +310,9 @@ public class DonNhapHangDAO {
                             ps.setInt(3, chiTiet.getSoLuong());
                             if (coTN) {
                                 ps.setInt(4, chiTiet.getSoLuongThucNhan() != null ? chiTiet.getSoLuongThucNhan() : chiTiet.getSoLuong());
-                                ps.setBigDecimal(5, chiTiet.getDonGia());
+                                ps.setDouble(5, chiTiet.getDonGia());
                             } else {
-                                ps.setBigDecimal(4, chiTiet.getDonGia());
+                                ps.setDouble(4, chiTiet.getDonGia());
                             }
                             ps.addBatch();
                         }
@@ -426,7 +403,7 @@ public class DonNhapHangDAO {
                         } else {
                             ct.setSoLuongThucNhan(soLuong);
                         }
-                        ct.setDonGia(rs.getBigDecimal("donGia"));
+                        ct.setDonGia(rs.getDouble("donGia"));
                         ct.setTenSanPham(rs.getNString("tenSanPham"));
                         ct.setDonViTinh(rs.getNString("donViTinh"));
                         list.add(ct);
@@ -467,7 +444,6 @@ public class DonNhapHangDAO {
             if (conn == null) {
                 throw new IllegalStateException("Lỗi khi tìm kiếm đơn nhập: không thể kết nối cơ sở dữ liệu");
             }
-            damBaoCauTrucBang(conn);
             String bangDH = getTenBangDonNhap(conn);
             String bangCT = getTenBangChiTiet(conn);
 
@@ -588,7 +564,7 @@ public class DonNhapHangDAO {
      * Xác nhận nhận hàng và cộng tồn kho (tương thích ngược).
      */
     public boolean xacNhanNhanHangVaCongTonKho(String maDonHang, String maNhanVienNhan,
-                                                LocalDateTime ngayGioNhan, BigDecimal tongTienThucNhan,
+                                                LocalDateTime ngayGioNhan, double tongTienThucNhan,
                                                 List<ChiTietDonNhap> chiTietCapNhat) {
         String ketQua = xacNhanNhanHangThieuVaTaoDonBu(maDonHang, maNhanVienNhan, ngayGioNhan, tongTienThucNhan,
                 null, chiTietCapNhat, null);
@@ -605,7 +581,7 @@ public class DonNhapHangDAO {
      * @return Mã đơn bù (nếu tạo) hoặc mã đơn gốc (nếu không tạo đơn bù)
      */
     public String xacNhanNhanHangThieuVaTaoDonBu(String maDonHang, String maNhanVienNhan,
-                                                LocalDateTime ngayGioNhan, BigDecimal tongTienThucNhan,
+                                                LocalDateTime ngayGioNhan, double tongTienThucNhan,
                                                 String ghiChuChenhLech,
                                                 List<ChiTietDonNhap> chiTietCapNhat,
                                                 DonNhapHang donNhapBu) {
@@ -638,7 +614,7 @@ public class DonNhapHangDAO {
                 if (coTruyVet) {
                     psUpdate.setString(2, maNhanVienNhan);
                     psUpdate.setTimestamp(3, ngayGioNhan != null ? Timestamp.valueOf(ngayGioNhan) : Timestamp.valueOf(LocalDateTime.now()));
-                    psUpdate.setBigDecimal(4, tongTienThucNhan != null ? tongTienThucNhan : BigDecimal.ZERO);
+                    psUpdate.setDouble(4, tongTienThucNhan);
                     psUpdate.setNString(5, ghiChuChenhLech);
                     psUpdate.setString(6, maDonHang);
                     psUpdate.setNString(7, DonNhapHang.TRANG_THAI_CHO_NHAN);
@@ -701,11 +677,11 @@ public class DonNhapHangDAO {
                     psBu.setDate(4, Date.valueOf(donNhapBu.getNgayLap() != null ? donNhapBu.getNgayLap() : LocalDate.now()));
                     if (coGio) {
                         psBu.setTime(5, Time.valueOf(donNhapBu.getGioLap() != null ? donNhapBu.getGioLap() : LocalTime.now().withNano(0)));
-                        psBu.setBigDecimal(6, donNhapBu.getTongTien() != null ? donNhapBu.getTongTien() : BigDecimal.ZERO);
+                        psBu.setDouble(6, donNhapBu.tinhTongTien());
                         psBu.setNString(7, DonNhapHang.TRANG_THAI_CHO_NHAN);
                         psBu.setNString(8, donNhapBu.getLyDoHuy());
                     } else {
-                        psBu.setBigDecimal(5, donNhapBu.getTongTien() != null ? donNhapBu.getTongTien() : BigDecimal.ZERO);
+                        psBu.setDouble(5, donNhapBu.tinhTongTien());
                         psBu.setNString(6, DonNhapHang.TRANG_THAI_CHO_NHAN);
                         psBu.setNString(7, donNhapBu.getLyDoHuy());
                     }
@@ -722,9 +698,9 @@ public class DonNhapHangDAO {
                         psCTBu.setInt(3, ct.getSoLuong());
                         if (coTN) {
                             psCTBu.setInt(4, ct.getSoLuong());
-                            psCTBu.setBigDecimal(5, ct.getDonGia() != null ? ct.getDonGia() : BigDecimal.ZERO);
+                            psCTBu.setDouble(5, ct.getDonGia());
                         } else {
-                            psCTBu.setBigDecimal(4, ct.getDonGia() != null ? ct.getDonGia() : BigDecimal.ZERO);
+                            psCTBu.setDouble(4, ct.getDonGia());
                         }
                         psCTBu.addBatch();
                     }
@@ -783,11 +759,12 @@ public class DonNhapHangDAO {
     private void napTenHangChoDanhSach(Connection conn, List<DonNhapHang> list) {
         if (list == null || list.isEmpty()) return;
         String bangCT = getTenBangChiTiet(conn);
-        Map<String, List<String>> mapTenHang = new HashMap<>();
+        boolean coTN = coCotThucNhan(conn);
+        Map<String, List<ChiTietDonNhap>> mapChiTiet = new HashMap<>();
         for (int i = 0; i < list.size(); i += 50) {
             List<DonNhapHang> sub = list.subList(i, Math.min(i + 50, list.size()));
             String placeholders = String.join(",", Collections.nCopies(sub.size(), "?"));
-            String sql = "SELECT ct.maDonHang, sp.tenSanPham, ct.soLuong " +
+            String sql = "SELECT ct.*, sp.tenSanPham, sp.donViTinh " +
                     "FROM " + bangCT + " ct " +
                     "LEFT JOIN SanPham sp ON ct.maSanPham = sp.maSanPham " +
                     "WHERE ct.maDonHang IN (" + placeholders + ")";
@@ -798,29 +775,55 @@ public class DonNhapHangDAO {
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         String maDH = rs.getString("maDonHang");
-                        String tenSP = rs.getNString("tenSanPham");
+                        ChiTietDonNhap ct = new ChiTietDonNhap();
+                        ct.setMaDonHang(maDH);
+                        ct.setMaSanPham(rs.getString("maSanPham"));
+                        ct.setTenSanPham(rs.getNString("tenSanPham"));
+                        ct.setDonViTinh(rs.getNString("donViTinh"));
                         int sl = rs.getInt("soLuong");
-                        String hienThi = (tenSP != null ? tenSP : "SP") + " (x" + sl + ")";
-                        mapTenHang.computeIfAbsent(maDH, k -> new ArrayList<>()).add(hienThi);
+                        ct.setSoLuong(sl);
+                        if (coTN) {
+                            int tn = rs.getInt("soLuongThucNhan");
+                            ct.setSoLuongThucNhan(rs.wasNull() ? sl : tn);
+                        } else {
+                            ct.setSoLuongThucNhan(sl);
+                        }
+                        ct.setDonGia(rs.getDouble("donGia"));
+                        mapChiTiet.computeIfAbsent(maDH, k -> new ArrayList<>()).add(ct);
                     }
                 }
             } catch (SQLException ignored) {}
         }
         for (DonNhapHang dh : list) {
-            List<String> ds = mapTenHang.get(dh.getMaDonHang());
-            if (ds != null && !ds.isEmpty()) {
-                dh.setTenHang(String.join(", ", ds));
-            } else {
-                dh.setTenHang("");
+            List<ChiTietDonNhap> cts = mapChiTiet.getOrDefault(dh.getMaDonHang(), new ArrayList<>());
+            dh.setDanhSachChiTiet(cts);
+            List<String> ds = new ArrayList<>();
+            for (ChiTietDonNhap ct : cts) {
+                String tenSP = ct.getTenSanPham() != null ? ct.getTenSanPham() : "SP";
+                ds.add(tenSP + " (x" + ct.getSoLuong() + ")");
             }
+            dh.setTenHang(String.join(", ", ds));
         }
     }
 
     private DonNhapHang anhXaDonNhapHang(ResultSet rs) throws SQLException {
         DonNhapHang dh = new DonNhapHang();
         dh.setMaDonHang(rs.getString("maDonHang"));
-        dh.setMaNhaCungCap(rs.getString("maNhaCungCap"));
-        dh.setMaNhanVien(rs.getString("maNhanVien"));
+
+        NhaCungCap ncc = new NhaCungCap();
+        ncc.setMaNhaCungCap(rs.getString("maNhaCungCap"));
+        try {
+            ncc.setTenNhaCungCap(rs.getNString("tenNhaCungCap"));
+        } catch (SQLException ignored) {}
+        dh.setNhaCungCap(ncc);
+
+        NhanVien nv = new NhanVien();
+        nv.setMaNhanVien(rs.getString("maNhanVien"));
+        try {
+            nv.setHoTen(rs.getNString("tenNhanVien"));
+        } catch (SQLException ignored) {}
+        dh.setNhanVien(nv);
+
         Date ngayLap = rs.getDate("ngayLap");
         if (ngayLap != null) {
             dh.setNgayLap(ngayLap.toLocalDate());
@@ -831,15 +834,19 @@ public class DonNhapHangDAO {
         } catch (SQLException ex) {
             dh.setGioLap(LocalTime.MIDNIGHT);
         }
-        dh.setTongTien(rs.getBigDecimal("tongTien"));
         dh.setTrangThai(rs.getNString("trangThai"));
-
+        dh.setTongTien(rs.getDouble("tongTien"));
         try {
-            dh.setTongTienThucNhan(rs.getBigDecimal("tongTienThucNhan"));
+            dh.setTongTienThucNhan(rs.getDouble("tongTienThucNhan"));
         } catch (SQLException ignored) {}
 
         try {
-            dh.setMaNhanVienNhan(rs.getString("maNhanVienNhan"));
+            String maNVNhan = rs.getString("maNhanVienNhan");
+            if (maNVNhan != null && !maNVNhan.isBlank()) {
+                NhanVien nvn = new NhanVien();
+                nvn.setMaNhanVien(maNVNhan);
+                dh.setNhanVienNhan(nvn);
+            }
             Timestamp tsNhan = rs.getTimestamp("ngayGioNhan");
             if (tsNhan != null) {
                 dh.setNgayGioNhan(tsNhan.toLocalDateTime());
@@ -847,16 +854,13 @@ public class DonNhapHangDAO {
         } catch (SQLException ignored) {}
 
         try {
-            dh.setMaNhanVienHuy(rs.getString("maNhanVienHuy"));
+            String maNVHuy = rs.getString("maNhanVienHuy");
+            if (maNVHuy != null && !maNVHuy.isBlank()) {
+                NhanVien nvh = new NhanVien();
+                nvh.setMaNhanVien(maNVHuy);
+                dh.setNhanVienHuy(nvh);
+            }
             dh.setLyDoHuy(rs.getNString("lyDoHuy"));
-        } catch (SQLException ignored) {}
-
-        try {
-            dh.setTenNhaCungCap(rs.getNString("tenNhaCungCap"));
-        } catch (SQLException ignored) {}
-
-        try {
-            dh.setTenNhanVien(rs.getNString("tenNhanVien"));
         } catch (SQLException ignored) {}
 
         return dh;

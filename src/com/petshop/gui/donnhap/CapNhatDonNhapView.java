@@ -20,7 +20,6 @@ import javafx.scene.paint.Color;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -193,8 +192,8 @@ public class CapNhatDonNhapView extends VBox {
         // Cột tổng tiền (định dạng #,##0)
         TableColumn<DonNhapHang, String> cotTongTien = new TableColumn<>("Tổng tiền (đ)");
         cotTongTien.setCellValueFactory(cellData -> {
-            BigDecimal tongTien = cellData.getValue().getTongTien();
-            String tienStr = (tongTien != null) ? dinhDangTien.format(tongTien) : "0";
+            double tongTien = cellData.getValue().getTongTien();
+            String tienStr = dinhDangTien.format(tongTien);
             return new SimpleStringProperty(tienStr);
         });
         cotTongTien.setPrefWidth(125);
@@ -396,13 +395,13 @@ public class CapNhatDonNhapView extends VBox {
         hopXuLyThieu.setManaged(false);
 
         Runnable tinhLaiTong = () -> {
-            BigDecimal tong = BigDecimal.ZERO;
+            double tong = 0.0;
             int tongThieu = 0;
             for (ChiTietDonNhap ct : dsObservable) {
                 int slDat = ct.getSoLuong();
                 int slTN = ct.getSoLuongThucNhan() != null ? ct.getSoLuongThucNhan() : 0;
-                BigDecimal gia = ct.getDonGia() != null ? ct.getDonGia() : BigDecimal.ZERO;
-                tong = tong.add(gia.multiply(BigDecimal.valueOf(slTN)));
+                double gia = ct.getDonGia();
+                tong += (gia * slTN);
                 if (slTN < slDat) {
                     tongThieu += (slDat - slTN);
                 }
@@ -462,8 +461,8 @@ public class CapNhatDonNhapView extends VBox {
 
         TableColumn<ChiTietDonNhap, String> cotGia = new TableColumn<>("Đơn giá (đ)");
         cotGia.setCellValueFactory(cellData -> {
-            BigDecimal g = cellData.getValue().getDonGia();
-            return new SimpleStringProperty(g != null ? dinhDangTien.format(g) : "0");
+            double g = cellData.getValue().getDonGia();
+            return new SimpleStringProperty(dinhDangTien.format(g));
         });
         cotGia.setPrefWidth(110);
         cotGia.setStyle("-fx-alignment: CENTER-RIGHT;");

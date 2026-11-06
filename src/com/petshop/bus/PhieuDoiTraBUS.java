@@ -296,8 +296,8 @@ public class PhieuDoiTraBUS {
                     }
                     if (ct.getDonGiaDoi() <= 0) {
                         SanPham spDoi = sanPhamDAO.layTheoMa(ct.getMaSanPhamDoi());
-                        if (spDoi != null && spDoi.getGiaBan() != null) {
-                            ct.setDonGiaDoi(spDoi.getGiaBan().doubleValue());
+                        if (spDoi != null) {
+                            ct.setDonGiaDoi(spDoi.getGiaBan());
                         }
                     }
                 }
@@ -354,8 +354,8 @@ public class PhieuDoiTraBUS {
             if (laDoiHang(phieu.getLoaiXuLy()) && ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().trim().isEmpty()) {
                 if (ct.getDonGiaDoi() <= 0) {
                     SanPham spDoi = sanPhamDAO.layTheoMa(ct.getMaSanPhamDoi());
-                    if (spDoi != null && spDoi.getGiaBan() != null) {
-                        ct.setDonGiaDoi(spDoi.getGiaBan().doubleValue());
+                    if (spDoi != null) {
+                        ct.setDonGiaDoi(spDoi.getGiaBan());
                     }
                 }
             }

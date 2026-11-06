@@ -97,7 +97,7 @@ public class XuLyPhieuDoiTraView extends VBox {
             this.sanPham = sanPham;
             this.chiTietDoi = new ChiTietPhieuDoiTra();
             this.chiTietDoi.setSanPhamDoi(sanPham);
-            this.chiTietDoi.setDonGiaDoi(sanPham.getGiaBan() != null ? sanPham.getGiaBan().doubleValue() : 0.0);
+            this.chiTietDoi.setDonGiaDoi(sanPham != null ? sanPham.getGiaBan() : 0.0);
             this.chiTietDoi.setSoLuongDoi(soLuong);
         }
 
@@ -1015,7 +1015,7 @@ public class XuLyPhieuDoiTraView extends VBox {
                     SanPham spDoi = new SanPham();
                     spDoi.setMaSanPham(ct.getMaSanPhamDoi());
                     spDoi.setTenSanPham(ct.getTenSanPhamDoi() != null ? ct.getTenSanPhamDoi() : ct.getMaSanPhamDoi());
-                    spDoi.setGiaBan(java.math.BigDecimal.valueOf(ct.getDonGiaDoi()));
+                    spDoi.setGiaBan(ct.getDonGiaDoi());
                     spDoi.setSoLuongTon(9999);
                     dsSanPhamDoiMoi.add(new DongDoiHang(spDoi, ct.getSoLuongDoi()));
                 }

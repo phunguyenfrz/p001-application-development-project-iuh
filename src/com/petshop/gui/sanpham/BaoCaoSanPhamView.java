@@ -9,7 +9,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
-import java.math.BigDecimal;
+
 import java.util.List;
 
 /**
@@ -111,11 +111,18 @@ public class BaoCaoSanPhamView extends VBox {
         colDonVi.setPrefWidth(90);
         colDonVi.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDonViTinh()));
 
+        TableColumn<SanPham, String> colGiaNhap = new TableColumn<>("Giá nhập");
+        colGiaNhap.setPrefWidth(120);
+        colGiaNhap.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colGiaNhap.setCellValueFactory(cell -> new SimpleStringProperty(
+                ThemSanPhamView.dinhDangTien(cell.getValue().getGiaNhap())
+        ));
+
         TableColumn<SanPham, String> colGiaBan = new TableColumn<>("Giá bán");
         colGiaBan.setPrefWidth(120);
         colGiaBan.setStyle("-fx-alignment: CENTER-RIGHT;");
         colGiaBan.setCellValueFactory(cell -> new SimpleStringProperty(
-                ThemSanPhamView.dinhDangTien(cell.getValue().getGiaBan().doubleValue())
+                ThemSanPhamView.dinhDangTien(cell.getValue().getGiaBan())
         ));
 
 TableColumn<SanPham, String> colTon = new TableColumn<>("Số lượng tồn");
@@ -129,21 +136,34 @@ colNguong.setStyle("-fx-alignment: CENTER-RIGHT;");
 colNguong.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getNguongTonToiThieu())));
 
 TableColumn<SanPham, String> colTinhTrang = new TableColumn<>("Tình trạng");
-colTinhTrang.setPrefWidth(140);
-colTinhTrang.setCellValueFactory(cell -> {
-    if (cell.getValue().getSoLuongTon() == 0) {
-        return new SimpleStringProperty("✖ HẾT HÀNG");
-    }
-    boolean sapHet = cell.getValue().isSapHetHang();
-    return new SimpleStringProperty(sapHet ? "⚠ SẮP HẾT HÀNG" : "Ổn định");
-});
+        colTinhTrang.setPrefWidth(140);
+        colTinhTrang.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getTinhTrangTonKho()));
+        colTinhTrang.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    if ("Hết hàng".equals(item)) {
+                        setStyle("-fx-text-fill: #b91c1c; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                    } else if ("Sắp hết hàng".equals(item)) {
+                        setStyle("-fx-text-fill: #d97706; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                    } else {
+                        setStyle("-fx-text-fill: #15803d; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                    }
+                }
+            }
+        });
 
 TableColumn<SanPham, String> colGiaTri = new TableColumn<>("Thành tiền tồn");
 colGiaTri.setPrefWidth(140);
 colGiaTri.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
 colGiaTri.setCellValueFactory(cell -> {
-    BigDecimal thanhTien = cell.getValue().getGiaBan().multiply(BigDecimal.valueOf(cell.getValue().getSoLuongTon()));
-    return new SimpleStringProperty(ThemSanPhamView.dinhDangTien(thanhTien.doubleValue()));
+    double thanhTien = cell.getValue().getGiaBan() * cell.getValue().getSoLuongTon();
+    return new SimpleStringProperty(ThemSanPhamView.dinhDangTien(thanhTien));
 });
 
 TableColumn<SanPham, String> colNcc = new TableColumn<>("Nhà cung cấp");
@@ -159,7 +179,7 @@ colTrangThai.setCellValueFactory(cell -> new SimpleStringProperty(
 ));
 
 tblDanhSach.getColumns().setAll(List.of(
-        colMa, colTen, colDonVi, colTon, colNguong, colTinhTrang, colGiaBan, colGiaTri, colNcc, colTrangThai
+        colMa, colTen, colDonVi, colTon, colNguong, colTinhTrang, colGiaNhap, colGiaBan, colGiaTri, colNcc, colTrangThai
 ));
 tblDanhSach.getStyleClass().add("bang-du-lieu");
 tblDanhSach.setPlaceholder(new Label("Chưa có dữ liệu sản phẩm trong cơ sở dữ liệu."));
@@ -200,19 +220,19 @@ tblDanhSach.setRowFactory(tv -> new TableRow<>() {
 
             lblTongSanPham.setText(String.valueOf(ds.size()));
 
-            BigDecimal tongTienKho = BigDecimal.ZERO;
+            double tongTienKho = 0;
             long sapHet = 0;
             for (SanPham sp : ds) {
                 if (sp.isTrangThai()) {
-                    BigDecimal giaTriSp = sp.getGiaBan().multiply(BigDecimal.valueOf(sp.getSoLuongTon()));
-                    tongTienKho = tongTienKho.add(giaTriSp);
+                    double giaTriSp = sp.getGiaBan() * sp.getSoLuongTon();
+                    tongTienKho += giaTriSp;
                     if (sp.isSapHetHang()) {
                         sapHet++;
                     }
                 }
             }
 
-            lblTongGiaTriKho.setText(ThemSanPhamView.dinhDangTien(tongTienKho.doubleValue()));
+            lblTongGiaTriKho.setText(ThemSanPhamView.dinhDangTien(tongTienKho));
             lblTongSapHet.setText(String.valueOf(sapHet));
         } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             Alert alert = new Alert(Alert.AlertType.WARNING);

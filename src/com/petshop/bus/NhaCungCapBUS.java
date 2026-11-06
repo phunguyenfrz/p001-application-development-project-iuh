@@ -192,6 +192,12 @@ public class NhaCungCapBUS {
         }
         ncc.setTenNhaCungCap(ten);
 
+        // Kiểm tra trùng tên nhà cung cấp (không cho phép trùng lặp)
+        String maLoaiTru = laCapNhat ? ncc.getMaNhaCungCap() : null;
+        if (nhaCungCapDAO.kiemTraTrungTenNhaCungCap(ten, maLoaiTru)) {
+            throw new IllegalArgumentException("Tên nhà cung cấp '" + ten + "' đã tồn tại!");
+        }
+
         // 2. Kiểm tra và chuẩn hóa số điện thoại
         String sdt = ncc.getSoDienThoai() == null ? "" : ncc.getSoDienThoai().trim();
         if (sdt.isEmpty()) {
@@ -203,7 +209,6 @@ public class NhaCungCapBUS {
         ncc.setSoDienThoai(sdt);
 
         // Kiểm tra trùng SĐT
-        String maLoaiTru = laCapNhat ? ncc.getMaNhaCungCap() : null;
         if (nhaCungCapDAO.kiemTraTrungSoDienThoai(sdt, maLoaiTru)) {
             throw new IllegalArgumentException("Số điện thoại '" + sdt + "' đã tồn tại ở nhà cung cấp khác!");
         }

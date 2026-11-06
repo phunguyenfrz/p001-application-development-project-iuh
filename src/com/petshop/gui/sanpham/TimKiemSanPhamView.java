@@ -14,6 +14,7 @@ import javafx.stage.Stage;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Màn hình tra cứu, tìm kiếm sản phẩm theo từ khóa và trạng thái kinh doanh (PRD_SEARCH).
@@ -133,19 +134,39 @@ public class TimKiemSanPhamView extends VBox {
 
         TableColumn<SanPham, String> colTinhTrang = new TableColumn<>("Tình trạng");
         colTinhTrang.setPrefWidth(140);
-        colTinhTrang.setCellValueFactory(cell -> {
-            if (cell.getValue().getSoLuongTon() == 0) {
-                return new SimpleStringProperty("✖ HẾT HÀNG");
+        colTinhTrang.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getTinhTrangTonKho()));
+        colTinhTrang.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    if ("Hết hàng".equals(item)) {
+                        setStyle("-fx-text-fill: #b91c1c; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                    } else if ("Sắp hết hàng".equals(item)) {
+                        setStyle("-fx-text-fill: #d97706; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                    } else {
+                        setStyle("-fx-text-fill: #15803d; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                    }
+                }
             }
-            boolean sapHet = cell.getValue().isSapHetHang();
-            return new SimpleStringProperty(sapHet ? "⚠ SẮP HẾT HÀNG" : "Ổn định");
         });
+
+        TableColumn<SanPham, String> colGiaNhap = new TableColumn<>("Giá nhập");
+        colGiaNhap.setPrefWidth(120);
+        colGiaNhap.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colGiaNhap.setCellValueFactory(cell -> new SimpleStringProperty(
+                ThemSanPhamView.dinhDangTien(cell.getValue().getGiaNhap())
+        ));
 
         TableColumn<SanPham, String> colGiaBan = new TableColumn<>("Giá bán");
         colGiaBan.setPrefWidth(120);
         colGiaBan.setStyle("-fx-alignment: CENTER-RIGHT;");
         colGiaBan.setCellValueFactory(cell -> new SimpleStringProperty(
-                ThemSanPhamView.dinhDangTien(cell.getValue().getGiaBan().doubleValue())
+                ThemSanPhamView.dinhDangTien(cell.getValue().getGiaBan())
         ));
 
         TableColumn<SanPham, String> colNcc = new TableColumn<>("Nhà cung cấp");
@@ -161,7 +182,7 @@ public class TimKiemSanPhamView extends VBox {
         ));
 
         tblDanhSach.getColumns().setAll(List.of(
-                colMa, colTen, colLoai, colTon, colNguong, colTinhTrang, colGiaBan, colNcc, colTrangThai
+                colMa, colTen, colLoai, colTon, colNguong, colTinhTrang, colGiaNhap, colGiaBan, colNcc, colTrangThai
         ));
 
         // Hết hàng và sắp hết hàng đổi màu nền dòng giống bên Theo dõi tồn kho
@@ -206,9 +227,9 @@ pnlBang.getChildren().add(tblDanhSach);
 
             List<SanPham> ds = sanPhamController.timKiemSanPham(tuKhoa, trangThai);
             if ("Hết hàng".equals(trangThaiChon)) {
-                ds = ds.stream().filter(sp -> sp.getSoLuongTon() <= 0).toList();
+                ds = ds.stream().filter(sp -> sp.getSoLuongTon() <= 0).collect(Collectors.toList());
             } else if ("Đang kinh doanh".equals(trangThaiChon)) {
-                ds = ds.stream().filter(sp -> sp.getSoLuongTon() > 0).toList();
+                ds = ds.stream().filter(sp -> sp.getSoLuongTon() > 0).collect(Collectors.toList());
             }
             tblDanhSach.setItems(FXCollections.observableArrayList(ds));
             lblKetQua.setText("Tổng số: " + ds.size() + " sản phẩm");

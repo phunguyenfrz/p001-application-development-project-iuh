@@ -9,7 +9,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -46,15 +45,15 @@ class DonNhapHangBUSTest {
         DonNhapHang donHang = new DonNhapHang();
         donHang.setMaNhaCungCap("NCC-01");
         List<ChiTietDonNhap> chiTiet = List.of(
-                new ChiTietDonNhap(null, "SP-01", 3, new BigDecimal("100")),
-                new ChiTietDonNhap(null, "SP-02", 2, new BigDecimal("50"))
+                new ChiTietDonNhap(null, "SP-01", 3, 100.0),
+                new ChiTietDonNhap(null, "SP-02", 2, 50.0)
         );
 
         assertTrue(service.lapDonNhapHang(donHang, chiTiet));
 
         assertEquals(MA_DON, donHang.getMaDonHang());
         assertEquals("NV-QL01", donHang.getMaNhanVien());
-        assertEquals(new BigDecimal("400"), donHang.getTongTien());
+        assertEquals(400.0, donHang.getTongTien(), 0.001);
         assertEquals(DonNhapHang.TRANG_THAI_CHO_NHAN, donHang.getTrangThai());
         assertEquals(MA_DON, chiTiet.get(0).getMaDonHang());
         assertTrue(dao.donHangDaLuu);
@@ -63,7 +62,7 @@ class DonNhapHangBUSTest {
     @Test
     void xacNhanDonHangChiCongTonKhoMotLan() {
         DonNhapHang donHang = taoDonChoNhan();
-        dao.themDonNhapHang(donHang, List.of(new ChiTietDonNhap(MA_DON, "SP-01", 4, BigDecimal.TEN)));
+        dao.themDonNhapHang(donHang, List.of(new ChiTietDonNhap(MA_DON, "SP-01", 4, 10.0)));
 
         assertTrue(service.xacNhanNhanHang(MA_DON));
         assertThrows(IllegalStateException.class, () -> service.xacNhanNhanHang(MA_DON));
@@ -75,8 +74,8 @@ class DonNhapHangBUSTest {
     @Test
     void xacNhanNhanHangThieuCongDungSoLuongThucNhan() {
         DonNhapHang donHang = taoDonChoNhan();
-        ChiTietDonNhap ct1 = new ChiTietDonNhap(MA_DON, "SP-01", "Hạt Me-O", "Gói", 10, 7, new BigDecimal("100"));
-        ChiTietDonNhap ct2 = new ChiTietDonNhap(MA_DON, "SP-02", "Pate Royal", "Lon", 5, 0, new BigDecimal("50"));
+        ChiTietDonNhap ct1 = new ChiTietDonNhap(MA_DON, "SP-01", "Hạt Me-O", "Gói", 10, 7, 100.0);
+        ChiTietDonNhap ct2 = new ChiTietDonNhap(MA_DON, "SP-02", "Pate Royal", "Lon", 5, 0, 50.0);
         dao.themDonNhapHang(donHang, List.of(ct1, ct2));
 
         assertTrue(service.xacNhanNhanHang(MA_DON, List.of(ct1, ct2)));
@@ -87,14 +86,14 @@ class DonNhapHangBUSTest {
         // SP-02 thực nhận 0 -> không cộng tồn kho
         assertEquals(0, dao.soLuongTon.getOrDefault("SP-02", 0));
         // Tổng tiền thực nhận = 7 * 100 + 0 * 50 = 700
-        assertEquals(new BigDecimal("700"), donHang.getTongTienThucNhan());
+        assertEquals(700.0, donHang.getTongTienThucNhan(), 0.001);
     }
 
     @Test
     void xacNhanNhanHangChanKhiTatCaBangKhong() {
         DonNhapHang donHang = taoDonChoNhan();
-        ChiTietDonNhap ct1 = new ChiTietDonNhap(MA_DON, "SP-01", "Hạt Me-O", "Gói", 10, 0, new BigDecimal("100"));
-        ChiTietDonNhap ct2 = new ChiTietDonNhap(MA_DON, "SP-02", "Pate Royal", "Lon", 5, 0, new BigDecimal("50"));
+        ChiTietDonNhap ct1 = new ChiTietDonNhap(MA_DON, "SP-01", "Hạt Me-O", "Gói", 10, 0, 100.0);
+        ChiTietDonNhap ct2 = new ChiTietDonNhap(MA_DON, "SP-02", "Pate Royal", "Lon", 5, 0, 50.0);
         dao.themDonNhapHang(donHang, List.of(ct1, ct2));
 
         // Nếu tất cả thực nhận = 0 thì phải chặn và ném ngoại lệ gợi ý dùng chức năng Hủy đơn
@@ -104,8 +103,8 @@ class DonNhapHangBUSTest {
     @Test
     void xacNhanNhanHangThieu_PhuongAn3_TaoDonBu() {
         DonNhapHang donHang = taoDonChoNhan();
-        ChiTietDonNhap ct1 = new ChiTietDonNhap(MA_DON, "SP-01", "Hạt Me-O", "Gói", 10, 7, new BigDecimal("100"));
-        ChiTietDonNhap ct2 = new ChiTietDonNhap(MA_DON, "SP-02", "Pate Royal", "Lon", 5, 2, new BigDecimal("50"));
+        ChiTietDonNhap ct1 = new ChiTietDonNhap(MA_DON, "SP-01", "Hạt Me-O", "Gói", 10, 7, 100.0);
+        ChiTietDonNhap ct2 = new ChiTietDonNhap(MA_DON, "SP-02", "Pate Royal", "Lon", 5, 2, 50.0);
         dao.themDonNhapHang(donHang, List.of(ct1, ct2));
 
         // Giao thiếu: SP-01 thiếu 3, SP-02 thiếu 3. Chọn tạo đơn bù (taoDonBu = true)
@@ -113,7 +112,7 @@ class DonNhapHangBUSTest {
 
         // Đơn gốc hoàn tất với số lượng thực nhận và tổng tiền thực nhận = 7*100 + 2*50 = 800
         assertEquals(DonNhapHang.TRANG_THAI_HOAN_TAT, donHang.getTrangThai());
-        assertEquals(new BigDecimal("800"), donHang.getTongTienThucNhan());
+        assertEquals(800.0, donHang.getTongTienThucNhan(), 0.001);
         assertEquals(7, dao.soLuongTon.get("SP-01"));
         assertEquals(2, dao.soLuongTon.get("SP-02"));
 
@@ -121,7 +120,7 @@ class DonNhapHangBUSTest {
         assertEquals("PN-20261030-999999", maDonBu);
         DonNhapHang donBu = dao.timTheoMa(maDonBu);
         assertEquals(DonNhapHang.TRANG_THAI_CHO_NHAN, donBu.getTrangThai());
-        assertEquals(new BigDecimal("450"), donBu.getTongTien()); // 3 * 100 + 3 * 50 = 450
+        assertEquals(450.0, donBu.getTongTien(), 0.001); // 3 * 100 + 3 * 50 = 450
         List<ChiTietDonNhap> ctBu = dao.layChiTietTheoMaDonHang(maDonBu);
         assertEquals(2, ctBu.size());
         assertEquals(3, ctBu.get(0).getSoLuong());
@@ -131,7 +130,7 @@ class DonNhapHangBUSTest {
     @Test
     void xacNhanNhanHangThieu_PhuongAn3_DongDonBatBuocLyDo() {
         DonNhapHang donHang = taoDonChoNhan();
-        ChiTietDonNhap ct1 = new ChiTietDonNhap(MA_DON, "SP-01", "Hạt Me-O", "Gói", 10, 7, new BigDecimal("100"));
+        ChiTietDonNhap ct1 = new ChiTietDonNhap(MA_DON, "SP-01", "Hạt Me-O", "Gói", 10, 7, 100.0);
         dao.themDonNhapHang(donHang, List.of(ct1));
 
         // Giao thiếu: chọn đóng đơn (taoDonBu = false) nhưng không truyền lý do -> phải chặn
@@ -177,7 +176,7 @@ class DonNhapHangBUSTest {
         SessionManager.dangNhap(new TaiKhoan("NV-BH01", "banhang", "Nhân viên bán hàng", TaiKhoan.VaiTro.BAN_HANG));
 
         DonNhapHang donHang = taoDonChoNhan();
-        dao.themDonNhapHang(donHang, List.of(new ChiTietDonNhap(MA_DON, "SP-01", 5, BigDecimal.TEN)));
+        dao.themDonNhapHang(donHang, List.of(new ChiTietDonNhap(MA_DON, "SP-01", 5, 10.0)));
 
         // 1. Chặn xác nhận nhận hàng
         assertThrows(SecurityException.class, () -> service.xacNhanNhanHang(MA_DON));
@@ -192,7 +191,7 @@ class DonNhapHangBUSTest {
         // 4. Vẫn được lập đơn nhập mới
         DonNhapHang donMoi = new DonNhapHang();
         donMoi.setMaNhaCungCap("NCC-01");
-        List<ChiTietDonNhap> chiTiet = List.of(new ChiTietDonNhap(null, "SP-01", 2, BigDecimal.TEN));
+        List<ChiTietDonNhap> chiTiet = List.of(new ChiTietDonNhap(null, "SP-01", 2, 10.0));
         assertTrue(service.lapDonNhapHang(donMoi, chiTiet));
     }
 
@@ -272,7 +271,7 @@ class DonNhapHangBUSTest {
 
         @Override
         public String xacNhanNhanHangThieuVaTaoDonBu(String maDonHang, String maNhanVienNhan,
-                                                    LocalDateTime ngayGioNhan, BigDecimal tongTienThucNhan,
+                                                    LocalDateTime ngayGioNhan, double tongTienThucNhan,
                                                     String ghiChuChenhLech,
                                                     List<ChiTietDonNhap> chiTietCapNhat,
                                                     DonNhapHang donNhapBu) {
@@ -289,7 +288,7 @@ class DonNhapHangBUSTest {
             donHang.setTrangThai(DonNhapHang.TRANG_THAI_HOAN_TAT);
             donHang.setMaNhanVienNhan(maNhanVienNhan);
             donHang.setNgayGioNhan(ngayGioNhan);
-            donHang.setTongTienThucNhan(tongTienThucNhan);
+donHang.setTongTienThucNhan(tongTienThucNhan);
             donHang.setLyDoHuy(ghiChuChenhLech);
 
             if (donNhapBu != null) {
@@ -304,7 +303,7 @@ class DonNhapHangBUSTest {
 
         @Override
         public boolean xacNhanNhanHangVaCongTonKho(String maDonHang, String maNhanVienNhan,
-                                                    LocalDateTime ngayGioNhan, BigDecimal tongTienThucNhan,
+                                                    LocalDateTime ngayGioNhan, double tongTienThucNhan,
                                                     List<ChiTietDonNhap> chiTietCapNhat) {
             String res = xacNhanNhanHangThieuVaTaoDonBu(maDonHang, maNhanVienNhan, ngayGioNhan, tongTienThucNhan,
                     null, chiTietCapNhat, null);

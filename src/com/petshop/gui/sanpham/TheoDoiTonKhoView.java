@@ -8,21 +8,26 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Màn hình theo dõi số lượng tồn kho và cảnh báo dưới ngưỡng an toàn (PRD_INVENTORY, PRD_LOW_STOCK).
+ * Phân loại chính xác 3 trạng thái: "Còn hàng", "Sắp hết hàng" (dưới ngưỡng an toàn), "Hết hàng".
  * Thiết kế giao diện đồng bộ hoàn toàn theo phân hệ Dịch vụ.
  */
 public class TheoDoiTonKhoView extends VBox {
 
     private final SanPhamBUS sanPhamController = new SanPhamBUS();
 
-    private final CheckBox chkChiLocSapHet = new CheckBox("Chỉ hiện hàng hết hoặc sắp hết (tồn <= ngưỡng)");
+    private final TextField txtTimKiem = new TextField();
+    private final ComboBox<String> cboLocTinhTrang = new ComboBox<>();
     private final Button btnLamMoi = new Button("Làm mới dữ liệu");
     private final Label lblThongKeTong = new Label();
 
     private final TableView<SanPham> tblDanhSach = new TableView<>();
+    private List<SanPham> danhSachGoc = new ArrayList<>();
 
     public TheoDoiTonKhoView() {
         this(false);
@@ -50,13 +55,15 @@ public class TheoDoiTonKhoView extends VBox {
         pnlKhungChinh.getChildren().addAll(pnlThanhCongCu, pnlBang);
         getChildren().addAll(pnlTieuDeMan, pnlKhungChinh);
 
-        chkChiLocSapHet.setSelected(chiLocSapHet);
+        if (chiLocSapHet) {
+            cboLocTinhTrang.setValue("Cần nhập (Hết + Sắp hết)");
+        }
         taiDuLieu();
     }
 
     public void locHangSapHet() {
-        chkChiLocSapHet.setSelected(true);
-        taiDuLieu();
+        cboLocTinhTrang.setValue("Cần nhập (Hết + Sắp hết)");
+        locDuLieu();
     }
 
     private HBox taoThanhCongCu() {
@@ -64,8 +71,19 @@ public class TheoDoiTonKhoView extends VBox {
         pnlThanh.getStyleClass().add("thanh-tac-vu");
         pnlThanh.setAlignment(Pos.CENTER_LEFT);
 
-        chkChiLocSapHet.setStyle("-fx-font-weight: bold; -fx-text-fill: #b91c1c;");
-        chkChiLocSapHet.setOnAction(e -> taiDuLieu());
+        txtTimKiem.setPromptText("Tìm mã, tên sản phẩm...");
+        txtTimKiem.setPrefWidth(220);
+        txtTimKiem.textProperty().addListener((obs, oldVal, newVal) -> locDuLieu());
+
+        cboLocTinhTrang.setItems(FXCollections.observableArrayList(
+                "Tất cả tình trạng",
+                "Còn hàng",
+                "Sắp hết hàng",
+                "Hết hàng",
+                "Cần nhập (Hết + Sắp hết)"
+        ));
+        cboLocTinhTrang.setValue("Tất cả tình trạng");
+        cboLocTinhTrang.setOnAction(e -> locDuLieu());
 
         btnLamMoi.getStyleClass().add("nut-phu");
         btnLamMoi.setOnAction(e -> taiDuLieu());
@@ -75,7 +93,17 @@ public class TheoDoiTonKhoView extends VBox {
 
         lblThongKeTong.setStyle("-fx-font-weight: bold; -fx-text-fill: #334155;");
 
-        pnlThanh.getChildren().addAll(chkChiLocSapHet, btnLamMoi, pnlKhoangCach, lblThongKeTong);
+        Label lblLoc = new Label("Lọc tình trạng:");
+        lblLoc.setStyle("-fx-font-weight: bold;");
+
+        pnlThanh.getChildren().addAll(
+                txtTimKiem,
+                lblLoc,
+                cboLocTinhTrang,
+                btnLamMoi,
+                pnlKhoangCach,
+                lblThongKeTong
+        );
         return pnlThanh;
     }
 
@@ -106,19 +134,39 @@ public class TheoDoiTonKhoView extends VBox {
 
         TableColumn<SanPham, String> colTinhTrang = new TableColumn<>("Tình trạng");
         colTinhTrang.setPrefWidth(140);
-        colTinhTrang.setCellValueFactory(cell -> {
-            if (cell.getValue().getSoLuongTon() == 0) {
-                return new SimpleStringProperty("✖ HẾT HÀNG");
+        colTinhTrang.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getTinhTrangTonKho()));
+        colTinhTrang.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    if ("Hết hàng".equals(item)) {
+                        setStyle("-fx-text-fill: #b91c1c; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                    } else if ("Sắp hết hàng".equals(item)) {
+                        setStyle("-fx-text-fill: #d97706; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                    } else {
+                        setStyle("-fx-text-fill: #15803d; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                    }
+                }
             }
-            boolean sapHet = cell.getValue().isSapHetHang();
-            return new SimpleStringProperty(sapHet ? "⚠ SẮP HẾT HÀNG" : "Ổn định");
         });
+
+        TableColumn<SanPham, String> colGiaNhap = new TableColumn<>("Giá nhập");
+        colGiaNhap.setPrefWidth(120);
+        colGiaNhap.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colGiaNhap.setCellValueFactory(cell -> new SimpleStringProperty(
+                ThemSanPhamView.dinhDangTien(cell.getValue().getGiaNhap())
+        ));
 
         TableColumn<SanPham, String> colGiaBan = new TableColumn<>("Giá bán");
         colGiaBan.setPrefWidth(120);
         colGiaBan.setStyle("-fx-alignment: CENTER-RIGHT;");
         colGiaBan.setCellValueFactory(cell -> new SimpleStringProperty(
-                ThemSanPhamView.dinhDangTien(cell.getValue().getGiaBan().doubleValue())
+                ThemSanPhamView.dinhDangTien(cell.getValue().getGiaBan())
         ));
 
         TableColumn<SanPham, String> colNcc = new TableColumn<>("Nhà cung cấp");
@@ -134,12 +182,12 @@ public class TheoDoiTonKhoView extends VBox {
         ));
 
         tblDanhSach.getColumns().setAll(List.of(
-                colMa, colTen, colDonVi, colTonKho, colNguong, colTinhTrang, colGiaBan, colNcc, colTrangThai
+                colMa, colTen, colDonVi, colTonKho, colNguong, colTinhTrang, colGiaNhap, colGiaBan, colNcc, colTrangThai
         ));
         tblDanhSach.getStyleClass().add("bang-du-lieu");
         tblDanhSach.setPlaceholder(new Label("Không có sản phẩm nào trong danh sách."));
 
-        // Hết hàng có nhãn riêng; ngừng kinh doanh hiển thị ở cột trạng thái kế bên.
+        // Hết hàng có nền đỏ nhạt; sắp hết hàng có nền vàng nhạt; ngừng kinh doanh mờ
         tblDanhSach.setRowFactory(tv -> new TableRow<>() {
             @Override
             protected void updateItem(SanPham item, boolean empty) {
@@ -150,12 +198,12 @@ public class TheoDoiTonKhoView extends VBox {
                 } else if (!item.isTrangThai()) {
                     setOpacity(0.5);
                     setStyle("-fx-background-color: #f1f5f9;");
-                } else if (item.getSoLuongTon() == 0) {
+                } else if (item.isHetHang()) {
                     setOpacity(1.0);
                     setStyle("-fx-background-color: #fee2e2;");
                 } else if (item.isSapHetHang()) {
                     setOpacity(1.0);
-                    setStyle("-fx-background-color: #fef2f2;");
+                    setStyle("-fx-background-color: #fef3c7;");
                 } else {
                     setOpacity(1.0);
                     setStyle("");
@@ -170,23 +218,8 @@ public class TheoDoiTonKhoView extends VBox {
 
     public void taiDuLieu() {
         try {
-            List<SanPham> ds;
-            if (chkChiLocSapHet.isSelected()) {
-                ds = sanPhamController.layDanhSachSanPhamSapHet();
-            } else {
-                ds = sanPhamController.layDanhSachSanPham();
-            }
-
-            tblDanhSach.setItems(FXCollections.observableArrayList(ds));
-
-            long soHetHang = ds.stream()
-                    .filter(sp -> sp.isTrangThai() && sp.getSoLuongTon() == 0)
-                    .count();
-            long soSapHet = ds.stream()
-                    .filter(sp -> sp.isTrangThai() && sp.getSoLuongTon() > 0 && sp.isSapHetHang())
-                    .count();
-            lblThongKeTong.setText("Tổng sản phẩm: " + ds.size()
-                    + " | Hết hàng: " + soHetHang + " | Sắp hết hàng: " + soSapHet);
+            danhSachGoc = sanPhamController.layDanhSachSanPham();
+            locDuLieu();
         } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("Lỗi");
@@ -194,5 +227,41 @@ public class TheoDoiTonKhoView extends VBox {
             alert.setContentText("Không thể tải dữ liệu tồn kho: " + ex.getMessage());
             alert.showAndWait();
         }
+    }
+
+    private void locDuLieu() {
+        if (danhSachGoc == null) return;
+
+        String tuKhoa = txtTimKiem.getText() != null ? txtTimKiem.getText().trim().toLowerCase() : "";
+        String luaChon = cboLocTinhTrang.getValue() != null ? cboLocTinhTrang.getValue() : "Tất cả tình trạng";
+
+        List<SanPham> ketQua = danhSachGoc.stream().filter(sp -> {
+            if (!tuKhoa.isEmpty()) {
+                boolean hopMa = sp.getMaSanPham() != null && sp.getMaSanPham().toLowerCase().contains(tuKhoa);
+                boolean hopTen = sp.getTenSanPham() != null && sp.getTenSanPham().toLowerCase().contains(tuKhoa);
+                if (!hopMa && !hopTen) {
+                    return false;
+                }
+            }
+
+            return switch (luaChon) {
+                case "Còn hàng" -> sp.isConHang();
+                case "Sắp hết hàng" -> sp.isSapHetHang();
+                case "Hết hàng" -> sp.isHetHang();
+                case "Cần nhập (Hết + Sắp hết)" -> sp.isHetHang() || sp.isSapHetHang();
+                default -> true;
+            };
+        }).collect(Collectors.toList());
+
+        tblDanhSach.setItems(FXCollections.observableArrayList(ketQua));
+
+        long soHetHang = danhSachGoc.stream().filter(sp -> sp.isTrangThai() && sp.isHetHang()).count();
+        long soSapHet = danhSachGoc.stream().filter(sp -> sp.isTrangThai() && sp.isSapHetHang()).count();
+        long soConHang = danhSachGoc.stream().filter(sp -> sp.isTrangThai() && sp.isConHang()).count();
+
+        lblThongKeTong.setText("Tổng SP: " + danhSachGoc.size()
+                + " | Còn hàng: " + soConHang
+                + " | Sắp hết hàng: " + soSapHet
+                + " | Hết hàng: " + soHetHang);
     }
 }

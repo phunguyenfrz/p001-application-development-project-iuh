@@ -4,7 +4,6 @@ import com.petshop.dao.SanPhamDAO;
 import com.petshop.entity.NhaCungCap;
 import com.petshop.entity.SanPham;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -190,8 +189,14 @@ public class SanPhamBUS {
         if (sp.getMaVach() == null || sp.getMaVach().trim().isEmpty()) {
             throw new IllegalArgumentException("Mã vạch sản phẩm không được để trống!");
         }
-        if (sp.getGiaBan() == null || sp.getGiaBan().compareTo(BigDecimal.ZERO) < 0) {
+        if (sp.getGiaNhap() < 0) {
+            throw new IllegalArgumentException("Giá nhập sản phẩm phải lớn hơn hoặc bằng 0!");
+        }
+        if (sp.getGiaBan() < 0) {
             throw new IllegalArgumentException("Giá bán sản phẩm phải lớn hơn hoặc bằng 0!");
+        }
+        if (sp.getGiaBan() < sp.getGiaNhap()) {
+            throw new IllegalArgumentException("Giá bán phải lớn hơn hoặc bằng giá nhập!");
         }
         if (sp.getSoLuongTon() < 0) {
             throw new IllegalArgumentException("Số lượng tồn kho không được âm!");
