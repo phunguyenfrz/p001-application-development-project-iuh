@@ -18,9 +18,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Lớp DAO phụ trách truy xuất dữ liệu phiếu dịch vụ và chi tiết phiếu trong SQL Server.
@@ -68,7 +66,7 @@ public class PhieuDichVuDAO {
                 INSERT INTO ChiTietPhieuDichVu (maPhieuDichVu, maThuCung, maDichVu, donGia)
                 VALUES (?, ?, ?, ?)
                 """;
-        String sqlCapNhatLichHen = "UPDATE LichHen SET trangThai = N'Đã tiếp nhận' WHERE maLichHen = ? AND trangThai != N'Đã hủy'";
+        String sqlCapNhatLichHen = "UPDATE LichHen SET trangThai = N'Hoàn thành' WHERE maLichHen = ? AND trangThai != N'Đã hủy'";
 
         try (Connection conn = DatabaseManager.getConnection()) {
             conn.setAutoCommit(false);
@@ -99,18 +97,11 @@ public class PhieuDichVuDAO {
                     }
                 }
 
-                // 3. Nếu lập từ lịch hẹn: cập nhật trạng thái lịch hẹn sang 'Đã tiếp nhận'
+                // 3. Nếu lập từ lịch hẹn: cập nhật trạng thái lịch hẹn sang 'Hoàn thành' (Hướng A)
                 if (phieu.getMaLichHen() != null && !phieu.getMaLichHen().trim().isEmpty()) {
                     try (PreparedStatement psLh = conn.prepareStatement(sqlCapNhatLichHen)) {
                         psLh.setString(1, phieu.getMaLichHen().trim());
                         psLh.executeUpdate();
-                    } catch (SQLException ex) {
-                        // Fallback nếu database cũ chưa cập nhật CHECK constraint 'Đã tiếp nhận'
-                        try (PreparedStatement psFallback = conn.prepareStatement(
-                                "UPDATE LichHen SET trangThai = N'Đang thực hiện' WHERE maLichHen = ? AND trangThai != N'Đã hủy'")) {
-                            psFallback.setString(1, phieu.getMaLichHen().trim());
-                            psFallback.executeUpdate();
-                        }
                     }
                 }
 
@@ -255,26 +246,6 @@ public class PhieuDichVuDAO {
         return null;
     }
 
-    // Lấy tập hợp mã nhân viên hiện đang có phiếu ở trạng thái 'Đang thực hiện'
-    public Set<String> laySetMaNhanVienDangThucHien() {
-        String sql = "SELECT DISTINCT maNhanVien FROM PhieuDichVu WHERE trangThai = N'Đang thực hiện'";
-        Set<String> danhSach = new HashSet<>();
-
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                String maNv = rs.getString("maNhanVien");
-                if (maNv != null && !maNv.trim().isEmpty()) {
-                    danhSach.add(maNv.trim());
-                }
-            }
-        } catch (SQLException e) {
-            throw new IllegalStateException("Lỗi khi lấy danh sách nhân viên đang bận: " + e.getMessage(), e);
-        }
-        return danhSach;
-    }
-
     // Kiểm tra xem thú cưng có thuộc quyền sở hữu của khách hàng hay không
     public boolean kiemTraThuCungThuocKhachHang(String maThuCung, String maKhachHang) {
         if (maThuCung == null || maKhachHang == null) return false;
@@ -291,7 +262,7 @@ public class PhieuDichVuDAO {
         }
     }
 
-    // Xóa mềm phiếu dịch vụ (chuyển trạng thái sang 'Đã hủy' và lưu lý do)
+    // Xóa mềm phiếu dịch vụ (chuyển trạng thái sang 'Đã hủy' và lưu lý do, đồng thời hủy lịch hẹn liên kết nếu có)
     public boolean xoaMem(String maPhieuDichVu, String lyDoHuy) {
         String sql = """
                 UPDATE PhieuDichVu
@@ -302,15 +273,43 @@ public class PhieuDichVuDAO {
                     END
                 WHERE maPhieuDichVu = ?
                 """;
+        String sqlHuyLich = """
+                UPDATE LichHen
+                SET trangThai = N'Đã hủy',
+                    ghiChu = CASE
+                        WHEN ghiChu IS NULL OR LEN(LTRIM(RTRIM(ghiChu))) = 0 THEN ?
+                        ELSE ghiChu + N' | Lý do hủy phiếu: ' + ?
+                    END
+                WHERE maLichHen = (SELECT maLichHen FROM PhieuDichVu WHERE maPhieuDichVu = ?)
+                """;
 
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            String lyDo = (lyDoHuy != null && !lyDoHuy.trim().isEmpty()) ? "Lý do hủy: " + lyDoHuy.trim() : "Lý do hủy: Hủy phiếu tại quầy";
-            String lyDoKem = (lyDoHuy != null && !lyDoHuy.trim().isEmpty()) ? lyDoHuy.trim() : "Hủy phiếu tại quầy";
-            ps.setString(1, lyDo);
-            ps.setString(2, lyDoKem);
-            ps.setString(3, maPhieuDichVu);
-            return ps.executeUpdate() > 0;
+        try (Connection conn = DatabaseManager.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                String lyDo = (lyDoHuy != null && !lyDoHuy.trim().isEmpty()) ? "Lý do hủy: " + lyDoHuy.trim() : "Lý do hủy: Hủy phiếu tại quầy";
+                String lyDoKem = (lyDoHuy != null && !lyDoHuy.trim().isEmpty()) ? lyDoHuy.trim() : "Hủy phiếu tại quầy";
+
+                try (PreparedStatement psHuyLich = conn.prepareStatement(sqlHuyLich)) {
+                    psHuyLich.setString(1, lyDo);
+                    psHuyLich.setString(2, lyDoKem);
+                    psHuyLich.setString(3, maPhieuDichVu);
+                    psHuyLich.executeUpdate();
+                }
+
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, lyDo);
+                    ps.setString(2, lyDoKem);
+                    ps.setString(3, maPhieuDichVu);
+                    boolean ok = ps.executeUpdate() > 0;
+                    conn.commit();
+                    return ok;
+                }
+            } catch (SQLException ex) {
+                conn.rollback();
+                throw ex;
+            } finally {
+                conn.setAutoCommit(true);
+            }
         } catch (SQLException e) {
             throw new IllegalStateException("Lỗi khi xóa mềm phiếu dịch vụ: " + e.getMessage(), e);
         }
@@ -551,12 +550,11 @@ public class PhieuDichVuDAO {
                 LEFT JOIN NhanVien nv ON nv.maNhanVien = lh.maNhanVien
                 WHERE lh.trangThai IN (N'Đã đặt', N'Đã xác nhận')
                   AND lh.trangThai != N'Đã tiếp nhận'
-                  AND CAST(lh.ngayHen AS DATE) = CAST(GETDATE() AS DATE)
                   AND NOT EXISTS (
                       SELECT 1 FROM PhieuDichVu pdv
                       WHERE pdv.maLichHen = lh.maLichHen AND pdv.trangThai != N'Đã hủy'
                   )
-                ORDER BY lh.ngayHen DESC, lh.gioHen DESC
+                ORDER BY lh.ngayHen ASC, lh.gioHen ASC
                 """;
         List<LichHen> danhSach = new ArrayList<>();
 
@@ -642,12 +640,11 @@ public class PhieuDichVuDAO {
                 WHERE lh.maKhachHang = ?
                   AND lh.trangThai IN (N'Đã đặt', N'Đã xác nhận')
                   AND lh.trangThai != N'Đã tiếp nhận'
-                  AND CAST(lh.ngayHen AS DATE) = CAST(GETDATE() AS DATE)
                   AND NOT EXISTS (
                       SELECT 1 FROM PhieuDichVu pdv
                       WHERE pdv.maLichHen = lh.maLichHen AND pdv.trangThai != N'Đã hủy'
                   )
-                ORDER BY lh.gioHen ASC
+                ORDER BY lh.ngayHen ASC, lh.gioHen ASC
                 """;
         List<LichHen> danhSach = new ArrayList<>();
         try (Connection conn = DatabaseManager.getConnection();
@@ -719,6 +716,24 @@ public class PhieuDichVuDAO {
         }
 
         return danhSach;
+    }
+
+    // Quét và tự động hủy tất cả các lịch hẹn đã trễ quá 2 giờ
+    public int quetVaHuyLichHenTreQua2Gio() {
+        List<LichHen> ds = layDanhSachLichHenChoTiepNhan();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        int count = 0;
+        LichHenDAO lhDAO = new LichHenDAO();
+        for (LichHen lh : ds) {
+            if (lh.getNgayHen() != null && lh.getGioHen() != null) {
+                java.time.LocalDateTime thoiGianHen = java.time.LocalDateTime.of(lh.getNgayHen(), lh.getGioHen());
+                if (now.isAfter(thoiGianHen.plusHours(2))) {
+                    lhDAO.huyLichHenTuDong(lh.getMaLichHen(), "Hủy tự động: Khách đến trễ quá 2 giờ so với lịch hẹn");
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     // Ánh xạ một dòng ResultSet thành đối tượng PhieuDichVu

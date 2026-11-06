@@ -192,6 +192,28 @@ public class LichHenDAO {
         }
     }
 
+    // Tự động hủy lịch hẹn kèm ghi chú lý do (áp dụng khi đến trễ > 2h hoặc đến sớm > 2h cần tiếp nhận mới)
+    public boolean huyLichHenTuDong(String maLichHen, String lyDoHuy) {
+        String sql = """
+                UPDATE LichHen
+                SET trangThai = N'Đã hủy',
+                    ghiChu = CASE 
+                        WHEN ghiChu IS NULL OR LTRIM(RTRIM(ghiChu)) = '' THEN ?
+                        ELSE ghiChu + ' | ' + ?
+                    END
+                WHERE maLichHen = ? AND trangThai IN (N'Đã đặt', N'Đã xác nhận')
+                """;
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, lyDoHuy);
+            ps.setString(2, lyDoHuy);
+            ps.setString(3, maLichHen);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi tự động hủy lịch hẹn: " + e.getMessage(), e);
+        }
+    }
+
     // Lấy toàn bộ danh sách lịch hẹn
     public List<LichHen> layDanhSachLichHen() {
         String sql = """

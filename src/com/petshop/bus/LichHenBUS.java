@@ -331,13 +331,14 @@ public class LichHenBUS {
             throw new IllegalArgumentException("Lịch hẹn đã bị hủy, không thể kích hoạt lại trạng thái!");
         }
 
-        // Từ 'Đã đặt' chỉ được sang 'Đã xác nhận', 'Đã tiếp nhận' hoặc 'Đã hủy'
+        // Từ 'Đã đặt' có thể sang 'Đã xác nhận', 'Đã tiếp nhận', 'Đang thực hiện', 'Hoàn thành' hoặc 'Đã hủy'
         if ("Đã đặt".equalsIgnoreCase(trangThaiCu)) {
             if (!"Đã xác nhận".equalsIgnoreCase(trangThaiMoi)
                     && !"Đã tiếp nhận".equalsIgnoreCase(trangThaiMoi)
                     && !"Đang thực hiện".equalsIgnoreCase(trangThaiMoi)
+                    && !"Hoàn thành".equalsIgnoreCase(trangThaiMoi)
                     && !"Đã hủy".equalsIgnoreCase(trangThaiMoi)) {
-                throw new IllegalArgumentException("Lịch hẹn mới đặt chỉ có thể chuyển sang 'Đã xác nhận', 'Đã tiếp nhận' hoặc 'Đã hủy'!");
+                throw new IllegalArgumentException("Lịch hẹn mới đặt chỉ có thể chuyển sang 'Đã xác nhận', 'Hoàn thành' hoặc 'Đã hủy'!");
             }
         }
 

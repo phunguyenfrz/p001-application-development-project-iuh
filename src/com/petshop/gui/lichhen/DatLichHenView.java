@@ -23,7 +23,6 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 
-import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -41,7 +40,6 @@ import java.util.List;
 public class DatLichHenView extends VBox {
 
     private static final String CSS_CHUNG = "/com/petshop/gui/css/chung.css";
-    private static final DecimalFormat DINH_DANG_TIEN = new DecimalFormat("#,##0 'đ'");
 
     private final LichHenBUS controller = new LichHenBUS();
     private final Runnable khiDatThanhCong;
@@ -706,12 +704,11 @@ public class DatLichHenView extends VBox {
                     cboThuCung.requestFocus();
                 }
             } else {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Khách hàng mới");
-                alert.setHeaderText("Khách hàng chưa có trong hệ thống!");
-                alert.setContentText("Số điện thoại '" + sdt + "' chưa từng sử dụng dịch vụ tại cửa hàng.\nHệ thống sẽ mở hộp thoại thêm nhanh khách hàng mới.");
-                alert.showAndWait();
-                moCuaSoThemKhachNhanh(sdt);
+                khachHangHienTai = null;
+                txtKhachHangHienThi.setText("Chưa chọn khách hàng");
+                cboThuCung.getItems().clear();
+                hienThiCanhBao("Chưa có khách hàng với số điện thoại '" + sdt + "' trong hệ thống!\nVui lòng nhấn nút '+ Khách mới' để thêm khách hàng.");
+                txtTimKhach.requestFocus();
             }
         } catch (IllegalArgumentException ex) {
             hienThiCanhBao(ex.getMessage() != null ? ex.getMessage() : "Dữ liệu không hợp lệ!");

@@ -188,6 +188,18 @@ public class PhieuDichVuBUS {
         return phieuDichVuDAO.layDanhSachLichHenChoTiepNhan();
     }
 
+    // Quét và tự động hủy tất cả các lịch hẹn đã trễ quá 2 giờ
+    public int quetVaHuyLichHenTreQua2Gio() {
+        kiemTraQuyenXemPhieu();
+        return phieuDichVuDAO.quetVaHuyLichHenTreQua2Gio();
+    }
+
+    // Tự động hủy lịch hẹn kèm ghi chú lý do
+    public boolean huyLichHenTuDong(String maLichHen, String lyDoHuy) {
+        if (maLichHen == null || maLichHen.isBlank()) return false;
+        return new LichHenDAO().huyLichHenTuDong(maLichHen.trim(), lyDoHuy);
+    }
+
     // Lấy danh sách các lịch hẹn đang chờ tiếp nhận hôm nay của một khách hàng cụ thể
     public List<LichHen> layDanhSachLichHenChoTheoKhachHang(String maKhachHang) {
         if (maKhachHang == null || maKhachHang.trim().isEmpty()) {
@@ -195,11 +207,6 @@ public class PhieuDichVuBUS {
         }
         kiemTraQuyenXemPhieu();
         return phieuDichVuDAO.layDanhSachLichHenChoTheoKhachHang(maKhachHang.trim());
-    }
-
-    // Lấy danh sách mã các nhân viên đang bận làm dịch vụ (có phiếu Đang thực hiện)
-    public Set<String> laySetMaNhanVienDangBan() {
-        return phieuDichVuDAO.laySetMaNhanVienDangThucHien();
     }
 
     // Tự sinh mã phiếu dịch vụ mới tiếp theo
