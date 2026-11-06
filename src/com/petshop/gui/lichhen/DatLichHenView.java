@@ -61,7 +61,6 @@ public class DatLichHenView extends VBox {
     private final ComboBox<ThuCung> cboThuCung = new ComboBox<>();
     private final Button btnThemThuCungNhanh = new Button("+ Mới");
 
-    private final TextField txtNhanVienHienThi = new TextField();
     private final DatePicker dpNgayHen = new DatePicker();
     private final ComboBox<String> cboGioHen = new ComboBox<>();
     private final TextArea txtGhiChu = new TextArea();
@@ -195,7 +194,8 @@ public class DatLichHenView extends VBox {
         pnlCotTrai.add(new Label("Thú cưng (*):"), 0, 2);
         pnlCotTrai.add(pnlChonThuCung, 1, 2);
 
-        // --- CỘT PHẢI (NV phụ trách, Khách hàng hiển thị, Ngày & Giờ) ---
+        // --- CỘT PHẢI (Ngày & Giờ, Khách hàng hiển thị, Ghi chú / Lưu ý) ---
+        // Nhân viên phụ trách tự động lấy từ phiên đăng nhập SessionManager (lưu trữ ngầm, không hiển thị dư thừa)
         GridPane pnlCotPhai = new GridPane();
         pnlCotPhai.setHgap(10);
         pnlCotPhai.setVgap(8);
@@ -206,15 +206,6 @@ public class DatLichHenView extends VBox {
         cPhai2.setHgrow(Priority.ALWAYS);
         cPhai2.setFillWidth(true);
         pnlCotPhai.getColumnConstraints().addAll(cPhai1, cPhai2);
-
-        txtNhanVienHienThi.setEditable(false);
-        txtNhanVienHienThi.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #475569;");
-        txtNhanVienHienThi.setMaxWidth(Double.MAX_VALUE);
-
-        txtKhachHangHienThi.setEditable(false);
-        txtKhachHangHienThi.setPromptText("Chưa chọn khách hàng");
-        txtKhachHangHienThi.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #0f172a; -fx-font-weight: bold;");
-        txtKhachHangHienThi.setMaxWidth(Double.MAX_VALUE);
 
         // Ngày & Giờ
         dpNgayHen.setPromptText("dd/MM/yyyy");
@@ -245,27 +236,10 @@ public class DatLichHenView extends VBox {
         HBox pnlThoiGian = new HBox(8, dpNgayHen, lblGio, cboGioHen);
         pnlThoiGian.setAlignment(Pos.CENTER_LEFT);
 
-        pnlCotPhai.add(new Label("NV phụ trách:"), 0, 0);
-        pnlCotPhai.add(txtNhanVienHienThi, 1, 0);
-        pnlCotPhai.add(new Label("Khách hàng:"), 0, 1);
-        pnlCotPhai.add(txtKhachHangHienThi, 1, 1);
-        pnlCotPhai.add(new Label("Ngày & Giờ (*):"), 0, 2);
-        pnlCotPhai.add(pnlThoiGian, 1, 2);
-
-        // Đưa 2 cột vào pnlHaiCot
-        GridPane.setHgrow(pnlCotTrai, Priority.ALWAYS);
-        GridPane.setHgrow(pnlCotPhai, Priority.ALWAYS);
-        pnlHaiCot.add(pnlCotTrai, 0, 0);
-        pnlHaiCot.add(pnlCotPhai, 1, 0);
-
-        // HÀNG DƯỚI: Ghi chú / Lưu ý
-        HBox pnlGhiChu = new HBox(10);
-        pnlGhiChu.setAlignment(Pos.CENTER_LEFT);
-
-        Label lblGhiChu = new Label("Ghi chú / Lưu ý:");
-        lblGhiChu.setMinWidth(135);
-        lblGhiChu.setPrefWidth(135);
-        lblGhiChu.setMaxWidth(135);
+        txtKhachHangHienThi.setEditable(false);
+        txtKhachHangHienThi.setPromptText("Chưa chọn khách hàng");
+        txtKhachHangHienThi.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #0f172a; -fx-font-weight: bold;");
+        txtKhachHangHienThi.setMaxWidth(Double.MAX_VALUE);
 
         txtGhiChu.setPromptText("Ghi chú thêm (yêu cầu riêng của khách hàng, lưu ý thú cưng nhát nước...)");
         txtGhiChu.setPrefRowCount(1);
@@ -273,11 +247,21 @@ public class DatLichHenView extends VBox {
         txtGhiChu.setMaxHeight(36);
         txtGhiChu.setWrapText(true);
         txtGhiChu.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(txtGhiChu, Priority.ALWAYS);
 
-        pnlGhiChu.getChildren().addAll(lblGhiChu, txtGhiChu);
+        pnlCotPhai.add(new Label("Ngày & Giờ (*):"), 0, 0);
+        pnlCotPhai.add(pnlThoiGian, 1, 0);
+        pnlCotPhai.add(new Label("Khách hàng:"), 0, 1);
+        pnlCotPhai.add(txtKhachHangHienThi, 1, 1);
+        pnlCotPhai.add(new Label("Ghi chú / Lưu ý:"), 0, 2);
+        pnlCotPhai.add(txtGhiChu, 1, 2);
 
-        pnlKhung.getChildren().addAll(lblTieuDePhan, pnlHaiCot, pnlGhiChu);
+        // Đưa 2 cột vào pnlHaiCot
+        GridPane.setHgrow(pnlCotTrai, Priority.ALWAYS);
+        GridPane.setHgrow(pnlCotPhai, Priority.ALWAYS);
+        pnlHaiCot.add(pnlCotTrai, 0, 0);
+        pnlHaiCot.add(pnlCotPhai, 1, 0);
+
+        pnlKhung.getChildren().addAll(lblTieuDePhan, pnlHaiCot);
         return pnlKhung;
     }
 
@@ -550,6 +534,18 @@ public class DatLichHenView extends VBox {
                 }
                 lh.setKhachHang(khachHangHienTai);
                 lh.setThuCung(pet);
+                if (nhanVienHienTai == null) {
+                    TaiKhoan tk = SessionManager.getTaiKhoanHienTai();
+                    if (tk != null) {
+                        if (tk.getNhanVien() != null) {
+                            nhanVienHienTai = tk.getNhanVien();
+                        } else if (tk.getMaNhanVien() != null) {
+                            nhanVienHienTai = new NhanVien();
+                            nhanVienHienTai.setMaNhanVien(tk.getMaNhanVien());
+                            nhanVienHienTai.setHoTen(tk.getHoTenNhanVien() != null ? tk.getHoTenNhanVien() : tk.getTenDangNhap());
+                        }
+                    }
+                }
                 lh.setNhanVien(nhanVienHienTai);
                 lh.setNgayHen(ngay);
                 lh.setGioHen(gio);
@@ -603,12 +599,18 @@ public class DatLichHenView extends VBox {
             txtMaLichHen.setText("LH-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-000001");
         }
 
-        // Tự động gán nhân viên phụ trách từ phiên đăng nhập
+        // Tự động gán nhân viên phụ trách từ phiên đăng nhập (lưu trữ ngầm)
         TaiKhoan tk = SessionManager.getTaiKhoanHienTai();
-        if (tk != null && tk.getNhanVien() != null) {
-            nhanVienHienTai = tk.getNhanVien();
-            txtNhanVienHienThi.setText(nhanVienHienTai.getHoTen() + " (" + nhanVienHienTai.getMaNhanVien() + ")");
-        } else {
+        if (tk != null) {
+            if (tk.getNhanVien() != null) {
+                nhanVienHienTai = tk.getNhanVien();
+            } else if (tk.getMaNhanVien() != null && !tk.getMaNhanVien().isBlank()) {
+                nhanVienHienTai = new NhanVien();
+                nhanVienHienTai.setMaNhanVien(tk.getMaNhanVien());
+                nhanVienHienTai.setHoTen(tk.getHoTenNhanVien() != null ? tk.getHoTenNhanVien() : tk.getTenDangNhap());
+            }
+        }
+        if (nhanVienHienTai == null) {
             // Mặc định tìm nhân viên đầu tiên trong danh sách chăm sóc nếu chưa có phiên
             try {
                 List<String[]> dsNv = controller.layDanhSachNhanVienChamSoc();
@@ -616,7 +618,6 @@ public class DatLichHenView extends VBox {
                     nhanVienHienTai = new NhanVien();
                     nhanVienHienTai.setMaNhanVien(dsNv.get(0)[0]);
                     nhanVienHienTai.setHoTen(dsNv.get(0)[1]);
-                    txtNhanVienHienThi.setText(nhanVienHienTai.getHoTen() + " (" + nhanVienHienTai.getMaNhanVien() + ")");
                 }
             } catch (Exception ignored) {}
         }
