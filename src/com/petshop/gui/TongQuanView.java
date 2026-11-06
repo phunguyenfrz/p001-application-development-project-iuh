@@ -1,232 +1,345 @@
 package com.petshop.gui;
 
 import com.petshop.bus.TongQuanBUS;
-import com.petshop.entity.HoatDongGanDay;
+import com.petshop.bus.XacThucBUS;
 import com.petshop.entity.TaiKhoan;
 import com.petshop.entity.ThongKeTongQuan;
-import javafx.beans.binding.DoubleBinding;
-import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.Cursor;
+import javafx.scene.Node;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.PieChart;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
+import java.util.Map;
 
 /**
- * Màn hình Tổng quan Dashboard (TongQuanView).
- * Sử dụng bộ màu mặc định chuẩn chung.css đồng bộ với toàn hệ thống.
- * Bảng Lịch hẹn & Hoạt động trong ngày được cố định cột (không kéo ra vô) và tự động dàn đều 100% chiều rộng màn hình.
+ * Màn hình Tổng quan (Dashboard) hiển thị các thẻ KPI tương tác và biểu đồ trực quan.
+ * - Click thẻ "DOANH THU" -> Mở màn Thống kê doanh thu (BaoCaoDoanhThuHoaDonView).
+ * - Click thẻ "LỊCH HẸN"  -> Mở màn Tìm kiếm lịch hẹn (lọc hôm nay).
+ * - Click thẻ "TỒN KHO"   -> Mở màn Theo dõi tồn kho (lọc hàng sắp hết).
+ * - Biểu đồ cột (BarChart): Thống kê doanh thu 7 ngày gần nhất.
+ * - Biểu đồ tròn (PieChart): Cơ cấu doanh thu Bán hàng vs Dịch vụ Spa.
  */
-public class TongQuanView extends ScrollPane {
+public class TongQuanView extends VBox {
 
-    private final Label lblXinChao = new Label();
-    private final Label lblMoTa = new Label("Hệ thống quản lý cửa hàng thú cưng Happy Tails theo mô hình Hướng Đối Tượng.");
-    private final Label lblNgayHienTai = new Label();
+    private static final DecimalFormat DINH_DANG_TIEN = new DecimalFormat("#,##0");
 
-    private final Label lblDoanhThuGiaTri = new Label("0 đ");
-    private final Label lblLichHenGiaTri = new Label("0");
-    private final Label lblTonKhoGiaTri = new Label("0");
-
-    private final TableView<HoatDongGanDay> tblHoatDong = new TableView<>();
-    private final Button btnLamMoi = new Button("Làm mới dữ liệu");
-
-    private final TongQuanBUS tongQuanController = new TongQuanBUS();
-    private final DecimalFormat dinhDangTien = new DecimalFormat("#,##0 đ");
+    private final TongQuanBUS tongQuanService;
+    private Runnable xuLyClickDoanhThu;
+    private Runnable xuLyClickLichHen;
+    private Runnable xuLyClickTonKho;
 
     public TongQuanView() {
-        setFitToWidth(true);
-        setFitToHeight(true);
-        setStyle("-fx-background-color: #f4f6f8; -fx-background: #f4f6f8; -fx-border-color: transparent;");
-
-        VBox pnlNoiDung = new VBox(16);
-        pnlNoiDung.getStyleClass().add("khung-phan-he");
-
-        // 1. Header lời chào và ngày làm việc
-        HBox pnlHeader = taoPhanHeader();
-
-        // 2. Các thẻ thống kê KPI (Màu mặc định chuẩn chung.css)
-        HBox pnlTheThongKe = taoCacTheThongKe();
-
-        // 3. Khối danh sách hoạt động / lịch hẹn hôm nay
-        VBox pnlBangHoatDong = taoBangHoatDong();
-        VBox.setVgrow(pnlBangHoatDong, Priority.ALWAYS);
-
-        pnlNoiDung.getChildren().addAll(pnlHeader, pnlTheThongKe, pnlBangHoatDong);
-        setContent(pnlNoiDung);
-
-        // Tải dữ liệu ban đầu
-        taiDuLieu();
+        this(null, null, null);
     }
 
-    private HBox taoPhanHeader() {
-        HBox pnlHeader = new HBox(16);
-        pnlHeader.setAlignment(Pos.CENTER_LEFT);
+    public TongQuanView(Runnable xuLyClickDoanhThu, Runnable xuLyClickLichHen, Runnable xuLyClickTonKho) {
+        this.tongQuanService = new TongQuanBUS();
+        this.xuLyClickDoanhThu = xuLyClickDoanhThu;
+        this.xuLyClickLichHen = xuLyClickLichHen;
+        this.xuLyClickTonKho = xuLyClickTonKho;
 
-        TaiKhoan tk = tongQuanController.layTaiKhoanHienTai();
-        String tenNhanVien = (tk != null && tk.getHoTenNhanVien() != null) ? tk.getHoTenNhanVien() : "Quản trị hệ thống";
-        lblXinChao.setText("Xin chào, " + tenNhanVien);
-        lblXinChao.getStyleClass().add("tieu-de-phan-he");
+        getStyleClass().add("khung-phan-he");
+        setSpacing(18);
+        setPadding(new Insets(20, 24, 20, 24));
 
-        lblMoTa.getStyleClass().add("mo-ta-phan-he");
+        TaiKhoan tk = new XacThucBUS().getTaiKhoanHienTai();
+        String hoTen = (tk != null && tk.getHoTenNhanVien() != null) ? tk.getHoTenNhanVien() : "Nhân viên";
+        String tenVaiTro = (tk != null && tk.getPhanQuyen() != null) ? tk.getPhanQuyen().getTenHienThi() : "Quản trị viên";
+        String ngayHomNay = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
-        VBox pnlLoiChao = new VBox(4, lblXinChao, lblMoTa);
+        ThongKeTongQuan thongKe = taiThongKeAnToan();
 
-        Region pnlKhoangCach = new Region();
-        HBox.setHgrow(pnlKhoangCach, Priority.ALWAYS);
+        // 1. Khung chào mừng
+        HBox pnlChaoMung = new HBox(16);
+        pnlChaoMung.setAlignment(Pos.CENTER_LEFT);
+        pnlChaoMung.setPadding(new Insets(18, 22, 18, 22));
+        pnlChaoMung.setStyle("-fx-background-color: white; -fx-background-radius: 10px; -fx-border-color: #eaecf0; -fx-border-radius: 10px;");
 
-        String ngayChuoi = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-        lblNgayHienTai.setText("Ngày: " + ngayChuoi);
-        lblNgayHienTai.getStyleClass().add("hop-noi-dung");
-        lblNgayHienTai.setStyle("-fx-padding: 6 12; -fx-font-weight: bold;");
+        VBox pnlThongTinChao = new VBox(5);
+        Label lblChao = new Label("Xin chào, " + hoTen + "!");
+        lblChao.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #101828;");
+        Label lblPhuDe = new Label("Vai trò hiện tại: " + tenVaiTro + "  •  Ngày làm việc: " + ngayHomNay);
+        lblPhuDe.setStyle("-fx-font-size: 13px; -fx-text-fill: #667085;");
+        pnlThongTinChao.getChildren().addAll(lblChao, lblPhuDe);
 
-        btnLamMoi.getStyleClass().add("nut-phu");
-        btnLamMoi.setOnAction(e -> taiDuLieu());
+        Region pnlKhoangTrong = new Region();
+        HBox.setHgrow(pnlKhoangTrong, Priority.ALWAYS);
 
-        pnlHeader.getChildren().addAll(pnlLoiChao, pnlKhoangCach, btnLamMoi, lblNgayHienTai);
-        return pnlHeader;
-    }
+        Label lblTrangThai = new Label("Hệ thống sẵn sàng");
+        lblTrangThai.setStyle("-fx-background-color: #ecfdf3; -fx-text-fill: #027a48; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 6 14 6 14; -fx-background-radius: 16px;");
 
-    private HBox taoCacTheThongKe() {
-        HBox pnlCacThe = new HBox(16);
+        pnlChaoMung.getChildren().addAll(pnlThongTinChao, pnlKhoangTrong, lblTrangThai);
 
-        // Thẻ 1: Doanh thu hôm nay
-        VBox pnlTheDoanhThu = taoTheKpiMacDinh(
+        // 2. Hàng 3 thẻ KPI tương tác (Click mở màn hình tương ứng)
+        HBox pnlThongKe = new HBox(16);
+        String chuoiDoanhThu = DINH_DANG_TIEN.format(thongKe.getDoanhThuHomNay()) + " ₫";
+        String chuoiPhuDoanhThu = thongKe.getSoHoaDonHomNay() + " hóa đơn đã thanh toán (Nhấn để xem báo cáo)";
+        String chuoiLichHen = thongKe.getTongSoLichHenHomNay() + " lịch";
+        String chuoiPhuLichHen = thongKe.getSoLichHenChoXuLy() + " lịch đang chờ xử lý (Nhấn để tra cứu hôm nay)";
+        String chuoiTonKho = thongKe.getSoSanPhamSapHet() + " mặt hàng";
+        String chuoiPhuTonKho = "Dưới ngưỡng tồn tối thiểu (Nhấn để kiểm tra kho)";
+
+        VBox theDoanhThu = taoTheChiSo(
                 "DOANH THU HÔM NAY",
-                lblDoanhThuGiaTri,
-                "Tổng thanh toán thực tế trong ngày (đã trừ hoàn đổi trả)"
+                chuoiDoanhThu,
+                chuoiPhuDoanhThu,
+                "#f97316",
+                "Nhấn để mở màn hình Thống kê doanh thu hóa đơn",
+                () -> kichHoatDieuHuongDoanhThu()
         );
-
-        // Thẻ 2: Lịch hẹn hôm nay
-        VBox pnlTheLichHen = taoTheKpiMacDinh(
+        VBox theLichHen = taoTheChiSo(
                 "LỊCH HẸN HÔM NAY",
-                lblLichHenGiaTri,
-                "Lịch hẹn dịch vụ chăm sóc"
+                chuoiLichHen,
+                chuoiPhuLichHen,
+                "#2563eb",
+                "Nhấn để mở màn hình Tìm kiếm lịch hẹn hôm nay",
+                () -> kichHoatDieuHuongLichHen()
         );
-
-        // Thẻ 3: Sản phẩm cần nhập thêm
-        VBox pnlTheTonKho = taoTheKpiMacDinh(
+        VBox theTonKho = taoTheChiSo(
                 "SẢN PHẨM CẦN NHẬP THÊM",
-                lblTonKhoGiaTri,
-                "Hết hàng hoặc tồn dưới ngưỡng an toàn"
+                chuoiTonKho,
+                chuoiPhuTonKho,
+                "#dc2626",
+                "Nhấn để mở màn hình Theo dõi tồn kho (lọc hàng sắp hết)",
+                () -> kichHoatDieuHuongTonKho()
         );
 
-        pnlCacThe.getChildren().addAll(pnlTheDoanhThu, pnlTheLichHen, pnlTheTonKho);
-        return pnlCacThe;
+        pnlThongKe.getChildren().addAll(theDoanhThu, theLichHen, theTonKho);
+
+        // 3. Hàng Biểu đồ trực quan (BarChart 7 ngày & PieChart cơ cấu doanh thu)
+        HBox pnlBieuDo = taoKhuVucBieuDo();
+        VBox.setVgrow(pnlBieuDo, Priority.ALWAYS);
+
+        // 4. Hướng dẫn thao tác nhanh
+        VBox pnlHuongDan = new VBox(8);
+        pnlHuongDan.setPadding(new Insets(16, 22, 16, 22));
+        pnlHuongDan.setStyle("-fx-background-color: white; -fx-background-radius: 10px; -fx-border-color: #eaecf0; -fx-border-radius: 10px;");
+
+        Label lblTieuDeHuongDan = new Label("Hướng dẫn thao tác nhanh");
+        lblTieuDeHuongDan.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #101828;");
+
+        Label lblDong1 = new Label("• Nhấp trực tiếp vào 3 thẻ chỉ số phía trên (Doanh thu, Lịch hẹn, Tồn kho) để chuyển nhanh đến màn hình nghiệp vụ chi tiết.");
+        Label lblDong2 = new Label("• Sử dụng thanh điều hướng bên trái để truy cập các phân hệ: Khách hàng, Thú cưng, Lịch hẹn, Hóa đơn, Sản phẩm...");
+        lblDong1.setStyle("-fx-text-fill: #475467; -fx-font-size: 12.5px;");
+        lblDong2.setStyle("-fx-text-fill: #475467; -fx-font-size: 12.5px;");
+
+        pnlHuongDan.getChildren().addAll(lblTieuDeHuongDan, lblDong1, lblDong2);
+
+        VBox noiDungChinh = new VBox(16, pnlChaoMung, pnlThongKe, pnlBieuDo, pnlHuongDan);
+        ScrollPane scroll = new ScrollPane(noiDungChinh);
+        scroll.setFitToWidth(true);
+        scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
+        VBox.setVgrow(scroll, Priority.ALWAYS);
+
+        getChildren().add(scroll);
     }
 
-    private VBox taoTheKpiMacDinh(String tieuDe, Label lblGiaTri, String moTa) {
-        VBox card = new VBox(6);
-        card.getStyleClass().add("hop-noi-dung");
-        card.setPadding(new Insets(16));
-        HBox.setHgrow(card, Priority.ALWAYS);
-        card.setMaxWidth(Double.MAX_VALUE);
+    private HBox taoKhuVucBieuDo() {
+        HBox khungBieuDo = new HBox(16);
+        khungBieuDo.setAlignment(Pos.CENTER);
 
-        Label lblTieuDe = new Label(tieuDe);
-        lblTieuDe.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #64748b;");
+        VBox cardBarChart = taoBieuDoDoanhThu7Ngay();
+        VBox cardPieChart = taoBieuDoCoCauDoanhThu();
 
-        lblGiaTri.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
+        HBox.setHgrow(cardBarChart, Priority.ALWAYS);
+        HBox.setHgrow(cardPieChart, Priority.ALWAYS);
+        cardBarChart.setMaxWidth(Double.MAX_VALUE);
+        cardPieChart.setMaxWidth(Double.MAX_VALUE);
 
-        Label lblMoTa = new Label(moTa);
-        lblMoTa.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748b;");
-
-        card.getChildren().addAll(lblTieuDe, lblGiaTri, lblMoTa);
-        return card;
-    }
-
-    private VBox taoBangHoatDong() {
-        VBox pnlKhungBang = new VBox(10);
-        pnlKhungBang.getStyleClass().add("hop-noi-dung");
-        pnlKhungBang.setPadding(new Insets(16, 18, 18, 18));
-
-        Label lblTieuDeBang = new Label("Lịch hẹn & Hoạt động trong ngày");
-        lblTieuDeBang.setStyle("-fx-font-size: 15px; -fx-font-weight: bold;");
-
-        Label lblMoTaBang = new Label("Tổng hợp toàn bộ các lịch hẹn dịch vụ, hóa đơn thanh toán và phiếu đổi trả phát sinh trong ngày.");
-        lblMoTaBang.getStyleClass().add("mo-ta-phan-he");
-
-        tblHoatDong.getStyleClass().add("bang-du-lieu");
-        tblHoatDong.setMaxWidth(Double.MAX_VALUE);
-        VBox.setVgrow(tblHoatDong, Priority.ALWAYS);
-
-        // Tính chiều rộng khả dụng của bảng để chia đều 100% full màn hình và cố định không cho kéo cột
-        DoubleBinding chieuRongKhaDung = tblHoatDong.widthProperty().subtract(18);
-
-        // Cột 1: Thời gian (12%)
-        TableColumn<HoatDongGanDay, String> colThoiGian = new TableColumn<>("Thời gian");
-        colThoiGian.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getThoiGian()));
-        colThoiGian.setStyle("-fx-alignment: center;");
-        colThoiGian.setResizable(false);
-        colThoiGian.setReorderable(false);
-        colThoiGian.prefWidthProperty().bind(chieuRongKhaDung.multiply(0.12));
-
-        // Cột 2: Phân hệ / Hoạt động (18%)
-        TableColumn<HoatDongGanDay, String> colLoai = new TableColumn<>("Phân hệ / Hoạt động");
-        colLoai.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getLoaiHoatDong()));
-        colLoai.setStyle("-fx-alignment: center; -fx-font-weight: bold;");
-        colLoai.setResizable(false);
-        colLoai.setReorderable(false);
-        colLoai.prefWidthProperty().bind(chieuRongKhaDung.multiply(0.18));
-
-        // Cột 3: Khách hàng / Thú cưng (22%)
-        TableColumn<HoatDongGanDay, String> colDoiTuong = new TableColumn<>("Khách hàng / Thú cưng");
-        colDoiTuong.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDoiTuong()));
-        colDoiTuong.setResizable(false);
-        colDoiTuong.setReorderable(false);
-        colDoiTuong.prefWidthProperty().bind(chieuRongKhaDung.multiply(0.22));
-
-        // Cột 4: Chi tiết giao dịch (33%)
-        TableColumn<HoatDongGanDay, String> colChiTiet = new TableColumn<>("Chi tiết giao dịch");
-        colChiTiet.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getChiTiet()));
-        colChiTiet.setResizable(false);
-        colChiTiet.setReorderable(false);
-        colChiTiet.prefWidthProperty().bind(chieuRongKhaDung.multiply(0.33));
-
-        // Cột 5: Trạng thái (15%)
-        TableColumn<HoatDongGanDay, String> colTrangThai = new TableColumn<>("Trạng thái");
-        colTrangThai.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getTrangThai()));
-        colTrangThai.setStyle("-fx-alignment: center; -fx-font-weight: bold;");
-        colTrangThai.setResizable(false);
-        colTrangThai.setReorderable(false);
-        colTrangThai.prefWidthProperty().bind(chieuRongKhaDung.multiply(0.15));
-
-        tblHoatDong.getColumns().setAll(List.of(colThoiGian, colLoai, colDoiTuong, colChiTiet, colTrangThai));
-        tblHoatDong.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-        tblHoatDong.setPlaceholder(new Label("Chưa có phát sinh hoạt động nào trong ngày hôm nay."));
-        tblHoatDong.setPrefHeight(440);
-
-        pnlKhungBang.getChildren().addAll(lblTieuDeBang, lblMoTaBang, tblHoatDong);
-        return pnlKhungBang;
+        khungBieuDo.getChildren().addAll(cardBarChart, cardPieChart);
+        return khungBieuDo;
     }
 
     /**
-     * Nạp dữ liệu thống kê từ Controller và cập nhật lên giao diện.
+     * Biểu đồ cột (BarChart): Thống kê doanh thu 7 ngày gần nhất.
      */
-    public void taiDuLieu() {
+    private VBox taoBieuDoDoanhThu7Ngay() {
+        VBox card = new VBox(10);
+        card.setPadding(new Insets(16, 18, 16, 18));
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 10px; -fx-border-color: #eaecf0; -fx-border-radius: 10px;");
+
+        Label lblTieuDe = new Label("BIỂU ĐỒ DOANH THU 7 NGÀY GẦN NHẤT");
+        lblTieuDe.setStyle("-fx-font-size: 13.5px; -fx-font-weight: bold; -fx-text-fill: #101828;");
+
+        CategoryAxis trucNgay = new CategoryAxis();
+        trucNgay.setLabel("Ngày");
+
+        NumberAxis trucTien = new NumberAxis();
+        trucTien.setLabel("Doanh thu (VNĐ)");
+
+        BarChart<String, Number> barChart = new BarChart<>(trucNgay, trucTien);
+        barChart.setLegendVisible(false);
+        barChart.setAnimated(false);
+        barChart.setPrefHeight(270);
+        VBox.setVgrow(barChart, Priority.ALWAYS);
+
+        XYChart.Series<String, Number> chuoiDuLieu = new XYChart.Series<>();
+        chuoiDuLieu.setName("Doanh thu thuần");
+
         try {
-            ThongKeTongQuan thongKe = tongQuanController.layThongKeTongQuan();
-            if (thongKe != null) {
-                lblDoanhThuGiaTri.setText(dinhDangTien.format(thongKe.getDoanhThuHomNay()));
-                lblLichHenGiaTri.setText(String.valueOf(thongKe.getSoLichHenHomNay()));
-                lblTonKhoGiaTri.setText(String.valueOf(thongKe.getSoSanPhamSapHet()));
+            Map<String, Double> duLieu7Ngay = tongQuanService.layDoanhThu7NgayGanNhat();
+            for (Map.Entry<String, Double> muc : duLieu7Ngay.entrySet()) {
+                double giaTri = muc.getValue() != null ? muc.getValue() : 0.0;
+                chuoiDuLieu.getData().add(new XYChart.Data<>(muc.getKey(), giaTri));
             }
+        } catch (Exception ignored) {}
 
-            List<HoatDongGanDay> dsHoatDong = tongQuanController.layHoatDongGanDay();
-            tblHoatDong.getItems().setAll(dsHoatDong);
+        barChart.getData().add(chuoiDuLieu);
 
-        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
-            hienThiCanhBao("Lỗi tải dữ liệu", "Không thể lấy số liệu thống kê: " + ex.getMessage());
+        card.getChildren().addAll(lblTieuDe, barChart);
+        return card;
+    }
+
+    /**
+     * Biểu đồ tròn (PieChart): Cơ cấu doanh thu Bán hàng vs Dịch vụ Spa.
+     */
+    private VBox taoBieuDoCoCauDoanhThu() {
+        VBox card = new VBox(10);
+        card.setPadding(new Insets(16, 18, 16, 18));
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 10px; -fx-border-color: #eaecf0; -fx-border-radius: 10px;");
+
+        Label lblTieuDe = new Label("CƠ CẤU DOANH THU: BÁN HÀNG VS DỊCH VỤ SPA");
+        lblTieuDe.setStyle("-fx-font-size: 13.5px; -fx-font-weight: bold; -fx-text-fill: #101828;");
+
+        ObservableList<PieChart.Data> duLieuPie = FXCollections.observableArrayList();
+        double dtBanHang = 0.0;
+        double dtDichVu = 0.0;
+
+        try {
+            Map<String, Double> coCau = tongQuanService.layCoCauDoanhThuBanHangVaDichVu();
+            dtBanHang = coCau.getOrDefault("Bán hàng", 0.0);
+            dtDichVu = coCau.getOrDefault("Dịch vụ Spa", 0.0);
+        } catch (Exception ignored) {}
+
+        double tongCoCau = dtBanHang + dtDichVu;
+        if (tongCoCau <= 0) {
+            duLieuPie.add(new PieChart.Data("Bán hàng (0 ₫)", 1));
+            duLieuPie.add(new PieChart.Data("Dịch vụ Spa (0 ₫)", 1));
+        } else {
+            double ptBanHang = (dtBanHang * 100.0) / tongCoCau;
+            double ptDichVu = (dtDichVu * 100.0) / tongCoCau;
+            duLieuPie.add(new PieChart.Data(
+                    String.format("Bán hàng (%.1f%% - %s ₫)", ptBanHang, DINH_DANG_TIEN.format(dtBanHang)),
+                    dtBanHang));
+            duLieuPie.add(new PieChart.Data(
+                    String.format("Dịch vụ Spa (%.1f%% - %s ₫)", ptDichVu, DINH_DANG_TIEN.format(dtDichVu)),
+                    dtDichVu));
+        }
+
+        PieChart pieChart = new PieChart(duLieuPie);
+        pieChart.setLabelsVisible(true);
+        pieChart.setLegendVisible(true);
+        pieChart.setAnimated(false);
+        pieChart.setPrefHeight(270);
+        VBox.setVgrow(pieChart, Priority.ALWAYS);
+
+        card.getChildren().addAll(lblTieuDe, pieChart);
+        return card;
+    }
+
+    private ThongKeTongQuan taiThongKeAnToan() {
+        try {
+            return tongQuanService.layThongKeHomNay();
+        } catch (Exception e) {
+            return new ThongKeTongQuan();
         }
     }
 
-    private void hienThiCanhBao(String tieuDe, String noiDung) {
-        Alert thongBao = new Alert(Alert.AlertType.WARNING);
-        thongBao.setTitle(tieuDe);
-        thongBao.setHeaderText(null);
-        thongBao.setContentText(noiDung);
-        thongBao.showAndWait();
+    private VBox taoTheChiSo(String tieuDe, String giaTri, String ghiChu, String mauNhan,
+                             String goiY, Runnable suKienClick) {
+        VBox the = new VBox(8);
+        the.setPadding(new Insets(18, 20, 18, 20));
+        String styleMacDinh = "-fx-background-color: white; -fx-background-radius: 10px; -fx-border-color: #eaecf0; -fx-border-radius: 10px; -fx-cursor: hand;";
+        String styleHover = "-fx-background-color: #f8fafc; -fx-background-radius: 10px; -fx-border-color: " + mauNhan + "; -fx-border-width: 1.5px; -fx-border-radius: 10px; -fx-cursor: hand;";
+
+        the.setStyle(styleMacDinh);
+        the.setCursor(Cursor.HAND);
+        HBox.setHgrow(the, Priority.ALWAYS);
+        the.setMaxWidth(Double.MAX_VALUE);
+
+        if (goiY != null && !goiY.isBlank()) {
+            Tooltip.install(the, new Tooltip(goiY));
+        }
+
+        the.setOnMouseEntered(e -> the.setStyle(styleHover));
+        the.setOnMouseExited(e -> the.setStyle(styleMacDinh));
+        the.setOnMouseClicked(e -> {
+            if (suKienClick != null) {
+                suKienClick.run();
+            }
+        });
+
+        Label lblTieuDe = new Label(tieuDe);
+        lblTieuDe.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #667085;");
+
+        Label lblGiaTri = new Label(giaTri);
+        lblGiaTri.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + mauNhan + ";");
+
+        Label lblGhiChu = new Label(ghiChu);
+        lblGhiChu.setStyle("-fx-font-size: 12px; -fx-text-fill: #98a2b3;");
+
+        the.getChildren().addAll(lblTieuDe, lblGiaTri, lblGhiChu);
+        return the;
+    }
+
+    private void kichHoatDieuHuongDoanhThu() {
+        if (xuLyClickDoanhThu != null) {
+            xuLyClickDoanhThu.run();
+            return;
+        }
+        ManHinhChinhView mhc = timManHinhChinh();
+        if (mhc != null) {
+            mhc.moManHinhThongKeDoanhThuTuDashboard();
+        }
+    }
+
+    private void kichHoatDieuHuongLichHen() {
+        if (xuLyClickLichHen != null) {
+            xuLyClickLichHen.run();
+            return;
+        }
+        ManHinhChinhView mhc = timManHinhChinh();
+        if (mhc != null) {
+            mhc.moManHinhTimKiemLichHenHomNayTuDashboard();
+        }
+    }
+
+    private void kichHoatDieuHuongTonKho() {
+        if (xuLyClickTonKho != null) {
+            xuLyClickTonKho.run();
+            return;
+        }
+        ManHinhChinhView mhc = timManHinhChinh();
+        if (mhc != null) {
+            mhc.moManHinhTheoDoiTonKhoSapHetTuDashboard();
+        }
+    }
+
+    private ManHinhChinhView timManHinhChinh() {
+        Node hienTai = this.getParent();
+        while (hienTai != null) {
+            if (hienTai instanceof ManHinhChinhView mhc) {
+                return mhc;
+            }
+            hienTai = hienTai.getParent();
+        }
+        return null;
     }
 }

@@ -25,6 +25,10 @@ public class TheoDoiTonKhoView extends VBox {
     private final TableView<SanPham> tblDanhSach = new TableView<>();
 
     public TheoDoiTonKhoView() {
+        this(false);
+    }
+
+    public TheoDoiTonKhoView(boolean chiLocSapHet) {
         setSpacing(14);
         getStyleClass().add("khung-phan-he");
 
@@ -46,6 +50,12 @@ public class TheoDoiTonKhoView extends VBox {
         pnlKhungChinh.getChildren().addAll(pnlThanhCongCu, pnlBang);
         getChildren().addAll(pnlTieuDeMan, pnlKhungChinh);
 
+        chkChiLocSapHet.setSelected(chiLocSapHet);
+        taiDuLieu();
+    }
+
+    public void locHangSapHet() {
+        chkChiLocSapHet.setSelected(true);
         taiDuLieu();
     }
 

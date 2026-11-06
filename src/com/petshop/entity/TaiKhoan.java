@@ -83,6 +83,11 @@ public class TaiKhoan {
     }
 
     public NhanVien getNhanVien() {
+        if (nhanVien == null && maNhanVien != null && !maNhanVien.isBlank()) {
+            nhanVien = new NhanVien();
+            nhanVien.setMaNhanVien(maNhanVien);
+            nhanVien.setHoTen(hoTenNhanVien);
+        }
         return nhanVien;
     }
 
@@ -90,9 +95,13 @@ public class TaiKhoan {
         this.nhanVien = nhanVien;
         if (nhanVien != null) {
             this.maNhanVien = nhanVien.getMaNhanVien();
-            this.hoTenNhanVien = nhanVien.getHoTen();
+            if (nhanVien.getHoTen() != null && !nhanVien.getHoTen().isBlank()) {
+                this.hoTenNhanVien = nhanVien.getHoTen();
+            }
         }
     }
+
+
 
     public String getMaNhanVien() {
         return nhanVien != null ? nhanVien.getMaNhanVien() : maNhanVien;
@@ -135,12 +144,20 @@ public class TaiKhoan {
     }
 
     public String getHoTenNhanVien() {
-        return nhanVien != null ? nhanVien.getHoTen() : hoTenNhanVien;
+        if (nhanVien != null && nhanVien.getHoTen() != null && !nhanVien.getHoTen().isBlank()) {
+            return nhanVien.getHoTen();
+        }
+        return hoTenNhanVien;
     }
 
     public void setHoTenNhanVien(String hoTenNhanVien) {
         this.hoTenNhanVien = hoTenNhanVien;
+        if (this.nhanVien != null) {
+            this.nhanVien.setHoTen(hoTenNhanVien);
+        }
     }
+
+
 
     // Các phương thức nghiệp vụ khớp với Class Diagram
     public void doiMatKhau(String matKhauMoi) {

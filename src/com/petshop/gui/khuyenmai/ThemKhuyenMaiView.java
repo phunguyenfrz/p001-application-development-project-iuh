@@ -15,8 +15,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.math.BigDecimal;
-
 /**
  * Màn hình nhỏ nhập chương trình khuyến mãi mới.
  */
@@ -102,9 +100,9 @@ public class ThemKhuyenMaiView extends VBox {
         if (chuoiGiam.isEmpty()) {
             throw new IllegalArgumentException("Vui lòng nhập mức giảm!");
         }
-        BigDecimal mucGiam;
+        double mucGiam;
         try {
-            mucGiam = new BigDecimal(chuoiGiam);
+            mucGiam = Double.parseDouble(chuoiGiam);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Mức giảm phải là số hợp lệ!");
         }

@@ -400,8 +400,4 @@ public class HoaDonBUS {
     public double tinhSoTienGiam(String maKhuyenMai, double tongTienGoc) {
         return khuyenMaiService.tinhSoTienGiam(maKhuyenMai, tongTienGoc);
     }
-
-    public BigDecimal tinhSoTienGiam(String maKhuyenMai, BigDecimal tongTienGoc) {
-        return khuyenMaiService.tinhSoTienGiam(maKhuyenMai, tongTienGoc);
-    }
 }

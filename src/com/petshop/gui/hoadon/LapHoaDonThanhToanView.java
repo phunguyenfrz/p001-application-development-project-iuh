@@ -1228,6 +1228,7 @@ public class LapHoaDonThanhToanView extends VBox {
     // TÍNH TOÁN TIỀN TỆ & ĐIỂM TÍCH LŨY (Điều 1 & 2 IUH: 100% double)
     // =========================================================================
 
+
     private void capNhatTongTienThanhToan() {
         if (dangCapNhatTien) return;
         dangCapNhatTien = true;

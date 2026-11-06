@@ -1,25 +1,24 @@
 package com.petshop.entity;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * Thực thể chương trình khuyến mãi áp dụng cho tổng tiền hóa đơn.
+ * Thực thể đại diện cho bảng KhuyenMai trong cơ sở dữ liệu.
+ * Chuẩn hóa theo Bộ chỉ thị kỹ thuật IUH: sử dụng kiểu nguyên thủy double cho tỷ lệ giảm và tính tiền giảm.
  */
 public class KhuyenMai {
 
     private String maKhuyenMai;
     private String tenChuongTrinh;
-    private BigDecimal phanTramGiam;
+    private double phanTramGiam;
     private LocalDate ngayBatDau;
     private LocalDate ngayKetThuc;
     private boolean trangThai;
 
     public KhuyenMai() {
-        this.trangThai = true;
     }
 
-    public KhuyenMai(String maKhuyenMai, String tenChuongTrinh, BigDecimal phanTramGiam,
+    public KhuyenMai(String maKhuyenMai, String tenChuongTrinh, double phanTramGiam,
                      LocalDate ngayBatDau, LocalDate ngayKetThuc, boolean trangThai) {
         this.maKhuyenMai = maKhuyenMai;
         this.tenChuongTrinh = tenChuongTrinh;
@@ -27,6 +26,16 @@ public class KhuyenMai {
         this.ngayBatDau = ngayBatDau;
         this.ngayKetThuc = ngayKetThuc;
         this.trangThai = trangThai;
+    }
+
+    /**
+     * Phương thức tính số tiền được giảm trên tổng hóa đơn (thuộc tính dẫn xuất).
+     */
+    public double tinhTienGiam(double tongTien) {
+        if (tongTien <= 0 || phanTramGiam <= 0) {
+            return 0.0;
+        }
+        return tongTien * phanTramGiam / 100.0;
     }
 
     public String getMaKhuyenMai() {
@@ -53,11 +62,11 @@ public class KhuyenMai {
         this.tenChuongTrinh = tenKhuyenMai;
     }
 
-    public BigDecimal getPhanTramGiam() {
+    public double getPhanTramGiam() {
         return phanTramGiam;
     }
 
-    public void setPhanTramGiam(BigDecimal phanTramGiam) {
+    public void setPhanTramGiam(double phanTramGiam) {
         this.phanTramGiam = phanTramGiam;
     }
 

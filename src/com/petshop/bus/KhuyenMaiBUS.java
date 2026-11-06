@@ -3,12 +3,12 @@ package com.petshop.bus;
 import com.petshop.dao.KhuyenMaiDAO;
 import com.petshop.entity.KhuyenMai;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
 /**
  * Xử lý nghiệp vụ, kiểm tra dữ liệu và phân quyền cho khuyến mãi.
+ * Tuân thủ 100% kiểu nguyên thủy double (0% BigDecimal, 0% javafx.*).
  */
 public class KhuyenMaiBUS {
 
@@ -93,29 +93,16 @@ public class KhuyenMaiBUS {
                 && !homNay.isAfter(khuyenMai.getNgayKetThuc());
     }
 
-    // Hàm hỗ trợ tính giảm giá trên tổng hóa đơn; một hóa đơn chỉ áp dụng tối đa một mã.
+    // Hàm hỗ trợ tính giảm giá trên tổng hóa đơn bằng kiểu nguyên thủy double; một hóa đơn chỉ áp dụng tối đa một mã.
     public double tinhSoTienGiam(String maKhuyenMai, double tongHoaDon) {
-        if (tongHoaDon <= 0) {
+        if (Double.isNaN(tongHoaDon) || tongHoaDon <= 0) {
             throw new IllegalArgumentException("Tổng hóa đơn phải lớn hơn 0!");
         }
         if (!kiemTraKhuyenMaiHopLe(maKhuyenMai)) {
             throw new IllegalArgumentException("Khuyến mãi không hợp lệ hoặc đã hết thời gian áp dụng!");
         }
         KhuyenMai khuyenMai = khuyenMaiDAO.layKhuyenMaiTheoMa(maKhuyenMai.trim());
-        double phanTram = (khuyenMai != null && khuyenMai.getPhanTramGiam() != null)
-                ? khuyenMai.getPhanTramGiam().doubleValue() : 0.0;
-        return tongHoaDon * (phanTram / 100.0);
-    }
-
-    public BigDecimal tinhSoTienGiam(String maKhuyenMai, BigDecimal tongHoaDon) {
-        if (tongHoaDon == null || tongHoaDon.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Tổng hóa đơn phải lớn hơn 0!");
-        }
-        if (!kiemTraKhuyenMaiHopLe(maKhuyenMai)) {
-            throw new IllegalArgumentException("Khuyến mãi không hợp lệ hoặc đã hết thời gian áp dụng!");
-        }
-        KhuyenMai khuyenMai = khuyenMaiDAO.layKhuyenMaiTheoMa(maKhuyenMai.trim());
-        return tongHoaDon.multiply(khuyenMai.getPhanTramGiam()).divide(new BigDecimal("100"));
+        return khuyenMai != null ? khuyenMai.tinhTienGiam(tongHoaDon) : 0.0;
     }
 
     private void kiemTraDuLieuKhuyenMai(KhuyenMai khuyenMai) {
@@ -131,15 +118,15 @@ public class KhuyenMaiBUS {
         }
         khuyenMai.setTenChuongTrinh(ten);
 
-        BigDecimal phanTram = khuyenMai.getPhanTramGiam();
-        if (phanTram == null || phanTram.compareTo(BigDecimal.ZERO) <= 0 || phanTram.compareTo(new BigDecimal("100")) > 0) {
-            throw new IllegalArgumentException("Mức giảm phải lớn hơn 0% và không vượt quá 100%!");
+        double phanTram = khuyenMai.getPhanTramGiam();
+        if (Double.isNaN(phanTram) || phanTram < 1.0 || phanTram > 100.0) {
+            throw new IllegalArgumentException("Tỷ lệ giảm giá phải nằm trong khoảng từ 1% đến 100%!");
         }
         if (khuyenMai.getNgayBatDau() == null || khuyenMai.getNgayKetThuc() == null) {
             throw new IllegalArgumentException("Vui lòng nhập đầy đủ ngày bắt đầu và ngày kết thúc!");
         }
         if (khuyenMai.getNgayKetThuc().isBefore(khuyenMai.getNgayBatDau())) {
-            throw new IllegalArgumentException("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!");
+            throw new IllegalArgumentException("Ngày kết thúc khuyến mãi phải lớn hơn hoặc bằng ngày bắt đầu!");
         }
     }
 }

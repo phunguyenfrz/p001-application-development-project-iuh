@@ -242,7 +242,10 @@ public class ThemNhanVienView extends VBox {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Thành công");
                 alert.setHeaderText(null);
-                alert.setContentText("Đã thêm mới nhân viên '" + hoTen + "' (" + nv.getMaNhanVien() + ") vào hệ thống!");
+                alert.setContentText("Đã thêm mới nhân viên '" + hoTen + "' (" + nv.getMaNhanVien() + ") vào hệ thống!\n"
+                        + "• Tài khoản đăng nhập: " + nv.getMaNhanVien() + "\n"
+                        + "• Vai trò hệ thống: " + cv + "\n"
+                        + "• Mật khẩu khởi tạo: 1111 (Đã băm bảo mật SHA-256)");
                 alert.showAndWait();
 
                 if (callbackSauKhiLuu != null) {
@@ -266,7 +269,7 @@ public class ThemNhanVienView extends VBox {
         try {
             txtMaNhanVien.setText(controller.taoMaNhanVienMoi());
         } catch (Exception e) {
-            txtMaNhanVien.setText("NV-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-000001");
+            txtMaNhanVien.setText("260001");
         }
         txtHoTen.clear();
         txtSoDienThoai.clear();

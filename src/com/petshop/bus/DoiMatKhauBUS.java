@@ -2,6 +2,7 @@ package com.petshop.bus;
 
 import com.petshop.dao.TaiKhoanDAO;
 import com.petshop.entity.TaiKhoan;
+import com.petshop.util.HashUtil;
 import com.petshop.util.SessionManager;
 
 /**
@@ -59,7 +60,7 @@ public class DoiMatKhauBUS {
             throw new IllegalArgumentException("Mật khẩu hiện tại không chính xác!");
         }
 
-        boolean ketQua = taiKhoanDAO.doiMatKhau(taiKhoanHienTai.getMaTaiKhoan(), matKhauMoi);
+        boolean ketQua = taiKhoanDAO.doiMatKhau(taiKhoanHienTai.getMaTaiKhoan(), HashUtil.sha256(matKhauMoi));
         if (!ketQua) {
             throw new IllegalStateException("Không thể cập nhật mật khẩu, vui lòng thử lại sau!");
         }

@@ -60,7 +60,7 @@ public class KhuyenMaiDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, khuyenMai.getMaKhuyenMai());
             ps.setString(2, khuyenMai.getTenChuongTrinh());
-            ps.setBigDecimal(3, khuyenMai.getPhanTramGiam());
+            ps.setDouble(3, khuyenMai.getPhanTramGiam());
             ps.setDate(4, Date.valueOf(khuyenMai.getNgayBatDau()));
             ps.setDate(5, Date.valueOf(khuyenMai.getNgayKetThuc()));
             ps.setBoolean(6, khuyenMai.isTrangThai());
@@ -81,7 +81,7 @@ public class KhuyenMaiDAO {
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, khuyenMai.getTenChuongTrinh());
-            ps.setBigDecimal(2, khuyenMai.getPhanTramGiam());
+            ps.setDouble(2, khuyenMai.getPhanTramGiam());
             ps.setDate(3, Date.valueOf(khuyenMai.getNgayBatDau()));
             ps.setDate(4, Date.valueOf(khuyenMai.getNgayKetThuc()));
             ps.setBoolean(5, khuyenMai.isTrangThai());
@@ -190,7 +190,7 @@ public class KhuyenMaiDAO {
         Date ngayBatDau = rs.getDate("ngayBatDau");
         Date ngayKetThuc = rs.getDate("ngayKetThuc");
         return new KhuyenMai(rs.getString("maKhuyenMai"), rs.getString("tenChuongTrinh"),
-                rs.getBigDecimal("phanTramGiam"), ngayBatDau.toLocalDate(), ngayKetThuc.toLocalDate(),
+                rs.getDouble("phanTramGiam"), ngayBatDau.toLocalDate(), ngayKetThuc.toLocalDate(),
                 rs.getBoolean("trangThai"));
     }
 }

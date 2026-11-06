@@ -4,7 +4,6 @@ import com.petshop.entity.ChiTietPhieuDoiTra;
 import com.petshop.entity.PhieuDoiTra;
 import com.petshop.util.DatabaseManager;
 
-import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -13,7 +12,10 @@ import java.util.List;
 
 /**
  * Lớp truy xuất cơ sở dữ liệu cho Phiếu đổi trả (PhieuDoiTraDAO).
- * Thao tác với các bảng PhieuDoiTra và ChiTietPhieuDoiTra.
+ * Tuân thủ Bộ chỉ thị kỹ thuật IUH:
+ * - 100% tiền tệ dùng kiểu nguyên thủy double (0% BigDecimal).
+ * - Các nghiệp vụ tác động nhiều bảng (thêm phiếu, cập nhật phiếu, duyệt phiếu hoàn tồn kho & trừ điểm tích lũy)
+ *   BẮT BUỘC sử dụng JDBC Transaction (setAutoCommit(false), commit(), rollback()).
  */
 public class PhieuDoiTraDAO {
 
@@ -28,7 +30,6 @@ public class PhieuDoiTraDAO {
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) return;
             try (Statement st = conn.createStatement()) {
-                // 1. Bổ sung các cột thiếu trong ChiTietPhieuDoiTra nếu chưa có
                 st.executeUpdate("""
                     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.ChiTietPhieuDoiTra') AND name = 'lyDo')
                     BEGIN
@@ -41,7 +42,6 @@ public class PhieuDoiTraDAO {
                     END
                 """);
 
-                // 2. Bổ sung các cột thiếu trong PhieuDoiTra nếu chưa có
                 st.executeUpdate("""
                     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.PhieuDoiTra') AND name = 'loaiXuLy')
                     BEGIN
@@ -51,7 +51,6 @@ public class PhieuDoiTraDAO {
                     END
                 """);
 
-                // 3. Bổ sung các cột thiếu trong HoaDon nếu chưa có
                 st.executeUpdate("""
                     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.HoaDon') AND name = 'tienHoanLai')
                     BEGIN
@@ -67,7 +66,6 @@ public class PhieuDoiTraDAO {
                     END
                 """);
 
-                // 4. Tự động liên kết tạo chi tiết mặt hàng cho các phiếu đổi trả chưa có dòng chi tiết
                 st.executeUpdate("""
                     INSERT INTO dbo.ChiTietPhieuDoiTra (maPhieuDoiTra, maHoaDon, maSanPham, soLuong, donGia, lyDo, tinhTrang, huongXuLy, ghiChu)
                     SELECT p.maPhieuDoiTra, p.maHoaDon, ct.maSanPham, ISNULL(p.soLuong, 1), ct.donGia,
@@ -82,7 +80,6 @@ public class PhieuDoiTraDAO {
                 """);
                 st.executeUpdate("UPDATE dbo.PhieuDoiTra SET trangThai = N'Đã duyệt' WHERE trangThai = N'Hoàn thành'");
 
-                // 5. Đồng bộ lại tienBu và tienHoan cho các phiếu Đổi hàng từ dữ liệu chi tiết sản phẩm đổi
                 st.executeUpdate("""
                     ;WITH BangTinh AS (
                         SELECT p.maPhieuDoiTra,
@@ -104,7 +101,6 @@ public class PhieuDoiTraDAO {
             }
             daKiemTraCauTruc = true;
         } catch (Exception ignored) {
-            // Bỏ qua nếu database không hỗ trợ quyền DDL
         }
     }
 
@@ -134,7 +130,7 @@ public class PhieuDoiTraDAO {
     }
 
     /**
-     * Lưu phiếu đổi trả mới và danh sách chi tiết mặt hàng vào database.
+     * Lưu phiếu đổi trả mới và danh sách chi tiết mặt hàng vào database (Transaction).
      */
     public boolean themPhieuDoiTra(PhieuDoiTra phieu) {
         String sqlPhieu = """
@@ -157,7 +153,6 @@ public class PhieuDoiTraDAO {
             try (PreparedStatement psPhieu = conn.prepareStatement(sqlPhieu);
                  PreparedStatement psChiTiet = conn.prepareStatement(sqlChiTiet)) {
 
-                // 1. Lưu thông tin phiếu đổi trả
                 psPhieu.setString(1, phieu.getMaPhieuDoiTra());
                 psPhieu.setString(2, phieu.getMaHoaDon());
                 psPhieu.setString(3, phieu.getMaNhanVien());
@@ -166,18 +161,17 @@ public class PhieuDoiTraDAO {
                 psPhieu.setString(6, phieu.getLyDo());
                 psPhieu.setInt(7, phieu.getSoLuong());
                 psPhieu.setString(8, phieu.getLoaiXuLy());
-                psPhieu.setBigDecimal(9, phieu.getTienHoan());
-                psPhieu.setBigDecimal(10, phieu.getTienBu());
+                psPhieu.setDouble(9, phieu.tinhTienHoan());
+                psPhieu.setDouble(10, phieu.tinhTienBu());
                 psPhieu.setString(11, phieu.getTrangThai());
                 psPhieu.executeUpdate();
 
-                // 2. Lưu từng dòng sản phẩm chi tiết
                 for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
                     psChiTiet.setString(1, phieu.getMaPhieuDoiTra());
                     psChiTiet.setString(2, phieu.getMaHoaDon());
                     psChiTiet.setString(3, ct.getMaSanPham());
                     psChiTiet.setInt(4, ct.getSoLuong());
-                    psChiTiet.setBigDecimal(5, ct.getDonGia());
+                    psChiTiet.setDouble(5, ct.getDonGia());
                     psChiTiet.setString(6, ct.getLyDo());
                     psChiTiet.setString(7, ct.getTinhTrang() != null ? ct.getTinhTrang() : "Nguyên vẹn");
                     psChiTiet.setString(8, ct.getHuongXuLy());
@@ -204,7 +198,7 @@ public class PhieuDoiTraDAO {
     }
 
     /**
-     * Cập nhật thông tin phiếu đổi trả và danh sách chi tiết (chỉ khi Chờ xử lý).
+     * Cập nhật thông tin phiếu đổi trả và danh sách chi tiết (Transaction, chỉ khi Chờ xử lý).
      */
     public boolean capNhatPhieuDoiTra(PhieuDoiTra phieu) {
         String sqlPhieu = """
@@ -229,12 +223,11 @@ public class PhieuDoiTraDAO {
                  PreparedStatement psXoa = conn.prepareStatement(sqlXoaChiTiet);
                  PreparedStatement psChiTiet = conn.prepareStatement(sqlChiTiet)) {
 
-                // 1. Cập nhật phiếu
                 psPhieu.setString(1, phieu.getLyDo());
                 psPhieu.setInt(2, phieu.getSoLuong());
                 psPhieu.setString(3, phieu.getLoaiXuLy());
-                psPhieu.setBigDecimal(4, phieu.getTienHoan());
-                psPhieu.setBigDecimal(5, phieu.getTienBu());
+                psPhieu.setDouble(4, phieu.tinhTienHoan());
+                psPhieu.setDouble(5, phieu.tinhTienBu());
                 psPhieu.setString(6, phieu.getMaPhieuDoiTra());
                 int soDong = psPhieu.executeUpdate();
                 if (soDong <= 0) {
@@ -242,17 +235,15 @@ public class PhieuDoiTraDAO {
                     throw new IllegalStateException("Phiếu đã được duyệt/xác nhận, không thể chỉnh sửa!");
                 }
 
-                // 2. Xóa chi tiết cũ
                 psXoa.setString(1, phieu.getMaPhieuDoiTra());
                 psXoa.executeUpdate();
 
-                // 3. Thêm chi tiết mới
                 for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
                     psChiTiet.setString(1, phieu.getMaPhieuDoiTra());
                     psChiTiet.setString(2, phieu.getMaHoaDon());
                     psChiTiet.setString(3, ct.getMaSanPham());
                     psChiTiet.setInt(4, ct.getSoLuong());
-                    psChiTiet.setBigDecimal(5, ct.getDonGia());
+                    psChiTiet.setDouble(5, ct.getDonGia());
                     psChiTiet.setString(6, ct.getLyDo());
                     psChiTiet.setString(7, ct.getTinhTrang() != null ? ct.getTinhTrang() : "Nguyên vẹn");
                     psChiTiet.setString(8, ct.getHuongXuLy());
@@ -307,16 +298,22 @@ public class PhieuDoiTraDAO {
     }
 
     /**
-     * Cập nhật số lượng tồn kho sản phẩm khi hoàn thành phiếu đổi trả:
-     * - Sản phẩm trả lại được cộng thêm vào tồn kho nếu hướng xử lý là "Thu lại vào kho" / "Nhập lại kho bán".
-     * - Nếu hướng xử lý là "Hủy bỏ" / "Tiêu hủy" / "Trả nhà cung cấp" thì không cộng lại tồn kho.
-     * - Sản phẩm đổi mới bị trừ tồn kho tương ứng.
+     * Duyệt phiếu đổi trả và đồng bộ dữ liệu trong cùng một Transaction:
+     * 1. Tự động hoàn tồn kho (soLuongTon + ?) đối với sản phẩm thu lại vào kho.
+     * 2. Trừ tồn kho (soLuongTon - ?) đối với sản phẩm đổi mới.
+     * 3. Tự động trừ điểm tích lũy của khách hàng tương ứng với giá trị hoàn trả.
+     * 4. Cập nhật trạng thái phiếu sang "Đã duyệt" và đồng bộ tiền hoàn/bù vào hóa đơn gốc.
      */
-    public boolean capNhatTonKhoKhiHoanTat(PhieuDoiTra phieu) {
+    public boolean capNhatTonKhoKhiHoanTat(PhieuDoiTra phieu, int soDiemTruKhachHang) {
         String sqlCongTon = "UPDATE dbo.SanPham SET soLuongTon = soLuongTon + ? WHERE maSanPham = ?";
         String sqlTruTon = "UPDATE dbo.SanPham SET soLuongTon = soLuongTon - ? WHERE maSanPham = ? AND soLuongTon >= ?";
         String sqlCapNhatHuong = "UPDATE dbo.ChiTietPhieuDoiTra SET huongXuLy = ? WHERE maPhieuDoiTra = ? AND maSanPham = ?";
-        String sqlCapNhatPhieu = "UPDATE dbo.PhieuDoiTra SET tienHoan = ?, tienBu = ? WHERE maPhieuDoiTra = ?";
+        String sqlCapNhatPhieu = "UPDATE dbo.PhieuDoiTra SET tienHoan = ?, tienBu = ?, trangThai = N'Đã duyệt' WHERE maPhieuDoiTra = ?";
+        String sqlTruDiemKhach = """
+                UPDATE dbo.KhachHang
+                SET diemTichLuy = CASE WHEN ISNULL(diemTichLuy, 0) >= ? THEN ISNULL(diemTichLuy, 0) - ? ELSE 0 END
+                WHERE maKhachHang = ?
+                """;
 
         try (Connection conn = DatabaseManager.getConnection()) {
             conn.setAutoCommit(false);
@@ -324,7 +321,8 @@ public class PhieuDoiTraDAO {
             try (PreparedStatement psCong = conn.prepareStatement(sqlCongTon);
                  PreparedStatement psTru = conn.prepareStatement(sqlTruTon);
                  PreparedStatement psHuong = conn.prepareStatement(sqlCapNhatHuong);
-                 PreparedStatement psPhieu = conn.prepareStatement(sqlCapNhatPhieu)) {
+                 PreparedStatement psPhieu = conn.prepareStatement(sqlCapNhatPhieu);
+                 PreparedStatement psTruDiem = conn.prepareStatement(sqlTruDiemKhach)) {
 
                 for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
                     String huong = ct.getHuongXuLy() != null ? ct.getHuongXuLy().trim() : "";
@@ -350,7 +348,6 @@ public class PhieuDoiTraDAO {
                         psCong.executeUpdate();
                     }
 
-                    // Trừ tồn cho sản phẩm đổi mới nếu khách chọn đổi hàng
                     if (ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().trim().isEmpty() && ct.getSoLuongDoi() > 0) {
                         psTru.setInt(1, ct.getSoLuongDoi());
                         psTru.setString(2, ct.getMaSanPhamDoi());
@@ -358,23 +355,29 @@ public class PhieuDoiTraDAO {
                         int soDongCapNhat = psTru.executeUpdate();
                         if (soDongCapNhat <= 0) {
                             conn.rollback();
-                            throw new IllegalStateException("Sản phẩm đổi '" + ct.getMaSanPhamDoi() + "' không đủ số lượng tồn kho!");
+                            throw new IllegalArgumentException("Sản phẩm đổi '" + ct.getMaSanPhamDoi() + "' không đủ số lượng tồn kho!");
                         }
                     }
                 }
 
-                // Cập nhật lại tienHoan và tienBu của phiếu cho chính xác trước khi duyệt
-                BigDecimal tienHoan = phieu.getTienHoan() != null ? phieu.getTienHoan() : BigDecimal.ZERO;
-                BigDecimal tienBu = phieu.getTienBu() != null ? phieu.getTienBu() : BigDecimal.ZERO;
-                psPhieu.setBigDecimal(1, tienHoan);
-                psPhieu.setBigDecimal(2, tienBu);
+                // Tự động trừ điểm tích lũy của khách hàng khi duyệt đổi trả
+                if (soDiemTruKhachHang > 0 && phieu.getMaKhachHang() != null && !phieu.getMaKhachHang().isBlank()) {
+                    psTruDiem.setInt(1, soDiemTruKhachHang);
+                    psTruDiem.setInt(2, soDiemTruKhachHang);
+                    psTruDiem.setString(3, phieu.getMaKhachHang().trim());
+                    psTruDiem.executeUpdate();
+                }
+
+                double tienHoan = phieu.tinhTienHoan();
+                double tienBu = phieu.tinhTienBu();
+                psPhieu.setDouble(1, tienHoan);
+                psPhieu.setDouble(2, tienBu);
                 psPhieu.setString(3, phieu.getMaPhieuDoiTra());
                 psPhieu.executeUpdate();
 
-                // Cập nhật tiền hoàn/bù và ghi chú liên kết vào Hóa đơn gốc (nếu có cột)
                 String moTaDoiTra = "Đổi trả " + phieu.getMaPhieuDoiTra() + " (" + phieu.getLoaiXuLy() + "): "
-                        + (tienHoan.compareTo(BigDecimal.ZERO) > 0 ? "Hoàn " + tienHoan + "đ" : "")
-                        + (tienBu.compareTo(BigDecimal.ZERO) > 0 ? "Bù " + tienBu + "đ" : "");
+                        + (tienHoan > 0 ? "Hoàn " + (long) tienHoan + "đ" : "")
+                        + (tienBu > 0 ? "Bù " + (long) tienBu + "đ" : "");
 
                 boolean coCotTienHoan = false;
                 boolean coCotGhiChu = false;
@@ -387,29 +390,13 @@ public class PhieuDoiTraDAO {
                     }
                 } catch (Exception ignored) {}
 
-                if (!coCotTienHoan) {
-                    try (Statement stAlter = conn.createStatement()) {
-                        stAlter.executeUpdate("""
-                            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.HoaDon') AND name = 'tienHoanLai')
-                            BEGIN
-                                ALTER TABLE dbo.HoaDon ADD tienHoanLai DECIMAL(18,2) NOT NULL DEFAULT 0;
-                            END
-                            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.HoaDon') AND name = 'tienThanhToanThem')
-                            BEGIN
-                                ALTER TABLE dbo.HoaDon ADD tienThanhToanThem DECIMAL(18,2) NOT NULL DEFAULT 0;
-                            END
-                        """);
-                        coCotTienHoan = true;
-                    } catch (Exception ignored) {}
-                }
-
                 if (coCotTienHoan) {
                     String sqlHD = "UPDATE dbo.HoaDon SET tienHoanLai = ISNULL(tienHoanLai, 0) + ?, tienThanhToanThem = ISNULL(tienThanhToanThem, 0) + ? "
                             + (coCotGhiChu ? ", ghiChu = ISNULL(ghiChu + N'; ', N'') + ? " : " ")
                             + "WHERE maHoaDon = ?";
                     try (PreparedStatement psHD = conn.prepareStatement(sqlHD)) {
-                        psHD.setBigDecimal(1, tienHoan);
-                        psHD.setBigDecimal(2, tienBu);
+                        psHD.setDouble(1, tienHoan);
+                        psHD.setDouble(2, tienBu);
                         if (coCotGhiChu) {
                             psHD.setString(3, moTaDoiTra);
                             psHD.setString(4, phieu.getMaHoaDon());
@@ -434,8 +421,12 @@ public class PhieuDoiTraDAO {
                 throw ex;
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Lỗi khi cập nhật tồn kho khi hoàn tất đổi trả: " + e.getMessage(), e);
+            throw new IllegalStateException("Lỗi khi cập nhật tồn kho và điểm tích lũy khi duyệt đổi trả: " + e.getMessage(), e);
         }
+    }
+
+    public boolean capNhatTonKhoKhiHoanTat(PhieuDoiTra phieu) {
+        return capNhatTonKhoKhiHoanTat(phieu, 0);
     }
 
     /**
@@ -525,15 +516,12 @@ public class PhieuDoiTraDAO {
                     phieu.setLyDo(rs.getString("lyDo"));
                     phieu.setSoLuong(rs.getInt("soLuong"));
                     phieu.setLoaiXuLy(rs.getString("loaiXuLy"));
-                    phieu.setTienHoan(rs.getBigDecimal("tienHoan"));
-                    phieu.setTienBu(rs.getBigDecimal("tienBu"));
                     phieu.setTrangThai(rs.getString("trangThai"));
 
                     phieu.setTenNhanVien(rs.getString("tenNhanVien"));
                     phieu.setTenKhachHang(rs.getString("tenKhachHang"));
                     phieu.setSoDienThoaiKhachHang(rs.getString("soDienThoaiKhachHang"));
 
-                    // Tải luôn danh sách chi tiết mặt hàng cho từng phiếu
                     napChiTietMatHang(conn, phieu);
 
                     danhSach.add(phieu);
@@ -579,8 +567,6 @@ public class PhieuDoiTraDAO {
                     phieu.setLyDo(rs.getString("lyDo"));
                     phieu.setSoLuong(rs.getInt("soLuong"));
                     phieu.setLoaiXuLy(rs.getString("loaiXuLy"));
-                    phieu.setTienHoan(rs.getBigDecimal("tienHoan"));
-                    phieu.setTienBu(rs.getBigDecimal("tienBu"));
                     phieu.setTrangThai(rs.getString("trangThai"));
 
                     phieu.setTenNhanVien(rs.getString("tenNhanVien"));
@@ -651,7 +637,7 @@ public class PhieuDoiTraDAO {
                     ct.setTenSanPham(rs.getString("tenSanPham"));
                     ct.setDonViTinh(rs.getString("donViTinh"));
                     ct.setSoLuong(rs.getInt("soLuong"));
-                    ct.setDonGia(rs.getBigDecimal("donGia"));
+                    ct.setDonGia(rs.getDouble("donGia"));
 
                     ct.setLyDo(rs.getString("lyDo"));
                     ct.setTinhTrang(rs.getString("tinhTrang"));
@@ -661,26 +647,9 @@ public class PhieuDoiTraDAO {
                     ct.setMaSanPhamDoi(rs.getString("maSanPhamDoi"));
                     ct.setTenSanPhamDoi(rs.getString("tenSanPhamDoi"));
                     ct.setSoLuongDoi(rs.getInt("soLuongDoi"));
-                    ct.setDonGiaDoi(rs.getBigDecimal("donGiaDoi"));
+                    ct.setDonGiaDoi(rs.getDouble("donGiaDoi"));
 
                     phieu.themChiTiet(ct);
-                }
-            }
-        }
-
-        // Đồng bộ lại tienBu và tienHoan của phiếu Đổi hàng nếu có thông tin sản phẩm đổi mới
-        String loai = phieu.getLoaiXuLy() != null ? phieu.getLoaiXuLy().toLowerCase() : "";
-        if (loai.contains("đổi") || loai.contains("doi")) {
-            BigDecimal tongTra = phieu.tinhTongTienHangTra();
-            BigDecimal tongDoi = phieu.tinhTongTienHangDoi();
-            if (tongDoi.compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal chenhLech = tongDoi.subtract(tongTra);
-                if (chenhLech.compareTo(BigDecimal.ZERO) > 0) {
-                    phieu.setTienBu(chenhLech);
-                    phieu.setTienHoan(BigDecimal.ZERO);
-                } else {
-                    phieu.setTienHoan(chenhLech.abs());
-                    phieu.setTienBu(BigDecimal.ZERO);
                 }
             }
         }

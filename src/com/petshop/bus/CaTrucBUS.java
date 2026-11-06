@@ -175,19 +175,27 @@ public class CaTrucBUS {
         }
 
         // Kiểm tra trùng khung giờ làm việc của nhân viên trong ngày
-        List<PhanCa> dsCaTrongNgay = phanCaDAO.layPhanCaTheoNhanVienVaNgay(phanCa.getMaNhanVien(), phanCa.getNgayLam());
-        for (PhanCa daPhan : dsCaTrongNgay) {
-            // Khung giờ giao nhau khi: batDau1 < ketThuc2 AND batDau2 < ketThuc1
-            if (daPhan.getGioBatDau() != null && daPhan.getGioKetThuc() != null) {
-                boolean biTrung = caMoi.getGioBatDau().isBefore(daPhan.getGioKetThuc()) 
-                        && daPhan.getGioBatDau().isBefore(caMoi.getGioKetThuc());
-                if (biTrung) {
-                    throw new IllegalArgumentException("Nhân viên đã được phân công ca '" 
-                            + daPhan.getTenCa() + "' (" + daPhan.getKhungGio() 
-                            + ") trùng khung giờ làm việc trong ngày " + phanCa.getNgayLamDinhDang() + "!");
+        if (kiemTraTrungCa(phanCa.getMaNhanVien(), phanCa.getMaCa(), phanCa.getNgayLam(), phanCa.getMaPhanCa())) {
+            List<PhanCa> dsCaTrongNgay = phanCaDAO.layPhanCaTheoNhanVienVaNgay(phanCa.getMaNhanVien(), phanCa.getNgayLam());
+            for (PhanCa daPhan : dsCaTrongNgay) {
+                if (phanCa.getMaPhanCa() != null && phanCa.getMaPhanCa().equals(daPhan.getMaPhanCa())) {
+                    continue;
+                }
+                if (daPhan.getGioBatDau() != null && daPhan.getGioKetThuc() != null) {
+                    boolean biTrung = caMoi.getGioBatDau().isBefore(daPhan.getGioKetThuc())
+                            && daPhan.getGioBatDau().isBefore(caMoi.getGioKetThuc());
+                    if (biTrung) {
+                        throw new IllegalArgumentException("Nhân viên đã được phân công ca '"
+                                + daPhan.getTenCa() + "' (" + daPhan.getKhungGio()
+                                + ") trùng khung giờ làm việc trong ngày " + phanCa.getNgayLamDinhDang() + "!");
+                    }
                 }
             }
+            throw new IllegalArgumentException("Nhân viên bị trùng ca trực trong ngày " + phanCa.getNgayLamDinhDang() + "!");
         }
+
+        // Gắn Object Reference đầy đủ cho PhanCa
+        phanCa.setCa(caMoi);
 
         if (phanCa.getMaPhanCa() == null || phanCa.getMaPhanCa().isBlank()) {
             phanCa.setMaPhanCa(phanCaDAO.taoMaPhanCa());
@@ -278,16 +286,40 @@ public class CaTrucBUS {
         if (phanCa == null || phanCa.getMaPhanCa() == null || phanCa.getMaPhanCa().isBlank()) {
             throw new IllegalArgumentException("Mã phân ca cần sửa không được để trống!");
         }
+        if (phanCa.getMaNhanVien() == null || phanCa.getMaNhanVien().isBlank()) {
+            throw new IllegalArgumentException("Vui lòng chọn nhân viên được phân ca!");
+        }
+        if (phanCa.getMaCa() == null || phanCa.getMaCa().isBlank()) {
+            throw new IllegalArgumentException("Vui lòng chọn ca trực phân công!");
+        }
+        if (phanCa.getNgayLam() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn ngày làm việc!");
+        }
+        if (kiemTraTrungCa(phanCa.getMaNhanVien(), phanCa.getMaCa(), phanCa.getNgayLam(), phanCa.getMaPhanCa())) {
+            throw new IllegalArgumentException("Nhân viên bị trùng ca trực trong ngày " + phanCa.getNgayLamDinhDang() + "!");
+        }
         return phanCaDAO.capNhatPhanCa(phanCa);
     }
 
     public boolean kiemTraTrungCa(String maNhanVien, String maCa, LocalDate ngayLam) {
+        return kiemTraTrungCa(maNhanVien, maCa, ngayLam, null);
+    }
+
+    public boolean kiemTraTrungCa(String maNhanVien, String maCa, LocalDate ngayLam, String maPhanCaBoQua) {
+        if (maNhanVien == null || maCa == null || ngayLam == null) return false;
         Ca caMoi = caDAO.layTheoMa(maCa);
         if (caMoi == null) return false;
         List<PhanCa> dsCaTrongNgay = phanCaDAO.layPhanCaTheoNhanVienVaNgay(maNhanVien, ngayLam);
         for (PhanCa daPhan : dsCaTrongNgay) {
-            if (daPhan.getGioBatDau() != null && daPhan.getGioKetThuc() != null) {
-                boolean biTrung = caMoi.getGioBatDau().isBefore(daPhan.getGioKetThuc()) 
+            if (maPhanCaBoQua != null && maPhanCaBoQua.equals(daPhan.getMaPhanCa())) {
+                continue;
+            }
+            if (maCa.equalsIgnoreCase(daPhan.getMaCa())) {
+                return true;
+            }
+            if (daPhan.getGioBatDau() != null && daPhan.getGioKetThuc() != null
+                    && caMoi.getGioBatDau() != null && caMoi.getGioKetThuc() != null) {
+                boolean biTrung = caMoi.getGioBatDau().isBefore(daPhan.getGioKetThuc())
                         && daPhan.getGioBatDau().isBefore(caMoi.getGioKetThuc());
                 if (biTrung) return true;
             }

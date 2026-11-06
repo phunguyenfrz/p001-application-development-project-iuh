@@ -15,18 +15,21 @@ import java.util.List;
  * - Đăng nhập bằng Mã nhân viên (maNhanVien) hoặc tên đăng nhập.
  * - Mật khẩu được băm bằng thuật toán SHA-256 qua HashUtil.sha256().
  * - Tự động nạp Object Reference NhanVien vào TaiKhoan phục vụ SessionManager.
+ * - Hỗ trợ các nghiệp vụ xác minh cấp lại mật khẩu (Quên mật khẩu).
  */
 public class TaiKhoanDAO {
 
     private static boolean adminDaKhoiTao = false;
 
     /**
-     * Xác thực thông tin đăng nhập từ CSDL theo Mã nhân viên (hoặc Tên đăng nhập).
-     * Mật khẩu được kiểm tra theo chuẩn mã hóa SHA-256.
+     * Xác thực thông tin đăng nhập từ CSDL.
+     * Cho phép đăng nhập bằng Mã nhân viên (maNhanVien) hoặc Tên đăng nhập (tenDangNhap).
+     * Mật khẩu được kiểm tra qua băm SHA-256 (và fallback plain text tương thích ngược).
+     * Chỉ chấp nhận tài khoản đang hoạt động (trangThai = 1) của nhân viên đang làm việc.
      *
-     * @param maNhanVienHoacTenDangNhap Mã nhân viên (ví dụ NV-20261005-000000) hoặc tên đăng nhập
-     * @param matKhau Mật khẩu thuần người dùng nhập
-     * @return TaiKhoan kèm Object Reference NhanVien nếu hợp lệ, null nếu sai thông tin hoặc bị khóa.
+     * @param maNhanVienHoacTenDangNhap Mã nhân viên hoặc Tên tài khoản
+     * @param matKhau Mật khẩu gốc chưa băm
+     * @return TaiKhoan nếu đăng nhập hợp lệ, null nếu sai thông tin hoặc bị khóa.
      */
     public TaiKhoan dangNhap(String maNhanVienHoacTenDangNhap, String matKhau) {
         khoiTaoTaiKhoanAdmin();
@@ -43,7 +46,7 @@ public class TaiKhoanDAO {
                        nv.hoTen, nv.soDienThoai, nv.chucVu, nv.ngaySinh, nv.gioiTinh, nv.trangThai AS trangThaiNhanVien
                 FROM TaiKhoan tk
                 JOIN NhanVien nv ON nv.maNhanVien = tk.maNhanVien
-                WHERE (tk.maNhanVien = ? OR LOWER(tk.tenDangNhap) = LOWER(?))
+                WHERE (LOWER(tk.maNhanVien) = LOWER(?) OR LOWER(tk.tenDangNhap) = LOWER(?))
                   AND tk.trangThai = 1 AND nv.trangThai = N'Đang làm'
                 """;
 
@@ -125,7 +128,8 @@ public class TaiKhoanDAO {
                 SELECT tk.maTaiKhoan
                 FROM TaiKhoan tk
                 JOIN NhanVien nv ON nv.maNhanVien = tk.maNhanVien
-                WHERE tk.maNhanVien = ? AND nv.soDienThoai = ?
+                WHERE (LOWER(tk.maNhanVien) = LOWER(?) OR LOWER(tk.tenDangNhap) = LOWER(?))
+                  AND nv.soDienThoai = ?
                   AND tk.trangThai = 1 AND nv.trangThai = N'Đang làm'
                 """;
 
@@ -133,7 +137,8 @@ public class TaiKhoanDAO {
             String maTaiKhoan = null;
             try (PreparedStatement ps = conn.prepareStatement(sqlKiemTra)) {
                 ps.setString(1, maNhanVien.trim());
-                ps.setString(2, soDienThoai.trim());
+                ps.setString(2, maNhanVien.trim());
+                ps.setString(3, soDienThoai.trim());
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         maTaiKhoan = rs.getString("maTaiKhoan");
@@ -157,13 +162,56 @@ public class TaiKhoanDAO {
     }
 
     /**
-     * Cập nhật mật khẩu mới cho tài khoản (tự động băm SHA-256).
+     * Kiểm tra thông tin xác thực cho chức năng Quên mật khẩu.
+     * Yêu cầu Mã nhân viên và Số điện thoại phải khớp với hồ sơ nhân viên đang làm việc, tài khoản còn hoạt động.
      */
-    public boolean doiMatKhau(String maTaiKhoan, String matKhauMoi) {
+    public boolean kiemTraThongTinQuenMatKhau(String maNhanVien, String soDienThoai) {
+        String sql = """
+                SELECT 1
+                FROM NhanVien nv
+                JOIN TaiKhoan tk ON tk.maNhanVien = nv.maNhanVien
+                WHERE (LOWER(nv.maNhanVien) = LOWER(?) OR LOWER(tk.tenDangNhap) = LOWER(?))
+                  AND nv.soDienThoai = ?
+                  AND nv.trangThai = N'Đang làm'
+                  AND tk.trangThai = 1
+                """;
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maNhanVien);
+            ps.setString(2, maNhanVien);
+            ps.setString(3, soDienThoai);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi kiểm tra thông tin quên mật khẩu: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Cập nhật mật khẩu mới (đã băm SHA-256) cho nhân viên theo mã nhân viên.
+     */
+    public boolean datLaiMatKhauTheoMaNhanVien(String maNhanVien, String matKhauMoiHash) {
+        String sql = "UPDATE TaiKhoan SET matKhau = ? WHERE LOWER(maNhanVien) = LOWER(?) OR LOWER(tenDangNhap) = LOWER(?)";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, matKhauMoiHash);
+            ps.setString(2, maNhanVien);
+            ps.setString(3, maNhanVien);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi cập nhật lại mật khẩu: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Cập nhật mật khẩu mới cho tài khoản theo mã tài khoản.
+     */
+    public boolean doiMatKhau(String maTaiKhoan, String matKhauMoiHash) {
         String sql = "UPDATE TaiKhoan SET matKhau = ? WHERE maTaiKhoan = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, HashUtil.sha256(matKhauMoi));
+            ps.setString(1, matKhauMoiHash);
             ps.setString(2, maTaiKhoan);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -219,10 +267,10 @@ public class TaiKhoanDAO {
     }
 
     /**
-     * Reset mật khẩu tài khoản về mật khẩu mặc định (tự động băm SHA-256).
+     * Reset mật khẩu tài khoản về mật khẩu mặc định (băm SHA-256).
      */
-    public boolean resetMatKhau(String maTaiKhoan, String matKhauMacDinh) {
-        return doiMatKhau(maTaiKhoan, matKhauMacDinh);
+    public boolean resetMatKhau(String maTaiKhoan, String matKhauMacDinhHash) {
+        return doiMatKhau(maTaiKhoan, matKhauMacDinhHash);
     }
 
     /**
@@ -256,13 +304,13 @@ public class TaiKhoanDAO {
     }
 
     /**
-     * Đảm bảo tài khoản quản trị mặc định (admin / admin123) tồn tại trong CSDL với mật khẩu đã băm SHA-256.
+     * Đảm bảo tài khoản quản trị mặc định (admin hoặc 260000 / admin123 hash SHA-256) tồn tại trong CSDL.
      */
     public synchronized void khoiTaoTaiKhoanAdmin() {
         if (adminDaKhoiTao) return;
         try (Connection conn = DatabaseManager.getConnection()) {
             // Kiểm tra tài khoản admin đã có chưa
-            String checkSql = "SELECT COUNT(*) FROM TaiKhoan WHERE LOWER(tenDangNhap) = 'admin'";
+            String checkSql = "SELECT COUNT(*) FROM TaiKhoan WHERE LOWER(tenDangNhap) = 'admin' OR maNhanVien IN ('260000', 'NV-20261005-000000')";
             try (PreparedStatement ps = conn.prepareStatement(checkSql);
                  ResultSet rs = ps.executeQuery()) {
                 if (rs.next() && rs.getInt(1) > 0) {
@@ -273,7 +321,7 @@ public class TaiKhoanDAO {
 
             // Tạo nhân viên admin nếu chưa có
             String insertNv = """
-                IF NOT EXISTS (SELECT 1 FROM NhanVien WHERE maNhanVien = 'NV-20261005-000000')
+                IF NOT EXISTS (SELECT 1 FROM NhanVien WHERE maNhanVien IN ('260000', 'NV-20261005-000000'))
                 BEGIN
                     INSERT INTO NhanVien (maNhanVien, hoTen, soDienThoai, chucVu, ngaySinh, gioiTinh, trangThai)
                     VALUES ('NV-20261005-000000', N'Quản trị hệ thống', '0909000000', N'Quản lý', '1990-01-01', 1, N'Đang làm');
@@ -286,7 +334,7 @@ public class TaiKhoanDAO {
             // Tạo tài khoản admin với mật khẩu băm SHA-256 (admin123 -> SHA-256)
             String hashAdmin = HashUtil.sha256("admin123");
             String insertTk = """
-                IF NOT EXISTS (SELECT 1 FROM TaiKhoan WHERE tenDangNhap = 'admin')
+                IF NOT EXISTS (SELECT 1 FROM TaiKhoan WHERE tenDangNhap IN ('admin', '260000'))
                 BEGIN
                     INSERT INTO TaiKhoan (maTaiKhoan, maNhanVien, tenDangNhap, matKhau, phanQuyen, trangThai)
                     VALUES ('TK-20261005-000000', 'NV-20261005-000000', 'admin', ?, N'Admin', 1);

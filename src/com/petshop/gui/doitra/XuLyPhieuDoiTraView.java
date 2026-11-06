@@ -10,9 +10,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.util.StringConverter;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -21,9 +19,10 @@ import java.util.Optional;
 
 /**
  * Màn hình Xử lý đổi trả (RET_CONFIRM / DT_XU_LY).
- * Sử dụng bộ màu mặc định chuẩn chung.css đồng bộ với các phân hệ Dịch vụ, Hóa đơn.
- * - Danh sách chính: Chỉ phiếu đã duyệt mới hiện "Xử lý SP hoàn", phiếu chưa duyệt hoặc từ chối điền rỗng "-".
- * - Màn hình cập nhật/chi tiết: Bỏ xử lý SP khi hoàn (chỉ chọn khi bấm Duyệt), giao diện đồng bộ với bên lập phiếu.
+ * Tuân thủ 100% Bộ chỉ thị kỹ thuật IUH:
+ * - Kiểu tiền tệ: double (0% BigDecimal).
+ * - Không nạp toàn bộ sản phẩm dưới CSDL lên ComboBox trên RAM; sử dụng ô quét mã vạch / tìm kiếm trực tiếp dưới DB.
+ * - Khi duyệt phiếu: tự động hoàn tồn kho (soLuongTon + ?) và trừ điểm tích lũy của khách hàng.
  */
 public class XuLyPhieuDoiTraView extends VBox {
 
@@ -32,22 +31,17 @@ public class XuLyPhieuDoiTraView extends VBox {
 
     private final PhieuDoiTraBUS controller = new PhieuDoiTraBUS();
 
-    // Dữ liệu nguồn
     private final ObservableList<PhieuDoiTra> dsTatCaPhieu = FXCollections.observableArrayList();
     private final ObservableList<PhieuDoiTra> dsHienThi = FXCollections.observableArrayList();
     private final ObservableList<ChiTietPhieuDoiTra> dsChiTietTra = FXCollections.observableArrayList();
 
-    // Đối tượng phiếu đang xử lý/chỉnh sửa
     private PhieuDoiTra phieuDangChon = null;
     private HoaDon hoaDonGocCuaPhieu = null;
 
-    // Hai màn hình chính chuyển đổi linh hoạt
     private final VBox pnlManHinhDanhSach = new VBox(12);
     private final VBox pnlManHinhChinhSua = new VBox(12);
 
-    // ==========================================
-    // 1. CÁC THÀNH PHẦN MÀN HÌNH DANH SÁCH
-    // ==========================================
+    // 1. MÀN HÌNH DANH SÁCH
     private final TextField txtTimKiem = new TextField();
     private final ComboBox<String> cboLocTrangThai = new ComboBox<>();
     private final ComboBox<String> cboXuLySanPhamNhanh = new ComboBox<>();
@@ -58,15 +52,12 @@ public class XuLyPhieuDoiTraView extends VBox {
     private final TableView<PhieuDoiTra> bangDanhSachPhieu = new TableView<>();
     private final Label lblThongKeChanBang = new Label("Tổng cộng: 0 phiếu đổi trả");
 
-    // ==========================================
-    // 2. CÁC THÀNH PHẦN MÀN HÌNH CHỈNH SỬA / CHI TIẾT
-    // ==========================================
+    // 2. MÀN HÌNH CHỈNH SỬA / CHI TIẾT
     private final Button btnQuayLaiDanhSach = new Button("Quay lại danh sách phiếu");
     private final Label lblTieuDeChinhSua = new Label("CHI TIẾT PHIẾU ĐỔI TRẢ");
     private final Label lblBadgeTrangThai = new Label();
     private final Label lblBannerTrangThai = new Label();
 
-    // Khối tóm tắt thông tin phiếu & HĐ gốc
     private final Label lblMaPhieu = new Label("--");
     private final Label lblMaHoaDon = new Label("--");
     private final Label lblNgayLap = new Label("--");
@@ -74,7 +65,6 @@ public class XuLyPhieuDoiTraView extends VBox {
     private final Label lblNhanVienLap = new Label("--");
     private final Label lblLoaiXuLyHienTai = new Label("--");
 
-    // Bảng sản phẩm trả lại (Vùng B tương tự lập phiếu)
     private final TableView<ChiTietPhieuDoiTra> bangSanPhamDoiTra = new TableView<>();
     private final VBox boxThemSanPhamGoc = new VBox(8);
     private final ComboBox<ChiTietHoaDonSanPham> cboSanPhamGoc = new ComboBox<>();
@@ -84,52 +74,46 @@ public class XuLyPhieuDoiTraView extends VBox {
     private final TextField txtGhiChuThem = new TextField();
     private final Button btnThemSanPham = new Button("+ Thêm vào phiếu");
 
-    // Hình thức xử lý đổi trả (Vùng C tương tự lập phiếu)
     private final RadioButton rdoTraHang = new RadioButton("Trả hàng, hoàn tiền");
     private final RadioButton rdoDoiHang = new RadioButton("Đổi sang sản phẩm khác");
     private final ToggleGroup grpHinhThuc = new ToggleGroup();
 
-    // Thẻ hoàn tiền
     private final VBox pnlTheHoanTien = new VBox(10);
     private final ComboBox<String> cboHinhThucHoan = new ComboBox<>(FXCollections.observableArrayList("Tiền mặt", "Chuyển khoản", "Voucher"));
     private final Label lblTienHoanDuKien = new Label("0 VNĐ");
 
-    // Thẻ đổi hàng
     private final VBox pnlTheDoiHang = new VBox(10);
     private final HBox hangThemDoi = new HBox(10);
-    private final TextField txtTimSanPhamDoi = new TextField();
-    private final ComboBox<SanPham> cboSanPhamDoi = new ComboBox<>();
+    private final TextField txtMaVachSanPham = new TextField();
     private final Spinner<Integer> spnSoLuongDoi = new Spinner<>(1, 100, 1);
     private final Button btnThemSanPhamDoi = new Button("+ Thêm hàng đổi");
     private final Label lblCanhBaoTonKho = new Label();
-    private final List<SanPham> dsSanPhamDoiGoc = new ArrayList<>();
 
-    // DTO dòng đổi hàng
     public static class DongDoiHang {
         private final SanPham sanPham;
-        private int soLuong;
-        private BigDecimal thanhTien;
+        private final ChiTietPhieuDoiTra chiTietDoi;
 
         public DongDoiHang(SanPham sanPham, int soLuong) {
             this.sanPham = sanPham;
-            this.soLuong = soLuong;
-            this.thanhTien = sanPham.getGiaBan().multiply(BigDecimal.valueOf(soLuong));
+            this.chiTietDoi = new ChiTietPhieuDoiTra();
+            this.chiTietDoi.setSanPhamDoi(sanPham);
+            this.chiTietDoi.setDonGiaDoi(sanPham.getGiaBan() != null ? sanPham.getGiaBan().doubleValue() : 0.0);
+            this.chiTietDoi.setSoLuongDoi(soLuong);
         }
 
         public SanPham getSanPham() { return sanPham; }
-        public int getSoLuong() { return soLuong; }
+        public int getSoLuong() { return chiTietDoi.getSoLuongDoi(); }
         public void setSoLuong(int soLuong) {
-            this.soLuong = soLuong;
-            this.thanhTien = sanPham.getGiaBan().multiply(BigDecimal.valueOf(soLuong));
+            this.chiTietDoi.setSoLuongDoi(soLuong);
         }
-        public BigDecimal getThanhTien() { return thanhTien; }
+        public double getDonGia() { return chiTietDoi.getDonGiaDoi(); }
+        public double getThanhTien() { return chiTietDoi.tinhThanhTienDoi(); }
     }
 
     private final TableView<DongDoiHang> tblSanPhamDoiMoi = new TableView<>();
     private final ObservableList<DongDoiHang> dsSanPhamDoiMoi = FXCollections.observableArrayList();
     private final Label lblDongChenhLech = new Label("Không phát sinh chênh lệch (0 VNĐ)");
 
-    // Thanh tóm tắt cố định dưới cùng (Vùng D tương tự lập phiếu)
     private final Label lblTongTienTra = new Label("0 VNĐ");
     private final Label lblTongTienDoi = new Label("0 VNĐ");
     private final Label lblChenhLechCuoi = new Label("0 VNĐ");
@@ -153,10 +137,6 @@ public class XuLyPhieuDoiTraView extends VBox {
         getChildren().add(pnlManHinhDanhSach);
     }
 
-    /**
-     * Chuẩn hóa giá trị hướng xử lý sản phẩm khi hoàn về 2 lựa chọn chuẩn:
-     * "Thu lại vào kho" hoặc "Hủy bỏ".
-     */
     public static String chuanHoaHuongXuLyHienThi(String huongXuLy, String tinhTrang) {
         if (huongXuLy != null && !huongXuLy.isBlank()) {
             if ("Thu lại vào kho".equalsIgnoreCase(huongXuLy.trim())
@@ -172,22 +152,17 @@ public class XuLyPhieuDoiTraView extends VBox {
         return "Nguyên vẹn".equalsIgnoreCase(tinhTrang) ? "Thu lại vào kho" : "Hủy bỏ";
     }
 
-    // =========================================================================
-    // 1. DỰNG MÀN HÌNH 1: DANH SÁCH TẤT CẢ CÁC PHIẾU
-    // =========================================================================
     private void khoiTaoManHinhDanhSach() {
         pnlManHinhDanhSach.setSpacing(14);
         VBox.setVgrow(pnlManHinhDanhSach, Priority.ALWAYS);
 
-        // Header tiêu đề
         VBox pnlTieuDe = new VBox(4);
         Label lblTieuDe = new Label("PHIẾU ĐỔI TRẢ - XỬ LÝ ĐỔI TRẢ");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-        Label lblMoTa = new Label("Danh sách phiếu đổi trả hàng hóa. Chọn phiếu để cập nhật chi tiết, xử lý sản phẩm hoàn (Thu lại vào kho / Hủy bỏ), duyệt hoặc từ chối.");
+        Label lblMoTa = new Label("Danh sách phiếu đổi trả hàng hóa. Khi duyệt phiếu, hệ thống tự động hoàn tồn kho và trừ điểm tích lũy của khách hàng.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
         pnlTieuDe.getChildren().addAll(lblTieuDe, lblMoTa);
 
-        // Khung bảng và thanh công cụ
         VBox pnlKhungBang = new VBox(10);
         pnlKhungBang.getStyleClass().add("hop-noi-dung");
         VBox.setVgrow(pnlKhungBang, Priority.ALWAYS);
@@ -310,23 +285,17 @@ public class XuLyPhieuDoiTraView extends VBox {
         colXuLySp.setPrefWidth(115);
 
         TableColumn<PhieuDoiTra, String> colTongTra = new TableColumn<>("Tổng hàng trả");
-        colTongTra.setCellValueFactory(d -> {
-            BigDecimal tong = d.getValue().tinhTongTienHangTra();
-            if (tong.compareTo(BigDecimal.ZERO) == 0 && d.getValue().getTienHoan() != null && d.getValue().getTienHoan().compareTo(BigDecimal.ZERO) > 0) {
-                tong = d.getValue().getTienHoan();
-            }
-            return new SimpleStringProperty(DINH_DANG_TIEN.format(tong));
-        });
+        colTongTra.setCellValueFactory(d -> new SimpleStringProperty(DINH_DANG_TIEN.format(d.getValue().tinhTongTienHangTra())));
         colTongTra.setPrefWidth(105);
         colTongTra.setStyle("-fx-alignment: center-right; -fx-font-weight: bold;");
 
         TableColumn<PhieuDoiTra, String> colHoan = new TableColumn<>("Tiền hoàn");
-        colHoan.setCellValueFactory(d -> new SimpleStringProperty(DINH_DANG_TIEN.format(d.getValue().getTienHoan() != null ? d.getValue().getTienHoan() : BigDecimal.ZERO)));
+        colHoan.setCellValueFactory(d -> new SimpleStringProperty(DINH_DANG_TIEN.format(d.getValue().tinhTienHoan())));
         colHoan.setPrefWidth(95);
         colHoan.setStyle("-fx-alignment: center-right;");
 
         TableColumn<PhieuDoiTra, String> colBu = new TableColumn<>("Tiền bù");
-        colBu.setCellValueFactory(d -> new SimpleStringProperty(DINH_DANG_TIEN.format(d.getValue().getTienBu() != null ? d.getValue().getTienBu() : BigDecimal.ZERO)));
+        colBu.setCellValueFactory(d -> new SimpleStringProperty(DINH_DANG_TIEN.format(d.getValue().tinhTienBu())));
         colBu.setPrefWidth(90);
         colBu.setStyle("-fx-alignment: center-right;");
 
@@ -338,14 +307,10 @@ public class XuLyPhieuDoiTraView extends VBox {
         bangDanhSachPhieu.getColumns().addAll(colStt, colMaP, colMaHd, colNgay, colKhach, colLoai, colSpDoi, colXuLySp, colTongTra, colHoan, colBu, colTrangThai);
     }
 
-    // =========================================================================
-    // 2. DỰNG MÀN HÌNH 2: CHỈNH SỬA / CHI TIẾT PHIẾU (ĐỒNG BỘ THEO LẬP PHIẾU)
-    // =========================================================================
     private void khoiTaoManHinhChinhSua() {
         pnlManHinhChinhSua.setSpacing(10);
         VBox.setVgrow(pnlManHinhChinhSua, Priority.ALWAYS);
 
-        // Header trên cùng: Quay lại + Tiêu đề + Trạng thái
         HBox pnlHeaderSua = new HBox(12);
         pnlHeaderSua.setAlignment(Pos.CENTER_LEFT);
 
@@ -360,20 +325,12 @@ public class XuLyPhieuDoiTraView extends VBox {
 
         pnlHeaderSua.getChildren().addAll(btnQuayLaiDanhSach, lblTieuDeChinhSua, lblBadgeTrangThai, spacerH);
 
-        // Dòng mô tả trạng thái
         lblBannerTrangThai.getStyleClass().add("mo-ta-phan-he");
         lblBannerTrangThai.setMaxWidth(Double.MAX_VALUE);
 
-        // Vùng 1: Card thông tin tóm tắt
         VBox cardThongTin = taoCardThongTinTomTat();
-
-        // Vùng 2: Card chọn sản phẩm đổi trả (Tương tự vùng B bên lập phiếu)
         VBox cardSanPhamTra = taoVungSanPhamTra();
-
-        // Vùng 3: Card hình thức xử lý đổi trả (Tương tự vùng C bên lập phiếu)
         VBox cardHinhThucXuLy = taoVungHinhThucXuLy();
-
-        // Vùng 4: Thanh tóm tắt cố định dưới cùng (Tương tự vùng D bên lập phiếu)
         HBox barTomTat = taoVungTomTatCoDinh();
 
         ScrollPane scroll = new ScrollPane();
@@ -596,7 +553,6 @@ public class XuLyPhieuDoiTraView extends VBox {
 
         bangSanPhamDoiTra.getColumns().addAll(colStt, colTen, colGia, colSlTra, colLyDo, colTinhTrang, colGhiChu, colThanhTien, colXoa);
 
-        // Thanh thêm sản phẩm từ HĐ gốc nếu còn
         taoKhungThemSanPhamGoc();
 
         card.getChildren().addAll(lblTieuDe, bangSanPhamDoiTra, boxThemSanPhamGoc);
@@ -651,7 +607,6 @@ public class XuLyPhieuDoiTraView extends VBox {
         HBox hangChon = new HBox(30, rdoTraHang, rdoDoiHang);
         hangChon.setAlignment(Pos.CENTER_LEFT);
 
-        // Thẻ 1: Hoàn tiền
         pnlTheHoanTien.setPadding(new Insets(10));
         pnlTheHoanTien.setStyle("-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 4px; -fx-background-radius: 4px;");
         cboHinhThucHoan.setValue("Tiền mặt");
@@ -664,27 +619,22 @@ public class XuLyPhieuDoiTraView extends VBox {
         );
         pnlTheHoanTien.getChildren().add(hangHoan);
 
-        // Thẻ 2: Đổi hàng
         pnlTheDoiHang.setPadding(new Insets(10));
         pnlTheDoiHang.setStyle("-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 4px; -fx-background-radius: 4px;");
         pnlTheDoiHang.setManaged(false);
         pnlTheDoiHang.setVisible(false);
 
         hangThemDoi.setAlignment(Pos.CENTER_LEFT);
-        txtTimSanPhamDoi.setPromptText("Lọc nhanh sản phẩm...");
-        txtTimSanPhamDoi.setPrefWidth(160);
-
-        cboSanPhamDoi.setPromptText("-- Chọn sản phẩm đổi mới --");
-        cboSanPhamDoi.setPrefWidth(320);
-        cauHinhHienThiComboBoxSanPham(cboSanPhamDoi);
+        txtMaVachSanPham.setPromptText("Quét mã vạch / nhập mã hoặc tên SP đổi rồi nhấn Enter...");
+        txtMaVachSanPham.setPrefWidth(340);
+        HBox.setHgrow(txtMaVachSanPham, Priority.ALWAYS);
 
         spnSoLuongDoi.setPrefWidth(70);
         btnThemSanPhamDoi.getStyleClass().add("nut-chinh");
         lblCanhBaoTonKho.setStyle("-fx-font-size: 11.5px; -fx-font-weight: bold;");
 
         hangThemDoi.getChildren().addAll(
-                new Label("Tìm SP:"), txtTimSanPhamDoi,
-                cboSanPhamDoi,
+                new Label("Mã vạch / Mã SP đổi:"), txtMaVachSanPham,
                 new Label("SL:"), spnSoLuongDoi,
                 btnThemSanPhamDoi, lblCanhBaoTonKho
         );
@@ -697,7 +647,7 @@ public class XuLyPhieuDoiTraView extends VBox {
         colTenDoi.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getSanPham().getTenSanPham()));
 
         TableColumn<DongDoiHang, String> colGiaDoi = new TableColumn<>("Đơn giá");
-        colGiaDoi.setCellValueFactory(d -> new SimpleStringProperty(DINH_DANG_TIEN.format(d.getValue().getSanPham().getGiaBan())));
+        colGiaDoi.setCellValueFactory(d -> new SimpleStringProperty(DINH_DANG_TIEN.format(d.getValue().getDonGia())));
         colGiaDoi.setStyle("-fx-alignment: center-right;");
 
         TableColumn<DongDoiHang, Integer> colSlDoi = new TableColumn<>("SL");
@@ -733,7 +683,6 @@ public class XuLyPhieuDoiTraView extends VBox {
         tblSanPhamDoiMoi.setItems(dsSanPhamDoiMoi);
 
         lblDongChenhLech.setStyle("-fx-font-weight: bold; -fx-font-size: 13px;");
-
         pnlTheDoiHang.getChildren().addAll(hangThemDoi, tblSanPhamDoiMoi, lblDongChenhLech);
 
         card.getChildren().addAll(lblTieuDe, hangChon, pnlTheHoanTien, pnlTheDoiHang);
@@ -764,33 +713,6 @@ public class XuLyPhieuDoiTraView extends VBox {
 
         bar.getChildren().addAll(pnlThongKe, btnInLaiPhieu, btnHuyBoSua, btnLuuCapNhat);
         return bar;
-    }
-
-    private void cauHinhHienThiComboBoxSanPham(ComboBox<SanPham> combo) {
-        StringConverter<SanPham> converter = new StringConverter<>() {
-            @Override
-            public String toString(SanPham sp) {
-                if (sp == null) return "";
-                return sp.getTenSanPham() + " - " + DINH_DANG_TIEN.format(sp.getGiaBan()) + " (Tồn: " + sp.getSoLuongTon() + ")";
-            }
-            @Override
-            public SanPham fromString(String s) { return null; }
-        };
-        combo.setConverter(converter);
-        combo.setCellFactory(lv -> new ListCell<>() {
-            @Override
-            protected void updateItem(SanPham item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : converter.toString(item));
-            }
-        });
-        combo.setButtonCell(new ListCell<>() {
-            @Override
-            protected void updateItem(SanPham item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? "-- Chọn sản phẩm đổi mới --" : converter.toString(item));
-            }
-        });
     }
 
     private void dangKySuKien() {
@@ -829,112 +751,104 @@ public class XuLyPhieuDoiTraView extends VBox {
             tinhToanLaiTaiChinh();
         });
 
-        napDanhSachSanPhamDoi();
-
-        txtTimSanPhamDoi.textProperty().addListener((obs, oldVal, newVal) -> locDanhSachSanPhamDoi(newVal));
-
-        cboSanPhamDoi.valueProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null) {
-                int ton = newVal.getSoLuongTon();
-                if (ton <= 0) {
-                    lblCanhBaoTonKho.setText("Hết hàng!");
-                    btnThemSanPhamDoi.setDisable(true);
-                } else {
-                    lblCanhBaoTonKho.setText("Tồn kho: " + ton);
-                    btnThemSanPhamDoi.setDisable(false);
-                    spnSoLuongDoi.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, ton, 1));
-                }
-            } else {
-                lblCanhBaoTonKho.setText("");
-            }
-        });
-
+        txtMaVachSanPham.setOnAction(e -> themSanPhamDoi());
         btnThemSanPhamDoi.setOnAction(e -> themSanPhamDoi());
         btnLuuCapNhat.setOnAction(e -> xuLyLuuCapNhatPhieu());
         btnInLaiPhieu.setOnAction(e -> moHopThoaiXemVaIn(phieuDangChon));
         btnHuyBoSua.setOnAction(e -> chuyenManHinh(false));
     }
 
-    private void napDanhSachSanPhamDoi() {
-        try {
-            List<SanPham> sps = controller.layDanhSachSanPhamDangKinhDoanh();
-            if (sps != null) {
-                dsSanPhamDoiGoc.clear();
-                dsSanPhamDoiGoc.addAll(sps);
-                cboSanPhamDoi.setItems(FXCollections.observableArrayList(sps));
-            }
-        } catch (Exception ignored) {}
-    }
-
-    private void locDanhSachSanPhamDoi(String tuKhoa) {
-        if (tuKhoa == null || tuKhoa.trim().isEmpty()) {
-            cboSanPhamDoi.setItems(FXCollections.observableArrayList(dsSanPhamDoiGoc));
-            return;
-        }
-        String tk = tuKhoa.trim().toLowerCase();
-        List<SanPham> loc = new ArrayList<>();
-        for (SanPham sp : dsSanPhamDoiGoc) {
-            if ((sp.getTenSanPham() != null && sp.getTenSanPham().toLowerCase().contains(tk))
-                    || (sp.getMaSanPham() != null && sp.getMaSanPham().toLowerCase().contains(tk))) {
-                loc.add(sp);
-            }
-        }
-        cboSanPhamDoi.setItems(FXCollections.observableArrayList(loc));
-    }
-
     private void themSanPhamDoi() {
-        SanPham sp = cboSanPhamDoi.getValue();
-        if (sp == null) {
-            hienCanhBao("Vui lòng chọn sản phẩm cần đổi mới!");
-            return;
-        }
-        int sl = spnSoLuongDoi.getValue();
-        if (sl > sp.getSoLuongTon()) {
-            hienCanhBao("Số lượng vượt quá tồn kho hiện tại (" + sp.getSoLuongTon() + ")!");
-            return;
-        }
+        String maHoacTuKhoa = txtMaVachSanPham.getText();
+        try {
+            SanPham sp = controller.timSanPhamTheoMaVachHoacTuKhoa(maHoacTuKhoa);
+            int sl = spnSoLuongDoi.getValue() != null ? spnSoLuongDoi.getValue() : 1;
 
-        for (DongDoiHang d : dsSanPhamDoiMoi) {
-            if (d.getSanPham().getMaSanPham().equals(sp.getMaSanPham())) {
-                d.setSoLuong(d.getSoLuong() + sl);
-                tblSanPhamDoiMoi.refresh();
-                tinhToanLaiTaiChinh();
+            for (DongDoiHang d : dsSanPhamDoiMoi) {
+                if (d.getSanPham().getMaSanPham().equalsIgnoreCase(sp.getMaSanPham())) {
+                    int slMoi = d.getSoLuong() + 1;
+                    if (slMoi > sp.getSoLuongTon()) {
+                        hienCanhBao("Số lượng vượt quá tồn kho hiện tại (" + sp.getSoLuongTon() + ")!");
+                        return;
+                    }
+                    d.setSoLuong(slMoi);
+                    txtMaVachSanPham.clear();
+                    tblSanPhamDoiMoi.refresh();
+                    tinhToanLaiTaiChinh();
+                    return;
+                }
+            }
+
+            if (sl > sp.getSoLuongTon()) {
+                hienCanhBao("Số lượng vượt quá tồn kho hiện tại (" + sp.getSoLuongTon() + ")!");
                 return;
             }
+
+            dsSanPhamDoiMoi.add(new DongDoiHang(sp, sl));
+            lblCanhBaoTonKho.setText("Đã thêm: " + sp.getTenSanPham() + " (Tồn: " + sp.getSoLuongTon() + ")");
+            txtMaVachSanPham.clear();
+            tinhToanLaiTaiChinh();
+        } catch (IllegalArgumentException ex) {
+            hienCanhBao(ex.getMessage());
+        }
+    }
+
+    private PhieuDoiTra taoPhieuTamDeTinhToan() {
+        PhieuDoiTra phieuTam = new PhieuDoiTra();
+        phieuTam.setLoaiXuLy(rdoTraHang.isSelected() ? "Hoàn tiền" : "Đổi hàng");
+        List<ChiTietPhieuDoiTra> dsCt = new ArrayList<>();
+
+        for (ChiTietPhieuDoiTra d : dsChiTietTra) {
+            ChiTietPhieuDoiTra ct = new ChiTietPhieuDoiTra();
+            ct.setMaSanPham(d.getMaSanPham());
+            ct.setTenSanPham(d.getTenSanPham());
+            ct.setDonGia(d.getDonGia());
+            ct.setSoLuong(d.getSoLuong());
+            dsCt.add(ct);
         }
 
-        dsSanPhamDoiMoi.add(new DongDoiHang(sp, sl));
-        tinhToanLaiTaiChinh();
+        if (rdoDoiHang.isSelected() && !dsSanPhamDoiMoi.isEmpty()) {
+            for (int i = 0; i < dsSanPhamDoiMoi.size(); i++) {
+                DongDoiHang doi = dsSanPhamDoiMoi.get(i);
+                ChiTietPhieuDoiTra target;
+                if (i < dsCt.size()) {
+                    target = dsCt.get(i);
+                } else {
+                    target = new ChiTietPhieuDoiTra();
+                    target.setSoLuong(0);
+                    target.setDonGia(0.0);
+                    dsCt.add(target);
+                }
+                target.setSanPhamDoi(doi.getSanPham());
+                target.setDonGiaDoi(doi.getDonGia());
+                target.setSoLuongDoi(doi.getSoLuong());
+            }
+        }
+
+        phieuTam.setDanhSachSanPham(dsCt);
+        return phieuTam;
     }
 
     private void tinhToanLaiTaiChinh() {
-        BigDecimal tongTra = BigDecimal.ZERO;
-        for (ChiTietPhieuDoiTra d : dsChiTietTra) {
-            tongTra = tongTra.add(d.tinhThanhTienTra());
-        }
-
-        BigDecimal tongDoi = BigDecimal.ZERO;
-        if (rdoDoiHang.isSelected()) {
-            for (DongDoiHang d : dsSanPhamDoiMoi) {
-                tongDoi = tongDoi.add(d.getThanhTien());
-            }
-        }
+        PhieuDoiTra phieuTam = taoPhieuTamDeTinhToan();
+        double tongTra = phieuTam.tinhTongTienHangTra();
+        double tongDoi = phieuTam.tinhTongTienHangDoi();
+        double tienHoan = phieuTam.tinhTienHoan();
+        double tienBu = phieuTam.tinhTienBu();
 
         lblTongTienTra.setText(DINH_DANG_TIEN.format(tongTra));
         lblTongTienDoi.setText(DINH_DANG_TIEN.format(tongDoi));
-        lblTienHoanDuKien.setText(DINH_DANG_TIEN.format(tongTra));
+        lblTienHoanDuKien.setText(DINH_DANG_TIEN.format(tienHoan));
 
-        BigDecimal chenhLech = tongDoi.subtract(tongTra);
         if (rdoTraHang.isSelected()) {
-            lblChenhLechCuoi.setText("Hoàn trả: " + DINH_DANG_TIEN.format(tongTra));
+            lblChenhLechCuoi.setText("Hoàn trả: " + DINH_DANG_TIEN.format(tienHoan));
         } else {
-            if (chenhLech.compareTo(BigDecimal.ZERO) > 0) {
-                lblDongChenhLech.setText("Khách cần bù: " + DINH_DANG_TIEN.format(chenhLech));
-                lblChenhLechCuoi.setText("Khách bù: " + DINH_DANG_TIEN.format(chenhLech));
-            } else if (chenhLech.compareTo(BigDecimal.ZERO) < 0) {
-                BigDecimal hoan = chenhLech.abs();
-                lblDongChenhLech.setText("Hoàn lại khách: " + DINH_DANG_TIEN.format(hoan));
-                lblChenhLechCuoi.setText("Hoàn khách: " + DINH_DANG_TIEN.format(hoan));
+            if (tienBu > 0) {
+                lblDongChenhLech.setText("Khách cần bù: " + DINH_DANG_TIEN.format(tienBu));
+                lblChenhLechCuoi.setText("Khách bù: " + DINH_DANG_TIEN.format(tienBu));
+            } else if (tienHoan > 0) {
+                lblDongChenhLech.setText("Hoàn lại khách: " + DINH_DANG_TIEN.format(tienHoan));
+                lblChenhLechCuoi.setText("Hoàn khách: " + DINH_DANG_TIEN.format(tienHoan));
             } else {
                 lblDongChenhLech.setText("Không phát sinh chênh lệch (0 VNĐ)");
                 lblChenhLechCuoi.setText("0 VNĐ");
@@ -1078,7 +992,6 @@ public class XuLyPhieuDoiTraView extends VBox {
             rdoTraHang.setSelected(true);
         }
 
-        // Nạp danh sách hàng trả
         dsChiTietTra.clear();
         if (phieuDangChon.getDanhSachSanPham() != null) {
             for (ChiTietPhieuDoiTra ct : phieuDangChon.getDanhSachSanPham()) {
@@ -1095,7 +1008,6 @@ public class XuLyPhieuDoiTraView extends VBox {
             }
         }
 
-        // Nạp danh sách hàng đổi mới
         dsSanPhamDoiMoi.clear();
         if (phieuDangChon.getDanhSachSanPham() != null) {
             for (ChiTietPhieuDoiTra ct : phieuDangChon.getDanhSachSanPham()) {
@@ -1103,7 +1015,7 @@ public class XuLyPhieuDoiTraView extends VBox {
                     SanPham spDoi = new SanPham();
                     spDoi.setMaSanPham(ct.getMaSanPhamDoi());
                     spDoi.setTenSanPham(ct.getTenSanPhamDoi() != null ? ct.getTenSanPhamDoi() : ct.getMaSanPhamDoi());
-                    spDoi.setGiaBan(ct.getDonGiaDoi() != null ? ct.getDonGiaDoi() : BigDecimal.ZERO);
+                    spDoi.setGiaBan(java.math.BigDecimal.valueOf(ct.getDonGiaDoi()));
                     spDoi.setSoLuongTon(9999);
                     dsSanPhamDoiMoi.add(new DongDoiHang(spDoi, ct.getSoLuongDoi()));
                 }
@@ -1161,9 +1073,10 @@ public class XuLyPhieuDoiTraView extends VBox {
             }
         }
 
+        double donGiaGoc = spGoc.getDonGia();
         ChiTietPhieuDoiTra dongMoi = new ChiTietPhieuDoiTra(
                 phieuDangChon.getMaPhieuDoiTra(), phieuDangChon.getMaHoaDon(),
-                spGoc.getMaSanPham(), spGoc.getTenSanPham(), slThem, spGoc.getDonGia(),
+                spGoc.getMaSanPham(), spGoc.getTenSanPham(), slThem, donGiaGoc,
                 lyDo, tinhTrang, null, txtGhiChuThem.getText()
         );
         dsChiTietTra.add(dongMoi);
@@ -1188,50 +1101,30 @@ public class XuLyPhieuDoiTraView extends VBox {
         }
 
         int tongSoLuongTra = 0;
-        BigDecimal tongTra = BigDecimal.ZERO;
         for (ChiTietPhieuDoiTra ct : dsChiTietTra) {
             tongSoLuongTra += ct.getSoLuong();
-            tongTra = tongTra.add(ct.tinhThanhTienTra());
         }
 
-        BigDecimal tongDoi = BigDecimal.ZERO;
-        if (rdoDoiHang.isSelected()) {
-            for (DongDoiHang d : dsSanPhamDoiMoi) {
-                tongDoi = tongDoi.add(d.getThanhTien());
-            }
-            if (!dsSanPhamDoiMoi.isEmpty() && !dsChiTietTra.isEmpty()) {
-                DongDoiHang doiDau = dsSanPhamDoiMoi.get(0);
-                ChiTietPhieuDoiTra ctDau = dsChiTietTra.get(0);
-                ctDau.setMaSanPhamDoi(doiDau.getSanPham().getMaSanPham());
-                ctDau.setTenSanPhamDoi(doiDau.getSanPham().getTenSanPham());
-                ctDau.setSoLuongDoi(doiDau.getSoLuong());
-                ctDau.setDonGiaDoi(doiDau.getSanPham().getGiaBan());
-            }
+        if (rdoDoiHang.isSelected() && !dsSanPhamDoiMoi.isEmpty() && !dsChiTietTra.isEmpty()) {
+            DongDoiHang doiDau = dsSanPhamDoiMoi.get(0);
+            ChiTietPhieuDoiTra ctDau = dsChiTietTra.get(0);
+            ctDau.setSanPhamDoi(doiDau.getSanPham());
+            ctDau.setSoLuongDoi(doiDau.getSoLuong());
+            ctDau.setDonGiaDoi(doiDau.getDonGia());
         }
 
         phieuDangChon.setSoLuong(tongSoLuongTra);
         if (rdoTraHang.isSelected()) {
             phieuDangChon.setLoaiXuLy("Hoàn tiền");
             phieuDangChon.setHinhThucHoan(cboHinhThucHoan.getValue());
-            phieuDangChon.setTienHoan(tongTra);
-            phieuDangChon.setTienBu(BigDecimal.ZERO);
             for (ChiTietPhieuDoiTra ct : dsChiTietTra) {
-                ct.setMaSanPhamDoi(null);
-                ct.setTenSanPhamDoi(null);
+                ct.setSanPhamDoi(null);
                 ct.setSoLuongDoi(0);
-                ct.setDonGiaDoi(BigDecimal.ZERO);
+                ct.setDonGiaDoi(0.0);
             }
         } else {
             phieuDangChon.setLoaiXuLy("Đổi hàng");
             phieuDangChon.setHinhThucHoan(null);
-            BigDecimal chenhLech = tongDoi.subtract(tongTra);
-            if (chenhLech.compareTo(BigDecimal.ZERO) > 0) {
-                phieuDangChon.setTienBu(chenhLech);
-                phieuDangChon.setTienHoan(BigDecimal.ZERO);
-            } else {
-                phieuDangChon.setTienHoan(chenhLech.abs());
-                phieuDangChon.setTienBu(BigDecimal.ZERO);
-            }
         }
 
         try {
@@ -1260,13 +1153,15 @@ public class XuLyPhieuDoiTraView extends VBox {
         }
 
         String xuLySpChon = cboXuLySanPhamNhanh.getValue() != null ? cboXuLySanPhamNhanh.getValue() : "Thu lại vào kho";
+        int diemTruDuKien = controller.tinhSoDiemTichLuyCanTru(phieu);
 
         Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION);
         xacNhan.setTitle("Xác nhận duyệt phiếu & Xử lý sản phẩm hoàn");
         xacNhan.setHeaderText("Duyệt phiếu đổi trả: " + phieu.getMaPhieuDoiTra());
         xacNhan.setContentText("Chọn hướng xử lý đối với sản phẩm khách hoàn trả:\n"
-                + "• Thu lại vào kho: Cộng lại số lượng sản phẩm hoàn vào tồn kho.\n"
-                + "• Hủy bỏ: Hủy sản phẩm hoàn, không cộng lại vào tồn kho.\n\n"
+                + "• Thu lại vào kho: Cộng lại số lượng sản phẩm hoàn vào tồn kho (soLuongTon + ?).\n"
+                + "• Hủy bỏ: Hủy sản phẩm hoàn, không cộng lại vào tồn kho.\n"
+                + "• Điểm tích lũy khách hàng tự động trừ khi duyệt: " + diemTruDuKien + " điểm.\n\n"
                 + "(Mặc định đang chọn trên thanh công cụ: " + xuLySpChon + ")");
 
         ButtonType btnThuLaiKho = new ButtonType("Duyệt & Thu lại vào kho");
@@ -1284,7 +1179,9 @@ public class XuLyPhieuDoiTraView extends VBox {
         try {
             boolean kq = controller.duyetPhieuDoiTra(phieu.getMaPhieuDoiTra(), huongXuLyQuyetDinh);
             if (kq) {
-                hienThanhCong("Đã duyệt phiếu đổi trả thành công!\nHướng xử lý sản phẩm hoàn: " + huongXuLyQuyetDinh);
+                hienThanhCong("Đã duyệt phiếu đổi trả thành công!\n"
+                        + "• Hướng xử lý sản phẩm hoàn: " + huongXuLyQuyetDinh + "\n"
+                        + "• Đã trừ điểm tích lũy khách hàng: " + diemTruDuKien + " điểm.");
                 chuyenManHinh(false);
             }
         } catch (Exception ex) {
