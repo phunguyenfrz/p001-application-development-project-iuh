@@ -21,6 +21,19 @@ public class ThongKeDAO {
 
     private static final DateTimeFormatter DINH_DANG_NGAY_NGAN = DateTimeFormatter.ofPattern("dd/MM");
 
+    private String dinhDangNhanNgay7Ngay(LocalDate ngay) {
+        String thu = switch (ngay.getDayOfWeek()) {
+            case MONDAY -> "T2";
+            case TUESDAY -> "T3";
+            case WEDNESDAY -> "T4";
+            case THURSDAY -> "T5";
+            case FRIDAY -> "T6";
+            case SATURDAY -> "T7";
+            case SUNDAY -> "CN";
+        };
+        return thu + "\n" + ngay.format(DINH_DANG_NGAY_NGAN);
+    }
+
     public ThongKeTongQuan layThongKeHomNay() {
         ThongKeTongQuan thongKe = new ThongKeTongQuan();
         LocalDate homNay = LocalDate.now();
@@ -118,25 +131,25 @@ public class ThongKeDAO {
 
         for (int i = 0; i < 7; i++) {
             LocalDate ngay = tuNgay.plusDays(i);
-            ketQua.put(ngay.format(DINH_DANG_NGAY_NGAN), 0.0);
+            ketQua.put(dinhDangNhanNgay7Ngay(ngay), 0.0);
         }
 
         String sqlHoaDon = """
-                SELECT ngayLap, ISNULL(SUM(tongTien), 0) AS doanhThu
+                SELECT CAST(ngayLap AS DATE) AS ngayLap, ISNULL(SUM(tongTien), 0) AS doanhThu
                 FROM HoaDon
-                WHERE ngayLap BETWEEN ? AND ?
+                WHERE CAST(ngayLap AS DATE) BETWEEN ? AND ?
                   AND trangThaiThanhToan = N'Đã thanh toán'
-                GROUP BY ngayLap
+                GROUP BY CAST(ngayLap AS DATE)
                 """;
 
         String sqlDoiTra = """
-                SELECT ngayLap,
+                SELECT CAST(ngayLap AS DATE) AS ngayLap,
                        ISNULL(SUM(tienHoan), 0) AS tongHoan,
                        ISNULL(SUM(tienBu), 0) AS tongBu
                 FROM PhieuDoiTra
-                WHERE ngayLap BETWEEN ? AND ?
+                WHERE CAST(ngayLap AS DATE) BETWEEN ? AND ?
                   AND trangThai IN (N'Đã duyệt', N'Hoàn thành')
-                GROUP BY ngayLap
+                GROUP BY CAST(ngayLap AS DATE)
                 """;
 
         try (Connection conn = DatabaseManager.getConnection()) {
@@ -149,8 +162,10 @@ public class ThongKeDAO {
                     while (rs.next()) {
                         Date d = rs.getDate("ngayLap");
                         if (d != null) {
-                            String nhanNgay = d.toLocalDate().format(DINH_DANG_NGAY_NGAN);
-                            ketQua.put(nhanNgay, rs.getDouble("doanhThu"));
+                            String nhanNgay = dinhDangNhanNgay7Ngay(d.toLocalDate());
+                            if (ketQua.containsKey(nhanNgay)) {
+                                ketQua.put(nhanNgay, rs.getDouble("doanhThu"));
+                            }
                         }
                     }
                 }
@@ -163,10 +178,12 @@ public class ThongKeDAO {
                     while (rs.next()) {
                         Date d = rs.getDate("ngayLap");
                         if (d != null) {
-                            String nhanNgay = d.toLocalDate().format(DINH_DANG_NGAY_NGAN);
-                            double hienTai = ketQua.getOrDefault(nhanNgay, 0.0);
-                            double dieuChinh = hienTai - rs.getDouble("tongHoan") + rs.getDouble("tongBu");
-                            ketQua.put(nhanNgay, Math.max(0.0, dieuChinh));
+                            String nhanNgay = dinhDangNhanNgay7Ngay(d.toLocalDate());
+                            if (ketQua.containsKey(nhanNgay)) {
+                                double hienTai = ketQua.getOrDefault(nhanNgay, 0.0);
+                                double dieuChinh = hienTai - rs.getDouble("tongHoan") + rs.getDouble("tongBu");
+                                ketQua.put(nhanNgay, Math.max(0.0, dieuChinh));
+                            }
                         }
                     }
                 }

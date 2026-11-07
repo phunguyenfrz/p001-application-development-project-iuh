@@ -191,3 +191,46 @@
     -fx-font-size: 11.5px;
     -fx-font-weight: 600;
 }
+
+/* ==========================================================================
+   BIỂU ĐỒ THỐNG KÊ (BARCHART & PIECHART)
+   ========================================================================== */
+.chart-plot-background {
+    -fx-background-color: #ffffff;
+}
+
+.axis {
+    -fx-tick-label-fill: #1e293b;
+    -fx-tick-label-font-family: "Segoe UI", Arial, sans-serif;
+    -fx-tick-label-font-size: 11.5px;
+    -fx-tick-label-font-weight: bold;
+}
+
+.axis Text {
+    -fx-fill: #1e293b;
+    -fx-text-alignment: center;
+}
+
+.axis .axis-tick-mark,
+.axis .axis-minor-tick-mark {
+    -fx-stroke: #94a3b8;
+}
+
+.axis-label {
+    -fx-text-fill: #334155;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.chart-horizontal-grid-lines {
+    -fx-stroke: #e2e8f0;
+}
+
+.chart-vertical-grid-lines {
+    -fx-stroke: transparent;
+}
+
+.chart-pie-label {
+    -fx-fill: #1e293b;
+    -fx-font-size: 11.5px;
+}
