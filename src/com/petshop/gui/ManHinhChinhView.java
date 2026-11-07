@@ -648,7 +648,7 @@ public class ManHinhChinhView extends BorderPane {
     }
 
     // =========================================================================
-    // 5. TIá»†N ÃCH TÃ€I KHOáº¢N
+    // 5. HÀNH ĐỘNG TÀI KHOẢN
     // =========================================================================
     public void hienThiHopThoaiDoiMatKhau() {
         new DoiMatKhauView().showAndWait();

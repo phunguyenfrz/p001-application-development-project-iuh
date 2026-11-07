@@ -381,16 +381,16 @@ CREATE TABLE PhieuDoiTra (
     maPhieuDoiTra VARCHAR(20) PRIMARY KEY CHECK (maPhieuDoiTra LIKE 'PDT-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]'),
     maHoaDon VARCHAR(20) NOT NULL,
     maNhanVien VARCHAR(20) NOT NULL,
-    maKhachHang VARCHAR(20) NOT NULL,
+    maKhachHang VARCHAR(20) NULL,
     ngayLap DATE NOT NULL,
     lyDo NVARCHAR(255) NOT NULL CHECK (LEN(LTRIM(RTRIM(lyDo))) > 0),
     soLuong INT NOT NULL CHECK (soLuong > 0),
-    loaiXuLy NVARCHAR(30) NOT NULL DEFAULT N'Trả hàng, hoàn tiền' 
-        CHECK (loaiXuLy IN (N'Trả hàng, hoàn tiền', N'Đổi sang sản phẩm khác')),
+    loaiXuLy NVARCHAR(30) NOT NULL DEFAULT N'Hoàn tiền' 
+        CHECK (loaiXuLy IN (N'Hoàn tiền', N'Đổi hàng', N'Trả hàng, hoàn tiền', N'Đổi sang sản phẩm khác')),
     tienHoan DECIMAL(18,2) NOT NULL DEFAULT 0 CHECK (tienHoan >= 0),
     tienBu DECIMAL(18,2) NOT NULL DEFAULT 0 CHECK (tienBu >= 0),
     trangThai NVARCHAR(30) NOT NULL DEFAULT N'Chờ xử lý' 
-        CHECK (trangThai IN (N'Chờ xử lý', N'Đã duyệt', N'Từ chối')),
+        CHECK (trangThai IN (N'Chờ xử lý', N'Đã duyệt', N'Từ chối', N'Hoàn thành')),
     ghiChu NVARCHAR(255) NULL,
     CONSTRAINT FK_PhieuDoiTra_HoaDon FOREIGN KEY (maHoaDon) REFERENCES HoaDon(maHoaDon),
     CONSTRAINT FK_PhieuDoiTra_NhanVien FOREIGN KEY (maNhanVien) REFERENCES NhanVien(maNhanVien),

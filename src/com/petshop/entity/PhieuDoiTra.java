@@ -270,6 +270,15 @@ public class PhieuDoiTra {
     }
 
     public String getLyDo() {
+        if (lyDo != null && !lyDo.trim().isEmpty()) {
+            return lyDo;
+        }
+        if (danhSachSanPham != null && !danhSachSanPham.isEmpty()) {
+            String lyDoDau = danhSachSanPham.get(0).getLyDo();
+            if (lyDoDau != null && !lyDoDau.trim().isEmpty()) {
+                return lyDoDau;
+            }
+        }
         return lyDo;
     }
 
