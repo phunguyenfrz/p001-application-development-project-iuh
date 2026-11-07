@@ -354,7 +354,6 @@ public class HoaDonBUSTest {
 
             HoaDon hdCu = new HoaDon();
             hdCu.setMaHoaDon("HD-20261101-000001");
-            hdCu.setTongTienDb(100_000.0);
             hdCu.getDanhSachSanPham().add(new ChiTietHoaDonSanPham("HD-20261101-000001", "SP01", 1, 100_000.0));
             mockDao.themHoaDonSan(hdCu);
 
@@ -384,7 +383,6 @@ public class HoaDonBUSTest {
 
             HoaDon hdCu = new HoaDon();
             hdCu.setMaHoaDon("HD-20261101-000002");
-            hdCu.setTongTienDb(200_000.0);
             hdCu.getDanhSachSanPham().add(new ChiTietHoaDonSanPham("HD-20261101-000002", "SP01", 2, 100_000.0));
             mockDao.themHoaDonSan(hdCu);
 

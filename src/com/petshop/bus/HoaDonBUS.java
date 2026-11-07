@@ -3,7 +3,6 @@ package com.petshop.bus;
 import com.petshop.dao.HoaDonDAO;
 import com.petshop.entity.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -117,10 +116,6 @@ public class HoaDonBUS {
         }
     }
 
-    public int tinhDiemTichLuy(BigDecimal soTien, boolean laKhachHang) {
-        return tinhDiemTichLuy(soTien != null ? soTien.doubleValue() : 0.0, laKhachHang);
-    }
-
     /**
      * Hủy hóa đơn bán hàng và hoàn lại tồn kho sản phẩm (INV_CANCEL).
      * Yêu cầu quyền: HD_CAP_NHAT.
@@ -146,14 +141,8 @@ public class HoaDonBUS {
 
     /**
      * Cập nhật hóa đơn đã thanh toán khi có thay đổi mặt hàng hoặc số lượng (INV_UPDATE).
-     * Yêu cầu quyền: HD_CAP_NHAT.
+     * Yêu cầu quyền: HD_CAP_NHAT. Tuân thủ 100% kiểu nguyên thủy double (Điều 1 IUH).
      */
-    public boolean capNhatHoaDon(HoaDon hoaDonCu, HoaDon hoaDonMoi, BigDecimal tienThanhToanThem, BigDecimal tienHoanLai) {
-        return capNhatHoaDon(hoaDonCu, hoaDonMoi,
-                tienThanhToanThem != null ? tienThanhToanThem.doubleValue() : 0.0,
-                tienHoanLai != null ? tienHoanLai.doubleValue() : 0.0);
-    }
-
     public boolean capNhatHoaDon(HoaDon hoaDonCu, HoaDon hoaDonMoi, double tienThanhToanThem, double tienHoanLai) {
         kiemTraQuyenHoaDon("HD_CAP_NHAT");
 

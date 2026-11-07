@@ -19,7 +19,6 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -271,7 +270,7 @@ public class InBaoCaoDoanhThuDialog extends Stage {
         GridPane header = taoHangTieuDe(rongs, tieuDes);
         box.getChildren().add(header);
 
-        BigDecimal tongTien = BigDecimal.ZERO;
+        double tongTien = 0.0;
         if (dsHoaDon != null && !dsHoaDon.isEmpty()) {
             int stt = 1;
             for (HoaDon hd : dsHoaDon) {
@@ -282,8 +281,8 @@ public class InBaoCaoDoanhThuDialog extends Stage {
                     khach += " (" + hd.getSoDienThoaiKhachHang() + ")";
                 }
                 String tt = hd.getTrangThaiThanhToan();
-                BigDecimal thucThu = "Đã hủy".equalsIgnoreCase(tt) ? BigDecimal.ZERO : BigDecimal.valueOf(hd.getTongTien());
-                tongTien = tongTien.add(thucThu);
+                double thucThu = "Đã hủy".equalsIgnoreCase(tt) ? 0.0 : hd.getTongTien();
+                tongTien += thucThu;
 
                 String[] giaTri = {
                         String.valueOf(stt++),
@@ -327,14 +326,14 @@ public class InBaoCaoDoanhThuDialog extends Stage {
         box.getChildren().add(header);
 
         int tongSl = 0;
-        BigDecimal tongTien = BigDecimal.ZERO;
+        double tongTien = 0.0;
         if (dsSanPham != null && !dsSanPham.isEmpty()) {
             int stt = 1;
             for (Map<String, Object> m : dsSanPham) {
                 int sl = (int) m.getOrDefault("soLuong", 0);
-                BigDecimal dt = (BigDecimal) m.getOrDefault("doanhThu", BigDecimal.ZERO);
+                double dt = m.get("doanhThu") instanceof Number n ? n.doubleValue() : 0.0;
                 tongSl += sl;
-                tongTien = tongTien.add(dt);
+                tongTien += dt;
 
                 String[] giaTri = {
                         String.valueOf(stt++),
@@ -376,14 +375,14 @@ public class InBaoCaoDoanhThuDialog extends Stage {
         box.getChildren().add(header);
 
         int tongLuot = 0;
-        BigDecimal tongTien = BigDecimal.ZERO;
+        double tongTien = 0.0;
         if (dsDichVu != null && !dsDichVu.isEmpty()) {
             int stt = 1;
             for (Map<String, Object> m : dsDichVu) {
                 int sl = (int) m.getOrDefault("soLuong", 0);
-                BigDecimal dt = (BigDecimal) m.getOrDefault("doanhThu", BigDecimal.ZERO);
+                double dt = m.get("doanhThu") instanceof Number n ? n.doubleValue() : 0.0;
                 tongLuot += sl;
-                tongTien = tongTien.add(dt);
+                tongTien += dt;
 
                 String[] giaTri = {
                         String.valueOf(stt++),
@@ -423,12 +422,12 @@ public class InBaoCaoDoanhThuDialog extends Stage {
         GridPane header = taoHangTieuDe(rongs, tieuDes);
         box.getChildren().add(header);
 
-        BigDecimal tongHoan = BigDecimal.ZERO;
+        double tongHoan = 0.0;
         if (dsDoiTra != null && !dsDoiTra.isEmpty()) {
             int stt = 1;
             for (BaoCaoDoanhThuHoaDonView.DongHangDoiTraBaoCao dt : dsDoiTra) {
-                BigDecimal hoan = dt.tienHoan != null ? dt.tienHoan : BigDecimal.ZERO;
-                tongHoan = tongHoan.add(hoan);
+                double hoan = dt.tienHoan;
+                tongHoan += hoan;
 
                 String[] giaTri = {
                         String.valueOf(stt++),
@@ -725,7 +724,7 @@ public class InBaoCaoDoanhThuDialog extends Stage {
                     khach += " (" + hd.getSoDienThoaiKhachHang() + ")";
                 }
                 String tt = hd.getTrangThaiThanhToan();
-                BigDecimal thucThu = "Đã hủy".equalsIgnoreCase(tt) ? BigDecimal.ZERO : BigDecimal.valueOf(hd.getTongTien());
+                double thucThu = "Đã hủy".equalsIgnoreCase(tt) ? 0.0 : hd.getTongTien();
 
                 themODuLieuPDF(tblHd, String.valueOf(stt++), fontBody, Element.ALIGN_CENTER);
                 themODuLieuPDF(tblHd, hd.getMaHoaDon(), fontBody, Element.ALIGN_LEFT);

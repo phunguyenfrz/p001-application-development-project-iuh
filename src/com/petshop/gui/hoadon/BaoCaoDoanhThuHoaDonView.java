@@ -16,7 +16,6 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -366,8 +365,8 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
 
         TableColumn<Map<String, Object>, String> colDt = new TableColumn<>("Tổng doanh thu");
         colDt.setCellValueFactory(d -> {
-            BigDecimal dt = (BigDecimal) d.getValue().get("doanhThu");
-            return new SimpleStringProperty(DINH_DANG_TIEN.format(dt != null ? dt : BigDecimal.ZERO));
+            double dt = d.getValue().get("doanhThu") instanceof Number n ? n.doubleValue() : 0.0;
+            return new SimpleStringProperty(DINH_DANG_TIEN.format(dt));
         });
         colDt.setPrefWidth(130);
         colDt.setStyle("-fx-alignment: center-right; -fx-font-weight: bold;");
@@ -400,8 +399,8 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
 
         TableColumn<Map<String, Object>, String> colDt = new TableColumn<>("Tổng doanh thu dịch vụ");
         colDt.setCellValueFactory(d -> {
-            BigDecimal dt = (BigDecimal) d.getValue().get("doanhThu");
-            return new SimpleStringProperty(DINH_DANG_TIEN.format(dt != null ? dt : BigDecimal.ZERO));
+            double dt = d.getValue().get("doanhThu") instanceof Number n ? n.doubleValue() : 0.0;
+            return new SimpleStringProperty(DINH_DANG_TIEN.format(dt));
         });
         colDt.setPrefWidth(140);
         colDt.setStyle("-fx-alignment: center-right; -fx-font-weight: bold;");
@@ -552,20 +551,20 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
             }
             Map<String, Object> baoCao = hoaDonController.layBaoCaoDoanhThu(tuNgay, denNgay, trangThaiLoc);
 
-            BigDecimal tongDt = (BigDecimal) baoCao.getOrDefault("tongDoanhThu", BigDecimal.ZERO);
-            BigDecimal dtSp = (BigDecimal) baoCao.getOrDefault("doanhThuSanPham", BigDecimal.ZERO);
-            BigDecimal dtDv = (BigDecimal) baoCao.getOrDefault("doanhThuDichVu", BigDecimal.ZERO);
-            BigDecimal tongGiam = (BigDecimal) baoCao.getOrDefault("tongGiamGia", BigDecimal.ZERO);
+            double tongDt = baoCao.get("tongDoanhThu") instanceof Number n ? n.doubleValue() : 0.0;
+            double dtSp = baoCao.get("doanhThuSanPham") instanceof Number n ? n.doubleValue() : 0.0;
+            double dtDv = baoCao.get("doanhThuDichVu") instanceof Number n ? n.doubleValue() : 0.0;
+            double tongGiam = baoCao.get("tongGiamGia") instanceof Number n ? n.doubleValue() : 0.0;
 
-            BigDecimal tongHoanDt = (BigDecimal) baoCao.getOrDefault("tongTienHoanDoiTra", BigDecimal.ZERO);
-            BigDecimal tongBuDt = (BigDecimal) baoCao.getOrDefault("tongTienBuDoiTra", BigDecimal.ZERO);
+            double tongHoanDt = baoCao.get("tongTienHoanDoiTra") instanceof Number n ? n.doubleValue() : 0.0;
+            double tongBuDt = baoCao.get("tongTienBuDoiTra") instanceof Number n ? n.doubleValue() : 0.0;
 
-            BigDecimal dtTm = (BigDecimal) baoCao.getOrDefault("doanhThuTienMat", BigDecimal.ZERO);
-            BigDecimal dtCk = (BigDecimal) baoCao.getOrDefault("doanhThuChuyenKhoan", BigDecimal.ZERO);
+            double dtTm = baoCao.get("doanhThuTienMat") instanceof Number n ? n.doubleValue() : 0.0;
+            double dtCk = baoCao.get("doanhThuChuyenKhoan") instanceof Number n ? n.doubleValue() : 0.0;
             int soHd = (int) baoCao.getOrDefault("tongSoHoaDon", 0);
             int soHuy = (int) baoCao.getOrDefault("soHoaDonHuy", 0);
             int soTc = (int) baoCao.getOrDefault("soHoaDonThanhCong", Math.max(0, soHd - soHuy));
-            BigDecimal aov = (BigDecimal) baoCao.getOrDefault("giaTriTrungBinhDon", BigDecimal.ZERO);
+            double aov = baoCao.get("giaTriTrungBinhDon") instanceof Number n ? n.doubleValue() : 0.0;
 
             // Cập nhật các thẻ KPI
             lblTongDoanhThu.setText(DINH_DANG_TIEN.format(tongDt));
@@ -602,14 +601,14 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
                     if (p.getDanhSachSanPham() != null && !p.getDanhSachSanPham().isEmpty()) {
                         for (int i = 0; i < p.getDanhSachSanPham().size(); i++) {
                             ChiTietPhieuDoiTra ct = p.getDanhSachSanPham().get(i);
-                            BigDecimal tienHoanDong;
-                            BigDecimal tienBuDong;
+                            double tienHoanDong;
+                            double tienBuDong;
                             if (laDoi) {
-                                tienHoanDong = i == 0 ? BigDecimal.valueOf(p.getTienHoan()) : BigDecimal.ZERO;
-                                tienBuDong = i == 0 ? BigDecimal.valueOf(p.getTienBu()) : BigDecimal.ZERO;
+                                tienHoanDong = i == 0 ? p.getTienHoan() : 0.0;
+                                tienBuDong = i == 0 ? p.getTienBu() : 0.0;
                             } else {
-                                tienHoanDong = BigDecimal.valueOf(ct.tinhThanhTienTra());
-                                tienBuDong = BigDecimal.ZERO;
+                                tienHoanDong = ct.tinhThanhTienTra();
+                                tienBuDong = 0.0;
                             }
                             dsHangDoiTra.add(new DongHangDoiTraBaoCao(
                                     p.getMaPhieuDoiTra(),
@@ -632,8 +631,8 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
                                 p.getSoLuong(),
                                 p.getLyDo(),
                                 "Đang cập nhật",
-                                BigDecimal.valueOf(p.getTienHoan()),
-                                BigDecimal.valueOf(p.getTienBu()),
+                                p.getTienHoan(),
+                                p.getTienBu(),
                                 p.getTrangThai()
                         ));
                     }
@@ -642,7 +641,7 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
 
             long demThanhCong = ds.stream().filter(h -> "Đã thanh toán".equalsIgnoreCase(h.getTrangThaiThanhToan())).count();
             long demHuy = ds.stream().filter(h -> "Đã hủy".equalsIgnoreCase(h.getTrangThaiThanhToan())).count();
-            BigDecimal tongGocThuc = dtSp.add(dtDv);
+            double tongGocThuc = dtSp + dtDv;
             lblThongKeChanBang.setText(String.format("Hiển thị: %d hóa đơn (%d hoàn tất, %d đã hủy) | %d SP bán ra | %d dịch vụ | %d lượt đổi trả | Tổng giá gốc: %s | Tổng thực thu: %s",
                     ds.size(), demThanhCong, demHuy, dsSp.size(), dsDv.size(), dsHangDoiTra.size(), DINH_DANG_TIEN.format(tongGocThuc), DINH_DANG_TIEN.format(tongDt)));
 
@@ -691,20 +690,20 @@ public class BaoCaoDoanhThuHoaDonView extends VBox {
         public final int soLuong;
         public final String lyDo;
         public final String huongXuLy;
-        public final BigDecimal tienHoan;
-        public final BigDecimal tienBu;
+        public final double tienHoan;
+        public final double tienBu;
         public final String trangThai;
 
         public DongHangDoiTraBaoCao(String maPhieu, String maHoaDon, String tenSanPham, int soLuong,
-                                   String lyDo, String huongXuLy, BigDecimal tienHoan, BigDecimal tienBu, String trangThai) {
+                                   String lyDo, String huongXuLy, double tienHoan, double tienBu, String trangThai) {
             this.maPhieu = maPhieu;
             this.maHoaDon = maHoaDon;
             this.tenSanPham = tenSanPham;
             this.soLuong = soLuong;
             this.lyDo = lyDo;
             this.huongXuLy = huongXuLy;
-            this.tienHoan = tienHoan != null ? tienHoan : BigDecimal.ZERO;
-            this.tienBu = tienBu != null ? tienBu : BigDecimal.ZERO;
+            this.tienHoan = Math.max(0.0, tienHoan);
+            this.tienBu = Math.max(0.0, tienBu);
             this.trangThai = trangThai;
         }
     }

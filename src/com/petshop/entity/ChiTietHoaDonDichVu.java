@@ -66,5 +66,4 @@ public class ChiTietHoaDonDichVu {
 
     public double getDonGia() { return donGia; }
     public void setDonGia(double donGia) { this.donGia = donGia; }
-    public void setDonGia(java.math.BigDecimal donGia) { this.donGia = (donGia != null ? donGia.doubleValue() : 0.0); }
 }

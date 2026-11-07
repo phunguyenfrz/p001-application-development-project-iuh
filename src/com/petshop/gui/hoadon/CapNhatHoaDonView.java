@@ -14,7 +14,6 @@ import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -113,9 +112,9 @@ public class CapNhatHoaDonView extends VBox {
     private final Button btnLuuVaIn = new Button("🖨 Cập nhật & In hóa đơn");
     private final Button btnHuyChinhSua = new Button("Hủy bỏ");
 
-    // Biến tính toán chênh lệch
-    private BigDecimal tongTienMoiHienTai = BigDecimal.ZERO;
-    private BigDecimal tienChenhLech = BigDecimal.ZERO;
+    // Biến tính toán chênh lệch (100% double nguyên thủy - Điều 1 IUH)
+    private double tongTienMoiHienTai = 0.0;
+    private double tienChenhLech = 0.0;
 
     public CapNhatHoaDonView() {
         setSpacing(12);
@@ -669,8 +668,8 @@ public class CapNhatHoaDonView extends VBox {
         // Tiền khách đưa khi thanh toán thêm
         txtTienKhachDua.textProperty().addListener((obs, cu, moi) -> tinhToanTienThoiThem());
         btnDuTien.setOnAction(e -> {
-            if (tienChenhLech.compareTo(BigDecimal.ZERO) > 0) {
-                txtTienKhachDua.setText(String.valueOf(tienChenhLech.longValue()));
+            if (tienChenhLech > 0.0) {
+                txtTienKhachDua.setText(String.valueOf((long) tienChenhLech));
             }
         });
     }
@@ -920,23 +919,23 @@ public class CapNhatHoaDonView extends VBox {
     private void tinhToanLaiChenhLech() {
         if (hoaDonGoc == null) return;
 
-        BigDecimal tongGocMoi = BigDecimal.ZERO;
+        double tongGocMoi = 0.0;
         for (DongHoaDon d : dsDongHang) {
-            tongGocMoi = tongGocMoi.add(BigDecimal.valueOf(d.getThanhTien()));
+            tongGocMoi += d.getThanhTien();
         }
 
         // Áp lại các khoản giảm giá gốc nếu có
-        BigDecimal tienGiamKm = BigDecimal.valueOf(hoaDonGoc.getTienGiam());
-        BigDecimal tienGiamDiem = BigDecimal.valueOf(hoaDonGoc.getTienGiamTuDiem());
-        BigDecimal tongGiam = tienGiamKm.add(tienGiamDiem);
+        double tienGiamKm = hoaDonGoc.getTienGiam();
+        double tienGiamDiem = hoaDonGoc.getTienGiamTuDiem();
+        double tongGiam = tienGiamKm + tienGiamDiem;
 
-        this.tongTienMoiHienTai = tongGocMoi.subtract(tongGiam).max(BigDecimal.ZERO);
+        this.tongTienMoiHienTai = Math.max(0.0, tongGocMoi - tongGiam);
         lblTongTienMoi.setText(DINH_DANG_TIEN.format(tongTienMoiHienTai));
 
-        BigDecimal tongCu = BigDecimal.valueOf(hoaDonGoc.getTongTien());
-        this.tienChenhLech = tongTienMoiHienTai.subtract(tongCu);
+        double tongCu = hoaDonGoc.getTongTien();
+        this.tienChenhLech = tongTienMoiHienTai - tongCu;
 
-        if (tienChenhLech.compareTo(BigDecimal.ZERO) > 0) {
+        if (tienChenhLech > 0.0) {
             // Khách phải trả thêm
             lblTrangThaiChenhLech.setText("KHÁCH CẦN THANH TOÁN THÊM: +" + DINH_DANG_TIEN.format(tienChenhLech));
             lblTrangThaiChenhLech.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #0369a1;");
@@ -947,9 +946,9 @@ public class CapNhatHoaDonView extends VBox {
             boxHoanTien.setManaged(false);
 
             tinhToanTienThoiThem();
-        } else if (tienChenhLech.compareTo(BigDecimal.ZERO) < 0) {
+        } else if (tienChenhLech < 0.0) {
             // Cửa hàng hoàn tiền mặt cho khách
-            BigDecimal tienHoan = tienChenhLech.abs();
+            double tienHoan = Math.abs(tienChenhLech);
             lblTrangThaiChenhLech.setText("CỬA HÀNG HOÀN TIỀN CHO KHÁCH: " + DINH_DANG_TIEN.format(tienHoan));
             lblTrangThaiChenhLech.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #dc2626;");
 
@@ -972,7 +971,7 @@ public class CapNhatHoaDonView extends VBox {
     }
 
     private void tinhToanTienThoiThem() {
-        if (tienChenhLech.compareTo(BigDecimal.ZERO) <= 0) {
+        if (tienChenhLech <= 0.0) {
             lblTienThoiLai.setText("0 VNĐ");
             return;
         }
@@ -984,13 +983,13 @@ public class CapNhatHoaDonView extends VBox {
         }
 
         try {
-            BigDecimal dua = new BigDecimal(nhap);
-            BigDecimal thoi = dua.subtract(tienChenhLech);
-            if (thoi.compareTo(BigDecimal.ZERO) >= 0) {
+            double dua = Double.parseDouble(nhap);
+            double thoi = dua - tienChenhLech;
+            if (thoi >= 0.0) {
                 lblTienThoiLai.setText(DINH_DANG_TIEN.format(thoi));
                 lblTienThoiLai.setStyle("-fx-font-weight: bold; -fx-text-fill: #15803d;");
             } else {
-                lblTienThoiLai.setText("Chưa đủ (còn thiếu " + DINH_DANG_TIEN.format(thoi.abs()) + ")");
+                lblTienThoiLai.setText("Chưa đủ (còn thiếu " + DINH_DANG_TIEN.format(Math.abs(thoi)) + ")");
                 lblTienThoiLai.setStyle("-fx-font-weight: bold; -fx-text-fill: #dc2626;");
             }
         } catch (Exception ex) {
@@ -1009,8 +1008,8 @@ public class CapNhatHoaDonView extends VBox {
             return;
         }
 
-        BigDecimal tienKhachDua = BigDecimal.ZERO;
-        if (tienChenhLech.compareTo(BigDecimal.ZERO) > 0 && radTienMat.isSelected()) {
+        double tienKhachDua = 0.0;
+        if (tienChenhLech > 0.0 && radTienMat.isSelected()) {
             String strTienKhachDua = txtTienKhachDua.getText() != null
                     ? txtTienKhachDua.getText().trim()
                     : "";
@@ -1021,8 +1020,8 @@ public class CapNhatHoaDonView extends VBox {
             }
 
             try {
-                tienKhachDua = new BigDecimal(strTienKhachDua);
-                if (tienKhachDua.compareTo(tienChenhLech) < 0) {
+                tienKhachDua = Double.parseDouble(strTienKhachDua);
+                if (tienKhachDua < tienChenhLech) {
                     hienThiCanhBao("Số tiền khách đưa không đủ để thanh toán phần chênh lệch!");
                     txtTienKhachDua.requestFocus();
                     return;
@@ -1052,18 +1051,18 @@ public class CapNhatHoaDonView extends VBox {
         hdMoi.setDiemTichLuyCong(hoaDonGoc.getDiemTichLuyCong());
 
         // Hình thức thanh toán: nếu có thanh toán thêm thì ghi nhận hình thức trả thêm
-        if (tienChenhLech.compareTo(BigDecimal.ZERO) > 0) {
+        if (tienChenhLech > 0.0) {
             hdMoi.setHinhThucThanhToan(radChuyenKhoan.isSelected() ? "Chuyển khoản" : "Tiền mặt");
-            hdMoi.setTienThanhToanThem(tienChenhLech.doubleValue());
+            hdMoi.setTienThanhToanThem(tienChenhLech);
             hdMoi.setTienHoanLai(0.0);
             if (radTienMat.isSelected()) {
-                hdMoi.setTienKhachDua(tienKhachDua.doubleValue());
-                hdMoi.setTienThoiLai(tienKhachDua.subtract(tienChenhLech).doubleValue());
+                hdMoi.setTienKhachDua(tienKhachDua);
+                hdMoi.setTienThoiLai(tienKhachDua - tienChenhLech);
             }
-        } else if (tienChenhLech.compareTo(BigDecimal.ZERO) < 0) {
+        } else if (tienChenhLech < 0.0) {
             hdMoi.setHinhThucThanhToan(hoaDonGoc.getHinhThucThanhToan());
             hdMoi.setTienThanhToanThem(0.0);
-            hdMoi.setTienHoanLai(tienChenhLech.abs().doubleValue());
+            hdMoi.setTienHoanLai(Math.abs(tienChenhLech));
         } else {
             hdMoi.setHinhThucThanhToan(hoaDonGoc.getHinhThucThanhToan());
             hdMoi.setTienThanhToanThem(0.0);
