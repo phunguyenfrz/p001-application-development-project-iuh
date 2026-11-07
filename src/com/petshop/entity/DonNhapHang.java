@@ -49,8 +49,6 @@ public class DonNhapHang {
     private String lyDoHuy;
 
     // Danh sách dòng chi tiết và chuỗi tên mặt hàng hiển thị
-    private double tongTien;
-    private double tongTienThucNhan;
     private String tenHang;
     private List<ChiTietDonNhap> danhSachChiTiet = new ArrayList<>();
 
@@ -287,14 +285,14 @@ public class DonNhapHang {
      * Tuyệt đối không lưu biến thành viên tongTien.
      */
     public double tinhTongTien() {
-        if (danhSachChiTiet != null && !danhSachChiTiet.isEmpty()) {
-            double sum = 0.0;
-            for (ChiTietDonNhap ct : danhSachChiTiet) {
-                sum += ct.tinhThanhTien();
-            }
-            return sum;
+        if (danhSachChiTiet == null || danhSachChiTiet.isEmpty()) {
+            return 0.0;
         }
-        return tongTien;
+        double sum = 0.0;
+        for (ChiTietDonNhap ct : danhSachChiTiet) {
+            sum += ct.tinhThanhTien();
+        }
+        return sum;
     }
 
     /**
@@ -304,22 +302,19 @@ public class DonNhapHang {
         return tinhTongTien();
     }
 
-    public void setTongTien(double tongTien) {
-        this.tongTien = tongTien;
-    }
-
     /**
      * Phương thức tự tính toán tổng tiền thực nhận theo danh sách chi tiết (Điều 2.3).
+     * Tuyệt đối không lưu biến thành viên tongTienThucNhan.
      */
     public double tinhTongTienThucNhan() {
-        if (danhSachChiTiet != null && !danhSachChiTiet.isEmpty()) {
-            double sum = 0.0;
-            for (ChiTietDonNhap ct : danhSachChiTiet) {
-                sum += ct.tinhThanhTienThucNhan();
-            }
-            if (sum > 0.0) return sum;
+        if (danhSachChiTiet == null || danhSachChiTiet.isEmpty()) {
+            return 0.0;
         }
-        return tongTienThucNhan;
+        double sum = 0.0;
+        for (ChiTietDonNhap ct : danhSachChiTiet) {
+            sum += ct.tinhThanhTienThucNhan();
+        }
+        return sum;
     }
 
     /**
@@ -327,10 +322,6 @@ public class DonNhapHang {
      */
     public double getTongTienThucNhan() {
         return tinhTongTienThucNhan();
-    }
-
-    public void setTongTienThucNhan(double tongTienThucNhan) {
-        this.tongTienThucNhan = tongTienThucNhan;
     }
 
     @Override
