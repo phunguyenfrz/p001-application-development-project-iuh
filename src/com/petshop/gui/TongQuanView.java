@@ -127,22 +127,7 @@ public class TongQuanView extends VBox {
         HBox pnlBieuDo = taoKhuVucBieuDo();
         VBox.setVgrow(pnlBieuDo, Priority.ALWAYS);
 
-        // 4. Hướng dẫn thao tác nhanh
-        VBox pnlHuongDan = new VBox(8);
-        pnlHuongDan.setPadding(new Insets(16, 22, 16, 22));
-        pnlHuongDan.setStyle("-fx-background-color: white; -fx-background-radius: 10px; -fx-border-color: #eaecf0; -fx-border-radius: 10px;");
-
-        Label lblTieuDeHuongDan = new Label("Hướng dẫn thao tác nhanh");
-        lblTieuDeHuongDan.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #101828;");
-
-        Label lblDong1 = new Label("• Nhấp trực tiếp vào 3 thẻ chỉ số phía trên (Doanh thu, Lịch hẹn, Tồn kho) để chuyển nhanh đến màn hình nghiệp vụ chi tiết.");
-        Label lblDong2 = new Label("• Sử dụng thanh điều hướng bên trái để truy cập các phân hệ: Khách hàng, Thú cưng, Lịch hẹn, Hóa đơn, Sản phẩm...");
-        lblDong1.setStyle("-fx-text-fill: #475467; -fx-font-size: 12.5px;");
-        lblDong2.setStyle("-fx-text-fill: #475467; -fx-font-size: 12.5px;");
-
-        pnlHuongDan.getChildren().addAll(lblTieuDeHuongDan, lblDong1, lblDong2);
-
-        VBox noiDungChinh = new VBox(16, pnlChaoMung, pnlThongKe, pnlBieuDo, pnlHuongDan);
+        VBox noiDungChinh = new VBox(16, pnlChaoMung, pnlThongKe, pnlBieuDo);
         ScrollPane scroll = new ScrollPane(noiDungChinh);
         scroll.setFitToWidth(true);
         scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
