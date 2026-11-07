@@ -25,16 +25,7 @@ public class SanPhamDAO {
             String sql = "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'SanPham' AND COLUMN_NAME = 'giaNhap'";
             try (PreparedStatement ps = conn.prepareStatement(sql);
                  ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    coCotGiaNhap = true;
-                } else {
-                    try (Statement st = conn.createStatement()) {
-                        st.execute("ALTER TABLE SanPham ADD giaNhap DECIMAL(18,2) NOT NULL DEFAULT 0");
-                        coCotGiaNhap = true;
-                    } catch (SQLException ignored) {
-                        coCotGiaNhap = false;
-                    }
-                }
+                coCotGiaNhap = rs.next();
             } catch (SQLException e) {
                 coCotGiaNhap = true;
             }
