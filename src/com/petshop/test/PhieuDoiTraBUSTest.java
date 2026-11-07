@@ -5,7 +5,6 @@ import com.petshop.entity.HoaDon;
 import com.petshop.entity.PhieuDoiTra;
 import com.petshop.bus.PhieuDoiTraBUS;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -188,7 +187,7 @@ public class PhieuDoiTraBUSTest {
         ct.setMaSanPham("SP-20261005-000001");
         ct.setTenSanPham("Thức ăn Royal Canin");
         ct.setSoLuong(2);
-        ct.setDonGia(new BigDecimal("150000"));
+        ct.setDonGia(150_000.0);
         dsSp.add(ct);
         hd.setDanhSachSanPham(dsSp);
 

@@ -14,7 +14,6 @@ import javafx.scene.layout.*;
 import javafx.stage.Popup;
 import javafx.util.StringConverter;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -720,14 +719,14 @@ public class LichSuGiaoDichKhachHangView extends VBox {
         int soHoaDon = danhSachHoaDon.size();
         lblKetQuaHienThi.setText("Trong kết quả đang hiển thị:\n" + soHoaDon + " hóa đơn");
 
-        // Tính tổng tiền các hóa đơn có trạng thái "Đã thanh toán"
+        // Tính tổng tiền các hóa đơn có trạng thái "Đã thanh toán" (100% double)
         int soHoaDonDaThanhToan = 0;
-        BigDecimal tongTienDaTT = BigDecimal.ZERO;
+        double tongTienDaTT = 0.0;
 
         for (LichSuGiaoDich hd : danhSachHoaDon) {
             if ("Đã thanh toán".equalsIgnoreCase(hd.getTrangThaiThanhToan())) {
                 soHoaDonDaThanhToan++;
-                tongTienDaTT = tongTienDaTT.add(hd.getTongTien());
+                tongTienDaTT += hd.getTongTien();
             }
         }
 

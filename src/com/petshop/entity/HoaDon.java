@@ -51,8 +51,6 @@ public class HoaDon {
     private double tienThoiLai = 0.0;
     private double tienThanhToanThem = 0.0;
     private double tienHoanLai = 0.0;
-    private double tongTienGocDb = 0.0; // Lưu tạm khi query DB chưa nạp chi tiết
-    private double tongTienDb = 0.0;    // Lưu tạm khi query DB chưa nạp chi tiết
     private String ghiChu;
 
     // Danh sách dòng chi tiết
@@ -106,9 +104,6 @@ public class HoaDon {
             for (ChiTietHoaDonDichVu dv : danhSachDichVu) {
                 tong += dv.tinhThanhTien();
             }
-        }
-        if (tong == 0.0 && tongTienGocDb > 0.0) {
-            return tongTienGocDb;
         }
         return tong;
     }
@@ -288,22 +283,12 @@ public class HoaDon {
         return tinhTongTienGoc();
     }
 
-    public void setTongTienGocDb(double tongTienGocDb) {
-        this.tongTienGocDb = tongTienGocDb;
-    }
-
     /**
-     * Delegate getter lấy tổng tiền thực thanh toán dẫn xuất.
+     * Delegate getter lấy tổng tiền thực thanh toán dẫn xuất (Điều 2 IUH).
+     * 100% tự tính toán từ chi tiết hóa đơn và giảm giá, không lưu trường dẫn xuất.
      */
     public double getTongTien() {
-        if ((danhSachSanPham != null && !danhSachSanPham.isEmpty()) || (danhSachDichVu != null && !danhSachDichVu.isEmpty())) {
-            return tinhTongThanhToan();
-        }
-        return tongTienDb > 0.0 ? tongTienDb : tinhTongThanhToan();
-    }
-
-    public void setTongTienDb(double tongTienDb) {
-        this.tongTienDb = tongTienDb;
+        return tinhTongThanhToan();
     }
 
     public int getDiemTichLuySuDung() { return diemTichLuySuDung; }

@@ -1,10 +1,9 @@
 package com.petshop.entity;
 
-import java.math.BigDecimal;
-
 /**
  * Thực thể chi tiết một dòng sản phẩm hoặc dịch vụ trong hóa đơn giao dịch.
  * Dùng để hiển thị trong popup Chi tiết giao dịch.
+ * Tuân thủ 100% Điều 1 IUH: Sử dụng kiểu nguyên thủy double cho tiền tệ (0% BigDecimal).
  */
 public class ChiTietGiaoDich {
 
@@ -17,14 +16,14 @@ public class ChiTietGiaoDich {
     /** Số lượng sử dụng / mua */
     private final int soLuong;
 
-    /** Đơn giá tại thời điểm lập hóa đơn */
-    private final BigDecimal donGia;
+    /** Đơn giá tại thời điểm lập hóa đơn (double) */
+    private final double donGia;
 
-    public ChiTietGiaoDich(String maDoiTuong, String tenDoiTuong, int soLuong, BigDecimal donGia) {
+    public ChiTietGiaoDich(String maDoiTuong, String tenDoiTuong, int soLuong, double donGia) {
         this.maDoiTuong = maDoiTuong;
         this.tenDoiTuong = tenDoiTuong;
         this.soLuong = soLuong;
-        this.donGia = donGia != null ? donGia : BigDecimal.ZERO;
+        this.donGia = Math.max(0.0, donGia);
     }
 
     public String getMaDoiTuong() {
@@ -39,15 +38,19 @@ public class ChiTietGiaoDich {
         return soLuong;
     }
 
-    public BigDecimal getDonGia() {
+    public double getDonGia() {
         return donGia;
     }
 
     /**
-     * Tính thành tiền của dòng: Số lượng * Đơn giá.
+     * Phương thức tự tính toán: Thành tiền của dòng: Số lượng * Đơn giá (Điều 2 IUH).
      */
-    public BigDecimal getThanhTien() {
-        return donGia.multiply(BigDecimal.valueOf(soLuong));
+    public double tinhThanhTien() {
+        return donGia * soLuong;
+    }
+
+    public double getThanhTien() {
+        return tinhThanhTien();
     }
 }
 

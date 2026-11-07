@@ -6,7 +6,6 @@ import com.petshop.entity.HoaDon;
 import com.petshop.entity.PhieuDichVu;
 import com.petshop.util.DatabaseManager;
 
-import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -307,13 +306,8 @@ public class HoaDonDAO {
      * Tự động hoàn lại hoặc trừ thêm số lượng tồn kho tương ứng của sản phẩm.
      * Cập nhật điểm tích lũy của khách hàng nếu tổng tiền thay đổi.
      * Toàn bộ thao tác thực thi trong một JDBC Transaction toàn vẹn.
+     * Tuân thủ Điều 1 IUH: 100% double nguyên thủy.
      */
-    public boolean capNhatHoaDon(HoaDon hoaDonCu, HoaDon hoaDonMoi, BigDecimal tienThanhToanThem, BigDecimal tienHoanLai) {
-        return capNhatHoaDon(hoaDonCu, hoaDonMoi,
-                tienThanhToanThem != null ? tienThanhToanThem.doubleValue() : 0.0,
-                tienHoanLai != null ? tienHoanLai.doubleValue() : 0.0);
-    }
-
     public boolean capNhatHoaDon(HoaDon hoaDonCu, HoaDon hoaDonMoi, double tienThanhToanThem, double tienHoanLai) {
         String sqlXoaSanPham = "DELETE FROM dbo.ChiTietHoaDon_SanPham WHERE maHoaDon = ?";
         String sqlChenSanPham = """
@@ -452,22 +446,10 @@ public class HoaDonDAO {
     /**
      * Lấy thông tin chi tiết một hóa đơn theo mã kèm đầy đủ danh sách mặt hàng và dịch vụ.
      */
-    public HoaDon layHoaDonTheoMa(String maHoaDon) {
-        String sql = """
-                SELECT hd.maHoaDon, hd.maLichHen, hd.maPhieuDichVu, hd.maNhanVien, hd.maKhachHang,
-                       hd.ngayLap, hd.hinhThucThanhToan, hd.trangThaiThanhToan, hd.maKhuyenMai, hd.tongTien,
-                       nv.hoTen AS tenNhanVien,
-                       kh.hoTen AS tenKhachHang, kh.soDienThoai AS soDienThoaiKhachHang,
-                       km.tenChuongTrinh AS tenKhuyenMai, km.phanTramGiam,
-                       (ISNULL((SELECT SUM(sp.soLuong * sp.donGia) FROM dbo.ChiTietHoaDon_SanPham sp WHERE sp.maHoaDon = hd.maHoaDon), 0)
-                        + ISNULL((SELECT SUM(dv.soLuong * dv.donGia) FROM dbo.ChiTietHoaDon_DichVu dv WHERE dv.maHoaDon = hd.maHoaDon), 0)
-                       ) AS tongTienGoc
-                FROM dbo.HoaDon hd
-                LEFT JOIN dbo.NhanVien nv ON hd.maNhanVien = nv.maNhanVien
-                LEFT JOIN dbo.KhachHang kh ON hd.maKhachHang = kh.maKhachHang
-                LEFT JOIN dbo.KhuyenMai km ON hd.maKhuyenMai = km.maKhuyenMai
-                WHERE hd.maHoaDon = ?
-                """;
+    public void napChiTietHoaDon(Connection conn, HoaDon hd) throws SQLException {
+        if (hd == null || hd.getMaHoaDon() == null) return;
+        hd.getDanhSachSanPham().clear();
+        hd.getDanhSachDichVu().clear();
 
         String sqlSanPham = """
                 SELECT ct.maHoaDon, ct.maSanPham, ct.soLuong, ct.donGia,
@@ -485,6 +467,56 @@ public class HoaDonDAO {
                 WHERE ct.maHoaDon = ?
                 """;
 
+        try (PreparedStatement psSp = conn.prepareStatement(sqlSanPham)) {
+            psSp.setString(1, hd.getMaHoaDon());
+            try (ResultSet rsSp = psSp.executeQuery()) {
+                while (rsSp.next()) {
+                    hd.getDanhSachSanPham().add(new ChiTietHoaDonSanPham(
+                            rsSp.getString("maHoaDon"),
+                            rsSp.getString("maSanPham"),
+                            rsSp.getString("tenSanPham"),
+                            rsSp.getString("donViTinh"),
+                            rsSp.getInt("soLuong"),
+                            rsSp.getDouble("donGia")
+                    ));
+                }
+            }
+        }
+
+        try (PreparedStatement psDv = conn.prepareStatement(sqlDichVu)) {
+            psDv.setString(1, hd.getMaHoaDon());
+            try (ResultSet rsDv = psDv.executeQuery()) {
+                while (rsDv.next()) {
+                    hd.getDanhSachDichVu().add(new ChiTietHoaDonDichVu(
+                            rsDv.getString("maHoaDon"),
+                            rsDv.getString("maDichVu"),
+                            rsDv.getString("tenDichVu"),
+                            null,
+                            null,
+                            rsDv.getDouble("donGia")
+                    ));
+                }
+            }
+        }
+    }
+
+    public HoaDon layHoaDonTheoMa(String maHoaDon) {
+        String sql = """
+                SELECT hd.maHoaDon, hd.maLichHen, hd.maPhieuDichVu, hd.maNhanVien, hd.maKhachHang,
+                       hd.ngayLap, hd.hinhThucThanhToan, hd.trangThaiThanhToan, hd.maKhuyenMai, hd.tongTien,
+                       nv.hoTen AS tenNhanVien,
+                       kh.hoTen AS tenKhachHang, kh.soDienThoai AS soDienThoaiKhachHang,
+                       km.tenChuongTrinh AS tenKhuyenMai, km.phanTramGiam,
+                       (ISNULL((SELECT SUM(sp.soLuong * sp.donGia) FROM dbo.ChiTietHoaDon_SanPham sp WHERE sp.maHoaDon = hd.maHoaDon), 0)
+                        + ISNULL((SELECT SUM(dv.soLuong * dv.donGia) FROM dbo.ChiTietHoaDon_DichVu dv WHERE dv.maHoaDon = hd.maHoaDon), 0)
+                       ) AS tongTienGoc
+                FROM dbo.HoaDon hd
+                LEFT JOIN dbo.NhanVien nv ON hd.maNhanVien = nv.maNhanVien
+                LEFT JOIN dbo.KhachHang kh ON hd.maKhachHang = kh.maKhachHang
+                LEFT JOIN dbo.KhuyenMai km ON hd.maKhuyenMai = km.maKhuyenMai
+                WHERE hd.maHoaDon = ?
+                """;
+
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -492,40 +524,7 @@ public class HoaDonDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     HoaDon hd = anhXaHoaDon(rs);
-
-                    // Nạp danh sách sản phẩm
-                    try (PreparedStatement psSp = conn.prepareStatement(sqlSanPham)) {
-                        psSp.setString(1, maHoaDon);
-                        try (ResultSet rsSp = psSp.executeQuery()) {
-                            while (rsSp.next()) {
-                                hd.getDanhSachSanPham().add(new ChiTietHoaDonSanPham(
-                                        rsSp.getString("maHoaDon"),
-                                        rsSp.getString("maSanPham"),
-                                        rsSp.getString("tenSanPham"),
-                                        rsSp.getString("donViTinh"),
-                                        rsSp.getInt("soLuong"),
-                                        rsSp.getDouble("donGia")
-                                ));
-                            }
-                        }
-                    }
-
-                    // Nạp danh sách dịch vụ
-                    try (PreparedStatement psDv = conn.prepareStatement(sqlDichVu)) {
-                        psDv.setString(1, maHoaDon);
-                        try (ResultSet rsDv = psDv.executeQuery()) {
-                            while (rsDv.next()) {
-                                hd.getDanhSachDichVu().add(new ChiTietHoaDonDichVu(
-                                        rsDv.getString("maHoaDon"),
-                                        rsDv.getString("maDichVu"),
-                                        rsDv.getString("tenDichVu"),
-                                        null,
-                                        null,
-                                        rsDv.getDouble("donGia")
-                                ));
-                            }
-                        }
-                    }
+                    napChiTietHoaDon(conn, hd);
 
                     // Tính chi tiết tiền giảm KM và điểm tích lũy
                     HoaDon cached = boNhoHoaDon.get(maHoaDon);
@@ -646,7 +645,9 @@ public class HoaDonDAO {
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    danhSach.add(anhXaHoaDon(rs));
+                    HoaDon hd = anhXaHoaDon(rs);
+                    napChiTietHoaDon(conn, hd);
+                    danhSach.add(hd);
                 }
             }
         } catch (SQLException e) {
@@ -829,50 +830,34 @@ public class HoaDonDAO {
                     int soHuy = rs.getInt("soHoaDonHuy");
                     int soTc = rs.getInt("soHoaDonThanhCong");
 
-                    BigDecimal tongDt = rs.getBigDecimal("tongDoanhThu");
-                    if (tongDt == null) tongDt = BigDecimal.ZERO;
-
-                    BigDecimal dtTm = rs.getBigDecimal("doanhThuTienMat");
-                    if (dtTm == null) dtTm = BigDecimal.ZERO;
-
-                    BigDecimal dtCk = rs.getBigDecimal("doanhThuChuyenKhoan");
-                    if (dtCk == null) dtCk = BigDecimal.ZERO;
-
-                    BigDecimal dtPos = rs.getBigDecimal("doanhThuPos");
-                    if (dtPos == null) dtPos = BigDecimal.ZERO;
-
-                    BigDecimal dtSp = rs.getBigDecimal("doanhThuSanPham");
-                    if (dtSp == null) dtSp = BigDecimal.ZERO;
-
-                    BigDecimal dtDv = rs.getBigDecimal("doanhThuDichVu");
-                    if (dtDv == null) dtDv = BigDecimal.ZERO;
+                    double tongDt = rs.getDouble("tongDoanhThu");
+                    double dtTm = rs.getDouble("doanhThuTienMat");
+                    double dtCk = rs.getDouble("doanhThuChuyenKhoan");
+                    double dtPos = rs.getDouble("doanhThuPos");
+                    double dtSp = rs.getDouble("doanhThuSanPham");
+                    double dtDv = rs.getDouble("doanhThuDichVu");
 
                     // Tổng tiền giảm giá = Tổng tiền hàng gốc (Sản phẩm + Dịch vụ) - Tổng thực thu (sau giảm giá)
-                    BigDecimal tongGoc = dtSp.add(dtDv);
-                    BigDecimal tongGiamGia = tongGoc.subtract(tongDt).max(BigDecimal.ZERO);
+                    double tongGoc = dtSp + dtDv;
+                    double tongGiamGia = Math.max(0.0, tongGoc - tongDt);
 
-                    BigDecimal aov = soTc > 0
-                            ? tongDt.divide(BigDecimal.valueOf(soTc), 0, java.math.RoundingMode.HALF_UP)
-                            : BigDecimal.ZERO;
+                    double aov = soTc > 0 ? (double) Math.round(tongDt / soTc) : 0.0;
 
                     // Tính tổng tiền hoàn đổi trả và bù đổi trả để đồng bộ doanh thu thực thu
-                    BigDecimal tongHoanDt = BigDecimal.ZERO;
-                    BigDecimal tongBuDt = BigDecimal.ZERO;
+                    double tongHoanDt = 0.0;
+                    double tongBuDt = 0.0;
                     try (Statement stDt = conn.createStatement();
                          ResultSet rsDt = stDt.executeQuery("SELECT ISNULL(SUM(tienHoan), 0) AS tongHoan, ISNULL(SUM(tienBu), 0) AS tongBu " +
                                  "FROM dbo.PhieuDoiTra WHERE trangThai IN (N'Đã duyệt', N'Hoàn thành') " +
                                  "AND ngayLap >= '" + dTu + "' AND ngayLap <= '" + dDen + "'")) {
                         if (rsDt.next()) {
-                            tongHoanDt = rsDt.getBigDecimal("tongHoan");
-                            tongBuDt = rsDt.getBigDecimal("tongBu");
+                            tongHoanDt = rsDt.getDouble("tongHoan");
+                            tongBuDt = rsDt.getDouble("tongBu");
                         }
                     } catch (Exception ignored) {}
 
                     // Doanh thu thực thu sau khi đã trừ tiền hoàn lại cho khách
-                    BigDecimal dtThucThuSauDoiTra = tongDt.subtract(tongHoanDt).add(tongBuDt);
-                    if (dtThucThuSauDoiTra.compareTo(BigDecimal.ZERO) < 0) {
-                        dtThucThuSauDoiTra = BigDecimal.ZERO;
-                    }
+                    double dtThucThuSauDoiTra = Math.max(0.0, tongDt - tongHoanDt + tongBuDt);
 
                     baoCao.put("tongSoHoaDon", tongSoHd);
                     baoCao.put("tongDoanhThu", dtThucThuSauDoiTra);
@@ -911,7 +896,6 @@ public class HoaDonDAO {
         hd.setHinhThucThanhToan(rs.getString("hinhThucThanhToan"));
         hd.setTrangThaiThanhToan(rs.getString("trangThaiThanhToan"));
         hd.setMaKhuyenMai(rs.getString("maKhuyenMai"));
-        hd.setTongTienDb(rs.getDouble("tongTien"));
 
         hd.setTenNhanVien(rs.getString("tenNhanVien"));
         hd.setTenKhachHang(rs.getString("tenKhachHang"));
@@ -929,11 +913,10 @@ public class HoaDonDAO {
 
         try {
             double tongGoc = rs.getDouble("tongTienGoc");
+            double tongTien = rs.getDouble("tongTien");
             if (tongGoc > 0.0) {
-                hd.setTongTienGocDb(tongGoc);
                 // Nếu chưa có tiền giảm (hoặc bằng 0), khôi phục từ tổng tiền gốc và tổng tiền thực tế
                 if (hd.getTongTienGiam() == 0.0) {
-                    double tongTien = hd.getTongTien();
                     double tongChenhLech = Math.max(0.0, tongGoc - tongTien);
                     if (tongChenhLech > 0.0) {
                         double tienGiamKm = 0.0;
@@ -996,7 +979,7 @@ public class HoaDonDAO {
                     map.put("tenSanPham", rs.getString("tenSanPham"));
                     map.put("donViTinh", rs.getString("donViTinh"));
                     map.put("soLuong", rs.getInt("tongSoLuong"));
-                    map.put("doanhThu", rs.getBigDecimal("tongDoanhThu"));
+                    map.put("doanhThu", rs.getDouble("tongDoanhThu"));
                     danhSach.add(map);
                 }
             }
@@ -1037,7 +1020,7 @@ public class HoaDonDAO {
                     map.put("maDichVu", rs.getString("maDichVu"));
                     map.put("tenDichVu", rs.getString("tenDichVu"));
                     map.put("soLuong", rs.getInt("tongLuot"));
-                    map.put("doanhThu", rs.getBigDecimal("tongDoanhThu"));
+                    map.put("doanhThu", rs.getDouble("tongDoanhThu"));
                     danhSach.add(map);
                 }
             }

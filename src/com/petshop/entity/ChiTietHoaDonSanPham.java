@@ -134,8 +134,4 @@ public class ChiTietHoaDonSanPham {
         }
         this.donGia = donGia;
     }
-
-    public void setDonGia(java.math.BigDecimal donGia) {
-        setDonGia(donGia != null ? donGia.doubleValue() : 0.0);
-    }
 }

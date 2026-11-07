@@ -4,8 +4,6 @@ import com.petshop.entity.ChiTietGiaoDich;
 import com.petshop.entity.KhachHang;
 import com.petshop.entity.LichSuGiaoDich;
 import com.petshop.util.DatabaseManager;
-
-import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -428,7 +426,7 @@ public class KhachHangDAO {
                             rs.getString("tenNhanVien"),
                             rs.getString("hinhThucThanhToan"),
                             rs.getString("trangThaiThanhToan"),
-                            rs.getBigDecimal("tongTien")
+                            rs.getDouble("tongTien")
                     );
                     danhSach.add(gd);
                 }
@@ -470,7 +468,7 @@ public class KhachHangDAO {
                             rs.getString("maDoiTuong"),
                             rs.getString("tenDoiTuong"),
                             rs.getInt("soLuong"),
-                            rs.getBigDecimal("donGia")
+                            rs.getDouble("donGia")
                     ));
                 }
             }
@@ -510,7 +508,7 @@ public class KhachHangDAO {
                             rs.getString("maDoiTuong"),
                             rs.getString("tenDoiTuong"),
                             rs.getInt("soLuong"),
-                            rs.getBigDecimal("donGia")
+                            rs.getDouble("donGia")
                     ));
                 }
             }

@@ -1,11 +1,11 @@
 package com.petshop.entity;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
  * Thực thể Lịch sử giao dịch của khách hàng (ánh xạ thông tin hóa đơn từ bảng HoaDon).
  * Dùng để hiển thị danh sách hóa đơn mua sắm sản phẩm và sử dụng dịch vụ của khách hàng.
+ * Tuân thủ 100% Điều 1 IUH: Sử dụng kiểu nguyên thủy double cho tiền tệ (0% BigDecimal).
  */
 public class LichSuGiaoDich {
 
@@ -30,12 +30,12 @@ public class LichSuGiaoDich {
     /** Trạng thái thanh toán: Đã thanh toán, Chưa thanh toán, Đã hủy */
     private final String trangThaiThanhToan;
 
-    /** Tổng thanh toán thực tế của hóa đơn */
-    private final BigDecimal tongTien;
+    /** Tổng thanh toán thực tế của hóa đơn (double nguyên thủy) */
+    private final double tongTien;
 
     public LichSuGiaoDich(String maHoaDon, String maKhachHang, String tenKhachHang,
                           LocalDate ngayLap, String tenNhanVien, String hinhThucThanhToan,
-                          String trangThaiThanhToan, BigDecimal tongTien) {
+                          String trangThaiThanhToan, double tongTien) {
         this.maHoaDon = maHoaDon;
         this.maKhachHang = maKhachHang;
         this.tenKhachHang = tenKhachHang;
@@ -43,7 +43,7 @@ public class LichSuGiaoDich {
         this.tenNhanVien = tenNhanVien;
         this.hinhThucThanhToan = hinhThucThanhToan;
         this.trangThaiThanhToan = trangThaiThanhToan;
-        this.tongTien = tongTien != null ? tongTien : BigDecimal.ZERO;
+        this.tongTien = Math.max(0.0, tongTien);
     }
 
     public String getMaHoaDon() {
@@ -74,7 +74,7 @@ public class LichSuGiaoDich {
         return trangThaiThanhToan;
     }
 
-    public BigDecimal getTongTien() {
+    public double getTongTien() {
         return tongTien;
     }
 }
