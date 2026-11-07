@@ -423,16 +423,17 @@ public class DonNhapHangDAO {
             }
 
             // 2. Chuyển trạng thái có điều kiện (WHERE trangThai = 'Chờ nhận hàng')
-            String sqlUpdateDonHang = "UPDATE DonNhapHang SET trangThai = ?, maNhanVienNhan = ?, ngayGioNhan = ?, tongTienThucNhan = ?, lyDoHuy = ? WHERE maDonHang = ? AND trangThai = ?";
+            String sqlUpdateDonHang = "UPDATE DonNhapHang SET trangThai = ?, maNhanVienNhan = ?, ngayGioNhan = ?, tongTien = ?, tongTienThucNhan = ?, lyDoHuy = ? WHERE maDonHang = ? AND trangThai = ?";
 
             try (PreparedStatement psUpdate = conn.prepareStatement(sqlUpdateDonHang)) {
                 psUpdate.setNString(1, DonNhapHang.TRANG_THAI_HOAN_TAT);
                 psUpdate.setString(2, maNhanVienNhan);
                 psUpdate.setTimestamp(3, ngayGioNhan != null ? Timestamp.valueOf(ngayGioNhan) : Timestamp.valueOf(LocalDateTime.now()));
                 psUpdate.setDouble(4, tongTienThucNhan);
-                psUpdate.setNString(5, ghiChuChenhLech);
-                psUpdate.setString(6, maDonHang);
-                psUpdate.setNString(7, DonNhapHang.TRANG_THAI_CHO_NHAN);
+                psUpdate.setDouble(5, tongTienThucNhan);
+                psUpdate.setNString(6, ghiChuChenhLech);
+                psUpdate.setString(7, maDonHang);
+                psUpdate.setNString(8, DonNhapHang.TRANG_THAI_CHO_NHAN);
 
                 if (psUpdate.executeUpdate() != 1) {
                     conn.rollback();
@@ -585,10 +586,13 @@ public class DonNhapHangDAO {
         for (DonNhapHang dh : list) {
             List<ChiTietDonNhap> cts = mapChiTiet.getOrDefault(dh.getMaDonHang(), new ArrayList<>());
             dh.setDanhSachChiTiet(cts);
+            boolean daHoanTat = DonNhapHang.TRANG_THAI_HOAN_TAT.equals(dh.getTrangThai());
             List<String> ds = new ArrayList<>();
             for (ChiTietDonNhap ct : cts) {
+                int slHienThi = daHoanTat && ct.getSoLuongThucNhan() != null ? ct.getSoLuongThucNhan() : ct.getSoLuong();
+                if (daHoanTat && slHienThi <= 0) continue;
                 String tenSP = ct.getTenSanPham() != null ? ct.getTenSanPham() : "SP";
-                ds.add(tenSP + " (x" + ct.getSoLuong() + ")");
+                ds.add(tenSP + " (x" + slHienThi + ")");
             }
             dh.setTenHang(String.join(", ", ds));
         }

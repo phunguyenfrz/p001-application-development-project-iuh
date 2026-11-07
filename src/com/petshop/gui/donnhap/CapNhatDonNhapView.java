@@ -189,10 +189,13 @@ public class CapNhatDonNhapView extends VBox {
         });
         cotGioLap.setPrefWidth(90);
 
-        // Cột tổng tiền (định dạng #,##0)
+        // Cột tổng tiền (định dạng #,##0) - đơn đã hoàn tất hiển thị theo số lượng thực nhận
         TableColumn<DonNhapHang, String> cotTongTien = new TableColumn<>("Tổng tiền (đ)");
         cotTongTien.setCellValueFactory(cellData -> {
-            double tongTien = cellData.getValue().getTongTien();
+            DonNhapHang dh = cellData.getValue();
+            double tongTien = DonNhapHang.TRANG_THAI_HOAN_TAT.equals(dh.getTrangThai())
+                    ? dh.getTongTienThucNhan()
+                    : dh.getTongTien();
             String tienStr = dinhDangTien.format(tongTien);
             return new SimpleStringProperty(tienStr);
         });

@@ -201,12 +201,15 @@ public class TimKiemDonNhapView extends VBox {
             return new SimpleStringProperty(gio != null ? gio.format(DINH_DANG_GIO) : "");
         });
 
-        // Cột tổng tiền (định dạng #,##0)
+        // Cột tổng tiền (định dạng #,##0) - đơn đã hoàn tất hiển thị theo số lượng thực nhận
         TableColumn<DonNhapHang, String> colTongTien = new TableColumn<>("Tổng tiền (đ)");
         colTongTien.setPrefWidth(120);
         colTongTien.setStyle("-fx-alignment: CENTER-RIGHT;");
         colTongTien.setCellValueFactory(d -> {
-            double tien = d.getValue().getTongTien();
+            DonNhapHang dh = d.getValue();
+            double tien = DonNhapHang.TRANG_THAI_HOAN_TAT.equals(dh.getTrangThai())
+                    ? dh.getTongTienThucNhan()
+                    : dh.getTongTien();
             return new SimpleStringProperty(DINH_DANG_TIEN.format(tien));
         });
 
