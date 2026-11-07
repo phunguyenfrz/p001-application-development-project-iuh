@@ -307,6 +307,8 @@ public class DangNhapView extends StackPane {
         );
 
         stage.setScene(scene);
+        stage.setMinWidth(1180);
+        stage.setMinHeight(680);
         stage.setResizable(true);
         stage.setMaximized(true);
     }

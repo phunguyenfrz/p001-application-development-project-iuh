@@ -83,6 +83,7 @@ public class CapNhatPhieuDichVuView extends VBox {
         thanhNut.setAlignment(Pos.CENTER_LEFT);
 
         Label lblLoc = new Label("Lọc trạng thái:");
+        lblLoc.setMinWidth(Region.USE_PREF_SIZE);
         cboLocTrangThai.getItems().addAll("Tất cả", "Đang chờ", "Đang thực hiện", "Hoàn thành", "Đã hủy");
         cboLocTrangThai.setValue("Tất cả");
         cboLocTrangThai.setOnAction(e -> apDungBoLoc());
@@ -91,15 +92,19 @@ public class CapNhatPhieuDichVuView extends VBox {
         HBox.setHgrow(khoangTrong, Priority.ALWAYS);
 
         btnChuyenTienDo.getStyleClass().add("nut-chinh");
+        btnChuyenTienDo.setMinWidth(Region.USE_PREF_SIZE);
         btnChuyenTienDo.setOnAction(e -> xuLyChuyenTienDo());
 
         btnSuaChiTiet.getStyleClass().add("nut-phu");
+        btnSuaChiTiet.setMinWidth(Region.USE_PREF_SIZE);
         btnSuaChiTiet.setOnAction(e -> moCuaSoCapNhat());
 
         btnHuyPhieu.getStyleClass().add("nut-xoa");
+        btnHuyPhieu.setMinWidth(Region.USE_PREF_SIZE);
         btnHuyPhieu.setOnAction(e -> xuLyHuyPhieu());
 
         btnLamMoi.getStyleClass().add("nut-phu");
+        btnLamMoi.setMinWidth(Region.USE_PREF_SIZE);
         btnLamMoi.setOnAction(e -> taiLaiDanhSach());
 
         thanhNut.getChildren().addAll(lblLoc, cboLocTrangThai, khoangTrong, btnChuyenTienDo, btnSuaChiTiet, btnHuyPhieu, btnLamMoi);
@@ -135,8 +140,8 @@ public class CapNhatPhieuDichVuView extends VBox {
         colGio.setCellValueFactory(d -> new SimpleStringProperty(
                 d.getValue().getGioTiepNhan() != null ? d.getValue().getGioTiepNhan().format(DINH_DANG_GIO) : ""));
 
-        TableColumn<PhieuDichVu, String> colNv = new TableColumn<>("Nhân viên");
-        colNv.setPrefWidth(150);
+        TableColumn<PhieuDichVu, String> colNv = new TableColumn<>("Nhân viên thực hiện");
+        colNv.setPrefWidth(160);
         colNv.setCellValueFactory(d -> new SimpleStringProperty(
                 d.getValue().getTenNhanVien() != null ? d.getValue().getTenNhanVien() : d.getValue().getMaNhanVien()));
 
@@ -335,7 +340,7 @@ public class CapNhatPhieuDichVuView extends VBox {
         txtGhiChu.setPromptText("Ghi chú bổ sung...");
 
         luoi.add(new Label("Khách hàng:"), 0, 0); luoi.add(txtKhach, 1, 0);
-        luoi.add(new Label("Nhân viên (*):"), 2, 0); luoi.add(cboNv, 3, 0);
+        luoi.add(new Label("Nhân viên thực hiện (*):"), 2, 0); luoi.add(cboNv, 3, 0);
         luoi.add(new Label("Ghi chú:"), 0, 1); luoi.add(txtGhiChu, 1, 1, 3, 1);
 
         // 3. Khung thêm bớt dịch vụ

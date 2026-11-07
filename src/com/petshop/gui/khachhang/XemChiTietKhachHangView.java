@@ -1,6 +1,6 @@
 package com.petshop.gui.khachhang;
 
-import com.petshop.dao.ThuCungDAO;
+import com.petshop.bus.ThuCungBUS;
 import com.petshop.entity.KhachHang;
 import com.petshop.entity.ThuCung;
 import javafx.beans.property.SimpleStringProperty;
@@ -19,7 +19,7 @@ import java.util.List;
 
 /**
  * Hộp thoại (Modal Dialog) Xem chi tiết khách hàng và danh sách thú cưng của khách hàng.
- * Phụ thuộc Issue #63: lấy danh sách thú cưng theo mã khách hàng qua ThuCungDAO.
+ * Sử dụng ThuCungBUS theo chuẩn kiến trúc 3 tầng IUH.
  * Hỗ trợ bôi đen (chọn văn bản bằng chuột) trên từng ô thông tin để sao chép (copy) dễ dàng.
  */
 public class XemChiTietKhachHangView extends VBox {
@@ -27,8 +27,7 @@ public class XemChiTietKhachHangView extends VBox {
     private static final String CSS_CHUNG = "/com/petshop/gui/css/chung.css";
     private static final DateTimeFormatter DINH_DANG_NGAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    // TODO: nối ThuCungBUS khi phân hệ Thú cưng merge theo Quy ước #60 (Mục 7.3)
-    private final ThuCungDAO thuCungDAO = new ThuCungDAO();
+    private final ThuCungBUS thuCungBUS = new ThuCungBUS();
 
     // Các ô hiển thị dữ liệu khách hàng (chỉ đọc, cho phép bôi đen copy)
     private final TextField txtMaKhachHang = new TextField();
@@ -201,11 +200,10 @@ public class XemChiTietKhachHangView extends VBox {
 
         tblThuCung.getColumns().addAll(colMaTC, colTenTC, colLoai, colGiong, colGioiTinh, colCanNang, colNgaySinh, colDiUng);
 
-        // Nạp dữ liệu thú cưng từ ThuCungDAO
-        // TODO: nối ThuCungBUS khi phân hệ Thú cưng merge theo Quy ước #60 (Mục 7.3)
+        // Nạp dữ liệu thú cưng từ ThuCungBUS (chuẩn 3 tầng IUH)
         if (kh != null && kh.getMaKhachHang() != null) {
             try {
-                List<ThuCung> ds = thuCungDAO.layDanhSachTheoKhachHang(kh.getMaKhachHang());
+                List<ThuCung> ds = thuCungBUS.layDanhSachTheoKhachHang(kh.getMaKhachHang());
                 tblThuCung.setItems(FXCollections.observableArrayList(ds));
             } catch (Exception e) {
                 tblThuCung.setItems(FXCollections.observableArrayList());

@@ -328,7 +328,7 @@ public class CapNhatThuCungView extends VBox {
         ObservableList<KhachHang> dsKhachHangGoc = FXCollections.observableArrayList();
         FilteredList<KhachHang> dsKhachHangLoc;
         try {
-            List<KhachHang> dsKh = khachHangController.layDanhSachKhachHang();
+            List<KhachHang> dsKh = khachHangController.layDanhSachKhachHangDangHoatDong();
             dsKhachHangGoc.setAll(dsKh);
             dsKhachHangLoc = new FilteredList<>(dsKhachHangGoc, p -> true);
             cboKhachHang.setItems(dsKhachHangLoc);

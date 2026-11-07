@@ -60,7 +60,6 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
 
     private double donGiaHienHanh = 0.0;
     private KhachHang khachHangHienTai = null;
-    private NhanVien nhanVienHienTai = null;
 
     // Lịch hẹn liên kết hiện tại (nếu tiếp nhận theo lịch hẹn)
     private LichHen lichHenHienTai = null;
@@ -75,7 +74,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
     private final HBox pnlBadgeLichHen = new HBox(6);
     private final Label lblThongTinLichHen = new Label();
     private final Button btnHuyLienKetLich = new Button("✕ Bỏ lịch");
-    private final TextField txtNhanVienHienThi = new TextField();
+    private final ComboBox<String[]> cboNhanVienThucHien = new ComboBox<>();
     private final DatePicker dpNgayTiepNhan = new DatePicker();
     private final TextField txtGioTiepNhan = new TextField();
     private final TextArea txtGhiChu = new TextArea();
@@ -120,12 +119,13 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
 
         VBox pnlCuon = new VBox(10, pnlThongTin, pnlDichVu);
         pnlCuon.setFillWidth(true);
+        pnlCuon.setMinWidth(920);
         VBox.setVgrow(pnlCuon, Priority.ALWAYS);
 
         ScrollPane spCuon = new ScrollPane(pnlCuon);
         spCuon.setFitToWidth(true);
         spCuon.setFitToHeight(true);
-        spCuon.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        spCuon.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         spCuon.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         VBox.setVgrow(spCuon, Priority.ALWAYS);
 
@@ -153,25 +153,50 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         pnlLuoi.setHgap(14);
         pnlLuoi.setVgap(8);
 
-        ColumnConstraints col1 = new ColumnConstraints(130);
-        ColumnConstraints col2 = new ColumnConstraints(260, 300, Double.MAX_VALUE);
+        ColumnConstraints col1 = new ColumnConstraints();
+        col1.setMinWidth(140);
+        col1.setPrefWidth(140);
+
+        ColumnConstraints col2 = new ColumnConstraints(320, 360, Double.MAX_VALUE);
         col2.setHgrow(Priority.ALWAYS);
-        ColumnConstraints col3 = new ColumnConstraints(130);
-        ColumnConstraints col4 = new ColumnConstraints(260, 300, Double.MAX_VALUE);
+
+        ColumnConstraints col3 = new ColumnConstraints();
+        col3.setMinWidth(175);
+        col3.setPrefWidth(175);
+
+        ColumnConstraints col4 = new ColumnConstraints(220, 260, Double.MAX_VALUE);
         col4.setHgrow(Priority.ALWAYS);
+
         pnlLuoi.getColumnConstraints().addAll(col1, col2, col3, col4);
 
         // Hàng 0: Mã phiếu & Nhân viên tiếp nhận (Khóa cứng, lấy từ phiên)
         txtMaPhieuDichVu.setEditable(false);
         txtMaPhieuDichVu.setPromptText("Tự động sinh (PDV-yyyyMMdd-xxxxxx)");
         txtMaPhieuDichVu.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #475569;");
-        pnlLuoi.add(new Label("Mã phiếu:"), 0, 0);
+        Label lblMaPhieu = new Label("Mã phiếu:");
+        lblMaPhieu.setMinWidth(Region.USE_PREF_SIZE);
+        pnlLuoi.add(lblMaPhieu, 0, 0);
         pnlLuoi.add(txtMaPhieuDichVu, 1, 0);
 
-        txtNhanVienHienThi.setEditable(false);
-        txtNhanVienHienThi.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #475569;");
-        pnlLuoi.add(new Label("Nhân viên (*):"), 2, 0);
-        pnlLuoi.add(txtNhanVienHienThi, 3, 0);
+        cboNhanVienThucHien.setPromptText("Chọn nhân viên thực hiện...");
+        cboNhanVienThucHien.setMaxWidth(Double.MAX_VALUE);
+        cboNhanVienThucHien.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(String[] nv) {
+                if (nv == null) return "";
+                String chucVu = (nv.length > 2 && nv[2] != null) ? nv[2] : "";
+                return nv[1] + " (" + nv[0] + (chucVu.isEmpty() ? "" : " - " + chucVu) + ")";
+            }
+
+            @Override
+            public String[] fromString(String string) {
+                return null;
+            }
+        });
+        Label lblNvThucHien = new Label("Nhân viên thực hiện (*):");
+        lblNvThucHien.setMinWidth(Region.USE_PREF_SIZE);
+        pnlLuoi.add(lblNvThucHien, 2, 0);
+        pnlLuoi.add(cboNhanVienThucHien, 3, 0);
 
         // Hàng 1: SĐT tra cứu (nhấn Enter hoặc bấm Tra cứu) & Khách hàng
         txtTimKhach.setPromptText("Nhập SĐT (10 số) rồi Enter...");
@@ -188,7 +213,9 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         HBox boxTimKhach = new HBox(6, txtTimKhach, btnKiemTraSdt, btnXemLichHomNay, btnThemKhachNhanh);
         boxTimKhach.setAlignment(Pos.CENTER_LEFT);
 
-        pnlLuoi.add(new Label("SĐT khách hàng (*):"), 0, 1);
+        Label lblSdtKh = new Label("SĐT khách hàng (*):");
+        lblSdtKh.setMinWidth(Region.USE_PREF_SIZE);
+        pnlLuoi.add(lblSdtKh, 0, 1);
         pnlLuoi.add(boxTimKhach, 1, 1);
 
         txtKhachHangHienThi.setEditable(false);
@@ -205,7 +232,9 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         pnlBadgeLichHen.setManaged(false);
 
         VBox boxKhachHang = new VBox(3, txtKhachHangHienThi, pnlBadgeLichHen);
-        pnlLuoi.add(new Label("Khách hàng (*):"), 2, 1);
+        Label lblKhachHang = new Label("Khách hàng (*):");
+        lblKhachHang.setMinWidth(Region.USE_PREF_SIZE);
+        pnlLuoi.add(lblKhachHang, 2, 1);
         pnlLuoi.add(boxKhachHang, 3, 1);
 
         // Hàng 2: Thời gian tiếp nhận (Ngày + Giờ) & Ghi chú tiếp nhận
@@ -224,13 +253,17 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         HBox boxThoiGian = new HBox(8, dpNgayTiepNhan, txtGioTiepNhan);
         boxThoiGian.setAlignment(Pos.CENTER_LEFT);
 
-        pnlLuoi.add(new Label("Thời gian tiếp nhận:"), 0, 2);
+        Label lblThoiGian = new Label("Thời gian tiếp nhận:");
+        lblThoiGian.setMinWidth(Region.USE_PREF_SIZE);
+        pnlLuoi.add(lblThoiGian, 0, 2);
         pnlLuoi.add(boxThoiGian, 1, 2);
 
         txtGhiChu.setPromptText("Ghi chú lúc tiếp nhận (tình trạng sức khỏe, dị ứng, yêu cầu...)");
         txtGhiChu.setPrefRowCount(1);
         txtGhiChu.setMaxHeight(36);
-        pnlLuoi.add(new Label("Ghi chú tiếp nhận:"), 2, 2);
+        Label lblGhiChu = new Label("Ghi chú tiếp nhận:");
+        lblGhiChu.setMinWidth(Region.USE_PREF_SIZE);
+        pnlLuoi.add(lblGhiChu, 2, 2);
         pnlLuoi.add(txtGhiChu, 3, 2);
 
         pnlKhung.getChildren().addAll(lblPhan1, pnlLuoi);
@@ -250,7 +283,8 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
 
         // Chọn thú cưng + Nút thêm nhanh
         cboThuCung.setPromptText("Chọn thú cưng...");
-        cboThuCung.setPrefWidth(180);
+        cboThuCung.setPrefWidth(160);
+        cboThuCung.setMinWidth(130);
 
         btnThemThuCungNhanh.setText("+ Mới");
         btnThemThuCungNhanh.getStyleClass().add("nut-phu");
@@ -261,27 +295,42 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
 
         // Ô nhập cân nặng thực tế tại quầy
         txtCanNangThucTe.setPromptText("Cân tại quầy (kg)");
-        txtCanNangThucTe.setPrefWidth(120);
+        txtCanNangThucTe.setPrefWidth(110);
+        txtCanNangThucTe.setMinWidth(90);
 
         // Chọn dịch vụ
         cboDichVu.setPromptText("Chọn dịch vụ chăm sóc...");
-        cboDichVu.setPrefWidth(220);
+        cboDichVu.setPrefWidth(200);
+        cboDichVu.setMinWidth(160);
         HBox.setHgrow(cboDichVu, Priority.ALWAYS);
 
         // Ô đơn giá tự động tính theo bậc cân nặng (chỉ đọc, nền xám)
         txtDonGia.setPromptText("Đơn giá áp dụng");
-        txtDonGia.setPrefWidth(170);
+        txtDonGia.setPrefWidth(140);
+        txtDonGia.setMinWidth(110);
         txtDonGia.setEditable(false);
         txtDonGia.setStyle("-fx-background-color: #f1f5f9; -fx-font-weight: bold;");
 
         btnThemDichVu.getStyleClass().add("nut-chinh");
         btnThemDichVu.setMinWidth(Region.USE_PREF_SIZE);
 
+        Label lblThuCung = new Label("Thú cưng:");
+        lblThuCung.setMinWidth(Region.USE_PREF_SIZE);
+
+        Label lblCanNang = new Label("Cân nặng (*):");
+        lblCanNang.setMinWidth(Region.USE_PREF_SIZE);
+
+        Label lblDichVu = new Label("Dịch vụ:");
+        lblDichVu.setMinWidth(Region.USE_PREF_SIZE);
+
+        Label lblDonGia = new Label("Đơn giá:");
+        lblDonGia.setMinWidth(Region.USE_PREF_SIZE);
+
         HBox pnlThem = new HBox(8,
-                new Label("Thú cưng:"), boxThuCung,
-                new Label("Cân nặng (*):"), txtCanNangThucTe,
-                new Label("Dịch vụ:"), cboDichVu,
-                new Label("Đơn giá:"), txtDonGia,
+                lblThuCung, boxThuCung,
+                lblCanNang, txtCanNangThucTe,
+                lblDichVu, cboDichVu,
+                lblDonGia, txtDonGia,
                 btnThemDichVu
         );
         pnlThem.setAlignment(Pos.CENTER_LEFT);
@@ -352,7 +401,9 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
 
     private HBox taoThanhTacVu() {
         btnLuu.getStyleClass().add("nut-chinh");
+        btnLuu.setMinWidth(Region.USE_PREF_SIZE);
         btnLamMoi.getStyleClass().add("nut-phu");
+        btnLamMoi.setMinWidth(Region.USE_PREF_SIZE);
 
         HBox pnlTacVu = new HBox(10, btnLamMoi, btnLuu);
         pnlTacVu.setAlignment(Pos.CENTER_RIGHT);
@@ -621,6 +672,17 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             ghiChuLh = "[Lưu ý dị ứng: " + tcHienTai.getDiUng().trim() + "] " + ghiChuLh;
         }
         txtGhiChu.setText(ghiChuLh);
+
+        // Đồng bộ nhân viên thực hiện từ lịch hẹn (theo yêu cầu của khách hàng khi đặt lịch)
+        String maNvLh = lh.getMaNhanVien();
+        if (maNvLh != null && !maNvLh.isBlank() && !cboNhanVienThucHien.getItems().isEmpty()) {
+            for (String[] nv : cboNhanVienThucHien.getItems()) {
+                if (nv[0].equalsIgnoreCase(maNvLh.trim())) {
+                    cboNhanVienThucHien.setValue(nv);
+                    break;
+                }
+            }
+        }
 
         capNhatTongTien();
         tinhGiaTuDong();
@@ -1380,10 +1442,17 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
                 return;
             }
 
-            if (nhanVienHienTai == null) {
-                hienThiCanhBao("Thiếu thông tin", "Không xác định được nhân viên tiếp nhận từ phiên đăng nhập!");
+            String[] nvChon = cboNhanVienThucHien.getValue();
+            if (nvChon == null) {
+                hienThiCanhBao("Thiếu thông tin", "Vui lòng chọn nhân viên thực hiện dịch vụ theo yêu cầu của khách hàng!");
+                cboNhanVienThucHien.requestFocus();
                 return;
             }
+
+            NhanVien nhanVienThucHien = new NhanVien();
+            nhanVienThucHien.setMaNhanVien(nvChon[0]);
+            nhanVienThucHien.setHoTen(nvChon[1]);
+            nhanVienThucHien.setChucVu(nvChon.length > 2 ? nvChon[2] : "");
 
             String strCanNang = txtCanNangThucTe.getText() != null ? txtCanNangThucTe.getText().trim() : "";
             if (strCanNang.isEmpty()) {
@@ -1420,7 +1489,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             PhieuDichVu phieu = new PhieuDichVu(
                     txtMaPhieuDichVu.getText().trim(),
                     khachHangHienTai,
-                    nhanVienHienTai,
+                    nhanVienThucHien,
                     lh,
                     ngay,
                     gio,
@@ -1465,6 +1534,13 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
     // =========================================================================
 
     private void napDuLieuBanDau() {
+        try {
+            List<String[]> dsNv = controller.layDanhSachNhanVien();
+            cboNhanVienThucHien.getItems().setAll(dsNv);
+        } catch (Exception ex) {
+            System.err.println("Lỗi khi nạp danh sách nhân viên thực hiện: " + ex.getMessage());
+        }
+
         lamMoiForm();
         try {
             List<DichVuChamSoc> dsDv = controller.layDanhSachDichVu();
@@ -1477,8 +1553,6 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         }
     }
 
-
-
     private void lamMoiForm() {
         try {
             txtMaPhieuDichVu.setText(controller.taoMaPhieuDichVuMoi());
@@ -1486,21 +1560,31 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             txtMaPhieuDichVu.setText("");
         }
 
-        // Tự động gán nhân viên phụ trách từ phiên đăng nhập
-        TaiKhoan tk = SessionManager.getTaiKhoanHienTai();
-        if (tk != null && tk.getNhanVien() != null) {
-            nhanVienHienTai = tk.getNhanVien();
-            txtNhanVienHienThi.setText(nhanVienHienTai.getHoTen() + " (" + nhanVienHienTai.getMaNhanVien() + ")");
-        } else {
+        // Tự động gán nhân viên thực hiện (người lập phiếu có thể chọn lại theo yêu cầu của khách hàng)
+        if (cboNhanVienThucHien.getItems().isEmpty()) {
             try {
-                List<String[]> dsNv = controller.layDanhSachNhanVien();
-                if (!dsNv.isEmpty()) {
-                    nhanVienHienTai = new NhanVien();
-                    nhanVienHienTai.setMaNhanVien(dsNv.get(0)[0]);
-                    nhanVienHienTai.setHoTen(dsNv.get(0)[1]);
-                    txtNhanVienHienThi.setText(nhanVienHienTai.getHoTen() + " (" + nhanVienHienTai.getMaNhanVien() + ")");
-                }
+                cboNhanVienThucHien.getItems().setAll(controller.layDanhSachNhanVien());
             } catch (Exception ignored) {}
+        }
+        TaiKhoan tk = SessionManager.getTaiKhoanHienTai();
+        String maNvHienTai = (tk != null && tk.getNhanVien() != null)
+                ? tk.getNhanVien().getMaNhanVien()
+                : (tk != null ? tk.getMaNhanVien() : null);
+
+        if (maNvHienTai != null && !cboNhanVienThucHien.getItems().isEmpty()) {
+            boolean daChon = false;
+            for (String[] nv : cboNhanVienThucHien.getItems()) {
+                if (nv[0].equalsIgnoreCase(maNvHienTai)) {
+                    cboNhanVienThucHien.setValue(nv);
+                    daChon = true;
+                    break;
+                }
+            }
+            if (!daChon) {
+                cboNhanVienThucHien.setValue(cboNhanVienThucHien.getItems().get(0));
+            }
+        } else if (!cboNhanVienThucHien.getItems().isEmpty()) {
+            cboNhanVienThucHien.setValue(cboNhanVienThucHien.getItems().get(0));
         }
 
         huyLienKetLichHen();
