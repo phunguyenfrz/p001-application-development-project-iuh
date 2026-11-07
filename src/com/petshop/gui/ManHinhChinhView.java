@@ -94,6 +94,12 @@ public class ManHinhChinhView extends BorderPane {
 
     public ManHinhChinhView(Stage stage) {
         this.stage = stage;
+        if (stage != null) {
+            stage.setMinWidth(1180);
+            stage.setMinHeight(680);
+        }
+        setMinWidth(1180);
+        setMinHeight(680);
         this.xacThucService = new XacThucBUS();
         this.taiKhoan = xacThucService.getTaiKhoanHienTai();
 
@@ -648,7 +654,7 @@ public class ManHinhChinhView extends BorderPane {
     }
 
     // =========================================================================
-    // 5. TIá»†N ÃCH TÃ€I KHOáº¢N
+    // 5. HÀNH ĐỘNG TÀI KHOẢN
     // =========================================================================
     public void hienThiHopThoaiDoiMatKhau() {
         new DoiMatKhauView().showAndWait();
@@ -663,6 +669,9 @@ public class ManHinhChinhView extends BorderPane {
                 getClass().getResource("/com/petshop/gui/css/dangnhap.css").toExternalForm()
         );
         stage.setScene(scene);
+        stage.setMinWidth(0);
+        stage.setMinHeight(0);
+        stage.setMaximized(false);
         stage.setResizable(false);
         stage.centerOnScreen();
     }

@@ -14,94 +14,13 @@ import java.util.List;
  * Lớp truy xuất cơ sở dữ liệu cho Phiếu đổi trả (PhieuDoiTraDAO).
  * Tuân thủ Bộ chỉ thị kỹ thuật IUH:
  * - 100% tiền tệ dùng kiểu nguyên thủy double (0% BigDecimal).
+ * - Không tự ý chạy DDL runtime (ALTER TABLE); toàn bộ cấu trúc bảng nằm trong script SQL.
  * - Các nghiệp vụ tác động nhiều bảng (thêm phiếu, cập nhật phiếu, duyệt phiếu hoàn tồn kho & trừ điểm tích lũy)
  *   BẮT BUỘC sử dụng JDBC Transaction (setAutoCommit(false), commit(), rollback()).
  */
 public class PhieuDoiTraDAO {
 
-    private static volatile boolean daKiemTraCauTruc = false;
-
     public PhieuDoiTraDAO() {
-        tuDongNangCapCauTrucVaDuLieu();
-    }
-
-    private synchronized void tuDongNangCapCauTrucVaDuLieu() {
-        if (daKiemTraCauTruc) return;
-        try (Connection conn = DatabaseManager.getConnection()) {
-            if (conn == null) return;
-            try (Statement st = conn.createStatement()) {
-                st.executeUpdate("""
-                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.ChiTietPhieuDoiTra') AND name = 'lyDo')
-                    BEGIN
-                        ALTER TABLE dbo.ChiTietPhieuDoiTra ADD lyDo NVARCHAR(100) NULL;
-                        ALTER TABLE dbo.ChiTietPhieuDoiTra ADD tinhTrang NVARCHAR(50) NULL;
-                        ALTER TABLE dbo.ChiTietPhieuDoiTra ADD huongXuLy NVARCHAR(50) NULL;
-                        ALTER TABLE dbo.ChiTietPhieuDoiTra ADD ghiChu NVARCHAR(255) NULL;
-                        ALTER TABLE dbo.ChiTietPhieuDoiTra ADD maSanPhamDoi VARCHAR(20) NULL;
-                        ALTER TABLE dbo.ChiTietPhieuDoiTra ADD soLuongDoi INT NULL;
-                    END
-                """);
-
-                st.executeUpdate("""
-                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.PhieuDoiTra') AND name = 'loaiXuLy')
-                    BEGIN
-                        ALTER TABLE dbo.PhieuDoiTra ADD loaiXuLy NVARCHAR(30) NOT NULL DEFAULT N'Hoàn tiền';
-                        ALTER TABLE dbo.PhieuDoiTra ADD tienHoan DECIMAL(18,2) NOT NULL DEFAULT 0;
-                        ALTER TABLE dbo.PhieuDoiTra ADD tienBu DECIMAL(18,2) NOT NULL DEFAULT 0;
-                    END
-                """);
-
-                st.executeUpdate("""
-                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.HoaDon') AND name = 'tienHoanLai')
-                    BEGIN
-                        ALTER TABLE dbo.HoaDon ADD tienHoanLai DECIMAL(18,2) NOT NULL DEFAULT 0;
-                    END
-                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.HoaDon') AND name = 'tienThanhToanThem')
-                    BEGIN
-                        ALTER TABLE dbo.HoaDon ADD tienThanhToanThem DECIMAL(18,2) NOT NULL DEFAULT 0;
-                    END
-                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.HoaDon') AND name = 'ghiChu')
-                    BEGIN
-                        ALTER TABLE dbo.HoaDon ADD ghiChu NVARCHAR(255) NULL;
-                    END
-                """);
-
-                st.executeUpdate("""
-                    INSERT INTO dbo.ChiTietPhieuDoiTra (maPhieuDoiTra, maHoaDon, maSanPham, soLuong, donGia, lyDo, tinhTrang, huongXuLy, ghiChu)
-                    SELECT p.maPhieuDoiTra, p.maHoaDon, ct.maSanPham, ISNULL(p.soLuong, 1), ct.donGia,
-                           ISNULL(p.lyDo, N'Không phù hợp'), N'Nguyên vẹn', N'Nhập lại kho bán', N'Tự động đồng bộ từ hóa đơn gốc'
-                    FROM dbo.PhieuDoiTra p
-                    CROSS APPLY (
-                        SELECT TOP 1 maSanPham, donGia FROM dbo.ChiTietHoaDon_SanPham WHERE maHoaDon = p.maHoaDon
-                    ) ct
-                    WHERE NOT EXISTS (
-                        SELECT 1 FROM dbo.ChiTietPhieuDoiTra WHERE maPhieuDoiTra = p.maPhieuDoiTra
-                    )
-                """);
-                st.executeUpdate("UPDATE dbo.PhieuDoiTra SET trangThai = N'Đã duyệt' WHERE trangThai = N'Hoàn thành'");
-
-                st.executeUpdate("""
-                    ;WITH BangTinh AS (
-                        SELECT p.maPhieuDoiTra,
-                               ISNULL(SUM(ct.soLuong * ct.donGia), 0) AS tongTra,
-                               ISNULL(SUM(ISNULL(ct.soLuongDoi, 0) * ISNULL(spDoi.giaBan, 0)), 0) AS tongDoi
-                        FROM dbo.PhieuDoiTra p
-                        JOIN dbo.ChiTietPhieuDoiTra ct ON p.maPhieuDoiTra = ct.maPhieuDoiTra
-                        LEFT JOIN dbo.SanPham spDoi ON ct.maSanPhamDoi = spDoi.maSanPham
-                        WHERE p.loaiXuLy LIKE N'%Đổi%'
-                        GROUP BY p.maPhieuDoiTra
-                    )
-                    UPDATE p
-                    SET p.tienBu = CASE WHEN bt.tongDoi > bt.tongTra THEN bt.tongDoi - bt.tongTra ELSE 0 END,
-                        p.tienHoan = CASE WHEN bt.tongTra > bt.tongDoi THEN bt.tongTra - bt.tongDoi ELSE 0 END
-                    FROM dbo.PhieuDoiTra p
-                    JOIN BangTinh bt ON p.maPhieuDoiTra = bt.maPhieuDoiTra
-                    WHERE bt.tongDoi > 0
-                """);
-            }
-            daKiemTraCauTruc = true;
-        } catch (Exception ignored) {
-        }
     }
 
     /**
@@ -156,14 +75,21 @@ public class PhieuDoiTraDAO {
                 psPhieu.setString(1, phieu.getMaPhieuDoiTra());
                 psPhieu.setString(2, phieu.getMaHoaDon());
                 psPhieu.setString(3, phieu.getMaNhanVien());
-                psPhieu.setString(4, phieu.getMaKhachHang());
-                psPhieu.setDate(5, Date.valueOf(phieu.getNgayLap()));
-                psPhieu.setString(6, phieu.getLyDo());
+                if (phieu.getMaKhachHang() != null && !phieu.getMaKhachHang().trim().isEmpty()) {
+                    psPhieu.setString(4, phieu.getMaKhachHang().trim());
+                } else {
+                    psPhieu.setNull(4, Types.VARCHAR);
+                }
+                psPhieu.setDate(5, Date.valueOf(phieu.getNgayLap() != null ? phieu.getNgayLap() : LocalDate.now()));
+                String lyDoPhieu = (phieu.getLyDo() != null && !phieu.getLyDo().trim().isEmpty())
+                        ? phieu.getLyDo().trim()
+                        : "Đổi trả sản phẩm";
+                psPhieu.setString(6, lyDoPhieu);
                 psPhieu.setInt(7, phieu.getSoLuong());
-                psPhieu.setString(8, phieu.getLoaiXuLy());
+                psPhieu.setString(8, phieu.getLoaiXuLy() != null ? phieu.getLoaiXuLy() : "Hoàn tiền");
                 psPhieu.setDouble(9, phieu.tinhTienHoan());
                 psPhieu.setDouble(10, phieu.tinhTienBu());
-                psPhieu.setString(11, phieu.getTrangThai());
+                psPhieu.setString(11, phieu.getTrangThai() != null ? phieu.getTrangThai() : "Chờ xử lý");
                 psPhieu.executeUpdate();
 
                 for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
@@ -223,9 +149,12 @@ public class PhieuDoiTraDAO {
                  PreparedStatement psXoa = conn.prepareStatement(sqlXoaChiTiet);
                  PreparedStatement psChiTiet = conn.prepareStatement(sqlChiTiet)) {
 
-                psPhieu.setString(1, phieu.getLyDo());
+                String lyDoPhieu = (phieu.getLyDo() != null && !phieu.getLyDo().trim().isEmpty())
+                        ? phieu.getLyDo().trim()
+                        : "Đổi trả sản phẩm";
+                psPhieu.setString(1, lyDoPhieu);
                 psPhieu.setInt(2, phieu.getSoLuong());
-                psPhieu.setString(3, phieu.getLoaiXuLy());
+                psPhieu.setString(3, phieu.getLoaiXuLy() != null ? phieu.getLoaiXuLy() : "Hoàn tiền");
                 psPhieu.setDouble(4, phieu.tinhTienHoan());
                 psPhieu.setDouble(5, phieu.tinhTienBu());
                 psPhieu.setString(6, phieu.getMaPhieuDoiTra());
@@ -379,39 +308,19 @@ public class PhieuDoiTraDAO {
                         + (tienHoan > 0 ? "Hoàn " + (long) tienHoan + "đ" : "")
                         + (tienBu > 0 ? "Bù " + (long) tienBu + "đ" : "");
 
-                boolean coCotTienHoan = false;
-                boolean coCotGhiChu = false;
-                try (Statement stCheck = conn.createStatement();
-                     ResultSet rsCheck = stCheck.executeQuery("SELECT name FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.HoaDon')")) {
-                    while (rsCheck.next()) {
-                        String tenCot = rsCheck.getString("name");
-                        if ("tienHoanLai".equalsIgnoreCase(tenCot)) coCotTienHoan = true;
-                        if ("ghiChu".equalsIgnoreCase(tenCot)) coCotGhiChu = true;
-                    }
-                } catch (Exception ignored) {}
-
-                if (coCotTienHoan) {
-                    String sqlHD = "UPDATE dbo.HoaDon SET tienHoanLai = ISNULL(tienHoanLai, 0) + ?, tienThanhToanThem = ISNULL(tienThanhToanThem, 0) + ? "
-                            + (coCotGhiChu ? ", ghiChu = ISNULL(ghiChu + N'; ', N'') + ? " : " ")
-                            + "WHERE maHoaDon = ?";
-                    try (PreparedStatement psHD = conn.prepareStatement(sqlHD)) {
-                        psHD.setDouble(1, tienHoan);
-                        psHD.setDouble(2, tienBu);
-                        if (coCotGhiChu) {
-                            psHD.setString(3, moTaDoiTra);
-                            psHD.setString(4, phieu.getMaHoaDon());
-                        } else {
-                            psHD.setString(3, phieu.getMaHoaDon());
-                        }
-                        psHD.executeUpdate();
-                    }
-                } else if (coCotGhiChu) {
-                    String sqlHD = "UPDATE dbo.HoaDon SET ghiChu = ISNULL(ghiChu + N'; ', N'') + ? WHERE maHoaDon = ?";
-                    try (PreparedStatement psHD = conn.prepareStatement(sqlHD)) {
-                        psHD.setString(1, moTaDoiTra);
-                        psHD.setString(2, phieu.getMaHoaDon());
-                        psHD.executeUpdate();
-                    }
+                String sqlHD = """
+                        UPDATE dbo.HoaDon
+                        SET tienHoanLai = ISNULL(tienHoanLai, 0) + ?,
+                            tienThanhToanThem = ISNULL(tienThanhToanThem, 0) + ?,
+                            ghiChu = ISNULL(ghiChu + N'; ', N'') + ?
+                        WHERE maHoaDon = ?
+                        """;
+                try (PreparedStatement psHD = conn.prepareStatement(sqlHD)) {
+                    psHD.setDouble(1, tienHoan);
+                    psHD.setDouble(2, tienBu);
+                    psHD.setString(3, moTaDoiTra);
+                    psHD.setString(4, phieu.getMaHoaDon());
+                    psHD.executeUpdate();
                 }
 
                 conn.commit();

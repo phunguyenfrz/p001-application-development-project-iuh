@@ -19,7 +19,7 @@ import java.util.List;
 
 /**
  * Hộp thoại (Modal Dialog) Xem chi tiết khách hàng và danh sách thú cưng của khách hàng.
- * Tuân thủ chuẩn 3 tầng (Điều 3 IUH): GUI gọi thông qua ThuCungBUS.
+ * Sử dụng ThuCungBUS theo chuẩn kiến trúc 3 tầng IUH.
  * Hỗ trợ bôi đen (chọn văn bản bằng chuột) trên từng ô thông tin để sao chép (copy) dễ dàng.
  */
 public class XemChiTietKhachHangView extends VBox {
