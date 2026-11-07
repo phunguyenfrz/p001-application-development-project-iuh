@@ -194,6 +194,10 @@ public class DanhMucMenu {
         return Collections.unmodifiableList(TAT_CA_MENU);
     }
 
+    public static List<NhomMenu> layDanhSachMenu() {
+        return layTatCaMenu();
+    }
+
     public static List<NhomMenu> layMenuTheoVaiTro(TaiKhoan.VaiTro vaiTro) {
         if (vaiTro == null) return Collections.emptyList();
         if (vaiTro == TaiKhoan.VaiTro.ADMIN) return layTatCaMenu();

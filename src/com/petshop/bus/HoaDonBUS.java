@@ -195,8 +195,12 @@ public class HoaDonBUS {
      * Lấy toàn bộ danh sách hóa đơn hiện có trong cơ sở dữ liệu.
      */
     public List<HoaDon> layTatCaHoaDon() {
+        return layDanhSachHoaDon();
+    }
+
+    public List<HoaDon> layDanhSachHoaDon() {
         kiemTraQuyenHoaDon("HD_TIM_KIEM");
-        return hoaDonDAO.layTatCaHoaDon();
+        return hoaDonDAO.layDanhSachHoaDon();
     }
 
     /**

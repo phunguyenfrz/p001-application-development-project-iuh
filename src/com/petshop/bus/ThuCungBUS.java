@@ -34,7 +34,11 @@ public class ThuCungBUS {
      * Quyền yêu cầu: TC_CAP_NHAT hoặc TC_TIM_KIEM.
      */
     public List<ThuCung> layDanhSachThuCung() {
-        return thuCungDAO.layTatCaThuCung();
+        return thuCungDAO.layDanhSachThuCung();
+    }
+
+    public List<ThuCung> layTatCaThuCung() {
+        return layDanhSachThuCung();
     }
 
     /**
@@ -109,6 +113,10 @@ public class ThuCungBUS {
      */
     public String taoMaThuCungMoi() {
         return thuCungDAO.taoMaThuCung();
+    }
+
+    public String taoMaThuCung() {
+        return taoMaThuCungMoi();
     }
 
     /**

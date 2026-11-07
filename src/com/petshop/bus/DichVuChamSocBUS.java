@@ -94,8 +94,12 @@ public class DichVuChamSocBUS {
 
     // Lấy toàn bộ danh sách bảng giá của các dịch vụ (yêu cầu quyền DVCS_BANG_GIA)
     public List<BangGiaDichVu> layTatCaBangGia() {
+        return layDanhSachBangGia();
+    }
+
+    public List<BangGiaDichVu> layDanhSachBangGia() {
         xacThucService.kiemTraQuyen("DVCS_BANG_GIA");
-        return dichVuChamSocDAO.layTatCaBangGia();
+        return dichVuChamSocDAO.layDanhSachBangGia();
     }
 
     // Hàm cung cấp cho #68 (Lịch hẹn), #69 (Phiếu dịch vụ), #71 (Hóa đơn): tra đơn giá theo cân nặng

@@ -266,6 +266,13 @@ public class DonNhapHangDAO {
      * Lấy tất cả đơn nhập hàng sắp xếp theo ngày lập giảm dần.
      */
     public List<DonNhapHang> layTatCaDonHang() {
+        return layDanhSachDonNhap();
+    }
+
+    /**
+     * Chuẩn quy ước tên hàm: layDanhSach...
+     */
+    public List<DonNhapHang> layDanhSachDonNhap() {
         return timKiemDonHang(null, null, null, null, null);
     }
 

@@ -235,7 +235,7 @@ public class PhieuDichVuBUS {
         if (!sdt.matches("^0\\d{9}$")) {
             throw new IllegalArgumentException("Số điện thoại không đúng định dạng (phải có 10 chữ số, bắt đầu bằng số 0)!");
         }
-        return new KhachHangDAO().layKhachHangTheoSoDienThoai(sdt);
+        return khachHangDAO.layKhachHangTheoSoDienThoai(sdt);
     }
 
     // Kiểm tra xem phiếu dịch vụ đã có hóa đơn thanh toán hay chưa (chặn trùng 2 hóa đơn)

@@ -170,8 +170,10 @@ public class ThongKeDAO {
                         }
                     }
                 }
-            } catch (SQLException ignored) {}
-        } catch (SQLException ignored) {}
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi thống kê doanh thu theo ngày: " + e.getMessage(), e);
+        }
 
         return ketQua;
     }
@@ -213,7 +215,9 @@ public class ThongKeDAO {
                     }
                 }
             }
-        } catch (SQLException ignored) {}
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi thống kê cơ cấu doanh thu: " + e.getMessage(), e);
+        }
 
         coCau.put("Bán hàng", Math.max(0.0, doanhThuBanHang));
         coCau.put("Dịch vụ Spa", Math.max(0.0, doanhThuDichVu));

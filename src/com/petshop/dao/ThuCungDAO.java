@@ -32,6 +32,13 @@ public class ThuCungDAO {
      * @return Danh sách thú cưng
      */
     public List<ThuCung> layTatCaThuCung() {
+        return layDanhSachThuCung();
+    }
+
+    /**
+     * Chuẩn quy ước tên hàm: layDanhSach...
+     */
+    public List<ThuCung> layDanhSachThuCung() {
         List<ThuCung> danhSach = new ArrayList<>();
         String sql = """
                 SELECT tc.maThuCung, tc.maKhachHang, tc.tenThuCung, tc.loaiThuCung, tc.giongLoai,

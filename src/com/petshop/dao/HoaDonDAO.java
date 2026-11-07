@@ -766,6 +766,13 @@ public class HoaDonDAO {
      * Lấy tất cả hóa đơn hiện có trong cơ sở dữ liệu.
      */
     public List<HoaDon> layTatCaHoaDon() {
+        return layDanhSachHoaDon();
+    }
+
+    /**
+     * Chuẩn quy ước tên hàm: layDanhSach...
+     */
+    public List<HoaDon> layDanhSachHoaDon() {
         return timKiemHoaDon("", null, null, "Tất cả", "Tất cả");
     }
 
