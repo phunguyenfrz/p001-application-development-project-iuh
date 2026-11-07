@@ -26,15 +26,27 @@ import java.util.Set;
 public class PhieuDichVuBUS {
 
     private final PhieuDichVuDAO phieuDichVuDAO;
+    private final LichHenDAO lichHenDAO;
+    private final ThuCungDAO thuCungDAO;
+    private final DichVuChamSocDAO dichVuChamSocDAO;
+    private final KhachHangDAO khachHangDAO;
     private final XacThucBUS xacThucService;
 
     public PhieuDichVuBUS() {
         this.phieuDichVuDAO = new PhieuDichVuDAO();
+        this.lichHenDAO = new LichHenDAO();
+        this.thuCungDAO = new ThuCungDAO();
+        this.dichVuChamSocDAO = new DichVuChamSocDAO();
+        this.khachHangDAO = new KhachHangDAO();
         this.xacThucService = new XacThucBUS();
     }
 
     public PhieuDichVuBUS(PhieuDichVuDAO phieuDichVuDAO, XacThucBUS xacThucService) {
         this.phieuDichVuDAO = phieuDichVuDAO;
+        this.lichHenDAO = new LichHenDAO();
+        this.thuCungDAO = new ThuCungDAO();
+        this.dichVuChamSocDAO = new DichVuChamSocDAO();
+        this.khachHangDAO = new KhachHangDAO();
         this.xacThucService = xacThucService;
     }
 
@@ -197,7 +209,7 @@ public class PhieuDichVuBUS {
     // Tự động hủy lịch hẹn kèm ghi chú lý do
     public boolean huyLichHenTuDong(String maLichHen, String lyDoHuy) {
         if (maLichHen == null || maLichHen.isBlank()) return false;
-        return new LichHenDAO().huyLichHenTuDong(maLichHen.trim(), lyDoHuy);
+        return lichHenDAO.huyLichHenTuDong(maLichHen.trim(), lyDoHuy);
     }
 
     // Lấy danh sách các lịch hẹn đang chờ tiếp nhận hôm nay của một khách hàng cụ thể
@@ -361,53 +373,53 @@ public class PhieuDichVuBUS {
     }
 
     public List<KhachHang> layDanhSachKhachHang() {
-        return new KhachHangDAO().layDanhSachKhachHang();
+        return khachHangDAO.layDanhSachKhachHang();
     }
 
     public List<ThuCung> layDanhSachThuCungTheoKhachHang(String maKhachHang) {
         if (maKhachHang == null || maKhachHang.trim().isEmpty()) {
             return List.of();
         }
-        return new ThuCungDAO().layDanhSachTheoKhachHang(maKhachHang.trim());
+        return thuCungDAO.layDanhSachTheoKhachHang(maKhachHang.trim());
     }
 
     public List<DichVuChamSoc> layDanhSachDichVu() {
-        return new DichVuChamSocDAO().layDanhSachDichVuDangKinhDoanh();
+        return dichVuChamSocDAO.layDanhSachDichVuDangKinhDoanh();
     }
 
     public double traGiaDichVuTheoCanNang(String maDichVu, double canNang) {
-        return new DichVuChamSocDAO().traGiaTheoCanNang(maDichVu, canNang);
+        return dichVuChamSocDAO.traGiaTheoCanNang(maDichVu, canNang);
     }
 
     public List<ChiTietLichHen> layChiTietLichHen(String maLichHen) {
-        return new LichHenDAO().layChiTietLichHen(maLichHen);
+        return lichHenDAO.layChiTietLichHen(maLichHen);
     }
 
     public List<String[]> layDanhSachNhanVien() {
-        return new LichHenDAO().layDanhSachNhanVienChamSoc();
+        return lichHenDAO.layDanhSachNhanVienChamSoc();
     }
 
     public boolean capNhatCanNangThuCung(String maThuCung, double canNang) {
-        return new ThuCungDAO().capNhatCanNang(maThuCung, canNang);
+        return thuCungDAO.capNhatCanNang(maThuCung, canNang);
     }
 
     public boolean themKhachHang(KhachHang kh) {
-        return new KhachHangDAO().themKhachHang(kh);
+        return khachHangDAO.themKhachHang(kh);
     }
 
     public String taoMaKhachHang() {
-        return new KhachHangDAO().taoMaKhachHang();
+        return khachHangDAO.taoMaKhachHang();
     }
 
     public boolean kiemTraTrungSoDienThoai(String soDienThoai) {
-        return new KhachHangDAO().kiemTraTrungSoDienThoai(soDienThoai, null);
+        return khachHangDAO.kiemTraTrungSoDienThoai(soDienThoai, null);
     }
 
     public boolean themThuCung(ThuCung tc) {
-        return new ThuCungDAO().themThuCung(tc);
+        return thuCungDAO.themThuCung(tc);
     }
 
     public String taoMaThuCungMoi() {
-        return new ThuCungDAO().taoMaThuCung();
+        return thuCungDAO.taoMaThuCung();
     }
 }

@@ -60,7 +60,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
-                    <argLine>-Xmx256m -XX:MaxMetaspaceSize=128m</argLine>
+                    <argLine>-Xmx128m -XX:MaxMetaspaceSize=96m -Xss512k</argLine>
                 </configuration>
             </plugin>
             <plugin>

@@ -89,19 +89,31 @@ public class TimKiemPhieuDichVuView extends VBox {
         cboTrangThai.setPrefWidth(150);
 
         btnTimKiem.getStyleClass().add("nut-chinh");
+        btnTimKiem.setMinWidth(Region.USE_PREF_SIZE);
         btnTimKiem.setOnAction(e -> xuLyTimKiem());
 
         btnLamMoi.getStyleClass().add("nut-phu");
+        btnLamMoi.setMinWidth(Region.USE_PREF_SIZE);
         btnLamMoi.setOnAction(e -> lamMoiBoLoc());
 
-        luoi.add(new Label("Từ khóa:"), 0, 0);
+        Label lblTuKhoa = new Label("Từ khóa:");
+        lblTuKhoa.setMinWidth(Region.USE_PREF_SIZE);
+        luoi.add(lblTuKhoa, 0, 0);
         luoi.add(txtTuKhoa, 1, 0);
-        luoi.add(new Label("Từ ngày:"), 2, 0);
+
+        Label lblTuNgay = new Label("Từ ngày:");
+        lblTuNgay.setMinWidth(Region.USE_PREF_SIZE);
+        luoi.add(lblTuNgay, 2, 0);
         luoi.add(dpTuNgay, 3, 0);
-        luoi.add(new Label("Đến ngày:"), 4, 0);
+
+        Label lblDenNgay = new Label("Đến ngày:");
+        lblDenNgay.setMinWidth(Region.USE_PREF_SIZE);
+        luoi.add(lblDenNgay, 4, 0);
         luoi.add(dpDenNgay, 5, 0);
 
-        luoi.add(new Label("Trạng thái:"), 0, 1);
+        Label lblTrangThai = new Label("Trạng thái:");
+        lblTrangThai.setMinWidth(Region.USE_PREF_SIZE);
+        luoi.add(lblTrangThai, 0, 1);
         luoi.add(cboTrangThai, 1, 1);
 
         HBox thanhNut = new HBox(10, btnTimKiem, btnLamMoi);
@@ -153,8 +165,8 @@ public class TimKiemPhieuDichVuView extends VBox {
         colGio.setCellValueFactory(d -> new SimpleStringProperty(
                 d.getValue().getGioTiepNhan() != null ? d.getValue().getGioTiepNhan().format(DINH_DANG_GIO) : ""));
 
-        TableColumn<PhieuDichVu, String> colNv = new TableColumn<>("Nhân viên");
-        colNv.setPrefWidth(150);
+        TableColumn<PhieuDichVu, String> colNv = new TableColumn<>("Nhân viên thực hiện");
+        colNv.setPrefWidth(160);
         colNv.setCellValueFactory(d -> new SimpleStringProperty(
                 d.getValue().getTenNhanVien() != null ? d.getValue().getTenNhanVien() : d.getValue().getMaNhanVien()));
 

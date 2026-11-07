@@ -96,7 +96,7 @@ public class ThemThuCungView extends VBox {
      */
     private void napDanhSachKhachHang(String maKhachHangMacDinh) {
         try {
-            List<KhachHang> ds = khachHangController.layDanhSachKhachHang();
+            List<KhachHang> ds = khachHangController.layDanhSachKhachHangDangHoatDong();
             dsKhachHangGoc.setAll(ds);
             dsKhachHangLoc = new FilteredList<>(dsKhachHangGoc, p -> true);
             cboKhachHang.setItems(dsKhachHangLoc);

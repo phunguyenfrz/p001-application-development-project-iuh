@@ -22,14 +22,15 @@ public class SanPhamDAO {
         if (coCotGiaNhap != null) return coCotGiaNhap;
         synchronized (SanPhamDAO.class) {
             if (coCotGiaNhap != null) return coCotGiaNhap;
+            if (conn == null) return false;
             String sql = "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'SanPham' AND COLUMN_NAME = 'giaNhap'";
             try (PreparedStatement ps = conn.prepareStatement(sql);
                  ResultSet rs = ps.executeQuery()) {
                 coCotGiaNhap = rs.next();
             } catch (SQLException e) {
-                coCotGiaNhap = true;
+                coCotGiaNhap = false;
             }
-            return coCotGiaNhap;
+            return coCotGiaNhap != null && coCotGiaNhap;
         }
     }
 
