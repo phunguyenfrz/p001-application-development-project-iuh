@@ -85,12 +85,43 @@ class NhaCungCapBUSTest {
         assertTrue(ex.getMessage().contains("đã tồn tại"), "Cập nhật trùng tên NCC khác phải báo lỗi");
     }
 
+    @Test
+    void testTimKiemNhaCungCapTheoDiaChi() {
+        fakeDAO.danhSach.add(new NhaCungCap("NCC-20261105-000001", "Pet City", "0901234567", "12 Nguyễn Văn Bảo, Gò Vấp", "petcity@gmail.com", true));
+        fakeDAO.danhSach.add(new NhaCungCap("NCC-20261105-000002", "Royal Canin", "0902222222", "Quận 7, TP.HCM", "royal@canin.vn", true));
+
+        List<NhaCungCap> ketQua = bus.timKiemNhaCungCap("", "Gò Vấp", true);
+        assertEquals(1, ketQua.size());
+        assertEquals("NCC-20261105-000001", ketQua.get(0).getMaNhaCungCap());
+    }
+
     private static class FakeNhaCungCapDAO extends NhaCungCapDAO {
         final List<NhaCungCap> danhSach = new ArrayList<>();
 
         @Override
         public String taoMaNhaCungCap() {
             return "NCC-20261105-000001";
+        }
+
+        @Override
+        public List<NhaCungCap> timKiemNhaCungCap(String tuKhoa, String diaChi, Boolean trangThai) {
+            return danhSach.stream().filter(n -> {
+                if (trangThai != null && n.isTrangThai() != trangThai) return false;
+                if (tuKhoa != null && !tuKhoa.isBlank()) {
+                    String kw = tuKhoa.trim().toLowerCase();
+                    boolean matchKw = n.getMaNhaCungCap().toLowerCase().contains(kw)
+                            || n.getTenNhaCungCap().toLowerCase().contains(kw)
+                            || n.getSoDienThoai().toLowerCase().contains(kw)
+                            || (n.getEmail() != null && n.getEmail().toLowerCase().contains(kw))
+                            || (n.getDiaChi() != null && n.getDiaChi().toLowerCase().contains(kw));
+                    if (!matchKw) return false;
+                }
+                if (diaChi != null && !diaChi.isBlank()) {
+                    String dc = diaChi.trim().toLowerCase();
+                    if (n.getDiaChi() == null || !n.getDiaChi().toLowerCase().contains(dc)) return false;
+                }
+                return true;
+            }).toList();
         }
 
         @Override

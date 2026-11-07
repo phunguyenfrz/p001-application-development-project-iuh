@@ -88,7 +88,7 @@ public class ChonNhaCungCapDialog extends Stage {
         HBox thanhTim = new HBox(10);
         thanhTim.setAlignment(Pos.CENTER_LEFT);
 
-        txtTuKhoa.setPromptText("Nhập mã, tên hoặc SĐT nhà cung cấp...");
+        txtTuKhoa.setPromptText("Nhập mã, tên, SĐT hoặc địa chỉ nhà cung cấp...");
         txtTuKhoa.setPrefWidth(320);
 
         Button btnTim = new Button("Tìm kiếm");
