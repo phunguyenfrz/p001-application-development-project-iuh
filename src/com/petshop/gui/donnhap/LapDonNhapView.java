@@ -53,7 +53,6 @@ public class LapDonNhapView extends VBox {
     private final Spinner<Integer> spGio = new Spinner<>(0, 23, LocalTime.now().getHour());
     private final Spinner<Integer> spPhut = new Spinner<>(0, 59, LocalTime.now().getMinute());
     private final Spinner<Integer> spGiay = new Spinner<>(0, 59, LocalTime.now().getSecond());
-    private final TextField txtNhanVien = new TextField();
 
     // Nhà cung cấp được ghi nhận riêng theo từng sản phẩm để khi lưu tự tách đơn.
     private final Map<String, String> nhaCungCapTheoSanPham = new LinkedHashMap<>();
@@ -118,16 +117,6 @@ public class LapDonNhapView extends VBox {
         HBox hangThongTin = new HBox(20);
         hangThongTin.setAlignment(Pos.CENTER_LEFT);
 
-        // Nhân viên lập
-        VBox hopNhanVien = new VBox(5);
-        Label lblNhanVien = new Label("Nhân viên lập:");
-        lblNhanVien.setStyle("-fx-font-weight: bold;");
-        txtNhanVien.setEditable(false);
-        txtNhanVien.setPrefWidth(220);
-        txtNhanVien.setStyle("-fx-background-color: #f0f0f0;");
-        hopNhanVien.getChildren().addAll(lblNhanVien, txtNhanVien);
-        HBox.setHgrow(hopNhanVien, Priority.ALWAYS);
-
         // Ngày lập (chỉ đọc, không dùng chọn lịch)
         VBox hopNgayLap = new VBox(5);
         Label lblNgayLap = new Label("Ngày lập:");
@@ -161,7 +150,7 @@ public class LapDonNhapView extends VBox {
         VBox hopThoiGian = new VBox(5, lblThoiGian, hangThoiGian);
         HBox.setHgrow(hopThoiGian, Priority.ALWAYS);
 
-        hangThongTin.getChildren().addAll(hopNhanVien, hopNgayLap, hopThoiGian);
+        hangThongTin.getChildren().addAll(hopNgayLap, hopThoiGian);
         hopThongTin.getChildren().add(hangThongTin);
         return hopThongTin;
     }
@@ -400,14 +389,6 @@ public class LapDonNhapView extends VBox {
      * Khởi tạo dữ liệu mặc định cho form.
      */
     private void khoiTaoDuLieuMacDinh() {
-        // Hiển thị nhân viên đang đăng nhập
-        TaiKhoan taiKhoan = SessionManager.getTaiKhoanHienTai();
-        if (taiKhoan != null) {
-            String hoTen = taiKhoan.getHoTenNhanVien();
-            String maNV = taiKhoan.getMaNhanVien();
-            txtNhanVien.setText((hoTen != null ? hoTen : "") + " (" + (maNV != null ? maNV : "") + ")");
-        }
-
         // Ngày lập mặc định hôm nay (chỉ đọc)
         txtNgayLap.setText(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         LocalTime gioHienTai = LocalTime.now();

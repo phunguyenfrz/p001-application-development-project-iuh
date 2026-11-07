@@ -17,12 +17,15 @@ import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Màn hình tìm kiếm đơn nhập hàng (IMP_SEARCH).
  * Cho phép tìm theo từ khóa (mã đơn hàng, tên nhà cung cấp),
- * khoảng ngày, trạng thái. Hỗ trợ xem chi tiết đơn nhập.
+ * nhân viên lập, khoảng ngày, trạng thái. Hỗ trợ xem chi tiết đơn nhập.
  * Tuân thủ phong cách giao diện TimKiemNhaCungCapView.
  */
 public class TimKiemDonNhapView extends VBox {
@@ -37,9 +40,11 @@ public class TimKiemDonNhapView extends VBox {
 
     // Các thành phần bộ lọc tìm kiếm
     private final TextField txtTuKhoa = new TextField();
+    private final ComboBox<String> cboNhanVien = new ComboBox<>();
     private final DatePicker dpTuNgay = new DatePicker();
     private final DatePicker dpDenNgay = new DatePicker();
     private final ComboBox<String> cboTrangThai = new ComboBox<>();
+    private boolean dangCapNhatBoLoc = false;
 
     // Bảng kết quả và nhãn số lượng
     private final TableView<DonNhapHang> tblDanhSach = new TableView<>();
@@ -56,7 +61,7 @@ public class TimKiemDonNhapView extends VBox {
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
 
         // Mô tả
-        Label lblMoTa = new Label("Tìm kiếm đơn nhập hàng theo mã đơn hàng, tên nhà cung cấp, tên mặt hàng, khoảng ngày và trạng thái.");
+        Label lblMoTa = new Label("Tìm kiếm đơn nhập hàng theo mã đơn hàng, tên nhà cung cấp, tên mặt hàng, nhân viên lập, khoảng ngày và trạng thái.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
 
         getChildren().addAll(lblTieuDe, lblMoTa, taoKhungChinh());
@@ -73,13 +78,23 @@ public class TimKiemDonNhapView extends VBox {
         khung.getStyleClass().add("hop-noi-dung");
         VBox.setVgrow(khung, Priority.ALWAYS);
 
-        // === Hàng 1: Từ khóa + Trạng thái ===
+        // === Hàng 1: Từ khóa + Nhân viên lập + Trạng thái ===
         HBox congCu1 = new HBox(10);
         congCu1.setAlignment(Pos.CENTER_LEFT);
 
         txtTuKhoa.setPromptText("Mã đơn, tên hàng, NCC, nhân viên...");
         txtTuKhoa.setPrefWidth(280);
         txtTuKhoa.setOnAction(e -> xuLyTimKiem());
+
+        // Danh sách nhân viên lập
+        cboNhanVien.getItems().add("Tất cả");
+        cboNhanVien.setValue("Tất cả");
+        cboNhanVien.setPrefWidth(180);
+        cboNhanVien.setOnAction(e -> {
+            if (!dangCapNhatBoLoc) {
+                xuLyTimKiem();
+            }
+        });
 
         // Danh sách trạng thái
         cboTrangThai.setItems(FXCollections.observableArrayList(
@@ -90,6 +105,7 @@ public class TimKiemDonNhapView extends VBox {
 
         congCu1.getChildren().addAll(
                 new Label("Từ khóa:"), txtTuKhoa,
+                new Label("Nhân viên lập:"), cboNhanVien,
                 new Label("Trạng thái:"), cboTrangThai
         );
 
@@ -109,6 +125,9 @@ public class TimKiemDonNhapView extends VBox {
         btnLamMoi.getStyleClass().add("nut-phu");
         btnLamMoi.setOnAction(e -> {
             txtTuKhoa.clear();
+            dangCapNhatBoLoc = true;
+            cboNhanVien.setValue("Tất cả");
+            dangCapNhatBoLoc = false;
             dpTuNgay.setValue(null);
             dpDenNgay.setValue(null);
             cboTrangThai.setValue("Tất cả");
@@ -265,6 +284,7 @@ public class TimKiemDonNhapView extends VBox {
     private void xuLyTimKiem() {
         try {
             String tuKhoa = txtTuKhoa.getText();
+            String nhanVienChon = cboNhanVien.getValue();
             LocalDate tuNgay = dpTuNgay.getValue();
             LocalDate denNgay = dpDenNgay.getValue();
             String trangThai = cboTrangThai.getValue();
@@ -276,6 +296,11 @@ public class TimKiemDonNhapView extends VBox {
 
             // Gọi controller tìm kiếm (từ khóa hỗ trợ tìm cả mã đơn, tên hàng, nhà cung cấp, nhân viên)
             List<DonNhapHang> ketQua = controller.timKiemDonHang(tuKhoa, null, tuNgay, denNgay, trangThai);
+            if (nhanVienChon != null && !"Tất cả".equals(nhanVienChon)) {
+                ketQua = ketQua.stream()
+                        .filter(dh -> dh.getTenNhanVien() != null && nhanVienChon.equals(dh.getTenNhanVien().trim()))
+                        .collect(Collectors.toList());
+            }
             danhSachHienThi.setAll(ketQua);
             tblDanhSach.getSelectionModel().clearSelection();
             tblDanhSach.refresh();
@@ -292,6 +317,7 @@ public class TimKiemDonNhapView extends VBox {
     private void taiLaiBang() {
         try {
             List<DonNhapHang> danhSach = controller.timKiemDonHang(null, null, null, null, null);
+            capNhatDanhSachNhanVien(danhSach);
             danhSachHienThi.setAll(danhSach);
             tblDanhSach.getSelectionModel().clearSelection();
             tblDanhSach.refresh();
@@ -300,6 +326,28 @@ public class TimKiemDonNhapView extends VBox {
         } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             hienThiLoi(ex.getMessage());
         }
+    }
+
+    /**
+     * Cập nhật danh sách nhân viên lập trong bộ lọc ComboBox.
+     */
+    private void capNhatDanhSachNhanVien(List<DonNhapHang> danhSach) {
+        String luaChonHienTai = cboNhanVien.getValue();
+        Set<String> dsNhanVien = new LinkedHashSet<>();
+        dsNhanVien.add("Tất cả");
+        for (DonNhapHang dh : danhSach) {
+            if (dh.getTenNhanVien() != null && !dh.getTenNhanVien().isBlank()) {
+                dsNhanVien.add(dh.getTenNhanVien().trim());
+            }
+        }
+        dangCapNhatBoLoc = true;
+        cboNhanVien.setItems(FXCollections.observableArrayList(dsNhanVien));
+        if (luaChonHienTai != null && dsNhanVien.contains(luaChonHienTai)) {
+            cboNhanVien.setValue(luaChonHienTai);
+        } else {
+            cboNhanVien.setValue("Tất cả");
+        }
+        dangCapNhatBoLoc = false;
     }
 
     /**

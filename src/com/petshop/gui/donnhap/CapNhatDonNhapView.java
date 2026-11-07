@@ -25,8 +25,11 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Giao diện cập nhật đơn nhập hàng.
@@ -40,7 +43,10 @@ public class CapNhatDonNhapView extends VBox {
     private Button nutHuyDon;
     private Button nutXemChiTiet;
     private Button nutLamMoi;
+    private ComboBox<String> cboNhanVien;
     private Label nhanTrangThai;
+    private List<DonNhapHang> tatCaDonHang = new ArrayList<>();
+    private boolean dangCapNhatBoLoc = false;
 
     // === Controller ===
     private final DonNhapHangBUS controller;
@@ -134,9 +140,26 @@ public class CapNhatDonNhapView extends VBox {
         // Nút làm mới
         nutLamMoi = new Button("Làm mới");
         nutLamMoi.getStyleClass().add("nut-phu");
-        nutLamMoi.setOnAction(e -> taiDuLieu());
+        nutLamMoi.setOnAction(e -> {
+            dangCapNhatBoLoc = true;
+            cboNhanVien.setValue("Tất cả");
+            dangCapNhatBoLoc = false;
+            taiDuLieu();
+        });
 
-        hop.getChildren().addAll(nutXacNhan, nutHuyDon, nutXemChiTiet, nutLamMoi);
+        // Bộ lọc nhân viên lập
+        Label lblNhanVien = new Label("Nhân viên lập:");
+        cboNhanVien = new ComboBox<>();
+        cboNhanVien.getItems().add("Tất cả");
+        cboNhanVien.setValue("Tất cả");
+        cboNhanVien.setPrefWidth(180);
+        cboNhanVien.setOnAction(e -> {
+            if (!dangCapNhatBoLoc) {
+                apDungBoLoc();
+            }
+        });
+
+        hop.getChildren().addAll(nutXacNhan, nutHuyDon, nutXemChiTiet, nutLamMoi, lblNhanVien, cboNhanVien);
         return hop;
     }
 
@@ -269,22 +292,61 @@ public class CapNhatDonNhapView extends VBox {
      */
     private void taiDuLieu() {
         try {
-            List<DonNhapHang> danhSach = controller.layTatCaDonHang();
-            ObservableList<DonNhapHang> danhSachObservable = FXCollections.observableArrayList(danhSach);
-            bangDonHang.setItems(danhSachObservable);
-
-            long soChoNhan = danhSach.stream()
-                    .filter(dh -> DonNhapHang.TRANG_THAI_CHO_NHAN.equals(dh.getTrangThai()))
-                    .count();
-            nhanTrangThai.setText("Tổng số đơn: " + danhSach.size()
-                    + " | Đang chờ nhận hàng: " + soChoNhan
-                    + " | Đã hoàn tất: " + (danhSach.size() - soChoNhan));
-
-            bangDonHang.getSelectionModel().clearSelection();
-            capNhatTrangThaiNut(null);
+            tatCaDonHang = controller.layTatCaDonHang();
+            capNhatDanhSachNhanVien();
+            apDungBoLoc();
         } catch (Exception ex) {
             hienThongBaoLoi("Lỗi tải dữ liệu", "Không thể tải danh sách đơn nhập hàng.\n" + ex.getMessage());
         }
+    }
+
+    /**
+     * Cập nhật danh sách nhân viên lập trong bộ lọc ComboBox.
+     */
+    private void capNhatDanhSachNhanVien() {
+        String luaChonHienTai = cboNhanVien.getValue();
+        Set<String> dsNhanVien = new LinkedHashSet<>();
+        dsNhanVien.add("Tất cả");
+        for (DonNhapHang dh : tatCaDonHang) {
+            if (dh.getTenNhanVien() != null && !dh.getTenNhanVien().isBlank()) {
+                dsNhanVien.add(dh.getTenNhanVien().trim());
+            }
+        }
+        dangCapNhatBoLoc = true;
+        cboNhanVien.setItems(FXCollections.observableArrayList(dsNhanVien));
+        if (luaChonHienTai != null && dsNhanVien.contains(luaChonHienTai)) {
+            cboNhanVien.setValue(luaChonHienTai);
+        } else {
+            cboNhanVien.setValue("Tất cả");
+        }
+        dangCapNhatBoLoc = false;
+    }
+
+    /**
+     * Áp dụng bộ lọc nhân viên lập lên bảng đơn nhập hàng.
+     */
+    private void apDungBoLoc() {
+        String nhanVienChon = cboNhanVien.getValue();
+        List<DonNhapHang> danhSachLoc;
+        if (nhanVienChon == null || "Tất cả".equals(nhanVienChon)) {
+            danhSachLoc = tatCaDonHang;
+        } else {
+            danhSachLoc = tatCaDonHang.stream()
+                    .filter(dh -> dh.getTenNhanVien() != null && nhanVienChon.equals(dh.getTenNhanVien().trim()))
+                    .collect(Collectors.toList());
+        }
+
+        bangDonHang.setItems(FXCollections.observableArrayList(danhSachLoc));
+
+        long soChoNhan = danhSachLoc.stream()
+                .filter(dh -> DonNhapHang.TRANG_THAI_CHO_NHAN.equals(dh.getTrangThai()))
+                .count();
+        nhanTrangThai.setText("Tổng số đơn: " + danhSachLoc.size()
+                + " | Đang chờ nhận hàng: " + soChoNhan
+                + " | Đã hoàn tất: " + (danhSachLoc.size() - soChoNhan));
+
+        bangDonHang.getSelectionModel().clearSelection();
+        capNhatTrangThaiNut(null);
     }
 
     /**
