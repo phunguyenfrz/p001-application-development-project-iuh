@@ -49,7 +49,6 @@ public class LapDonNhapView extends VBox {
     private final DonNhapHangBUS donHangController = new DonNhapHangBUS();
 
     // --- Phần thông tin đơn hàng ---
-    private final TextField txtMaDon = new TextField();
     private final TextField txtNgayLap = new TextField();
     private final Spinner<Integer> spGio = new Spinner<>(0, 23, LocalTime.now().getHour());
     private final Spinner<Integer> spPhut = new Spinner<>(0, 59, LocalTime.now().getMinute());
@@ -116,36 +115,8 @@ public class LapDonNhapView extends VBox {
         hopThongTin.getStyleClass().add("hop-noi-dung");
         hopThongTin.setPadding(new Insets(15));
 
-        // Hàng 1: Mã đơn + Ngày lập
-        HBox hang1 = new HBox(20);
-        hang1.setAlignment(Pos.CENTER_LEFT);
-
-        // Mã đơn (tự sinh, chỉ đọc)
-        VBox hopMaDon = new VBox(5);
-        Label lblMaDon = new Label("Mã đơn nhập:");
-        lblMaDon.setStyle("-fx-font-weight: bold;");
-        txtMaDon.setEditable(false);
-        txtMaDon.setPrefWidth(220);
-        txtMaDon.setPromptText("Tự sinh theo nhà cung cấp sau khi lưu");
-        txtMaDon.setStyle("-fx-background-color: #f0f0f0;");
-        hopMaDon.getChildren().addAll(lblMaDon, txtMaDon);
-        HBox.setHgrow(hopMaDon, Priority.ALWAYS);
-
-        // Ngày lập (chỉ đọc, không dùng chọn lịch)
-        VBox hopNgayLap = new VBox(5);
-        Label lblNgayLap = new Label("Ngày lập:");
-        lblNgayLap.setStyle("-fx-font-weight: bold;");
-        txtNgayLap.setEditable(false);
-        txtNgayLap.setPrefWidth(220);
-        txtNgayLap.setStyle("-fx-background-color: #f0f0f0;");
-        hopNgayLap.getChildren().addAll(lblNgayLap, txtNgayLap);
-        HBox.setHgrow(hopNgayLap, Priority.ALWAYS);
-
-        hang1.getChildren().addAll(hopMaDon, hopNgayLap);
-
-        // Hàng 2: Nhân viên lập + Thời gian lập
-        HBox hang2 = new HBox(20);
-        hang2.setAlignment(Pos.CENTER_LEFT);
+        HBox hangThongTin = new HBox(20);
+        hangThongTin.setAlignment(Pos.CENTER_LEFT);
 
         // Nhân viên lập
         VBox hopNhanVien = new VBox(5);
@@ -156,6 +127,16 @@ public class LapDonNhapView extends VBox {
         txtNhanVien.setStyle("-fx-background-color: #f0f0f0;");
         hopNhanVien.getChildren().addAll(lblNhanVien, txtNhanVien);
         HBox.setHgrow(hopNhanVien, Priority.ALWAYS);
+
+        // Ngày lập (chỉ đọc, không dùng chọn lịch)
+        VBox hopNgayLap = new VBox(5);
+        Label lblNgayLap = new Label("Ngày lập:");
+        lblNgayLap.setStyle("-fx-font-weight: bold;");
+        txtNgayLap.setEditable(false);
+        txtNgayLap.setPrefWidth(200);
+        txtNgayLap.setStyle("-fx-background-color: #f0f0f0;");
+        hopNgayLap.getChildren().addAll(lblNgayLap, txtNgayLap);
+        HBox.setHgrow(hopNgayLap, Priority.ALWAYS);
 
         // Thời gian lập (giờ : phút : giây)
         Label lblThoiGian = new Label("Thời gian lập (giờ : phút : giây):");
@@ -180,9 +161,8 @@ public class LapDonNhapView extends VBox {
         VBox hopThoiGian = new VBox(5, lblThoiGian, hangThoiGian);
         HBox.setHgrow(hopThoiGian, Priority.ALWAYS);
 
-        hang2.getChildren().addAll(hopNhanVien, hopThoiGian);
-
-        hopThongTin.getChildren().addAll(hang1, hang2);
+        hangThongTin.getChildren().addAll(hopNhanVien, hopNgayLap, hopThoiGian);
+        hopThongTin.getChildren().add(hangThongTin);
         return hopThongTin;
     }
 
@@ -420,8 +400,6 @@ public class LapDonNhapView extends VBox {
      * Khởi tạo dữ liệu mặc định cho form.
      */
     private void khoiTaoDuLieuMacDinh() {
-        txtMaDon.setText("Tự sinh khi lưu (mỗi NCC một mã)");
-
         // Hiển thị nhân viên đang đăng nhập
         TaiKhoan taiKhoan = SessionManager.getTaiKhoanHienTai();
         if (taiKhoan != null) {
@@ -616,8 +594,6 @@ public class LapDonNhapView extends VBox {
         spGiay.getValueFactory().setValue(gioHienTai.getSecond());
         capNhatTongTien();
         bangChiTiet.refresh();
-
-        txtMaDon.setText("Tự sinh khi lưu (mỗi NCC một mã)");
     }
 
     // ========================= THÔNG BÁO =========================
