@@ -1,7 +1,20 @@
 package com.petshop.gui.phieudichvu;
 
 import com.petshop.bus.PhieuDichVuBUS;
-import com.petshop.entity.*;
+import com.petshop.entity.BangGiaDichVu;
+import com.petshop.entity.ChiTietLichHen;
+import com.petshop.entity.ChiTietPhieuDichVu;
+import com.petshop.entity.DichVuChamSoc;
+import com.petshop.entity.KhachHang;
+import com.petshop.entity.LichHen;
+import com.petshop.entity.NhanVien;
+import com.petshop.entity.PhieuDichVu;
+import com.petshop.entity.TaiKhoan;
+import com.petshop.entity.ThuCung;
+import com.petshop.util.SessionManager;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -14,19 +27,23 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import javafx.util.StringConverter;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
  * Giao diện Lập phiếu tiếp nhận dịch vụ chăm sóc tại quầy (PDV_TAO).
- * Hỗ trợ tiếp nhận khách vãng lai, tra cứu SĐT, thêm nhanh khách hàng/thú cưng,
- * và tiếp nhận chuyển giao liền mạch từ Lịch hẹn đặt trước.
+ * Tuân thủ 100% Bộ chỉ thị kỹ thuật IUH:
+ * - Không nạp RAM ComboBox khách hàng: Tra cứu SĐT trực tiếp hoặc chọn Lịch hẹn hôm nay.
+ * - Nhân viên tự động lấy từ SessionManager (khóa ô chọn).
+ * - Cân nặng thực tế tự động áp đúng bảng giá dịch vụ theo bậc (Nhỏ, Vừa, Lớn).
+ * - Sử dụng kiểu nguyên thủy double, không BigDecimal.
  */
 public class LapPhieuTiepNhanDichVuView extends VBox {
 
@@ -38,24 +55,27 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
     private final Runnable khiLuuThanhCong;
 
     // Danh sách lưu trữ dữ liệu
-    private final List<KhachHang> dsKhachHangGoc = new ArrayList<>();
     private final ObservableList<ChiTietPhieuDichVu> dsChiTietChon = FXCollections.observableArrayList();
-    private final Map<String, BigDecimal> mapCanNangDaCan = new HashMap<>();
+    private final Map<String, Double> mapCanNangDaCan = new HashMap<>();
 
-    private BigDecimal donGiaHienHanh = BigDecimal.ZERO;
-    private boolean dangDongBo = false;
+    private double donGiaHienHanh = 0.0;
+    private KhachHang khachHangHienTai = null;
+    private NhanVien nhanVienHienTai = null;
 
-    // Điều khiển chọn nguồn tiếp nhận
-    private final ComboBox<LichHen> cboLichHen = new ComboBox<>();
+    // Lịch hẹn liên kết hiện tại (nếu tiếp nhận theo lịch hẹn)
+    private LichHen lichHenHienTai = null;
 
     // Điều khiển thông tin phiếu (Phần 1)
     private final TextField txtMaPhieuDichVu = new TextField();
     private final TextField txtTimKhach = new TextField();
-    private final Button btnKiemTraSdt = new Button("Kiểm tra");
-    private final ComboBox<KhachHang> cboKhachHang = new ComboBox<>();
-    private KhachHang khachHangHienTai = null;
-    private final ComboBox<String[]> cboNhanVien = new ComboBox<>();
-    private final java.util.Set<String> dsMaNhanVienDangBan = new java.util.HashSet<>();
+    private final Button btnKiemTraSdt = new Button("Tra cứu");
+    private final Button btnXemLichHomNay = new Button("📋 Lịch hẹn chờ");
+    private final Button btnThemKhachNhanh = new Button("+ Khách mới");
+    private final TextField txtKhachHangHienThi = new TextField();
+    private final HBox pnlBadgeLichHen = new HBox(6);
+    private final Label lblThongTinLichHen = new Label();
+    private final Button btnHuyLienKetLich = new Button("✕ Bỏ lịch");
+    private final TextField txtNhanVienHienThi = new TextField();
     private final DatePicker dpNgayTiepNhan = new DatePicker();
     private final TextField txtGioTiepNhan = new TextField();
     private final TextArea txtGhiChu = new TextArea();
@@ -89,7 +109,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         VBox pnlTieuDe = new VBox(2);
         Label lblTieuDe = new Label("TIẾP NHẬN DỊCH VỤ TẠI QUẦY");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-        Label lblMoTa = new Label("Lập phiếu tiếp nhận thú cưng làm dịch vụ trực tiếp hoặc tiếp nhận từ lịch hẹn đã đặt.");
+        Label lblMoTa = new Label("Lập phiếu tiếp nhận thú cưng làm dịch vụ trực tiếp tại quầy hoặc từ lịch hẹn đã đặt.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
         pnlTieuDe.getChildren().addAll(lblTieuDe, lblMoTa);
 
@@ -129,29 +149,6 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         Label lblPhan1 = new Label("1. Thông tin tiếp nhận dịch vụ");
         lblPhan1.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px; -fx-text-fill: #1e293b;");
 
-        // Dòng chọn tiếp nhận từ lịch hẹn
-        cboLichHen.setPromptText("-- Chọn lịch hẹn đến giờ tiếp nhận (nếu có) --");
-        cboLichHen.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(cboLichHen, Priority.ALWAYS);
-
-        Button btnBoChonLich = new Button("Tiếp nhận trực tiếp");
-        btnBoChonLich.getStyleClass().add("nut-phu");
-        btnBoChonLich.setOnAction(e -> {
-            cboLichHen.setValue(null);
-            cboKhachHang.setDisable(false);
-            txtTimKhach.setDisable(false);
-            btnKiemTraSdt.setDisable(false);
-            dsChiTietChon.clear();
-            capNhatTongTien();
-            txtGhiChu.clear();
-            ThuCung tc = cboThuCung.getValue();
-            if (tc != null) kiemTraVaChenLuuYDiUng(tc);
-        });
-
-        HBox pnlLichHen = new HBox(8, new Label("Nguồn tiếp nhận:"), cboLichHen, btnBoChonLich);
-        pnlLichHen.setAlignment(Pos.CENTER_LEFT);
-
-        // Lưới thông tin chi tiết (3 hàng gọn gàng, không tràn màn hình)
         GridPane pnlLuoi = new GridPane();
         pnlLuoi.setHgap(14);
         pnlLuoi.setVgap(8);
@@ -164,37 +161,56 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         col4.setHgrow(Priority.ALWAYS);
         pnlLuoi.getColumnConstraints().addAll(col1, col2, col3, col4);
 
-        // Hàng 0: Mã phiếu & Nhân viên tiếp nhận
+        // Hàng 0: Mã phiếu & Nhân viên tiếp nhận (Khóa cứng, lấy từ phiên)
         txtMaPhieuDichVu.setEditable(false);
         txtMaPhieuDichVu.setPromptText("Tự động sinh (PDV-yyyyMMdd-xxxxxx)");
         txtMaPhieuDichVu.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #475569;");
         pnlLuoi.add(new Label("Mã phiếu:"), 0, 0);
         pnlLuoi.add(txtMaPhieuDichVu, 1, 0);
 
-        cboNhanVien.setMaxWidth(Double.MAX_VALUE);
-        cboNhanVien.setPromptText("Chọn nhân viên tiếp nhận...");
+        txtNhanVienHienThi.setEditable(false);
+        txtNhanVienHienThi.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #475569;");
         pnlLuoi.add(new Label("Nhân viên (*):"), 2, 0);
-        pnlLuoi.add(cboNhanVien, 3, 0);
+        pnlLuoi.add(txtNhanVienHienThi, 3, 0);
 
-        // Hàng 1: SĐT tra cứu (nhấn Enter hoặc bấm Kiểm tra) & Khách hàng
+        // Hàng 1: SĐT tra cứu (nhấn Enter hoặc bấm Tra cứu) & Khách hàng
         txtTimKhach.setPromptText("Nhập SĐT (10 số) rồi Enter...");
         HBox.setHgrow(txtTimKhach, Priority.ALWAYS);
         btnKiemTraSdt.setMinWidth(Region.USE_PREF_SIZE);
         btnKiemTraSdt.getStyleClass().add("nut-phu");
-        HBox boxTimKhach = new HBox(6, txtTimKhach, btnKiemTraSdt);
+        btnXemLichHomNay.setMinWidth(Region.USE_PREF_SIZE);
+        btnXemLichHomNay.getStyleClass().add("nut-phu");
+        btnXemLichHomNay.setOnAction(e -> moCuaSoDanhSachLichHenHomNay());
+        btnThemKhachNhanh.setMinWidth(Region.USE_PREF_SIZE);
+        btnThemKhachNhanh.getStyleClass().add("nut-phu");
+        btnThemKhachNhanh.setOnAction(e -> moCuaSoThemKhachNhanh(txtTimKhach.getText()));
+
+        HBox boxTimKhach = new HBox(6, txtTimKhach, btnKiemTraSdt, btnXemLichHomNay, btnThemKhachNhanh);
         boxTimKhach.setAlignment(Pos.CENTER_LEFT);
 
         pnlLuoi.add(new Label("SĐT khách hàng (*):"), 0, 1);
         pnlLuoi.add(boxTimKhach, 1, 1);
 
-        cboKhachHang.setMaxWidth(Double.MAX_VALUE);
-        cboKhachHang.setPromptText("Chọn khách hàng (*)...");
+        txtKhachHangHienThi.setEditable(false);
+        txtKhachHangHienThi.setPromptText("Chưa chọn khách hàng (*)");
+        txtKhachHangHienThi.setStyle("-fx-background-color: #f1f5f9; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
+
+        // Huy hiệu hiển thị lịch hẹn liên kết
+        pnlBadgeLichHen.setAlignment(Pos.CENTER_LEFT);
+        lblThongTinLichHen.setStyle("-fx-background-color: #e0f2fe; -fx-text-fill: #0369a1; -fx-padding: 2 8; -fx-background-radius: 4px; -fx-font-weight: bold; -fx-font-size: 11.5px;");
+        btnHuyLienKetLich.setStyle("-fx-font-size: 11px; -fx-padding: 2 6; -fx-background-color: #fee2e2; -fx-text-fill: #b91c1c; -fx-cursor: hand; -fx-border-radius: 3px; -fx-background-radius: 3px;");
+        btnHuyLienKetLich.setOnAction(e -> huyLienKetLichHen());
+        pnlBadgeLichHen.getChildren().addAll(lblThongTinLichHen, btnHuyLienKetLich);
+        pnlBadgeLichHen.setVisible(false);
+        pnlBadgeLichHen.setManaged(false);
+
+        VBox boxKhachHang = new VBox(3, txtKhachHangHienThi, pnlBadgeLichHen);
         pnlLuoi.add(new Label("Khách hàng (*):"), 2, 1);
-        pnlLuoi.add(cboKhachHang, 3, 1);
+        pnlLuoi.add(boxKhachHang, 3, 1);
 
         // Hàng 2: Thời gian tiếp nhận (Ngày + Giờ) & Ghi chú tiếp nhận
         dpNgayTiepNhan.setValue(LocalDate.now());
-        dpNgayTiepNhan.setDisable(true); // Khóa cố định ngày tiếp nhận hôm nay
+        dpNgayTiepNhan.setDisable(true);
         dpNgayTiepNhan.setStyle("-fx-opacity: 0.9;");
         dpNgayTiepNhan.setPrefWidth(140);
         HBox.setHgrow(dpNgayTiepNhan, Priority.ALWAYS);
@@ -203,6 +219,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         txtGioTiepNhan.setText(LocalTime.now().format(DINH_DANG_GIO));
         txtGioTiepNhan.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #475569;");
         txtGioTiepNhan.setPrefWidth(110);
+        khoiTaoDongHoThoiGianThuc();
 
         HBox boxThoiGian = new HBox(8, dpNgayTiepNhan, txtGioTiepNhan);
         boxThoiGian.setAlignment(Pos.CENTER_LEFT);
@@ -216,7 +233,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         pnlLuoi.add(new Label("Ghi chú tiếp nhận:"), 2, 2);
         pnlLuoi.add(txtGhiChu, 3, 2);
 
-        pnlKhung.getChildren().addAll(lblPhan1, pnlLichHen, pnlLuoi);
+        pnlKhung.getChildren().addAll(lblPhan1, pnlLuoi);
         return pnlKhung;
     }
 
@@ -233,7 +250,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
 
         // Chọn thú cưng + Nút thêm nhanh
         cboThuCung.setPromptText("Chọn thú cưng...");
-        cboThuCung.setPrefWidth(170);
+        cboThuCung.setPrefWidth(180);
 
         btnThemThuCungNhanh.setText("+ Mới");
         btnThemThuCungNhanh.getStyleClass().add("nut-phu");
@@ -244,7 +261,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
 
         // Ô nhập cân nặng thực tế tại quầy
         txtCanNangThucTe.setPromptText("Cân tại quầy (kg)");
-        txtCanNangThucTe.setPrefWidth(110);
+        txtCanNangThucTe.setPrefWidth(120);
 
         // Chọn dịch vụ
         cboDichVu.setPromptText("Chọn dịch vụ chăm sóc...");
@@ -253,7 +270,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
 
         // Ô đơn giá tự động tính theo bậc cân nặng (chỉ đọc, nền xám)
         txtDonGia.setPromptText("Đơn giá áp dụng");
-        txtDonGia.setPrefWidth(160);
+        txtDonGia.setPrefWidth(170);
         txtDonGia.setEditable(false);
         txtDonGia.setStyle("-fx-background-color: #f1f5f9; -fx-font-weight: bold;");
 
@@ -306,10 +323,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         TableColumn<ChiTietPhieuDichVu, String> colDonGia = new TableColumn<>("Đơn giá");
         colDonGia.setStyle("-fx-alignment: CENTER-RIGHT;");
         colDonGia.setPrefWidth(140);
-        colDonGia.setCellValueFactory(c -> {
-            BigDecimal gia = c.getValue().getDonGia();
-            return new SimpleStringProperty(gia != null ? DINH_DANG_TIEN.format(gia) : "0 đ");
-        });
+        colDonGia.setCellValueFactory(c -> new SimpleStringProperty(DINH_DANG_TIEN.format(c.getValue().getDonGia())));
 
         TableColumn<ChiTietPhieuDichVu, Void> colXoa = new TableColumn<>("Thao tác");
         colXoa.setStyle("-fx-alignment: CENTER;");
@@ -336,7 +350,6 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         tblChiTiet.getColumns().addAll(colSTT, colThuCung, colDichVu, colDonGia, colXoa);
     }
 
-    // Tạo thanh nút tác vụ phía dưới
     private HBox taoThanhTacVu() {
         btnLuu.getStyleClass().add("nut-chinh");
         btnLamMoi.getStyleClass().add("nut-phu");
@@ -351,137 +364,31 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
     // 3. CÀI ĐẶT SỰ KIỆN & BỘ CHUYỂN ĐỔI HIỂN THỊ
     // =========================================================================
     private void caiDatSuKien() {
-        // 1. Hiển thị ComboBox Lịch hẹn
-        cboLichHen.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(LichHen lh) {
-                if (lh == null) return "";
-                String tenKh = lh.getTenKhachHang() != null ? lh.getTenKhachHang() : lh.getMaKhachHang();
-                String tenTc = lh.getTenThuCung() != null ? lh.getTenThuCung() : lh.getMaThuCung();
-                String ngay = lh.getNgayHen() != null ? lh.getNgayHen().toString() : "";
-                String gio = lh.getGioHen() != null ? lh.getGioHen().toString() : "";
-                return lh.getMaLichHen() + " | " + tenKh + " - Bé " + tenTc + " (" + gio + " " + ngay + ")";
-            }
 
-            @Override
-            public LichHen fromString(String string) {
-                return null;
-            }
-        });
 
-        // Khi chọn một lịch hẹn: tự động đồng bộ khách hàng, nhân viên, thú cưng và chi tiết dịch vụ
-        cboLichHen.setOnAction(e -> {
-            LichHen lh = cboLichHen.getValue();
-            if (lh != null) {
-                dongBoTuLichHen(lh);
-            }
-        });
-
-        // 2. Hiển thị ComboBox Khách hàng (gọn: Họ tên (SĐT))
-        cboKhachHang.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(KhachHang kh) {
-                if (kh == null) return "";
-                String sdt = (kh.getSoDienThoai() != null && !kh.getSoDienThoai().isBlank()) ? " (" + kh.getSoDienThoai() + ")" : "";
-                return kh.getHoTen() + sdt;
-            }
-
-            @Override
-            public KhachHang fromString(String string) {
-                return null;
-            }
-        });
-
-        // Tra cứu số điện thoại khi nhấn Enter hoặc bấm nút "Kiểm tra"
+        // Tra cứu số điện thoại khi nhấn Enter hoặc bấm nút "Tra cứu"
         txtTimKhach.setOnAction(e -> xuLyKiemTraSoDienThoai());
         btnKiemTraSdt.setOnAction(e -> xuLyKiemTraSoDienThoai());
 
-        // Ràng buộc nhập số điện thoại (tối đa 10 chữ số) và lọc danh sách khách hàng
+        // Ràng buộc nhập số điện thoại (tối đa 10 chữ số)
         txtTimKhach.textProperty().addListener((obs, cu, moi) -> {
-            if (dangDongBo || moi == null) return;
+            if (moi == null) return;
             if (!moi.matches("\\d*")) {
                 txtTimKhach.setText(cu != null ? cu : "");
                 return;
             }
             if (moi.length() > 10) {
                 txtTimKhach.setText(moi.substring(0, 10));
-                return;
-            }
-
-            KhachHang khChinhXac = null;
-            dangDongBo = true;
-            try {
-                if (moi.trim().isEmpty()) {
-                    cboKhachHang.setItems(FXCollections.observableArrayList(dsKhachHangGoc));
-                    cboKhachHang.setValue(null);
-        khachHangHienTai = null;
-                    cboLichHen.setValue(null);
-                } else {
-                    List<KhachHang> loc = dsKhachHangGoc.stream()
-                            .filter(k -> (k.getSoDienThoai() != null && k.getSoDienThoai().contains(moi.trim()))
-                                    || (k.getHoTen() != null && k.getHoTen().toLowerCase().contains(moi.trim().toLowerCase())))
-                            .toList();
-                    cboKhachHang.setItems(FXCollections.observableArrayList(loc));
-                    // Khi nhập đủ 10 số và khớp chính xác 1 khách hàng: ghi nhận để tự động đồng bộ
-                    if (moi.length() == 10) {
-                        for (KhachHang kh : loc) {
-                            if (moi.equals(kh.getSoDienThoai())) {
-                                khChinhXac = kh;
-                                break;
-                            }
-                        }
-                    }
-                }
-            } finally {
-                dangDongBo = false;
-            }
-
-            // Đồng bộ thông tin khách hàng và tự động nạp lịch hẹn / dịch vụ đã đặt trước (nếu có)
-            if (khChinhXac != null) {
-                if (kiemTraVaXacNhanDoiKhachHang(khChinhXac)) {
-                    dongBoThongTinKhachHang(khChinhXac);
-                } else {
-                    dangDongBo = true;
-                    try {
-                        txtTimKhach.setText(khachHangHienTai != null && khachHangHienTai.getSoDienThoai() != null ? khachHangHienTai.getSoDienThoai() : "");
-                        cboKhachHang.setValue(khachHangHienTai);
-                    } finally {
-                        dangDongBo = false;
-                    }
-                }
             }
         });
 
-        // Khi khách hàng thay đổi: đồng bộ thông tin hoặc nạp danh sách thú cưng
-        cboKhachHang.setOnAction(e -> {
-            if (dangDongBo) return;
-            KhachHang kh = cboKhachHang.getValue();
-            if (!kiemTraVaXacNhanDoiKhachHang(kh)) {
-                dangDongBo = true;
-                try {
-                    cboKhachHang.setValue(khachHangHienTai);
-                } finally {
-                    dangDongBo = false;
-                }
-                return;
-            }
-            if (kh != null) {
-                dongBoThongTinKhachHang(kh);
-            } else {
-                cboThuCung.getItems().clear();
-                cboThuCung.setValue(null);
-                txtCanNangThucTe.clear();
-                cboLichHen.setValue(null);
-            }
-        });
-
-        // 3. Hiển thị ComboBox Thú cưng
+        // Hiển thị ComboBox Thú cưng
         cboThuCung.setConverter(new StringConverter<>() {
             @Override
             public String toString(ThuCung tc) {
                 if (tc == null) return "";
                 String giong = tc.getGiongLoai() != null ? tc.getGiongLoai() : "";
-                String can = tc.getCanNang() != null ? " - " + tc.getCanNang() + "kg" : "";
+                String can = tc.getCanNang() > 0 ? " - " + tc.getCanNang() + "kg" : "";
                 return tc.getTenThuCung() + " (" + giong + can + ")";
             }
 
@@ -495,8 +402,8 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         cboThuCung.setOnAction(e -> {
             ThuCung tc = cboThuCung.getValue();
             if (tc != null) {
-                if (tc.getCanNang() != null && tc.getCanNang().doubleValue() > 0) {
-                    txtCanNangThucTe.setText(tc.getCanNang().stripTrailingZeros().toPlainString());
+                if (tc.getCanNang() > 0) {
+                    txtCanNangThucTe.setText(String.valueOf(tc.getCanNang()));
                 } else {
                     txtCanNangThucTe.clear();
                 }
@@ -519,7 +426,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             tinhLaiGiaTheoCanNangThucTe();
         });
 
-        // 4. Hiển thị ComboBox Dịch vụ (gọn: Tên dịch vụ (thời lượng phút))
+        // Hiển thị ComboBox Dịch vụ
         cboDichVu.setConverter(new StringConverter<>() {
             @Override
             public String toString(DichVuChamSoc dv) {
@@ -535,29 +442,13 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         });
         cboDichVu.setOnAction(e -> tinhGiaTuDong());
 
-        // 5. Hiển thị ComboBox Nhân viên (gọn: Họ tên (Chức vụ))
-        cboNhanVien.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(String[] nv) {
-                if (nv == null || nv.length < 2) return "";
-                String chucVu = (nv.length > 2 && nv[2] != null && !nv[2].isBlank()) ? " (" + nv[2] + ")" : "";
-                String trangThai = dsMaNhanVienDangBan.contains(nv[0]) ? " - [Đang bận]" : " - [Sẵn sàng]";
-                return nv[1] + chucVu + trangThai;
-            }
-
-            @Override
-            public String[] fromString(String string) {
-                return null;
-            }
-        });
-
-        // 6. Nút thêm dịch vụ vào bảng
+        // Nút thêm dịch vụ vào bảng
         btnThemDichVu.setOnAction(e -> xuLyThemDichVu());
 
-        // 7. Nút Lưu
+        // Nút Lưu
         btnLuu.setOnAction(e -> xuLyLuuPhieu());
 
-        // 8. Nút Làm mới
+        // Nút Làm mới
         btnLamMoi.setOnAction(e -> lamMoiForm());
     }
 
@@ -565,7 +456,6 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
     // 4. LOGIC TÍNH GIÁ TỰ ĐỘNG & CÂN THỰC TẾ TẠI QUẦY
     // =========================================================================
 
-    // Lấy cân nặng thực tế hiện tại trên ô nhập hoặc từ hồ sơ thú cưng
     private double layCanNangThucTeHienTai() {
         String txt = txtCanNangThucTe.getText() != null ? txtCanNangThucTe.getText().trim() : "";
         try {
@@ -574,49 +464,45 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         } catch (NumberFormatException ignored) {}
 
         ThuCung tc = cboThuCung.getValue();
-        if (tc != null && tc.getCanNang() != null && tc.getCanNang().doubleValue() > 0) {
-            return tc.getCanNang().doubleValue();
+        if (tc != null && tc.getCanNang() > 0) {
+            return tc.getCanNang();
         }
-        return 0; // Trả về 0 để yêu cầu bắt buộc nhập cân nặng thực tế tại quầy
+        return 0.0;
     }
 
-    // Tự động tính đơn giá cho dịch vụ đang chọn theo bậc cân nặng
     private void tinhGiaTuDong() {
         DichVuChamSoc dv = cboDichVu.getValue();
         if (dv == null) {
             txtDonGia.clear();
-            donGiaHienHanh = BigDecimal.ZERO;
+            donGiaHienHanh = 0.0;
             return;
         }
 
         double canNang = layCanNangThucTeHienTai();
         if (canNang <= 0) {
             txtDonGia.setText("Cần nhập cân nặng (*)");
-            donGiaHienHanh = BigDecimal.ZERO;
+            donGiaHienHanh = 0.0;
             return;
         }
 
         double gia = controller.traGiaDichVuTheoCanNang(dv.getMaDichVu(), canNang);
-        donGiaHienHanh = BigDecimal.valueOf(gia);
+        donGiaHienHanh = gia;
         String bac = BangGiaDichVu.xacDinhKichThuoc(canNang);
         txtDonGia.setText(DINH_DANG_TIEN.format(gia) + " (" + bac + ")");
     }
 
-    // Khi nhân viên nhập/sửa cân nặng tại quầy: tự động cập nhật đơn giá trên form và các dòng trong bảng
     private void tinhLaiGiaTheoCanNangThucTe() {
         ThuCung tc = cboThuCung.getValue();
         double canNang = layCanNangThucTeHienTai();
 
-        // 1. Cập nhật txtDonGia cho dịch vụ hiện tại
         tinhGiaTuDong();
 
-        // 2. Cập nhật lại các dòng dịch vụ của thú cưng này trong bảng (đặc biệt là giá tạm tính từ Lịch hẹn)
         if (tc != null && canNang > 0) {
             boolean coThayDoi = false;
             for (ChiTietPhieuDichVu ct : dsChiTietChon) {
                 if (tc.getMaThuCung().equals(ct.getMaThuCung())) {
                     double giaMoi = controller.traGiaDichVuTheoCanNang(ct.getMaDichVu(), canNang);
-                    ct.setDonGia(BigDecimal.valueOf(giaMoi));
+                    ct.setDonGia(giaMoi);
                     coThayDoi = true;
                 }
             }
@@ -625,12 +511,10 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
                 capNhatTongTien();
             }
 
-            // Ghi nhận cân nặng mới nhất để cập nhật vào bảng ThuCung khi lập phiếu
-            mapCanNangDaCan.put(tc.getMaThuCung(), BigDecimal.valueOf(canNang));
+            mapCanNangDaCan.put(tc.getMaThuCung(), canNang);
         }
     }
 
-    // Kiểm tra thông tin dị ứng của thú cưng và tự động chèn vào ghi chú nếu có
     private void kiemTraVaChenLuuYDiUng(ThuCung tc) {
         if (tc == null || tc.getDiUng() == null || tc.getDiUng().isBlank() || "Không có".equalsIgnoreCase(tc.getDiUng().trim())) {
             return;
@@ -650,57 +534,52 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
     // 5. XỬ LÝ TRA CỨU SĐT, ĐỒNG BỘ LỊCH HẸN & HỘP THOẠI THÊM NHANH
     // =========================================================================
 
-    // Đồng bộ toàn bộ thông tin từ lịch hẹn sang phiếu tiếp nhận (khách hàng, nhân viên, thú cưng, dịch vụ đã đặt)
+    private void huyLienKetLichHen() {
+        this.lichHenHienTai = null;
+        pnlBadgeLichHen.setVisible(false);
+        pnlBadgeLichHen.setManaged(false);
+        lblThongTinLichHen.setText("");
+        dsChiTietChon.clear();
+        capNhatTongTien();
+        txtGhiChu.clear();
+        ThuCung tc = cboThuCung.getValue();
+        if (tc != null) kiemTraVaChenLuuYDiUng(tc);
+    }
+
     private void dongBoTuLichHen(LichHen lh) {
         if (lh == null) return;
+        this.lichHenHienTai = lh;
+
+        String tenTcBadge = (lh.getTenThuCung() != null && !lh.getTenThuCung().isBlank()) ? lh.getTenThuCung() : lh.getMaThuCung();
+        String gioBadge = (lh.getGioHen() != null) ? lh.getGioHen().toString() : "";
+        lblThongTinLichHen.setText("📅 Lịch: " + lh.getMaLichHen() + " (Bé " + tenTcBadge + " - " + gioBadge + ")");
+        pnlBadgeLichHen.setVisible(true);
+        pnlBadgeLichHen.setManaged(true);
 
         // Đồng bộ khách hàng
-        KhachHang khKhop = null;
-        for (KhachHang kh : dsKhachHangGoc) {
-            if (kh.getMaKhachHang().equals(lh.getMaKhachHang())) {
-                khKhop = kh;
-                break;
-            }
+        KhachHang kh = lh.getKhachHang();
+        if (kh == null && lh.getMaKhachHang() != null) {
+            kh = controller.timKhachHangTheoSoDienThoai(lh.getSoDienThoai());
         }
-        if (khKhop != null) {
-            dangDongBo = true;
-            try {
-                cboKhachHang.setItems(FXCollections.observableArrayList(dsKhachHangGoc));
-                cboKhachHang.setValue(khKhop);
-                khachHangHienTai = khKhop;
-                if (khKhop.getSoDienThoai() != null) {
-                    txtTimKhach.setText(khKhop.getSoDienThoai());
-                }
-            } finally {
-                dangDongBo = false;
-            }
+        if (kh != null) {
+            khachHangHienTai = kh;
+            txtKhachHangHienThi.setText(kh.getHoTen() + " (" + kh.getSoDienThoai() + ")");
+            txtTimKhach.setText(kh.getSoDienThoai());
+        } else {
+            txtKhachHangHienThi.setText(lh.getTenKhachHang() + " (" + lh.getSoDienThoai() + ")");
         }
 
-        // Đồng bộ nhân viên phụ trách của lịch hẹn
-        if (lh.getMaNhanVien() != null && !lh.getMaNhanVien().isBlank()) {
-            for (String[] nv : cboNhanVien.getItems()) {
-                if (nv.length > 0 && lh.getMaNhanVien().equals(nv[0])) {
-                    cboNhanVien.setValue(nv);
-                    break;
-                }
-            }
-        }
-
-        // Nạp danh sách thú cưng của khách và chọn đúng thú cưng của lịch hẹn
-        if (khKhop != null) {
-            List<ThuCung> dsTc = controller.layDanhSachThuCungTheoKhachHang(khKhop.getMaKhachHang());
+        // Nạp thú cưng của lịch hẹn
+        if (khachHangHienTai != null) {
+            List<ThuCung> dsTc = controller.layDanhSachThuCungTheoKhachHang(khachHangHienTai.getMaKhachHang());
             cboThuCung.setItems(FXCollections.observableArrayList(dsTc));
-            ThuCung tcKhop = null;
-            for (ThuCung tc : dsTc) {
-                if (tc.getMaThuCung().equals(lh.getMaThuCung())) {
-                    tcKhop = tc;
-                    break;
-                }
-            }
+            ThuCung tcKhop = dsTc.stream()
+                    .filter(tc -> tc.getMaThuCung().equals(lh.getMaThuCung()))
+                    .findFirst().orElse(null);
             if (tcKhop != null) {
                 cboThuCung.setValue(tcKhop);
-                if (tcKhop.getCanNang() != null && tcKhop.getCanNang().doubleValue() > 0) {
-                    txtCanNangThucTe.setText(tcKhop.getCanNang().stripTrailingZeros().toPlainString());
+                if (tcKhop.getCanNang() > 0) {
+                    txtCanNangThucTe.setText(String.valueOf(tcKhop.getCanNang()));
                 } else {
                     txtCanNangThucTe.clear();
                 }
@@ -708,7 +587,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             }
         }
 
-        // Nạp chi tiết dịch vụ từ lịch hẹn (tính theo đơn giá thực tế theo cân nặng tại quầy)
+        // Nạp chi tiết dịch vụ từ lịch hẹn
         dsChiTietChon.clear();
         double canNang = layCanNangThucTeHienTai();
         List<ChiTietLichHen> dsCtLh = controller.layChiTietLichHen(lh.getMaLichHen());
@@ -717,14 +596,13 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
                 : (cboThuCung.getValue() != null ? cboThuCung.getValue().getTenThuCung() : lh.getMaThuCung());
 
         for (ChiTietLichHen ctLh : dsCtLh) {
-            // Nếu tại quầy chưa có cân nặng và chi tiết lịch hẹn có ghi cân nặng thì nạp lên
-            if (canNang <= 0 && ctLh.getCanNangThuCung() != null && ctLh.getCanNangThuCung().doubleValue() > 0) {
-                canNang = ctLh.getCanNangThuCung().doubleValue();
-                txtCanNangThucTe.setText(ctLh.getCanNangThuCung().stripTrailingZeros().toPlainString());
+            if (canNang <= 0 && ctLh.getCanNangThuCung() > 0) {
+                canNang = ctLh.getCanNangThuCung();
+                txtCanNangThucTe.setText(String.valueOf(canNang));
             }
 
-            double donGiaThucTe = controller.traGiaDichVuTheoCanNang(ctLh.getMaDichVu(), canNang);
-            BigDecimal giaApDung = (donGiaThucTe > 0) ? BigDecimal.valueOf(donGiaThucTe) : ctLh.getDonGia();
+            double donGiaThucTe = controller.traGiaDichVuTheoCanNang(ctLh.getMaDichVu(), canNang > 0 ? canNang : 1.0);
+            double giaApDung = (donGiaThucTe > 0) ? donGiaThucTe : ctLh.getDonGia();
 
             ChiTietPhieuDichVu ctPdv = new ChiTietPhieuDichVu(
                     txtMaPhieuDichVu.getText(),
@@ -737,7 +615,6 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             dsChiTietChon.add(ctPdv);
         }
 
-        // Ghi chú tiếp nhận
         String ghiChuLh = "Tiếp nhận theo lịch hẹn " + lh.getMaLichHen() + (lh.getGhiChu() != null && !lh.getGhiChu().isBlank() ? " | " + lh.getGhiChu() : "");
         ThuCung tcHienTai = cboThuCung.getValue();
         if (tcHienTai != null && tcHienTai.getDiUng() != null && !tcHienTai.getDiUng().isBlank() && !"Không có".equalsIgnoreCase(tcHienTai.getDiUng().trim())) {
@@ -749,96 +626,6 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         tinhGiaTuDong();
     }
 
-    // Đồng bộ thông tin khi tìm kiếm/chọn khách hàng (nếu có lịch hẹn chờ thì tự động nạp lịch hẹn & dịch vụ đã đặt)
-    // Kiểm tra và hiển thị hộp thoại xác nhận khi đổi sang khách hàng khác nếu bảng dịch vụ đang có dữ liệu
-    private boolean kiemTraVaXacNhanDoiKhachHang(KhachHang khMoi) {
-        if (khMoi == null) {
-            if (khachHangHienTai != null && !dsChiTietChon.isEmpty()) {
-                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-                confirm.setTitle("Hủy chọn khách hàng");
-                confirm.setHeaderText("Danh sách đang có dịch vụ của khách hàng '" + khachHangHienTai.getHoTen() + "'");
-                confirm.setContentText("Mỗi phiếu chỉ tiếp nhận cho một khách hàng duy nhất.\nBạn có chắc chắn muốn bỏ chọn khách hàng và làm mới danh sách dịch vụ không?");
-                Optional<ButtonType> opt = confirm.showAndWait();
-                if (opt.isEmpty() || opt.get() != ButtonType.OK) {
-                    return false;
-                }
-                dsChiTietChon.clear();
-                mapCanNangDaCan.clear();
-                capNhatTongTien();
-            }
-            khachHangHienTai = null;
-            return true;
-        }
-
-        if (khachHangHienTai != null && !khachHangHienTai.getMaKhachHang().equals(khMoi.getMaKhachHang())) {
-            if (!dsChiTietChon.isEmpty()) {
-                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-                confirm.setTitle("Đổi khách hàng tiếp nhận");
-                confirm.setHeaderText("Danh sách đang có dịch vụ của khách hàng '" + khachHangHienTai.getHoTen() + "'");
-                confirm.setContentText("Mỗi phiếu dịch vụ chỉ tiếp nhận cho một khách hàng duy nhất.\nViệc đổi sang khách hàng '" + khMoi.getHoTen() + "' sẽ xóa các dịch vụ đã chọn của khách hàng trước đó.\n\nBạn có chắc chắn muốn tiếp tục đổi không?");
-                Optional<ButtonType> opt = confirm.showAndWait();
-                if (opt.isEmpty() || opt.get() != ButtonType.OK) {
-                    return false;
-                }
-                dsChiTietChon.clear();
-                mapCanNangDaCan.clear();
-                capNhatTongTien();
-            }
-        }
-        return true;
-    }
-
-    private void dongBoThongTinKhachHang(KhachHang kh) {
-        if (kh == null) return;
-
-        // Dọn dẹp chi tiết cũ nếu khách hàng thay đổi
-        if (khachHangHienTai != null && !kh.getMaKhachHang().equals(khachHangHienTai.getMaKhachHang())) {
-            dsChiTietChon.clear();
-            mapCanNangDaCan.clear();
-            capNhatTongTien();
-        }
-        khachHangHienTai = kh;
-
-        dangDongBo = true;
-        try {
-            cboKhachHang.setItems(FXCollections.observableArrayList(dsKhachHangGoc));
-            cboKhachHang.setValue(kh);
-            if (kh.getSoDienThoai() != null && !kh.getSoDienThoai().equals(txtTimKhach.getText())) {
-                txtTimKhach.setText(kh.getSoDienThoai());
-            }
-        } finally {
-            dangDongBo = false;
-        }
-
-        // Nạp lại danh sách lịch hẹn chờ tiếp nhận để đảm bảo dữ liệu mới nhất
-        napDanhSachLichHenCho();
-
-        // Kiểm tra xem khách hàng này có lịch hẹn chờ tiếp nhận (Đã đặt / Đã xác nhận) hay không
-        LichHen lhKhop = null;
-        for (LichHen lh : cboLichHen.getItems()) {
-            if (lh != null && kh.getMaKhachHang().equals(lh.getMaKhachHang())) {
-                lhKhop = lh;
-                break;
-            }
-        }
-
-        if (lhKhop != null) {
-            cboLichHen.setValue(lhKhop);
-            dongBoTuLichHen(lhKhop);
-        } else {
-            cboLichHen.setValue(null);
-            List<ThuCung> dsTc = controller.layDanhSachThuCungTheoKhachHang(kh.getMaKhachHang());
-            cboThuCung.setItems(FXCollections.observableArrayList(dsTc));
-            if (!dsTc.isEmpty()) {
-                cboThuCung.setValue(dsTc.get(0));
-            } else {
-                cboThuCung.setValue(null);
-                txtCanNangThucTe.clear();
-            }
-        }
-    }
-
-    // Xử lý kiểm tra số điện thoại khi nhấn Enter hoặc bấm nút "Kiểm tra"
     private void xuLyKiemTraSoDienThoai() {
         String sdt = txtTimKhach.getText() != null ? txtTimKhach.getText().trim() : "";
         if (sdt.isEmpty()) {
@@ -847,37 +634,356 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             return;
         }
 
-        KhachHang khKhop = null;
-        for (KhachHang kh : dsKhachHangGoc) {
-            if (sdt.equals(kh.getSoDienThoai())) {
-                khKhop = kh;
-                break;
-            }
+        if (!sdt.matches("^0\\d{9}$")) {
+            hienThiCanhBao("SĐT không hợp lệ", "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0 (Ví dụ: 0912345678)!");
+            txtTimKhach.requestFocus();
+            return;
         }
 
-        if (khKhop != null) {
-            if (kiemTraVaXacNhanDoiKhachHang(khKhop)) {
-                dongBoThongTinKhachHang(khKhop);
+        try {
+            KhachHang khKhop = controller.timKhachHangTheoSoDienThoai(sdt);
+            if (khKhop != null) {
+                khachHangHienTai = khKhop;
+                txtKhachHangHienThi.setText(khKhop.getHoTen() + " (" + khKhop.getSoDienThoai() + ")");
+                txtTimKhach.setText(khKhop.getSoDienThoai());
+
+                // Nạp thú cưng của khách
+                List<ThuCung> dsTc = controller.layDanhSachThuCungTheoKhachHang(khKhop.getMaKhachHang());
+                cboThuCung.setItems(FXCollections.observableArrayList(dsTc));
+                if (!dsTc.isEmpty()) {
+                    cboThuCung.setValue(dsTc.get(0));
+                } else {
+                    cboThuCung.setValue(null);
+                    txtCanNangThucTe.clear();
+                }
+
+                // Kiểm tra lịch hẹn chờ tiếp nhận của khách (Quy định nghiêm ngặt: chỉ áp dụng trong khoảng +-2h so với giờ hẹn)
+                List<LichHen> dsLh = controller.layDanhSachLichHenChoTheoKhachHang(khKhop.getMaKhachHang());
+                LocalDateTime now = LocalDateTime.now();
+
+                List<LichHen> dsLhHopLe = new ArrayList<>();
+                List<LichHen> dsLhTre = new ArrayList<>();
+                List<LichHen> dsLhSom = new ArrayList<>();
+
+                for (LichHen lh : dsLh) {
+                    if (lh.getNgayHen() == null || lh.getGioHen() == null) continue;
+                    LocalDateTime thoiGianHen = LocalDateTime.of(lh.getNgayHen(), lh.getGioHen());
+                    long phutChenhLech = java.time.Duration.between(thoiGianHen, now).toMinutes();
+
+                    if (phutChenhLech > 120) {
+                        // Trễ quá 2 giờ -> Tự động hủy
+                        controller.huyLichHenTuDong(lh.getMaLichHen(), "Hủy tự động: Khách đến trễ quá 2 giờ so với lịch hẹn");
+                        dsLhTre.add(lh);
+                    } else if (phutChenhLech < -120) {
+                        // Đến trước giờ hẹn quá 2 giờ
+                        dsLhSom.add(lh);
+                    } else {
+                        // Nằm trong khung giờ hợp lệ [-120 phút, +120 phút] (trước/sau không quá 2 giờ)
+                        dsLhHopLe.add(lh);
+                    }
+                }
+
+                if (!dsLhHopLe.isEmpty()) {
+                    if (dsLhHopLe.size() == 1) {
+                        dongBoTuLichHen(dsLhHopLe.get(0));
+                    } else {
+                        moCuaSoChonLichHenCuaKhach(dsLhHopLe);
+                    }
+                } else {
+                    // Không có lịch hẹn hợp lệ trong khung giờ +-2h
+                    huyLienKetLichHen();
+                    if (!dsTc.isEmpty()) {
+                        cboThuCung.setValue(dsTc.get(0));
+                    } else {
+                        cboThuCung.setValue(null);
+                        txtCanNangThucTe.clear();
+                    }
+
+                    // Tự động hủy các lịch hẹn đến sớm > 2 giờ vì khách đã đến tiếp nhận trực tiếp mới
+                    for (LichHen lhSom : dsLhSom) {
+                        controller.huyLichHenTuDong(lhSom.getMaLichHen(), "Hủy tự động: Khách đến trước giờ hẹn > 2 giờ và lập phiếu tiếp nhận mới tại quầy");
+                    }
+
+                    // Hiển thị cảnh báo nghiệp vụ rõ ràng
+                    if (!dsLhTre.isEmpty()) {
+                        StringBuilder sb = new StringBuilder("Lịch hẹn sau của khách đã TỰ ĐỘNG HỦY do đến trễ quá 2 giờ:\n");
+                        for (LichHen lh : dsLhTre) {
+                            String ngay = lh.getNgayHen() != null ? DateTimeFormatter.ofPattern("dd/MM/yyyy").format(lh.getNgayHen()) : "";
+                            sb.append("• Mã ").append(lh.getMaLichHen())
+                              .append(" (Bé ").append(lh.getTenThuCung() != null ? lh.getTenThuCung() : "")
+                              .append(" - ").append(ngay).append(" lúc ").append(lh.getGioHen()).append(")\n");
+                        }
+                        sb.append("\n👉 Vui lòng tư vấn và lập phiếu tiếp nhận dịch vụ mới tại quầy.");
+                        hienThiCanhBao("Lịch hẹn quá hạn (Trễ > 2 giờ)", sb.toString());
+                    } else if (!dsLhSom.isEmpty()) {
+                        StringBuilder sb = new StringBuilder("Khách hàng có lịch hẹn đến TRƯỚC GIỜ HẸN quá 2 giờ:\n");
+                        for (LichHen lh : dsLhSom) {
+                            String ngay = lh.getNgayHen() != null ? DateTimeFormatter.ofPattern("dd/MM/yyyy").format(lh.getNgayHen()) : "";
+                            sb.append("• Mã ").append(lh.getMaLichHen())
+                              .append(" (Bé ").append(lh.getTenThuCung() != null ? lh.getTenThuCung() : "")
+                              .append(" - ").append(ngay).append(" lúc ").append(lh.getGioHen()).append(")\n");
+                        }
+                        sb.append("\n👉 Theo quy định, lịch hẹn cũ đã tự động hủy để giải phóng slot.\nVui lòng lập phiếu tiếp nhận dịch vụ mới trực tiếp tại quầy.");
+                        hienThiCanhBao("Đến trước giờ hẹn > 2 giờ", sb.toString());
+                    }
+                }
             } else {
-                txtTimKhach.setText(khachHangHienTai != null && khachHangHienTai.getSoDienThoai() != null ? khachHangHienTai.getSoDienThoai() : "");
-            }
-            cboKhachHang.requestFocus();
-        } else {
-            if (sdt.matches("^0[0-9]{9}$")) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Khách hàng mới");
-                alert.setHeaderText("Khách hàng chưa có trong hệ thống!");
-                alert.setContentText("Số điện thoại '" + sdt + "' chưa từng sử dụng dịch vụ tại cửa hàng.\nHệ thống sẽ mở hộp thoại thêm nhanh khách hàng mới.");
-                alert.showAndWait();
-                moCuaSoThemKhachNhanh(sdt);
-            } else {
-                hienThiCanhBao("Số điện thoại không hợp lệ", "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0 (Ví dụ: 0912345678)!");
+                khachHangHienTai = null;
+                txtKhachHangHienThi.setText("Chưa chọn khách hàng");
+                cboThuCung.getItems().clear();
+                cboThuCung.setValue(null);
+                txtCanNangThucTe.clear();
+                huyLienKetLichHen();
+                hienThiCanhBao("Chưa có khách hàng", "Chưa có khách hàng với số điện thoại '" + sdt + "' trong hệ thống!\nVui lòng nhấn nút '+ Khách mới' để thêm khách hàng.");
                 txtTimKhach.requestFocus();
             }
+        } catch (IllegalArgumentException ex) {
+            hienThiCanhBao("Lỗi tra cứu", ex.getMessage());
+        } catch (Exception ex) {
+            hienThiLoi("Lỗi hệ thống: " + ex.getMessage());
         }
     }
 
-    // Hộp thoại popup Thêm nhanh khách hàng mới
+    // Hộp thoại chọn lịch hẹn khi một khách hàng có nhiều lịch hẹn trong ngày (ví dụ 2 bé trở lên)
+    private void moCuaSoChonLichHenCuaKhach(List<LichHen> dsLh) {
+        Stage dlg = new Stage();
+        dlg.initModality(Modality.APPLICATION_MODAL);
+        if (getScene() != null && getScene().getWindow() != null) {
+            dlg.initOwner(getScene().getWindow());
+        }
+        dlg.setTitle("Chọn lịch hẹn tiếp nhận - " + (khachHangHienTai != null ? khachHangHienTai.getHoTen() : ""));
+
+        VBox pnlGoc = new VBox(12);
+        pnlGoc.setPadding(new Insets(16));
+        pnlGoc.setStyle("-fx-background-color: #f8fafc;");
+
+        Label lblTieuDe = new Label("KHÁCH HÀNG CÓ " + dsLh.size() + " LỊCH HẸN CHỜ TIẾP NHẬN");
+        lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #0369a1;");
+
+        Label lblMoTa = new Label("Khách hàng đang có lịch hẹn chờ tiếp nhận. Vui lòng chọn lịch hẹn và bé thú cưng cần tiếp nhận cho phiếu này:");
+        lblMoTa.setStyle("-fx-font-size: 12.5px; -fx-text-fill: #475569;");
+
+        VBox pnlDanhSach = new VBox(10);
+        for (LichHen lh : dsLh) {
+            HBox card = new HBox(12);
+            card.setAlignment(Pos.CENTER_LEFT);
+            card.setPadding(new Insets(10, 14, 10, 14));
+            card.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cbd5e1; -fx-border-radius: 6px; -fx-background-radius: 6px;");
+
+            VBox info = new VBox(4);
+            HBox.setHgrow(info, Priority.ALWAYS);
+
+            String tenTc = lh.getTenThuCung() != null ? lh.getTenThuCung() : "Thú cưng";
+            String gio = lh.getGioHen() != null ? lh.getGioHen().toString() : "";
+            String ngay = lh.getNgayHen() != null ? DateTimeFormatter.ofPattern("dd/MM/yyyy").format(lh.getNgayHen()) : "";
+            Label lblTen = new Label("🐾 Bé " + tenTc + "   |   " + (ngay.isEmpty() ? "" : "Ngày: " + ngay + " lúc ") + gio + " (" + lh.getMaLichHen() + ")");
+            lblTen.setStyle("-fx-font-weight: bold; -fx-font-size: 13.5px; -fx-text-fill: #1e293b;");
+
+            List<ChiTietLichHen> dsCt = controller.layChiTietLichHen(lh.getMaLichHen());
+            StringBuilder sbDv = new StringBuilder("Dịch vụ hẹn: ");
+            for (int i = 0; i < dsCt.size(); i++) {
+                sbDv.append(dsCt.get(i).getTenDichVu());
+                if (i < dsCt.size() - 1) sbDv.append(", ");
+            }
+            Label lblDichVu = new Label(sbDv.toString());
+            lblDichVu.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
+
+            info.getChildren().addAll(lblTen, lblDichVu);
+
+            Button btnChon = new Button("Tiếp nhận bé này");
+            btnChon.getStyleClass().add("nut-chinh");
+            btnChon.setStyle("-fx-padding: 6 14; -fx-font-weight: bold; -fx-font-size: 12px;");
+            btnChon.setOnAction(e -> {
+                dlg.close();
+                dongBoTuLichHen(lh);
+            });
+
+            card.getChildren().addAll(info, btnChon);
+            pnlDanhSach.getChildren().add(card);
+        }
+
+        ScrollPane spCuon = new ScrollPane(pnlDanhSach);
+        spCuon.setFitToWidth(true);
+        spCuon.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
+        spCuon.setMaxHeight(300);
+
+        Button btnKhachVangLai = new Button("Tiếp nhận trực tiếp (không theo lịch)");
+        btnKhachVangLai.getStyleClass().add("nut-phu");
+        btnKhachVangLai.setOnAction(e -> {
+            dlg.close();
+            huyLienKetLichHen();
+            List<ThuCung> dsTc = controller.layDanhSachThuCungTheoKhachHang(khachHangHienTai.getMaKhachHang());
+            if (!dsTc.isEmpty()) cboThuCung.setValue(dsTc.get(0));
+        });
+
+        HBox pnlNut = new HBox(btnKhachVangLai);
+        pnlNut.setAlignment(Pos.CENTER_RIGHT);
+
+        pnlGoc.getChildren().addAll(lblTieuDe, lblMoTa, spCuon, pnlNut);
+
+        Scene sc = new Scene(pnlGoc, 580, Math.min(460, 160 + dsLh.size() * 80));
+        if (LapPhieuTiepNhanDichVuView.class.getResource(CSS_CHUNG) != null) {
+            sc.getStylesheets().add(LapPhieuTiepNhanDichVuView.class.getResource(CSS_CHUNG).toExternalForm());
+        }
+        dlg.setScene(sc);
+        dlg.showAndWait();
+    }
+
+    // Hộp thoại xem toàn bộ danh sách lịch hẹn hôm nay đang chờ tiếp nhận (thay thế cho ComboBox 200 dòng)
+    private void moCuaSoDanhSachLichHenHomNay() {
+        Stage dlg = new Stage();
+        dlg.initModality(Modality.APPLICATION_MODAL);
+        if (getScene() != null && getScene().getWindow() != null) {
+            dlg.initOwner(getScene().getWindow());
+        }
+        dlg.setTitle("Danh sách lịch hẹn hôm nay chờ tiếp nhận");
+
+        VBox pnlGoc = new VBox(10);
+        pnlGoc.setPadding(new Insets(14));
+        pnlGoc.setStyle("-fx-background-color: #f8fafc;");
+
+        Label lblTieuDe = new Label("DANH SÁCH LỊCH HẸN CHỜ TIẾP NHẬN");
+        lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 14.5px; -fx-text-fill: #0369a1;");
+
+        HBox pnlThanhTim = new HBox(10);
+        pnlThanhTim.setAlignment(Pos.CENTER_LEFT);
+
+        TextField txtTimKiem = new TextField();
+        txtTimKiem.setPromptText("🔍 Tìm theo SĐT, tên khách hàng, tên bé thú cưng, mã lịch...");
+        HBox.setHgrow(txtTimKiem, Priority.ALWAYS);
+
+        Button btnDong = new Button("Đóng");
+        btnDong.getStyleClass().add("nut-phu");
+        btnDong.setOnAction(e -> dlg.close());
+        pnlThanhTim.getChildren().addAll(txtTimKiem, btnDong);
+
+        TableView<LichHen> tbl = new TableView<>();
+        tbl.getStyleClass().add("bang-du-lieu");
+        tbl.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        VBox.setVgrow(tbl, Priority.ALWAYS);
+
+        TableColumn<LichHen, String> colNgay = new TableColumn<>("Ngày hẹn");
+        colNgay.setPrefWidth(90);
+        colNgay.setStyle("-fx-alignment: CENTER;");
+        colNgay.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getNgayHen() != null ? DateTimeFormatter.ofPattern("dd/MM/yyyy").format(c.getValue().getNgayHen()) : ""));
+
+        TableColumn<LichHen, String> colGio = new TableColumn<>("Giờ hẹn");
+        colGio.setPrefWidth(80);
+        colGio.setStyle("-fx-alignment: CENTER;");
+        colGio.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getGioHen() != null ? c.getValue().getGioHen().toString() : ""));
+
+        TableColumn<LichHen, String> colMa = new TableColumn<>("Mã lịch");
+        colMa.setPrefWidth(135);
+        colMa.setStyle("-fx-alignment: CENTER;");
+        colMa.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getMaLichHen()));
+
+        TableColumn<LichHen, String> colKh = new TableColumn<>("Khách hàng");
+        colKh.setPrefWidth(150);
+        colKh.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getTenKhachHang()));
+
+        TableColumn<LichHen, String> colSdt = new TableColumn<>("Số điện thoại");
+        colSdt.setPrefWidth(110);
+        colSdt.setStyle("-fx-alignment: CENTER;");
+        colSdt.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getSoDienThoai()));
+
+        TableColumn<LichHen, String> colTc = new TableColumn<>("Thú cưng");
+        colTc.setPrefWidth(120);
+        colTc.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getTenThuCung()));
+
+        TableColumn<LichHen, String> colGhiChu = new TableColumn<>("Ghi chú");
+        colGhiChu.setPrefWidth(160);
+        colGhiChu.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getGhiChu() != null ? c.getValue().getGhiChu() : ""));
+
+        tbl.getColumns().addAll(List.of(colNgay, colGio, colMa, colKh, colSdt, colTc, colGhiChu));
+
+        controller.quetVaHuyLichHenTreQua2Gio();
+        List<LichHen> dsGoc = controller.layDanhSachLichHenChoTiepNhan();
+        ObservableList<LichHen> dsHienThi = FXCollections.observableArrayList(dsGoc);
+        tbl.setItems(dsHienThi);
+
+        txtTimKiem.textProperty().addListener((obs, cu, moi) -> {
+            String tuKhoa = (moi != null) ? moi.trim().toLowerCase() : "";
+            if (tuKhoa.isEmpty()) {
+                tbl.setItems(FXCollections.observableArrayList(dsGoc));
+            } else {
+                List<LichHen> loc = dsGoc.stream().filter(lh ->
+                        (lh.getSoDienThoai() != null && lh.getSoDienThoai().contains(tuKhoa)) ||
+                        (lh.getTenKhachHang() != null && lh.getTenKhachHang().toLowerCase().contains(tuKhoa)) ||
+                        (lh.getTenThuCung() != null && lh.getTenThuCung().toLowerCase().contains(tuKhoa)) ||
+                        (lh.getMaLichHen() != null && lh.getMaLichHen().toLowerCase().contains(tuKhoa))
+                ).toList();
+                tbl.setItems(FXCollections.observableArrayList(loc));
+            }
+        });
+
+        tbl.setRowFactory(tv -> {
+            TableRow<LichHen> row = new TableRow<>();
+            row.setOnMouseClicked(e -> {
+                if (e.getClickCount() == 2 && !row.isEmpty()) {
+                    LichHen lh = row.getItem();
+                    if (lh != null && lh.getNgayHen() != null && lh.getGioHen() != null) {
+                        LocalDateTime thoiGianHen = LocalDateTime.of(lh.getNgayHen(), lh.getGioHen());
+                        LocalDateTime now = LocalDateTime.now();
+                        long phut = java.time.Duration.between(thoiGianHen, now).toMinutes();
+
+                        if (phut > 120) {
+                            controller.huyLichHenTuDong(lh.getMaLichHen(), "Hủy tự động: Khách đến trễ quá 2 giờ so với lịch hẹn");
+                            hienThiCanhBao("Lịch hẹn quá hạn", "Lịch hẹn " + lh.getMaLichHen() + " đã quá giờ hẹn hơn 2 giờ nên đã tự động bị hủy theo quy định!");
+                            dlg.close();
+                            return;
+                        } else if (phut < -120) {
+                            Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION,
+                                    "Lịch hẹn " + lh.getMaLichHen() + " được đặt lúc " + lh.getGioHen() + " ngày " + DateTimeFormatter.ofPattern("dd/MM/yyyy").format(lh.getNgayHen()) + " (trước giờ hẹn hơn 2 tiếng).\nTheo quy định, tiếp nhận ngay bây giờ sẽ tự động hủy lịch cũ để chuyển sang lập phiếu mới.\nBạn có đồng ý không?",
+                                    ButtonType.YES, ButtonType.NO);
+                            xacNhan.setTitle("Xác nhận đến sớm");
+                            xacNhan.setHeaderText(null);
+                            if (xacNhan.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+                                controller.huyLichHenTuDong(lh.getMaLichHen(), "Hủy tự động: Khách đến trước giờ hẹn > 2 giờ và lập phiếu mới tại quầy");
+                                dlg.close();
+                                return;
+                            } else {
+                                return;
+                            }
+                        }
+                    }
+                    dlg.close();
+                    dongBoTuLichHen(lh);
+                }
+            });
+            return row;
+        });
+
+        Button btnTiepNhan = new Button("✔ Tiếp nhận lịch hẹn được chọn");
+        btnTiepNhan.getStyleClass().add("nut-chinh");
+        btnTiepNhan.setOnAction(e -> {
+            LichHen lh = tbl.getSelectionModel().getSelectedItem();
+            if (lh == null) {
+                hienThiCanhBao("Chưa chọn lịch hẹn", "Vui lòng chọn một lịch hẹn trong bảng để tiếp nhận!");
+                return;
+            }
+            dlg.close();
+            dongBoTuLichHen(lh);
+        });
+
+        HBox pnlNut = new HBox(btnTiepNhan);
+        pnlNut.setAlignment(Pos.CENTER_RIGHT);
+
+        Label lblHuongDan = new Label("💡 Gõ SĐT hoặc tên để tìm nhanh. Nhấp đúp chuột vào một dòng để nạp vào phiếu tiếp nhận.");
+        lblHuongDan.setStyle("-fx-font-style: italic; -fx-text-fill: #64748b; -fx-font-size: 11.5px;");
+
+        HBox pnlDay = new HBox(10, lblHuongDan, new Region(), pnlNut);
+        HBox.setHgrow(pnlDay.getChildren().get(1), Priority.ALWAYS);
+        pnlDay.setAlignment(Pos.CENTER_LEFT);
+
+        pnlGoc.getChildren().addAll(lblTieuDe, pnlThanhTim, tbl, pnlDay);
+
+        Scene sc = new Scene(pnlGoc, 820, 500);
+        if (LapPhieuTiepNhanDichVuView.class.getResource(CSS_CHUNG) != null) {
+            sc.getStylesheets().add(LapPhieuTiepNhanDichVuView.class.getResource(CSS_CHUNG).toExternalForm());
+        }
+        dlg.setScene(sc);
+        dlg.showAndWait();
+    }
     private void moCuaSoThemKhachNhanh(String sdtBanDau) {
         Stage dlg = new Stage();
         dlg.initModality(Modality.APPLICATION_MODAL);
@@ -913,14 +1019,12 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         TextField txtDiaChiMoi = new TextField();
         txtDiaChiMoi.setPromptText("Địa chỉ (tùy chọn)");
 
-        // Chặn ký tự đặc biệt ở họ tên
         txtHoTenMoi.textProperty().addListener((obs, cu, moi) -> {
             if (moi == null) return;
             String loc = moi.replaceAll("[^\\p{L}0-9\\s]", "");
             if (!loc.equals(moi)) txtHoTenMoi.setText(loc);
         });
 
-        // Khóa đúng 10 số điện thoại
         txtSdtMoi.textProperty().addListener((obs, cu, moi) -> {
             if (moi == null) return;
             if (!moi.matches("\\d*")) txtSdtMoi.setText(cu != null ? cu : "");
@@ -974,18 +1078,13 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
                 );
 
                 if (controller.themKhachHang(khMoi)) {
-                    dsKhachHangGoc.add(0, khMoi);
-                    cboKhachHang.setItems(FXCollections.observableArrayList(dsKhachHangGoc));
-                    cboKhachHang.setValue(khMoi);
-
-                    dangDongBo = true;
+                    khachHangHienTai = khMoi;
+                    txtKhachHangHienThi.setText(khMoi.getHoTen() + " (" + khMoi.getSoDienThoai() + ")");
                     txtTimKhach.setText(sdt);
-                    dangDongBo = false;
 
                     dlg.close();
                     hienThiThongBao("Thành công", "Đã thêm nhanh khách hàng '" + ten + "' (" + sdt + ")!");
 
-                    // Gợi ý thêm nhanh thú cưng cho khách
                     Platform.runLater(() -> {
                         Alert hoi = new Alert(Alert.AlertType.CONFIRMATION,
                                 "Khách hàng '" + ten + "' chưa có hồ sơ thú cưng. Bạn có muốn thêm nhanh thú cưng ngay bây giờ không?",
@@ -1019,18 +1118,16 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         dlg.showAndWait();
     }
 
-    // Hộp thoại popup Thêm nhanh hồ sơ thú cưng tại quầy
     private void moCuaSoThemThuCungNhanh() {
-        KhachHang kh = cboKhachHang.getValue();
-        if (kh == null) {
-            hienThiCanhBao("Chưa chọn khách hàng", "Vui lòng chọn hoặc thêm khách hàng trước khi tạo thú cưng!");
+        if (khachHangHienTai == null) {
+            hienThiCanhBao("Chưa chọn khách hàng", "Vui lòng tra cứu hoặc thêm khách hàng trước khi tạo thú cưng!");
             return;
         }
 
         Stage dlg = new Stage();
         dlg.initModality(Modality.APPLICATION_MODAL);
         if (getScene() != null && getScene().getWindow() != null) dlg.initOwner(getScene().getWindow());
-        dlg.setTitle("Thêm nhanh thú cưng - " + kh.getHoTen());
+        dlg.setTitle("Thêm nhanh thú cưng - " + khachHangHienTai.getHoTen());
 
         VBox pnlGoc = new VBox(12);
         pnlGoc.setPadding(new Insets(16));
@@ -1043,9 +1140,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         luoi.setHgap(12);
         luoi.setVgap(10);
 
-        ColumnConstraints col1 = new ColumnConstraints();
-        col1.setMinWidth(140);
-        col1.setPrefWidth(140);
+        ColumnConstraints col1 = new ColumnConstraints(140);
         ColumnConstraints col2 = new ColumnConstraints();
         col2.setHgrow(Priority.ALWAYS);
         luoi.getColumnConstraints().addAll(col1, col2);
@@ -1059,13 +1154,12 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         txtMaThuCung.setEditable(false);
         txtMaThuCung.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #475569;");
 
-        TextField txtChuNuoi = new TextField(kh.getHoTen() + " (" + kh.getSoDienThoai() + ")");
+        TextField txtChuNuoi = new TextField(khachHangHienTai.getHoTen() + " (" + khachHangHienTai.getSoDienThoai() + ")");
         txtChuNuoi.setEditable(false);
         txtChuNuoi.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #475569;");
 
         TextField txtTenThuCung = new TextField();
-        txtTenThuCung.setPromptText("Tên thú cưng (VD: Mochi, Bông, Lu, Corgi...) (*)");
-        // Chặn ký tự đặc biệt ở tên thú cưng
+        txtTenThuCung.setPromptText("Tên thú cưng (VD: Mochi, Bống, Lu, Corgi...) (*)");
         txtTenThuCung.textProperty().addListener((obs, cu, moi) -> {
             if (moi == null) return;
             String loc = moi.replaceAll("[^\\p{L}0-9\\s]", "");
@@ -1079,7 +1173,6 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
 
         TextField txtGiongLoai = new TextField();
         txtGiongLoai.setPromptText("VD: Poodle Tiny, Mèo Anh lông ngắn, Corgi...");
-        // Chặn ký tự đặc biệt ở giống loài
         txtGiongLoai.textProperty().addListener((obs, cu, moi) -> {
             if (moi == null) return;
             String loc = moi.replaceAll("[^\\p{L}0-9\\s]", "");
@@ -1093,7 +1186,6 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
 
         TextField txtCanNangMoi = new TextField();
         txtCanNangMoi.setPromptText("Cân nặng thực tế (kg) (*)");
-        // Lấy cân nặng đã gõ trên quầy (nếu có)
         if (txtCanNangThucTe.getText() != null && !txtCanNangThucTe.getText().isBlank()) {
             txtCanNangMoi.setText(txtCanNangThucTe.getText().trim());
         }
@@ -1111,24 +1203,15 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         txtDiUngTc.setPromptText("Ghi chú dị ứng thức ăn/sữa tắm, tính cách thú cưng...");
         txtDiUngTc.setPrefRowCount(2);
 
-        luoi.add(new Label("Mã thú cưng:"), 0, 0);
-        luoi.add(txtMaThuCung, 1, 0);
-        luoi.add(new Label("Chủ nuôi:"), 0, 1);
-        luoi.add(txtChuNuoi, 1, 1);
-        luoi.add(new Label("Tên thú cưng (*):"), 0, 2);
-        luoi.add(txtTenThuCung, 1, 2);
-        luoi.add(new Label("Loài thú cưng:"), 0, 3);
-        luoi.add(cboLoai, 1, 3);
-        luoi.add(new Label("Giống loài:"), 0, 4);
-        luoi.add(txtGiongLoai, 1, 4);
-        luoi.add(new Label("Giới tính:"), 0, 5);
-        luoi.add(cboGioiTinh, 1, 5);
-        luoi.add(new Label("Cân nặng (kg) (*):"), 0, 6);
-        luoi.add(txtCanNangMoi, 1, 6);
-        luoi.add(new Label("Ngày sinh:"), 0, 7);
-        luoi.add(dpNgaySinhTc, 1, 7);
-        luoi.add(new Label("Dị ứng / Lưu ý:"), 0, 8);
-        luoi.add(txtDiUngTc, 1, 8);
+        luoi.add(new Label("Mã thú cưng:"), 0, 0); luoi.add(txtMaThuCung, 1, 0);
+        luoi.add(new Label("Chủ nuôi:"), 0, 1); luoi.add(txtChuNuoi, 1, 1);
+        luoi.add(new Label("Tên thú cưng (*):"), 0, 2); luoi.add(txtTenThuCung, 1, 2);
+        luoi.add(new Label("Loài thú cưng:"), 0, 3); luoi.add(cboLoai, 1, 3);
+        luoi.add(new Label("Giống loài:"), 0, 4); luoi.add(txtGiongLoai, 1, 4);
+        luoi.add(new Label("Giới tính:"), 0, 5); luoi.add(cboGioiTinh, 1, 5);
+        luoi.add(new Label("Cân nặng (kg) (*):"), 0, 6); luoi.add(txtCanNangMoi, 1, 6);
+        luoi.add(new Label("Ngày sinh:"), 0, 7); luoi.add(dpNgaySinhTc, 1, 7);
+        luoi.add(new Label("Dị ứng / Lưu ý:"), 0, 8); luoi.add(txtDiUngTc, 1, 8);
 
         Button btnLuuTc = new Button("Lưu hồ sơ");
         btnLuuTc.getStyleClass().add("nut-chinh");
@@ -1155,12 +1238,10 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
                 return;
             }
 
-            BigDecimal canNangVal;
+            double canNangVal;
             try {
-                canNangVal = new BigDecimal(cnStr);
-                if (canNangVal.compareTo(BigDecimal.ZERO) <= 0) {
-                    throw new NumberFormatException();
-                }
+                canNangVal = Double.parseDouble(cnStr);
+                if (canNangVal <= 0) throw new NumberFormatException();
             } catch (Exception ex) {
                 hienThiCanhBao("Cân nặng không hợp lệ", "Cân nặng thú cưng phải là số lớn hơn 0!");
                 txtCanNangMoi.requestFocus();
@@ -1170,7 +1251,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             try {
                 ThuCung tc = new ThuCung(
                         txtMaThuCung.getText().trim(),
-                        kh.getMaKhachHang(),
+                        khachHangHienTai.getMaKhachHang(),
                         ten,
                         cboLoai.getValue(),
                         txtGiongLoai.getText() != null ? txtGiongLoai.getText().trim() : "",
@@ -1179,15 +1260,16 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
                         txtDiUngTc.getText() != null ? txtDiUngTc.getText().trim() : "",
                         cboGioiTinh.getValue()
                 );
+                tc.setKhachHang(khachHangHienTai);
 
                 if (controller.themThuCung(tc)) {
-                    List<ThuCung> dsMoi = controller.layDanhSachThuCungTheoKhachHang(kh.getMaKhachHang());
+                    List<ThuCung> dsMoi = controller.layDanhSachThuCungTheoKhachHang(khachHangHienTai.getMaKhachHang());
                     cboThuCung.setItems(FXCollections.observableArrayList(dsMoi));
                     cboThuCung.setValue(tc);
-                    txtCanNangThucTe.setText(canNangVal.stripTrailingZeros().toPlainString());
+                    txtCanNangThucTe.setText(String.valueOf(canNangVal));
 
                     dlg.close();
-                    hienThiThongBao("Thành công", "Đã thêm thú cưng '" + ten + "' cho khách hàng " + kh.getHoTen() + "!");
+                    hienThiThongBao("Thành công", "Đã thêm thú cưng '" + ten + "' cho khách hàng " + khachHangHienTai.getHoTen() + "!");
                     kiemTraVaChenLuuYDiUng(tc);
                 }
             } catch (Exception ex) {
@@ -1220,18 +1302,12 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
     // 6. THAO TÁC THÊM DÒNG DỊCH VỤ & LƯU PHIẾU
     // =========================================================================
 
-    // Xử lý thêm một dòng dịch vụ vào bảng chi tiết
     private void xuLyThemDichVu() {
-        KhachHang kh = cboKhachHang.getValue();
-        if (kh == null) {
-            hienThiCanhBao("Chưa chọn khách hàng", "Vui lòng chọn hoặc tra cứu khách hàng tiếp nhận trước khi thêm dịch vụ!");
+        if (khachHangHienTai == null) {
+            hienThiCanhBao("Chưa chọn khách hàng", "Vui lòng tra cứu hoặc thêm khách hàng trước khi thêm dịch vụ!");
             return;
         }
         ThuCung tc = cboThuCung.getValue();
-        if (tc != null && tc.getMaKhachHang() != null && !tc.getMaKhachHang().equals(kh.getMaKhachHang())) {
-            hienThiCanhBao("Thú cưng không hợp lệ", "Thú cưng '" + tc.getTenThuCung() + "' không thuộc sở hữu của khách hàng " + kh.getHoTen() + "!");
-            return;
-        }
         if (tc == null) {
             hienThiCanhBao("Chưa chọn thú cưng", "Vui lòng chọn thú cưng cần làm dịch vụ!");
             return;
@@ -1260,17 +1336,16 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             return;
         }
 
-        if (donGiaHienHanh == null || donGiaHienHanh.compareTo(BigDecimal.ZERO) <= 0) {
+        if (donGiaHienHanh <= 0) {
             double gia = controller.traGiaDichVuTheoCanNang(dv.getMaDichVu(), canNang);
             if (gia > 0) {
-                donGiaHienHanh = BigDecimal.valueOf(gia);
+                donGiaHienHanh = gia;
             } else {
                 hienThiCanhBao("Đơn giá không hợp lệ", "Chưa xác định được đơn giá hợp lệ cho dịch vụ!");
                 return;
             }
         }
 
-        // Kiểm tra xem dịch vụ này đã thêm cho thú cưng này chưa
         for (ChiTietPhieuDichVu ct : dsChiTietChon) {
             if (ct.getMaThuCung().equals(tc.getMaThuCung()) && ct.getMaDichVu().equals(dv.getMaDichVu())) {
                 hienThiCanhBao("Trùng dịch vụ", "Dịch vụ '" + dv.getTenDichVu() + "' đã được thêm cho bé " + tc.getTenThuCung() + "!");
@@ -1290,33 +1365,26 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         capNhatTongTien();
     }
 
-    // Cập nhật nhãn tổng tiền dự tính
     private void capNhatTongTien() {
-        BigDecimal tong = BigDecimal.ZERO;
+        double tong = 0.0;
         for (ChiTietPhieuDichVu ct : dsChiTietChon) {
-            if (ct.getDonGia() != null) {
-                tong = tong.add(ct.getDonGia());
-            }
+            tong += ct.getDonGia();
         }
         lblTongTien.setText("Tổng tiền dự tính: " + DINH_DANG_TIEN.format(tong));
     }
 
-    // Xử lý lưu phiếu tiếp nhận xuống CSDL
     private void xuLyLuuPhieu() {
         try {
-            KhachHang kh = cboKhachHang.getValue();
-            if (kh == null) {
-                hienThiCanhBao("Thiếu thông tin", "Vui lòng chọn hoặc tra cứu khách hàng tiếp nhận!");
+            if (khachHangHienTai == null) {
+                hienThiCanhBao("Thiếu thông tin", "Vui lòng tra cứu hoặc thêm khách hàng tiếp nhận!");
                 return;
             }
 
-            String[] nv = cboNhanVien.getValue();
-            if (nv == null || nv.length == 0) {
-                hienThiCanhBao("Thiếu thông tin", "Vui lòng chọn nhân viên tiếp nhận!");
+            if (nhanVienHienTai == null) {
+                hienThiCanhBao("Thiếu thông tin", "Không xác định được nhân viên tiếp nhận từ phiên đăng nhập!");
                 return;
             }
 
-            // Kiểm tra cân nặng thực tế bắt buộc tại quầy
             String strCanNang = txtCanNangThucTe.getText() != null ? txtCanNangThucTe.getText().trim() : "";
             if (strCanNang.isEmpty()) {
                 hienThiCanhBao("Chưa nhập cân nặng", "Cân nặng thực tế của thú cưng tại quầy là bắt buộc! Vui lòng cân thú cưng và nhập cân nặng.");
@@ -1337,23 +1405,6 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
                 return;
             }
 
-            // Kiểm tra tính toàn vẹn: Tất cả thú cưng trong chi tiết phải thuộc sở hữu của khách hàng tiếp nhận
-            List<ThuCung> dsThuCungCuaKhach = controller.layDanhSachThuCungTheoKhachHang(kh.getMaKhachHang());
-            Set<String> setMaThuCungHopLe = new HashSet<>();
-            for (ThuCung tcKh : dsThuCungCuaKhach) {
-                setMaThuCungHopLe.add(tcKh.getMaThuCung());
-            }
-
-            for (ChiTietPhieuDichVu ct : dsChiTietChon) {
-                if (!setMaThuCungHopLe.contains(ct.getMaThuCung())) {
-                    String tenTc = ct.getTenThuCung() != null ? ct.getTenThuCung() : ct.getMaThuCung();
-                    hienThiCanhBao("Thú cưng không đúng chủ",
-                            "Thú cưng '" + tenTc + "' không thuộc sở hữu của khách hàng '" + kh.getHoTen() + "'!\n"
-                            + "Vui lòng xóa các dịch vụ không đúng chủ trước khi lưu phiếu tiếp nhận.");
-                    return;
-                }
-            }
-
             LocalDate ngay = dpNgayTiepNhan.getValue() != null ? dpNgayTiepNhan.getValue() : LocalDate.now();
             String gioStr = txtGioTiepNhan.getText() != null ? txtGioTiepNhan.getText().trim() : "";
             LocalTime gio;
@@ -1363,14 +1414,14 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
                 gio = LocalTime.now();
             }
 
-            LichHen lh = cboLichHen.getValue();
+            LichHen lh = lichHenHienTai;
             String maLichHen = (lh != null) ? lh.getMaLichHen() : null;
 
             PhieuDichVu phieu = new PhieuDichVu(
                     txtMaPhieuDichVu.getText().trim(),
-                    kh.getMaKhachHang(),
-                    nv[0],
-                    maLichHen,
+                    khachHangHienTai,
+                    nhanVienHienTai,
+                    lh,
                     ngay,
                     gio,
                     "Đang chờ",
@@ -1380,15 +1431,14 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             List<ChiTietPhieuDichVu> danhSachChiTiet = new ArrayList<>(dsChiTietChon);
             boolean thanhCong = controller.taoPhieuDichVu(phieu, danhSachChiTiet);
             if (thanhCong) {
-                // Tự động cập nhật lại cân nặng mới nhất cho thú cưng trong CSDL nếu có
                 ThuCung tcHienTai = cboThuCung.getValue();
                 double cnThucTe = layCanNangThucTeHienTai();
                 if (tcHienTai != null && cnThucTe > 0) {
-                    mapCanNangDaCan.put(tcHienTai.getMaThuCung(), BigDecimal.valueOf(cnThucTe));
+                    mapCanNangDaCan.put(tcHienTai.getMaThuCung(), cnThucTe);
                 }
 
-                for (Map.Entry<String, BigDecimal> entry : mapCanNangDaCan.entrySet()) {
-                    if (entry.getValue() != null && entry.getValue().compareTo(BigDecimal.ZERO) > 0) {
+                for (Map.Entry<String, Double> entry : mapCanNangDaCan.entrySet()) {
+                    if (entry.getValue() != null && entry.getValue() > 0) {
                         try {
                             controller.capNhatCanNangThuCung(entry.getKey(), entry.getValue());
                         } catch (Exception ex) {
@@ -1406,7 +1456,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             hienThiCanhBao("Không thể lập phiếu", ex.getMessage());
         } catch (Exception ex) {
-            hienThiCanhBao("Lỗi hệ thống", "Đã xảy ra lỗi không mong muốn: " + ex.getMessage());
+            hienThiLoi("Lỗi hệ thống: " + ex.getMessage());
         }
     }
 
@@ -1414,86 +1464,58 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
     // 7. KHỞI TẠO & LÀM MỚI DỮ LIỆU
     // =========================================================================
 
-    // Nạp dữ liệu ban đầu cho các ComboBox
     private void napDuLieuBanDau() {
         lamMoiForm();
         try {
-            // Nạp khách hàng
-            dsKhachHangGoc.clear();
-            dsKhachHangGoc.addAll(controller.layDanhSachKhachHang());
-            cboKhachHang.setItems(FXCollections.observableArrayList(dsKhachHangGoc));
-
-            // Nạp nhân viên và chọn mặc định nhân viên Chăm sóc
-            dsMaNhanVienDangBan.clear();
-            dsMaNhanVienDangBan.addAll(controller.laySetMaNhanVienDangBan());
-            List<String[]> dsNv = controller.layDanhSachNhanVien();
-            cboNhanVien.setItems(FXCollections.observableArrayList(dsNv));
-            chonMacDinhNhanVienChamSoc();
-
-            // Nạp dịch vụ
             List<DichVuChamSoc> dsDv = controller.layDanhSachDichVu();
             cboDichVu.setItems(FXCollections.observableArrayList(dsDv));
             if (!dsDv.isEmpty()) {
                 cboDichVu.setValue(dsDv.get(0));
             }
-
-            // Nạp lịch hẹn chờ tiếp nhận
-            napDanhSachLichHenCho();
         } catch (Exception ex) {
             System.err.println("Lỗi khi nạp dữ liệu ban đầu cho phiếu dịch vụ: " + ex.getMessage());
         }
     }
 
-    // Chọn nhân viên có chức vụ "Chăm sóc" đầu tiên làm mặc định
-    private void chonMacDinhNhanVienChamSoc() {
-        for (String[] nv : cboNhanVien.getItems()) {
-            if (nv.length > 2 && nv[2] != null && nv[2].toLowerCase().contains("chăm sóc") && !dsMaNhanVienDangBan.contains(nv[0])) {
-                cboNhanVien.setValue(nv);
-                return;
-            }
-        }
-        for (String[] nv : cboNhanVien.getItems()) {
-            if (nv.length > 2 && nv[2] != null && nv[2].toLowerCase().contains("chăm sóc")) {
-                cboNhanVien.setValue(nv);
-                return;
-            }
-        }
-        if (!cboNhanVien.getItems().isEmpty()) {
-            cboNhanVien.setValue(cboNhanVien.getItems().get(0));
-        }
-    }
 
-    // Nạp lại danh sách lịch hẹn chờ tiếp nhận
-    private void napDanhSachLichHenCho() {
-        try {
-            List<LichHen> dsLh = controller.layDanhSachLichHenChoTiepNhan();
-            cboLichHen.setItems(FXCollections.observableArrayList(dsLh));
-        } catch (Exception ignored) {}
-    }
 
-    // Đặt lại dữ liệu form về trạng thái mới
     private void lamMoiForm() {
         try {
             txtMaPhieuDichVu.setText(controller.taoMaPhieuDichVuMoi());
         } catch (Exception ex) {
             txtMaPhieuDichVu.setText("");
         }
-        dangDongBo = true;
-        cboLichHen.setValue(null);
-        cboKhachHang.setItems(FXCollections.observableArrayList(dsKhachHangGoc));
-        cboKhachHang.setValue(null);
+
+        // Tự động gán nhân viên phụ trách từ phiên đăng nhập
+        TaiKhoan tk = SessionManager.getTaiKhoanHienTai();
+        if (tk != null && tk.getNhanVien() != null) {
+            nhanVienHienTai = tk.getNhanVien();
+            txtNhanVienHienThi.setText(nhanVienHienTai.getHoTen() + " (" + nhanVienHienTai.getMaNhanVien() + ")");
+        } else {
+            try {
+                List<String[]> dsNv = controller.layDanhSachNhanVien();
+                if (!dsNv.isEmpty()) {
+                    nhanVienHienTai = new NhanVien();
+                    nhanVienHienTai.setMaNhanVien(dsNv.get(0)[0]);
+                    nhanVienHienTai.setHoTen(dsNv.get(0)[1]);
+                    txtNhanVienHienThi.setText(nhanVienHienTai.getHoTen() + " (" + nhanVienHienTai.getMaNhanVien() + ")");
+                }
+            } catch (Exception ignored) {}
+        }
+
+        huyLienKetLichHen();
         khachHangHienTai = null;
-        cboKhachHang.setDisable(false);
+        txtKhachHangHienThi.setText("Chưa chọn khách hàng (*)");
         txtTimKhach.clear();
         txtTimKhach.setDisable(false);
         btnKiemTraSdt.setDisable(false);
-        dangDongBo = false;
+        btnThemKhachNhanh.setDisable(false);
 
         cboThuCung.getItems().clear();
         cboThuCung.setValue(null);
         txtCanNangThucTe.clear();
         txtDonGia.clear();
-        donGiaHienHanh = BigDecimal.ZERO;
+        donGiaHienHanh = 0.0;
 
         dpNgayTiepNhan.setValue(LocalDate.now());
         txtGioTiepNhan.setText(LocalTime.now().format(DINH_DANG_GIO));
@@ -1501,9 +1523,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         dsChiTietChon.clear();
         mapCanNangDaCan.clear();
 
-        chonMacDinhNhanVienChamSoc();
         capNhatTongTien();
-        napDanhSachLichHenCho();
     }
 
     private void hienThiCanhBao(String tieuDe, String noiDung) {
@@ -1520,5 +1540,25 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         alert.setHeaderText(tieuDe);
         alert.setContentText(noiDung);
         alert.showAndWait();
+    }
+
+    private void hienThiLoi(String noiDung) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Lỗi");
+        alert.setHeaderText(null);
+        alert.setContentText(noiDung);
+        alert.showAndWait();
+    }
+
+    // Đồng hồ chạy thời gian thực liên tục từng giây
+    private void khoiTaoDongHoThoiGianThuc() {
+        Timeline dongHo = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+            txtGioTiepNhan.setText(LocalTime.now().format(DINH_DANG_GIO));
+            if (dpNgayTiepNhan.getValue() != null && !dpNgayTiepNhan.getValue().equals(LocalDate.now())) {
+                dpNgayTiepNhan.setValue(LocalDate.now());
+            }
+        }));
+        dongHo.setCycleCount(Animation.INDEFINITE);
+        dongHo.play();
     }
 }

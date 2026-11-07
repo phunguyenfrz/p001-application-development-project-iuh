@@ -17,7 +17,6 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -156,8 +155,8 @@ public class CapNhatThuCungView extends VBox {
         TableColumn<ThuCung, String> colCanNang = new TableColumn<>("Cân nặng");
         colCanNang.setPrefWidth(110);
         colCanNang.setCellValueFactory(cell -> {
-            BigDecimal cn = cell.getValue().getCanNang();
-            return new SimpleStringProperty(cn != null ? String.format("%.2f kg", cn) : "-");
+            double cn = cell.getValue().getCanNang();
+            return new SimpleStringProperty(cn > 0 ? String.format("%.2f kg", cn) : "-");
         });
         colCanNang.setStyle("-fx-alignment: CENTER-RIGHT;");
 
@@ -407,7 +406,7 @@ public class CapNhatThuCungView extends VBox {
         cboGioiTinh.setMaxWidth(Double.MAX_VALUE);
 
         // Cân nặng cho phép sửa, chỉ nhận số và thập phân
-        TextField txtCanNang = new TextField(tcChon.getCanNang() != null ? tcChon.getCanNang().toPlainString() : "");
+        TextField txtCanNang = new TextField(tcChon.getCanNang() > 0 ? String.valueOf(tcChon.getCanNang()) : "");
         txtCanNang.textProperty().addListener((obs, cu, moi) -> {
             if (moi != null && !moi.matches("\\d*(\\.\\d{0,2})?")) {
                 txtCanNang.setText(cu != null ? cu : "");
@@ -493,10 +492,10 @@ public class CapNhatThuCungView extends VBox {
                     return;
                 }
 
-                BigDecimal canNang;
+                double canNang;
                 try {
-                    canNang = new BigDecimal(canNangStr);
-                    if (canNang.compareTo(BigDecimal.ZERO) <= 0) {
+                    canNang = Double.parseDouble(canNangStr);
+                    if (canNang <= 0) {
                         hienThiCanhBao("Cân nặng không hợp lệ", "Cân nặng thú cưng phải lớn hơn 0 kg!");
                         txtCanNang.requestFocus();
                         return;

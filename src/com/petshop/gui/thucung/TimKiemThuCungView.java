@@ -10,7 +10,6 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -178,8 +177,8 @@ public class TimKiemThuCungView extends VBox {
         TableColumn<ThuCung, String> colCanNang = new TableColumn<>("Cân nặng");
         colCanNang.setPrefWidth(110);
         colCanNang.setCellValueFactory(cell -> {
-            BigDecimal cn = cell.getValue().getCanNang();
-            return new SimpleStringProperty(cn != null ? String.format("%.2f kg", cn) : "-");
+            double cn = cell.getValue().getCanNang();
+            return new SimpleStringProperty(cn > 0 ? String.format("%.2f kg", cn) : "-");
         });
         colCanNang.setStyle("-fx-alignment: CENTER-RIGHT;");
 

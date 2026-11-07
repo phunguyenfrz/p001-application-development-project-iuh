@@ -71,12 +71,6 @@ public class TimKiemLichHenView extends VBox {
         xuLyTimKiem();
     }
 
-    public void locLichHenHomNay() {
-        dpTuNgay.setValue(LocalDate.now());
-        dpDenNgay.setValue(LocalDate.now());
-        xuLyTimKiem();
-    }
-
     // -------------------------------------------------------------------------
     // BỘ LỌC TÌM KIẾM
     // -------------------------------------------------------------------------

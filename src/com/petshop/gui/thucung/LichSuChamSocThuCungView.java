@@ -13,7 +13,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.stage.Popup;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -485,8 +484,8 @@ public class LichSuChamSocThuCungView extends VBox {
         lblLoaiGiongGioiTinh.setText(loai + " • " + giong + " • " + gt);
 
         lblNgaySinh.setText(tc.getNgaySinh() != null ? tc.getNgaySinh().format(DINH_DANG_NGAY) : "—");
-        BigDecimal cn = tc.getCanNang();
-        lblCanNangHienTai.setText(cn != null ? String.format("%.2f kg", cn) : "—");
+        double cn = tc.getCanNang();
+        lblCanNangHienTai.setText(cn > 0 ? String.format("%.2f kg", cn) : "-");
         lblDiUng.setText(tc.getDiUng() != null && !tc.getDiUng().isBlank() ? tc.getDiUng() : "Không có");
 
         // Tải danh sách lịch hẹn của thú cưng

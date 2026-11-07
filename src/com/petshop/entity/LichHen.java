@@ -1,6 +1,5 @@
 package com.petshop.entity;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -8,23 +7,29 @@ import java.util.List;
 
 /**
  * Thực thể lịch hẹn dịch vụ chăm sóc thú cưng của khách hàng.
+ * Chuẩn hóa OOP với Object Reference (KhachHang, ThuCung, NhanVien),
+ * kiểu nguyên thủy double, thuộc tính dẫn xuất tinhTongTien() (IUH Directive).
  */
 public class LichHen {
 
     private String maLichHen;
-    private String maKhachHang;
-    private String maThuCung;
-    private String maNhanVien;
+    private KhachHang khachHang;
+    private ThuCung thuCung;
+    private NhanVien nhanVien;
     private LocalDate ngayHen;
     private LocalTime gioHen;
-    private String trangThai;
+    private String trangThai; // "Đã đặt", "Đã xác nhận", "Đã tiếp nhận", "Đang thực hiện", "Hoàn thành", "Đã hủy"
     private String ghiChu;
 
-    // Các trường hỗ trợ hiển thị lên giao diện
-    private String tenKhachHang;
-    private String soDienThoai;
-    private String tenThuCung;
-    private String tenNhanVien;
+    // Biến phụ lưu trữ mã tạm khi chưa kịp liên kết đối tượng
+    private String maKhachHangTam;
+    private String maThuCungTam;
+    private String maNhanVienTam;
+    private String tenKhachHangTam;
+    private String soDienThoaiTam;
+    private String tenThuCungTam;
+    private String tenNhanVienTam;
+
     private List<ChiTietLichHen> danhSachChiTiet;
 
     public LichHen() {
@@ -35,15 +40,32 @@ public class LichHen {
     public LichHen(String maLichHen, String maKhachHang, String maThuCung, String maNhanVien,
                    LocalDate ngayHen, LocalTime gioHen, String trangThai, String ghiChu) {
         this.maLichHen = maLichHen;
-        this.maKhachHang = maKhachHang;
-        this.maThuCung = maThuCung;
-        this.maNhanVien = maNhanVien;
+        this.maKhachHangTam = maKhachHang;
+        this.maThuCungTam = maThuCung;
+        this.maNhanVienTam = maNhanVien;
         this.ngayHen = ngayHen;
         this.gioHen = gioHen;
         this.trangThai = trangThai != null ? trangThai : "Đã đặt";
         this.ghiChu = ghiChu;
         this.danhSachChiTiet = new ArrayList<>();
     }
+
+    public LichHen(String maLichHen, KhachHang khachHang, ThuCung thuCung, NhanVien nhanVien,
+                   LocalDate ngayHen, LocalTime gioHen, String trangThai, String ghiChu) {
+        this.maLichHen = maLichHen;
+        this.khachHang = khachHang;
+        this.thuCung = thuCung;
+        this.nhanVien = nhanVien;
+        this.ngayHen = ngayHen;
+        this.gioHen = gioHen;
+        this.trangThai = trangThai != null ? trangThai : "Đã đặt";
+        this.ghiChu = ghiChu;
+        this.danhSachChiTiet = new ArrayList<>();
+    }
+
+    // =========================================================================
+    // GETTERS & SETTERS (OOP & DELEGATE GETTERS)
+    // =========================================================================
 
     public String getMaLichHen() {
         return maLichHen;
@@ -53,28 +75,137 @@ public class LichHen {
         this.maLichHen = maLichHen;
     }
 
+    public KhachHang getKhachHang() {
+        return khachHang;
+    }
+
+    public void setKhachHang(KhachHang khachHang) {
+        this.khachHang = khachHang;
+        if (khachHang != null) {
+            this.maKhachHangTam = khachHang.getMaKhachHang();
+            this.tenKhachHangTam = khachHang.getHoTen();
+            this.soDienThoaiTam = khachHang.getSoDienThoai();
+        }
+    }
+
     public String getMaKhachHang() {
-        return maKhachHang;
+        return khachHang != null ? khachHang.getMaKhachHang() : maKhachHangTam;
     }
 
     public void setMaKhachHang(String maKhachHang) {
-        this.maKhachHang = maKhachHang;
+        this.maKhachHangTam = maKhachHang;
+        if (this.khachHang == null) {
+            this.khachHang = new KhachHang();
+        }
+        this.khachHang.setMaKhachHang(maKhachHang);
+    }
+
+    public String getTenKhachHang() {
+        if (khachHang != null && khachHang.getHoTen() != null) {
+            return khachHang.getHoTen();
+        }
+        return tenKhachHangTam != null ? tenKhachHangTam : "Khách vãng lai";
+    }
+
+    public void setTenKhachHang(String tenKhachHang) {
+        this.tenKhachHangTam = tenKhachHang;
+        if (this.khachHang == null) {
+            this.khachHang = new KhachHang();
+        }
+        this.khachHang.setHoTen(tenKhachHang);
+    }
+
+    public String getSoDienThoai() {
+        if (khachHang != null && khachHang.getSoDienThoai() != null) {
+            return khachHang.getSoDienThoai();
+        }
+        return soDienThoaiTam != null ? soDienThoaiTam : "";
+    }
+
+    public void setSoDienThoai(String soDienThoai) {
+        this.soDienThoaiTam = soDienThoai;
+        if (this.khachHang == null) {
+            this.khachHang = new KhachHang();
+        }
+        this.khachHang.setSoDienThoai(soDienThoai);
+    }
+
+    public ThuCung getThuCung() {
+        return thuCung;
+    }
+
+    public void setThuCung(ThuCung thuCung) {
+        this.thuCung = thuCung;
+        if (thuCung != null) {
+            this.maThuCungTam = thuCung.getMaThuCung();
+            this.tenThuCungTam = thuCung.getTenThuCung();
+        }
     }
 
     public String getMaThuCung() {
-        return maThuCung;
+        return thuCung != null ? thuCung.getMaThuCung() : maThuCungTam;
     }
 
     public void setMaThuCung(String maThuCung) {
-        this.maThuCung = maThuCung;
+        this.maThuCungTam = maThuCung;
+        if (this.thuCung == null) {
+            this.thuCung = new ThuCung();
+        }
+        this.thuCung.setMaThuCung(maThuCung);
+    }
+
+    public String getTenThuCung() {
+        if (thuCung != null && thuCung.getTenThuCung() != null) {
+            return thuCung.getTenThuCung();
+        }
+        return tenThuCungTam != null ? tenThuCungTam : "";
+    }
+
+    public void setTenThuCung(String tenThuCung) {
+        this.tenThuCungTam = tenThuCung;
+        if (this.thuCung == null) {
+            this.thuCung = new ThuCung();
+        }
+        this.thuCung.setTenThuCung(tenThuCung);
+    }
+
+    public NhanVien getNhanVien() {
+        return nhanVien;
+    }
+
+    public void setNhanVien(NhanVien nhanVien) {
+        this.nhanVien = nhanVien;
+        if (nhanVien != null) {
+            this.maNhanVienTam = nhanVien.getMaNhanVien();
+            this.tenNhanVienTam = nhanVien.getHoTen();
+        }
     }
 
     public String getMaNhanVien() {
-        return maNhanVien;
+        return nhanVien != null ? nhanVien.getMaNhanVien() : maNhanVienTam;
     }
 
     public void setMaNhanVien(String maNhanVien) {
-        this.maNhanVien = maNhanVien;
+        this.maNhanVienTam = maNhanVien;
+        if (this.nhanVien == null) {
+            this.nhanVien = new NhanVien();
+        }
+        this.nhanVien.setMaNhanVien(maNhanVien);
+    }
+
+    public String getTenNhanVien() {
+        if (nhanVien != null && nhanVien.getHoTen() != null) {
+            return nhanVien.getHoTen();
+        }
+        return tenNhanVienTam != null ? tenNhanVienTam : "";
+    }
+
+    public void setTenNhanVien(String tenNhanVien) {
+        this.tenNhanVienTam = tenNhanVien;
+        if (this.nhanVien == null) {
+            this.nhanVien = new NhanVien();
+        }
+        this.nhanVien.setHoTen(tenNhanVien);
     }
 
     public LocalDate getNgayHen() {
@@ -109,38 +240,6 @@ public class LichHen {
         this.ghiChu = ghiChu;
     }
 
-    public String getTenKhachHang() {
-        return tenKhachHang;
-    }
-
-    public void setTenKhachHang(String tenKhachHang) {
-        this.tenKhachHang = tenKhachHang;
-    }
-
-    public String getSoDienThoai() {
-        return soDienThoai;
-    }
-
-    public void setSoDienThoai(String soDienThoai) {
-        this.soDienThoai = soDienThoai;
-    }
-
-    public String getTenThuCung() {
-        return tenThuCung;
-    }
-
-    public void setTenThuCung(String tenThuCung) {
-        this.tenThuCung = tenThuCung;
-    }
-
-    public String getTenNhanVien() {
-        return tenNhanVien;
-    }
-
-    public void setTenNhanVien(String tenNhanVien) {
-        this.tenNhanVien = tenNhanVien;
-    }
-
     public List<ChiTietLichHen> getDanhSachChiTiet() {
         return danhSachChiTiet;
     }
@@ -149,20 +248,34 @@ public class LichHen {
         this.danhSachChiTiet = danhSachChiTiet != null ? danhSachChiTiet : new ArrayList<>();
     }
 
-    // Tính tổng tiền các dịch vụ đã chọn trong lịch hẹn
-    public BigDecimal getTongTien() {
-        BigDecimal tong = BigDecimal.ZERO;
+    // =========================================================================
+    // THUỘC TÍNH DẪN XUẤT (DERIVED ATTRIBUTES - ĐIỀU 2)
+    // CẤM LƯU BIẾN THÀNH VIÊN, CẤM TRUYỀN VÀO CONSTRUCTOR, CẤM CÓ SETTER
+    // =========================================================================
+
+    /**
+     * Phương thức tự tính toán tổng tiền dự kiến từ các dịch vụ trong lịch hẹn.
+     */
+    public double tinhTongTien() {
+        double tong = 0.0;
         if (danhSachChiTiet != null) {
             for (ChiTietLichHen ct : danhSachChiTiet) {
-                if (ct.getDonGia() != null) {
-                    tong = tong.add(ct.getDonGia());
-                }
+                tong += ct.getDonGia();
             }
         }
         return tong;
     }
 
-    // Lấy chuỗi danh sách tên dịch vụ để hiển thị lên bảng
+    /**
+     * Delegate getter cho TableView PropertyValueFactory nếu cần.
+     */
+    public double getTongTien() {
+        return tinhTongTien();
+    }
+
+    /**
+     * Chuỗi danh sách tên dịch vụ để hiển thị lên bảng TableView.
+     */
     public String getChuoiDichVu() {
         if (danhSachChiTiet == null || danhSachChiTiet.isEmpty()) {
             return "Chưa có dịch vụ";
@@ -180,4 +293,3 @@ public class LichHen {
         return sb.toString();
     }
 }
-

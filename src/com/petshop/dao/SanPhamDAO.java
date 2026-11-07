@@ -16,6 +16,31 @@ import java.util.List;
 public class SanPhamDAO {
 
     private final NhaCungCapDAO nhaCungCapDAO = new NhaCungCapDAO();
+    private static volatile Boolean coCotGiaNhap = null;
+
+    private static boolean coCotGiaNhap(Connection conn) {
+        if (coCotGiaNhap != null) return coCotGiaNhap;
+        synchronized (SanPhamDAO.class) {
+            if (coCotGiaNhap != null) return coCotGiaNhap;
+            String sql = "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'SanPham' AND COLUMN_NAME = 'giaNhap'";
+            try (PreparedStatement ps = conn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    coCotGiaNhap = true;
+                } else {
+                    try (Statement st = conn.createStatement()) {
+                        st.execute("ALTER TABLE SanPham ADD giaNhap DECIMAL(18,2) NOT NULL DEFAULT 0");
+                        coCotGiaNhap = true;
+                    } catch (SQLException ignored) {
+                        coCotGiaNhap = false;
+                    }
+                }
+            } catch (SQLException e) {
+                coCotGiaNhap = true;
+            }
+            return coCotGiaNhap;
+        }
+    }
 
     /**
      * Tự động sinh mã sản phẩm theo định dạng SP-yyyyMMdd-xxxxxx.
@@ -53,29 +78,45 @@ public class SanPhamDAO {
      * Thêm sản phẩm mới vào CSDL.
      */
     public boolean themSanPham(SanPham sp) {
-        String sql = """
-                INSERT INTO SanPham (maSanPham, maNhaCungCap, tenSanPham, maVach, giaNhap, giaBan, soLuongTon, nguongTonToiThieu, donViTinh, trangThai)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
+        if (sp == null) return false;
 
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, sp.getMaSanPham());
-            if (sp.getMaNhaCungCap() != null && !sp.getMaNhaCungCap().isBlank()) {
-                ps.setString(2, sp.getMaNhaCungCap());
-            } else {
-                ps.setNull(2, Types.VARCHAR);
+        try (Connection conn = DatabaseManager.getConnection()) {
+            if (conn == null) return false;
+            boolean hasGiaNhap = coCotGiaNhap(conn);
+            String sql = hasGiaNhap ? """
+                    INSERT INTO SanPham (maSanPham, maNhaCungCap, tenSanPham, maVach, giaNhap, giaBan, soLuongTon, nguongTonToiThieu, donViTinh, trangThai)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """ : """
+                    INSERT INTO SanPham (maSanPham, maNhaCungCap, tenSanPham, maVach, giaBan, soLuongTon, nguongTonToiThieu, donViTinh, trangThai)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """;
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, sp.getMaSanPham());
+                if (sp.getMaNhaCungCap() != null && !sp.getMaNhaCungCap().isBlank()) {
+                    ps.setString(2, sp.getMaNhaCungCap());
+                } else {
+                    ps.setNull(2, Types.VARCHAR);
+                }
+                ps.setString(3, sp.getTenSanPham());
+                ps.setString(4, sp.getMaVach());
+                if (hasGiaNhap) {
+                    ps.setDouble(5, sp.getGiaNhap());
+                    ps.setDouble(6, sp.getGiaBan());
+                    ps.setInt(7, sp.getSoLuongTon());
+                    ps.setInt(8, sp.getNguongTonToiThieu());
+                    ps.setString(9, sp.getDonViTinh());
+                    ps.setBoolean(10, sp.isTrangThai());
+                } else {
+                    ps.setDouble(5, sp.getGiaBan());
+                    ps.setInt(6, sp.getSoLuongTon());
+                    ps.setInt(7, sp.getNguongTonToiThieu());
+                    ps.setString(8, sp.getDonViTinh());
+                    ps.setBoolean(9, sp.isTrangThai());
+                }
+
+                return ps.executeUpdate() > 0;
             }
-            ps.setString(3, sp.getTenSanPham());
-            ps.setString(4, sp.getMaVach());
-            ps.setDouble(5, sp.getGiaNhap());
-            ps.setDouble(6, sp.getGiaBan());
-            ps.setInt(7, sp.getSoLuongTon());
-            ps.setInt(8, sp.getNguongTonToiThieu());
-            ps.setString(9, sp.getDonViTinh());
-            ps.setBoolean(10, sp.isTrangThai());
-
-            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new IllegalStateException("Lỗi khi thêm sản phẩm vào CSDL: " + e.getMessage(), e);
         }
@@ -85,31 +126,50 @@ public class SanPhamDAO {
      * Cập nhật thông tin sản phẩm.
      */
     public boolean capNhatSanPham(SanPham sp) {
-        String sql = """
-                UPDATE SanPham
-                SET maNhaCungCap = ?, tenSanPham = ?, maVach = ?, giaNhap = ?, giaBan = ?,
-                    soLuongTon = ?, nguongTonToiThieu = ?, donViTinh = ?, trangThai = ?
-                WHERE maSanPham = ?
-                """;
+        if (sp == null || sp.getMaSanPham() == null) return false;
 
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            if (sp.getMaNhaCungCap() != null && !sp.getMaNhaCungCap().isBlank()) {
-                ps.setString(1, sp.getMaNhaCungCap());
-            } else {
-                ps.setNull(1, Types.VARCHAR);
+        try (Connection conn = DatabaseManager.getConnection()) {
+            if (conn == null) return false;
+            boolean hasGiaNhap = coCotGiaNhap(conn);
+            String sql = hasGiaNhap ? """
+                    UPDATE SanPham
+                    SET maNhaCungCap = ?, tenSanPham = ?, maVach = ?, giaNhap = ?, giaBan = ?,
+                        soLuongTon = ?, nguongTonToiThieu = ?, donViTinh = ?, trangThai = ?
+                    WHERE maSanPham = ?
+                    """ : """
+                    UPDATE SanPham
+                    SET maNhaCungCap = ?, tenSanPham = ?, maVach = ?, giaBan = ?,
+                        soLuongTon = ?, nguongTonToiThieu = ?, donViTinh = ?, trangThai = ?
+                    WHERE maSanPham = ?
+                    """;
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                if (sp.getMaNhaCungCap() != null && !sp.getMaNhaCungCap().isBlank()) {
+                    ps.setString(1, sp.getMaNhaCungCap());
+                } else {
+                    ps.setNull(1, Types.VARCHAR);
+                }
+                ps.setString(2, sp.getTenSanPham());
+                ps.setString(3, sp.getMaVach());
+                if (hasGiaNhap) {
+                    ps.setDouble(4, sp.getGiaNhap());
+                    ps.setDouble(5, sp.getGiaBan());
+                    ps.setInt(6, sp.getSoLuongTon());
+                    ps.setInt(7, sp.getNguongTonToiThieu());
+                    ps.setString(8, sp.getDonViTinh());
+                    ps.setBoolean(9, sp.isTrangThai());
+                    ps.setString(10, sp.getMaSanPham());
+                } else {
+                    ps.setDouble(4, sp.getGiaBan());
+                    ps.setInt(5, sp.getSoLuongTon());
+                    ps.setInt(6, sp.getNguongTonToiThieu());
+                    ps.setString(7, sp.getDonViTinh());
+                    ps.setBoolean(8, sp.isTrangThai());
+                    ps.setString(9, sp.getMaSanPham());
+                }
+
+                return ps.executeUpdate() > 0;
             }
-            ps.setString(2, sp.getTenSanPham());
-            ps.setString(3, sp.getMaVach());
-            ps.setDouble(4, sp.getGiaNhap());
-            ps.setDouble(5, sp.getGiaBan());
-            ps.setInt(6, sp.getSoLuongTon());
-            ps.setInt(7, sp.getNguongTonToiThieu());
-            ps.setString(8, sp.getDonViTinh());
-            ps.setBoolean(9, sp.isTrangThai());
-            ps.setString(10, sp.getMaSanPham());
-
-            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new IllegalStateException("Lỗi khi cập nhật sản phẩm: " + e.getMessage(), e);
         }
@@ -194,17 +254,19 @@ public class SanPhamDAO {
      */
     public List<SanPham> layDanhSachSanPham() {
         List<SanPham> danhSach = new ArrayList<>();
-        String sql = """
-                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaNhap, sp.giaBan,
-                       sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
-                       ncc.tenNhaCungCap
-                FROM SanPham sp
-                LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
-                ORDER BY sp.maSanPham DESC
-                """;
 
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) return danhSach;
+
+            String cotGiaNhap = coCotGiaNhap(conn) ? "sp.giaNhap" : "CAST(0.0 AS DECIMAL(18,2)) AS giaNhap";
+            String sql = String.format("""
+                    SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, %s, sp.giaBan,
+                           sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
+                           ncc.tenNhaCungCap
+                    FROM SanPham sp
+                    LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
+                    ORDER BY sp.maSanPham DESC
+                    """, cotGiaNhap);
 
             try (PreparedStatement ps = conn.prepareStatement(sql);
                  ResultSet rs = ps.executeQuery()) {
@@ -224,18 +286,20 @@ public class SanPhamDAO {
      */
     public List<SanPham> layTheoNhaCungCap(String maNhaCungCap) {
         List<SanPham> danhSach = new ArrayList<>();
-        String sql = """
-                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaNhap, sp.giaBan,
-                       sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
-                       ncc.tenNhaCungCap
-                FROM SanPham sp
-                LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
-                WHERE sp.maNhaCungCap = ? AND sp.trangThai = 1
-                ORDER BY sp.trangThai DESC, sp.tenSanPham ASC
-                """;
 
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) return danhSach;
+
+            String cotGiaNhap = coCotGiaNhap(conn) ? "sp.giaNhap" : "CAST(0.0 AS DECIMAL(18,2)) AS giaNhap";
+            String sql = String.format("""
+                    SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, %s, sp.giaBan,
+                           sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
+                           ncc.tenNhaCungCap
+                    FROM SanPham sp
+                    LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
+                    WHERE sp.maNhaCungCap = ? AND sp.trangThai = 1
+                    ORDER BY sp.trangThai DESC, sp.tenSanPham ASC
+                    """, cotGiaNhap);
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, maNhaCungCap);
@@ -256,17 +320,18 @@ public class SanPhamDAO {
      * Lấy sản phẩm theo mã.
      */
     public SanPham layTheoMa(String maSanPham) {
-        String sql = """
-                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaNhap, sp.giaBan,
-                       sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
-                       ncc.tenNhaCungCap
-                FROM SanPham sp
-                LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
-                WHERE sp.maSanPham = ?
-                """;
-
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) return null;
+
+            String cotGiaNhap = coCotGiaNhap(conn) ? "sp.giaNhap" : "CAST(0.0 AS DECIMAL(18,2)) AS giaNhap";
+            String sql = String.format("""
+                    SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, %s, sp.giaBan,
+                           sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
+                           ncc.tenNhaCungCap
+                    FROM SanPham sp
+                    LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
+                    WHERE sp.maSanPham = ?
+                    """, cotGiaNhap);
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, maSanPham);
@@ -288,17 +353,20 @@ public class SanPhamDAO {
      */
     public SanPham layTheoMaHoacMaVach(String input) {
         if (input == null || input.isBlank()) return null;
-        String sql = """
-                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaNhap, sp.giaBan,
-                       sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
-                       ncc.tenNhaCungCap
-                FROM SanPham sp
-                LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
-                WHERE sp.maSanPham = ? OR sp.maVach = ?
-                """;
 
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) return null;
+
+            String cotGiaNhap = coCotGiaNhap(conn) ? "sp.giaNhap" : "CAST(0.0 AS DECIMAL(18,2)) AS giaNhap";
+            String sql = String.format("""
+                    SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, %s, sp.giaBan,
+                           sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
+                           ncc.tenNhaCungCap
+                    FROM SanPham sp
+                    LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
+                    WHERE sp.maSanPham = ? OR sp.maVach = ?
+                    """, cotGiaNhap);
+
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, input.trim());
                 ps.setString(2, input.trim());
@@ -319,25 +387,27 @@ public class SanPhamDAO {
      */
     public List<SanPham> timKiemSanPham(String tuKhoa, Boolean trangThai) {
         List<SanPham> danhSach = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("""
-                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaNhap, sp.giaBan,
-                       sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
-                       ncc.tenNhaCungCap
-                FROM SanPham sp
-                LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
-                WHERE 1 = 1
-                """);
-
-        if (tuKhoa != null && !tuKhoa.trim().isEmpty()) {
-            sql.append(" AND (LOWER(sp.maSanPham) LIKE LOWER(?) OR LOWER(sp.tenSanPham) LIKE LOWER(?) OR LOWER(sp.maVach) LIKE LOWER(?))");
-        }
-        if (trangThai != null) {
-            sql.append(" AND sp.trangThai = ?");
-        }
-        sql.append(" ORDER BY sp.maSanPham DESC");
 
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) return danhSach;
+
+            String cotGiaNhap = coCotGiaNhap(conn) ? "sp.giaNhap" : "CAST(0.0 AS DECIMAL(18,2)) AS giaNhap";
+            StringBuilder sql = new StringBuilder(String.format("""
+                    SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, %s, sp.giaBan,
+                           sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
+                           ncc.tenNhaCungCap
+                    FROM SanPham sp
+                    LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
+                    WHERE 1 = 1
+                    """, cotGiaNhap));
+
+            if (tuKhoa != null && !tuKhoa.trim().isEmpty()) {
+                sql.append(" AND (LOWER(sp.maSanPham) LIKE LOWER(?) OR LOWER(sp.tenSanPham) LIKE LOWER(?) OR LOWER(sp.maVach) LIKE LOWER(?))");
+            }
+            if (trangThai != null) {
+                sql.append(" AND sp.trangThai = ?");
+            }
+            sql.append(" ORDER BY sp.maSanPham DESC");
 
             try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
                 int paramIdx = 1;
@@ -369,18 +439,20 @@ public class SanPhamDAO {
      */
     public List<SanPham> layDanhSachSanPhamSapHet() {
         List<SanPham> danhSach = new ArrayList<>();
-        String sql = """
-                SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, sp.giaNhap, sp.giaBan,
-                       sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
-                       ncc.tenNhaCungCap
-                FROM SanPham sp
-                LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
-                WHERE sp.soLuongTon <= sp.nguongTonToiThieu AND sp.trangThai = 1
-                ORDER BY sp.soLuongTon ASC
-                """;
 
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) return danhSach;
+
+            String cotGiaNhap = coCotGiaNhap(conn) ? "sp.giaNhap" : "CAST(0.0 AS DECIMAL(18,2)) AS giaNhap";
+            String sql = String.format("""
+                    SELECT sp.maSanPham, sp.maNhaCungCap, sp.tenSanPham, sp.maVach, %s, sp.giaBan,
+                           sp.soLuongTon, sp.nguongTonToiThieu, sp.donViTinh, sp.trangThai,
+                           ncc.tenNhaCungCap
+                    FROM SanPham sp
+                    LEFT JOIN NhaCungCap ncc ON ncc.maNhaCungCap = sp.maNhaCungCap
+                    WHERE sp.soLuongTon <= sp.nguongTonToiThieu AND sp.trangThai = 1
+                    ORDER BY sp.soLuongTon ASC
+                    """, cotGiaNhap);
 
             try (PreparedStatement ps = conn.prepareStatement(sql);
                  ResultSet rs = ps.executeQuery()) {

@@ -192,7 +192,7 @@ CREATE TABLE LichHen (
     ngayHen DATE NOT NULL,
     gioHen TIME NOT NULL,
     trangThai NVARCHAR(30) NOT NULL DEFAULT N'Đã đặt' 
-        CHECK (trangThai IN (N'Đã đặt', N'Đã xác nhận', N'Đang thực hiện', N'Hoàn thành', N'Đã hủy')),
+        CHECK (trangThai IN (N'Đã đặt', N'Đã xác nhận', N'Đã tiếp nhận', N'Đang thực hiện', N'Hoàn thành', N'Đã hủy')),
     ghiChu NVARCHAR(255),
     CONSTRAINT FK_LichHen_KhachHang FOREIGN KEY (maKhachHang) REFERENCES KhachHang(maKhachHang),
     CONSTRAINT FK_LichHen_ThuCung FOREIGN KEY (maThuCung, maKhachHang) REFERENCES ThuCung(maThuCung, maKhachHang),
@@ -638,4 +638,18 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_PhieuDichVu_NhanVien_
     CREATE UNIQUE NONCLUSTERED INDEX UX_PhieuDichVu_NhanVien_DangThucHien 
     ON dbo.PhieuDichVu (maNhanVien) 
     WHERE trangThai = N'Đang thực hiện';
+GO
+
+-- Chỉ mục tối ưu hóa truy vấn cho phân hệ Thú cưng, Lịch hẹn và Tiếp nhận dịch vụ (Quy mô 50.000 - 100.000 bản ghi)
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ThuCung_MaKhachHang' AND object_id = OBJECT_ID(N'dbo.ThuCung'))
+    CREATE NONCLUSTERED INDEX IX_ThuCung_MaKhachHang ON dbo.ThuCung (maKhachHang) INCLUDE (tenThuCung, loaiThuCung, canNang);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_LichHen_MaKhachHang' AND object_id = OBJECT_ID(N'dbo.LichHen'))
+    CREATE NONCLUSTERED INDEX IX_LichHen_MaKhachHang ON dbo.LichHen (maKhachHang, ngayHen DESC);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_LichHen_NgayHen_TrangThai' AND object_id = OBJECT_ID(N'dbo.LichHen'))
+    CREATE NONCLUSTERED INDEX IX_LichHen_NgayHen_TrangThai ON dbo.LichHen (ngayHen, trangThai) INCLUDE (maKhachHang, maThuCung, maNhanVien, gioHen);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_PhieuDichVu_MaKhachHang' AND object_id = OBJECT_ID(N'dbo.PhieuDichVu'))
+    CREATE NONCLUSTERED INDEX IX_PhieuDichVu_MaKhachHang ON dbo.PhieuDichVu (maKhachHang, ngayTiepNhan DESC);
 GO

@@ -18,7 +18,6 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.StringConverter;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -348,7 +347,7 @@ public class CapNhatPhieuDichVuView extends VBox {
         cboTc.setPromptText("Chọn thú cưng...");
         List<ThuCung> dsThuCung = ctrl.layDanhSachThuCungTheoKhachHang(phieuGoc.getMaKhachHang());
         cboTc.getItems().setAll(dsThuCung);
-        cboTc.setConverter(taoConverter(t -> t.getTenThuCung() + " (" + (t.getCanNang() != null ? t.getCanNang() + "kg" : "") + ")"));
+        cboTc.setConverter(taoConverter(t -> t.getTenThuCung() + " (" + (t.getCanNang() > 0 ? t.getCanNang() + "kg" : "") + ")"));
         if (!dsThuCung.isEmpty()) cboTc.setValue(dsThuCung.get(0));
 
         ComboBox<DichVuChamSoc> cboDv = new ComboBox<>();
@@ -366,7 +365,7 @@ public class CapNhatPhieuDichVuView extends VBox {
             ThuCung tc = cboTc.getValue();
             DichVuChamSoc dv = cboDv.getValue();
             if (tc != null && dv != null) {
-                double can = tc.getCanNang() != null ? tc.getCanNang().doubleValue() : 3.0;
+                double can = tc.getCanNang() > 0 ? tc.getCanNang() : 3.0;
                 double gia = ctrl.traGiaDichVuTheoCanNang(dv.getMaDichVu(), can);
                 txtGia.setText(String.valueOf((long) gia));
             }
@@ -391,9 +390,9 @@ public class CapNhatPhieuDichVuView extends VBox {
         Label lblTongTienPopup = new Label();
         lblTongTienPopup.setStyle("-fx-font-weight: bold;");
         Runnable capNhatTong = () -> {
-            BigDecimal tong = BigDecimal.ZERO;
+            double tong = 0.0;
             for (ChiTietPhieuDichVu ct : dsChiTiet) {
-                if (ct.getDonGia() != null) tong = tong.add(ct.getDonGia());
+                tong += ct.getDonGia();
             }
             lblTongTienPopup.setText("Tổng tiền: " + DINH_DANG_TIEN.format(tong));
         };
@@ -417,7 +416,7 @@ public class CapNhatPhieuDichVuView extends VBox {
         colDonGia.setStyle("-fx-alignment: CENTER-RIGHT;");
         colDonGia.setPrefWidth(120);
         colDonGia.setCellValueFactory(c -> new SimpleStringProperty(
-                c.getValue().getDonGia() != null ? DINH_DANG_TIEN.format(c.getValue().getDonGia()) : "0 đ"));
+                DINH_DANG_TIEN.format(c.getValue().getDonGia())));
 
         TableColumn<ChiTietPhieuDichVu, Void> colXoa = new TableColumn<>("Thao tác");
         colXoa.setStyle("-fx-alignment: CENTER;");
@@ -453,11 +452,11 @@ public class CapNhatPhieuDichVuView extends VBox {
                     return;
                 }
             }
-            BigDecimal gia;
+            double gia;
             try {
-                gia = new BigDecimal(txtGia.getText().trim());
+                gia = Double.parseDouble(txtGia.getText().trim());
             } catch (Exception ex) {
-                gia = BigDecimal.ZERO;
+                gia = 0.0;
             }
             ChiTietPhieuDichVu dongMoi = new ChiTietPhieuDichVu(
                     phieuGoc.getMaPhieuDichVu(),

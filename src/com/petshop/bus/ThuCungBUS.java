@@ -5,14 +5,13 @@ import com.petshop.entity.ChiTietDichVuLichHen;
 import com.petshop.entity.LichSuChamSoc;
 import com.petshop.entity.ThuCung;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
 /**
  * Lớp Dịch vụ phụ trách xử lý nghiệp vụ, kiểm tra ràng buộc dữ liệu (Validation)
  * và phân quyền người dùng cho phân hệ Quản lý Thú cưng (THU_CUNG).
- * Tuân thủ Quy ước #60.
+ * Tuân thủ Quy ước #60 và kiến trúc 3 tầng IUH.
  */
 public class ThuCungBUS {
 
@@ -93,6 +92,19 @@ public class ThuCungBUS {
     }
 
     /**
+     * Cập nhật cân nặng thú cưng sau khi cân tại quầy.
+     */
+    public boolean capNhatCanNang(String maThuCung, double canNang) {
+        if (maThuCung == null || maThuCung.trim().isEmpty()) {
+            throw new IllegalArgumentException("Mã thú cưng không được để trống!");
+        }
+        if (canNang <= 0 || canNang > 999.99) {
+            throw new IllegalArgumentException("Cân nặng cập nhật phải > 0 và <= 999.99 kg!");
+        }
+        return thuCungDAO.capNhatCanNang(maThuCung.trim(), canNang);
+    }
+
+    /**
      * Sinh tự động mã thú cưng mới theo mẫu duy nhất.
      */
     public String taoMaThuCungMoi() {
@@ -110,10 +122,6 @@ public class ThuCungBUS {
         return thuCungDAO.layLichSuChamSoc(maThuCung.trim());
     }
 
-    /**
-     * Lấy danh sách lịch hẹn chăm sóc của thú cưng theo bộ lọc thời gian và trạng thái.
-     * Quyền yêu cầu: TC_CHAM_SOC hoặc TC_TIM_KIEM hoặc TC_CAP_NHAT.
-     */
     /**
      * Lấy danh sách thú cưng đã có ít nhất một lần hoàn thành dịch vụ chăm sóc.
      */
@@ -184,12 +192,9 @@ public class ThuCungBUS {
         }
 
         // 4. Kiểm tra cân nặng (Nếu có nhập thì phải > 0 và <= 999.99 kg; có thể để trống khi đặt lịch trước)
-        BigDecimal canNang = thuCung.getCanNang();
-        if (canNang != null) {
-            if (canNang.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("Cân nặng thú cưng phải lớn hơn 0 kg!");
-            }
-            if (canNang.compareTo(new BigDecimal("999.99")) > 0) {
+        double canNang = thuCung.getCanNang();
+        if (canNang > 0) {
+            if (canNang > 999.99) {
                 throw new IllegalArgumentException("Cân nặng thú cưng không được vượt quá 999.99 kg!");
             }
         }
@@ -208,4 +213,3 @@ public class ThuCungBUS {
         }
     }
 }
-

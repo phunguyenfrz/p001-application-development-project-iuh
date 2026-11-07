@@ -101,14 +101,15 @@ public class TaiKhoan {
         }
     }
 
-
-
     public String getMaNhanVien() {
         return nhanVien != null ? nhanVien.getMaNhanVien() : maNhanVien;
     }
 
     public void setMaNhanVien(String maNhanVien) {
         this.maNhanVien = maNhanVien;
+        if (this.nhanVien != null) {
+            this.nhanVien.setMaNhanVien(maNhanVien);
+        }
     }
 
     public String getTenDangNhap() {
@@ -156,8 +157,6 @@ public class TaiKhoan {
             this.nhanVien.setHoTen(hoTenNhanVien);
         }
     }
-
-
 
     // Các phương thức nghiệp vụ khớp với Class Diagram
     public void doiMatKhau(String matKhauMoi) {

@@ -1,17 +1,18 @@
 package com.petshop.dao;
 
 import com.petshop.entity.ChiTietDichVuLichHen;
+import com.petshop.entity.KhachHang;
 import com.petshop.entity.LichSuChamSoc;
 import com.petshop.entity.ThuCung;
 import com.petshop.util.DatabaseManager;
 
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ import java.util.List;
 
 /**
  * Lớp DAO phụ trách truy vấn và thao tác cơ sở dữ liệu cho thực thể Thú cưng (ThuCung).
- * Tuân thủ Quy ước #60: không nuốt ngoại lệ SQLException mà ném IllegalStateException.
+ * Tuân thủ Chuẩn 3 tầng IUH, kiểu nguyên thủy double, ném IllegalStateException khi có lỗi SQL.
  */
 public class ThuCungDAO {
 
@@ -120,11 +121,6 @@ public class ThuCungDAO {
 
     /**
      * Tìm kiếm và lọc thú cưng theo từ khóa và loài.
-     * Từ khóa tìm trên: mã thú cưng, tên thú cưng, giống loài, tên chủ nuôi, số điện thoại chủ nuôi.
-     *
-     * @param tuKhoa  Từ khóa tra cứu
-     * @param locLoai Loài thú cưng cần lọc (Chó, Mèo,...) hoặc null / "Tất cả"
-     * @return Danh sách thú cưng thỏa điều kiện
      */
     public List<ThuCung> timKiemThuCung(String tuKhoa, String locLoai) {
         List<ThuCung> danhSach = new ArrayList<>();
@@ -207,7 +203,11 @@ public class ThuCungDAO {
             ps.setString(3, tc.getTenThuCung());
             ps.setString(4, tc.getLoaiThuCung());
             ps.setString(5, tc.getGiongLoai());
-            ps.setBigDecimal(6, tc.getCanNang());
+            if (tc.getCanNang() > 0) {
+                ps.setDouble(6, tc.getCanNang());
+            } else {
+                ps.setNull(6, Types.DOUBLE);
+            }
             ps.setDate(7, tc.getNgaySinh() != null ? Date.valueOf(tc.getNgaySinh()) : null);
             ps.setString(8, tc.getDiUng());
             ps.setString(9, tc.getGioiTinh());
@@ -245,7 +245,11 @@ public class ThuCungDAO {
             ps.setString(2, tc.getTenThuCung());
             ps.setString(3, tc.getLoaiThuCung());
             ps.setString(4, tc.getGiongLoai());
-            ps.setBigDecimal(5, tc.getCanNang());
+            if (tc.getCanNang() > 0) {
+                ps.setDouble(5, tc.getCanNang());
+            } else {
+                ps.setNull(5, Types.DOUBLE);
+            }
             ps.setDate(6, tc.getNgaySinh() != null ? Date.valueOf(tc.getNgaySinh()) : null);
             ps.setString(7, tc.getDiUng());
             ps.setString(8, tc.getGioiTinh());
@@ -261,14 +265,18 @@ public class ThuCungDAO {
      * Cập nhật cân nặng thực tế cho thú cưng khi cân tại quầy tiếp nhận.
      *
      * @param maThuCung Mã thú cưng
-     * @param canNang Cân nặng thực tế
+     * @param canNang Cân nặng thực tế (double)
      * @return true nếu cập nhật thành công
      */
-    public boolean capNhatCanNang(String maThuCung, BigDecimal canNang) {
+    public boolean capNhatCanNang(String maThuCung, double canNang) {
         String sql = "UPDATE dbo.ThuCung SET canNang = ? WHERE maThuCung = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setBigDecimal(1, canNang);
+            if (canNang > 0) {
+                ps.setDouble(1, canNang);
+            } else {
+                ps.setNull(1, Types.DOUBLE);
+            }
             ps.setString(2, maThuCung);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -313,9 +321,6 @@ public class ThuCungDAO {
 
     /**
      * Lấy lịch sử chăm sóc dịch vụ của thú cưng từ các phiếu dịch vụ.
-     *
-     * @param maThuCung Mã thú cưng
-     * @return Danh sách lịch sử chăm sóc (mảng dữ liệu hiển thị bảng: Mã phiếu, Ngày lập, Tên dịch vụ, Đơn giá, Tên NV, Ghi chú)
      */
     public List<String[]> layLichSuChamSoc(String maThuCung) {
         List<String[]> lichSu = new ArrayList<>();
@@ -353,27 +358,12 @@ public class ThuCungDAO {
                 }
             }
         } catch (SQLException e) {
-            // Nếu bảng PhieuDichVu chưa có dữ liệu hoặc truy vấn lỗi thì log và trả danh sách rỗng, không crash màn hình
             System.err.println("Ghi nhận: Chưa có dữ liệu phiếu dịch vụ cho thú cưng " + maThuCung + " (" + e.getMessage() + ")");
         }
 
         return lichSu;
     }
 
-    /**
-     * Lấy danh sách lịch hẹn chăm sóc dịch vụ của thú cưng từ bảng LichHen,
-     * có thể lọc theo khoảng ngày (Từ ngày, Đến ngày) và trạng thái.
-     *
-     * @param maThuCung Mã thú cưng
-     * @param tuNgay    Từ ngày (hoặc null)
-     * @param denNgay   Đến ngày (hoặc null)
-     * @param trangThai Trạng thái (hoặc null / "Tất cả")
-     * @return Danh sách lịch sử chăm sóc
-     */
-    /**
-     * Lấy danh sách những thú cưng đã có ít nhất một lần hoàn thành dịch vụ chăm sóc.
-     * Dùng cho chức năng Xem Lịch sử chăm sóc thú cưng (chỉ thú cưng đã hoàn thành dịch vụ mới có lịch sử).
-     */
     public List<ThuCung> layDanhSachThuCungCoLichSuChamSoc() {
         List<ThuCung> danhSach = new ArrayList<>();
         String sql = """
@@ -407,9 +397,6 @@ public class ThuCungDAO {
         return danhSach;
     }
 
-    /**
-     * Tìm kiếm thú cưng có lịch sử chăm sóc hoàn thành theo từ khóa.
-     */
     public List<ThuCung> timKiemThuCungCoLichSuChamSoc(String tuKhoa) {
         List<ThuCung> danhSach = new ArrayList<>();
         String sql = """
@@ -483,9 +470,7 @@ public class ThuCungDAO {
             thamSo.add(Date.valueOf(denNgay));
         }
 
-        // Lịch sử chăm sóc chỉ hiển thị các lần hẹn dịch vụ đã hoàn thành
         sql.append(" AND lh.trangThai = N'Hoàn thành'");
-
         sql.append(" ORDER BY lh.ngayHen DESC, lh.gioHen DESC");
 
         try (Connection conn = DatabaseManager.getConnection();
@@ -529,12 +514,6 @@ public class ThuCungDAO {
         return danhSach;
     }
 
-    /**
-     * Lấy danh sách các dịch vụ chi tiết được thực hiện trong một lần hẹn từ bảng ChiTietLichHen.
-     *
-     * @param maLichHen Mã lịch hẹn
-     * @return Danh sách chi tiết dịch vụ
-     */
     public List<ChiTietDichVuLichHen> layChiTietDichVuLichHen(String maLichHen) {
         List<ChiTietDichVuLichHen> danhSach = new ArrayList<>();
         String sql = """
@@ -557,8 +536,8 @@ public class ThuCungDAO {
                     }
                     danhSach.add(new ChiTietDichVuLichHen(
                             tenDichVu,
-                            rs.getBigDecimal("canNangThuCung"),
-                            rs.getBigDecimal("donGia")
+                            rs.getDouble("canNangThuCung"),
+                            rs.getDouble("donGia")
                     ));
                 }
             }
@@ -569,34 +548,39 @@ public class ThuCungDAO {
         return danhSach;
     }
 
-    /**
-     * Ánh xạ một dòng ResultSet sang đối tượng ThuCung.
-     */
     private ThuCung anhXaDongThuCung(ResultSet rs) throws SQLException {
         Date sqlNgaySinh = rs.getDate("ngaySinh");
         LocalDate ngaySinh = sqlNgaySinh != null ? sqlNgaySinh.toLocalDate() : null;
 
+        String maKh = rs.getString("maKhachHang");
         String tenKh = null;
         String sdtKh = null;
         try {
             tenKh = rs.getString("tenKhachHang");
             sdtKh = rs.getString("soDienThoaiKhachHang");
         } catch (SQLException ignored) {
-            // Trường hợp truy vấn không JOIN với KhachHang
         }
 
-        return new ThuCung(
+        KhachHang kh = null;
+        if (maKh != null) {
+            kh = new KhachHang();
+            kh.setMaKhachHang(maKh);
+            kh.setHoTen(tenKh != null ? tenKh : "");
+            kh.setSoDienThoai(sdtKh != null ? sdtKh : "");
+        }
+
+        ThuCung tc = new ThuCung(
                 rs.getString("maThuCung"),
-                rs.getString("maKhachHang"),
+                kh,
                 rs.getString("tenThuCung"),
                 rs.getString("loaiThuCung"),
                 rs.getString("giongLoai"),
-                rs.getBigDecimal("canNang"),
+                rs.getDouble("canNang"),
                 ngaySinh,
                 rs.getString("diUng"),
-                rs.getString("gioiTinh"),
-                tenKh,
-                sdtKh
+                rs.getString("gioiTinh")
         );
+        tc.setMaKhachHang(maKh);
+        return tc;
     }
 }

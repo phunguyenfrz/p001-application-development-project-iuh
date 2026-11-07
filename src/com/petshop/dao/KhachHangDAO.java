@@ -111,6 +111,10 @@ public class KhachHangDAO {
     /**
      * Tìm khách hàng theo số điện thoại chính xác.
      */
+    public KhachHang layKhachHangTheoSoDienThoai(String soDienThoai) {
+        return timTheoSoDienThoai(soDienThoai);
+    }
+
     public KhachHang timTheoSoDienThoai(String soDienThoai) {
         if (soDienThoai == null || soDienThoai.trim().isEmpty()) {
             return null;

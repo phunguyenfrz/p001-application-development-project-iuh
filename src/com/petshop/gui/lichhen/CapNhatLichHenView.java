@@ -17,7 +17,6 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.StringConverter;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -29,6 +28,7 @@ import java.util.function.Function;
 /**
  * Phân hệ Quản lý & Cập nhật lịch hẹn chăm sóc thú cưng (APT_RESCHEDULE).
  * Hỗ trợ cập nhật thông tin lịch hẹn, đổi ngày giờ/dịch vụ, hoàn thành hoặc hủy lịch.
+ * Tuân thủ 100% chuẩn IUH: kiểu double, bắt ngoại lệ chuẩn, không dùng BigDecimal.
  */
 public class CapNhatLichHenView extends VBox {
 
@@ -107,7 +107,7 @@ public class CapNhatLichHenView extends VBox {
                 taoCot("Mã lịch hẹn", 150, d -> new SimpleStringProperty(d.getValue().getMaLichHen())),
                 taoCot("Khách hàng", 180, d -> {
                     String ten = d.getValue().getTenKhachHang() != null ? d.getValue().getTenKhachHang() : d.getValue().getMaKhachHang();
-                    String sdt = d.getValue().getSoDienThoai() != null ? " (" + d.getValue().getSoDienThoai() + ")" : "";
+                    String sdt = d.getValue().getSoDienThoai() != null && !d.getValue().getSoDienThoai().isEmpty() ? " (" + d.getValue().getSoDienThoai() + ")" : "";
                     return new SimpleStringProperty(ten + sdt);
                 }),
                 taoCot("Thú cưng", 130, d -> new SimpleStringProperty(
@@ -186,13 +186,32 @@ public class CapNhatLichHenView extends VBox {
                 return;
             }
             try {
-                controller.huyLichHen(chon.getMaLichHen(), lyDo);
-                new Alert(Alert.AlertType.INFORMATION, "Đã hủy lịch hẹn thành công!").showAndWait();
-                taiLaiDanhSach();
+                if (controller.huyLichHen(chon.getMaLichHen(), lyDo)) {
+                    Alert thongBao = new Alert(Alert.AlertType.INFORMATION, "Đã hủy lịch hẹn thành công!");
+                    thongBao.setHeaderText(null);
+                    thongBao.showAndWait();
+                    taiLaiDanhSach();
+                }
+            } catch (IllegalArgumentException ex) {
+                hienThiCanhBao(ex.getMessage());
             } catch (Exception ex) {
-                hienThiLoi("Lỗi khi hủy lịch hẹn: " + ex.getMessage());
+                hienThiLoi(ex.getMessage());
             }
         }
+    }
+
+    private void moCuaSoCapNhat() {
+        LichHen chon = tblDanhSach.getSelectionModel().getSelectedItem();
+        if (chon == null) {
+            hienThiCanhBao("Vui lòng chọn lịch hẹn cần cập nhật!");
+            return;
+        }
+        if ("Hoàn thành".equalsIgnoreCase(chon.getTrangThai()) || "Đã hủy".equalsIgnoreCase(chon.getTrangThai())) {
+            hienThiCanhBao("Không thể sửa đổi thông tin lịch hẹn đã kết thúc!");
+            return;
+        }
+
+        moPopupCapNhat(getScene() != null ? getScene().getWindow() : null, chon, this::taiLaiDanhSach);
     }
 
     public void taiLaiDanhSach() {
@@ -200,23 +219,9 @@ public class CapNhatLichHenView extends VBox {
             danhSachHienThi.setAll(controller.layDanhSachLichHen());
             tblDanhSach.getSelectionModel().clearSelection();
             capNhatTrangThaiNut(null);
-        } catch (Exception e) {
-            hienThiLoi("Lỗi khi tải danh sách lịch hẹn: " + e.getMessage());
+        } catch (Exception ex) {
+            hienThiLoi(ex.getMessage());
         }
-    }
-
-    private void moCuaSoCapNhat() {
-        LichHen chon = tblDanhSach.getSelectionModel().getSelectedItem();
-        if (chon == null) {
-            hienThiCanhBao("Vui lòng chọn một lịch hẹn trong bảng để cập nhật!");
-            return;
-        }
-        if ("Hoàn thành".equalsIgnoreCase(chon.getTrangThai()) || "Đã hủy".equalsIgnoreCase(chon.getTrangThai())) {
-            hienThiCanhBao("Không thể sửa đổi thông tin lịch hẹn đã hoàn thành hoặc đã bị hủy!");
-            return;
-        }
-        Window owner = getScene() != null ? getScene().getWindow() : null;
-        moPopupCapNhat(owner, chon, this::taiLaiDanhSach);
     }
 
     // -------------------------------------------------------------------------
@@ -246,7 +251,7 @@ public class CapNhatLichHenView extends VBox {
         luoi.setVgap(10);
 
         TextField txtKhach = new TextField((lichHen.getTenKhachHang() != null ? lichHen.getTenKhachHang() : lichHen.getMaKhachHang())
-                + (lichHen.getSoDienThoai() != null ? " - " + lichHen.getSoDienThoai() : ""));
+                + (lichHen.getSoDienThoai() != null && !lichHen.getSoDienThoai().isEmpty() ? " - " + lichHen.getSoDienThoai() : ""));
         txtKhach.setEditable(false);
 
         TextField txtThuCung = new TextField(lichHen.getTenThuCung() != null ? lichHen.getTenThuCung() : lichHen.getMaThuCung());
@@ -323,11 +328,31 @@ public class CapNhatLichHenView extends VBox {
         VBox.setVgrow(tblChiTiet, Priority.ALWAYS);
 
         TableColumn<ChiTietLichHen, String> colTenDv = new TableColumn<>("Tên dịch vụ chăm sóc");
-        colTenDv.setPrefWidth(450);
+        colTenDv.setPrefWidth(260);
         colTenDv.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTenDichVu()));
+
+        TableColumn<ChiTietLichHen, String> colThuCung = new TableColumn<>("Thú cưng");
+        colThuCung.setPrefWidth(140);
+        colThuCung.setStyle("-fx-alignment: CENTER;");
+        colThuCung.setCellValueFactory(d -> {
+            String ten = d.getValue().getTenThuCung();
+            if (ten == null || ten.isEmpty()) {
+                ten = lichHen.getTenThuCung();
+            }
+            return new SimpleStringProperty(ten != null && !ten.isEmpty() ? ten : "-");
+        });
+
+        TableColumn<ChiTietLichHen, String> colDonGia = new TableColumn<>("Đơn giá dự kiến");
+        colDonGia.setPrefWidth(130);
+        colDonGia.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colDonGia.setCellValueFactory(d -> {
+            double gia = d.getValue().getDonGia();
+            return new SimpleStringProperty(gia > 0 ? String.format("%,.0f đ", gia) : "Báo giá tại quầy");
+        });
 
         TableColumn<ChiTietLichHen, Void> colXoa = new TableColumn<>("Thao tác");
         colXoa.setPrefWidth(90);
+        colXoa.setStyle("-fx-alignment: CENTER;");
         colXoa.setCellFactory(param -> new TableCell<>() {
             private final Button btn = new Button("Xóa");
             {
@@ -341,7 +366,7 @@ public class CapNhatLichHenView extends VBox {
             }
         });
 
-        tblChiTiet.getColumns().addAll(List.of(colTenDv, colXoa));
+        tblChiTiet.getColumns().addAll(List.of(colTenDv, colThuCung, colDonGia, colXoa));
 
         btnThemDv.setOnAction(e -> {
             DichVuChamSoc dv = cboDv.getValue();
@@ -353,13 +378,13 @@ public class CapNhatLichHenView extends VBox {
                 new Alert(Alert.AlertType.WARNING, "Dịch vụ '" + dv.getTenDichVu() + "' đã có trong lịch hẹn!").showAndWait();
                 return;
             }
-            BigDecimal cn = dsChiTiet.stream()
-                    .map(ChiTietLichHen::getCanNangThuCung)
-                    .filter(c -> c != null && c.compareTo(BigDecimal.ZERO) > 0)
+            double cn = dsChiTiet.stream()
+                    .mapToDouble(ChiTietLichHen::getCanNangThuCung)
+                    .filter(c -> c > 0)
                     .findFirst()
-                    .orElse(null);
-            double gia = ctrl.traGiaDichVuTheoCanNang(dv.getMaDichVu(), cn != null ? cn.doubleValue() : 0.0);
-            dsChiTiet.add(new ChiTietLichHen(lichHen.getMaLichHen(), dv.getMaDichVu(), dv.getTenDichVu(), cn, BigDecimal.valueOf(gia)));
+                    .orElse(0.0);
+            double gia = ctrl.traGiaDichVuTheoCanNang(dv.getMaDichVu(), cn > 0 ? cn : 1.0);
+            dsChiTiet.add(new ChiTietLichHen(lichHen.getMaLichHen(), dv.getMaDichVu(), dv.getTenDichVu(), cn, gia));
             cboDv.setValue(null);
         });
 
@@ -377,13 +402,13 @@ public class CapNhatLichHenView extends VBox {
                 if (cboDv.getValue() != null) {
                     DichVuChamSoc dv = cboDv.getValue();
                     if (dsChiTiet.stream().noneMatch(ct -> ct.getMaDichVu().equals(dv.getMaDichVu()))) {
-                        BigDecimal cn = dsChiTiet.stream()
-                                .map(ChiTietLichHen::getCanNangThuCung)
-                                .filter(c -> c != null && c.compareTo(BigDecimal.ZERO) > 0)
+                        double cn = dsChiTiet.stream()
+                                .mapToDouble(ChiTietLichHen::getCanNangThuCung)
+                                .filter(c -> c > 0)
                                 .findFirst()
-                                .orElse(null);
-                        double gia = ctrl.traGiaDichVuTheoCanNang(dv.getMaDichVu(), cn != null ? cn.doubleValue() : 0.0);
-                        dsChiTiet.add(new ChiTietLichHen(lichHen.getMaLichHen(), dv.getMaDichVu(), dv.getTenDichVu(), cn, BigDecimal.valueOf(gia)));
+                                .orElse(0.0);
+                        double gia = ctrl.traGiaDichVuTheoCanNang(dv.getMaDichVu(), cn > 0 ? cn : 1.0);
+                        dsChiTiet.add(new ChiTietLichHen(lichHen.getMaLichHen(), dv.getMaDichVu(), dv.getTenDichVu(), cn, gia));
                     }
                 }
                 LocalDate ngayMoi = dpNgay.getValue();
@@ -403,6 +428,8 @@ public class CapNhatLichHenView extends VBox {
                 new Alert(Alert.AlertType.INFORMATION, "Cập nhật lịch hẹn thành công!").showAndWait();
                 cuaSo.close();
                 if (onThanhCong != null) onThanhCong.run();
+            } catch (IllegalArgumentException ex) {
+                new Alert(Alert.AlertType.WARNING, ex.getMessage()).showAndWait();
             } catch (Exception ex) {
                 new Alert(Alert.AlertType.ERROR, ex.getMessage()).showAndWait();
             }

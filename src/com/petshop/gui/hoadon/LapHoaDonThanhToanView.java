@@ -1113,7 +1113,7 @@ public class LapHoaDonThanhToanView extends VBox {
                             ct.getTenDichVu() != null ? ct.getTenDichVu() : ct.getMaDichVu(),
                             ct.getMaThuCung(),
                             ct.getTenThuCung(),
-                            ct.getDonGia() != null ? ct.getDonGia().doubleValue() : 0.0
+                            ct.getDonGia()
                     );
                     dsDongHang.add(d);
                 }
@@ -1180,43 +1180,81 @@ public class LapHoaDonThanhToanView extends VBox {
 
         VBox pnlGoc = new VBox(10);
         pnlGoc.setPadding(new Insets(14));
+        pnlGoc.getStyleClass().add("khung-phan-he");
 
-        Label lblTieuDe = new Label("DANH SÁCH PHIẾU DỊCH VỤ CHƯA THANH TOÁN");
+        Label lblTieuDe = new Label("DANH SÁCH PHIẾU DỊCH VỤ CHỜ THANH TOÁN");
         lblTieuDe.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #0369a1;");
 
-        TableView<PhieuDichVu> bang = new TableView<>();
+        // Ô tìm kiếm nhanh theo SĐT / Mã phiếu / Tên khách
+        TextField txtTimKiemPhieu = new TextField();
+        txtTimKiemPhieu.setPromptText("Tìm kiếm theo SĐT, Tên khách hoặc Mã phiếu...");
+        HBox.setHgrow(txtTimKiemPhieu, Priority.ALWAYS);
+        HBox pnlTim = new HBox(8, new Label("Tìm kiếm:"), txtTimKiemPhieu);
+        pnlTim.setAlignment(Pos.CENTER_LEFT);
+
+        List<PhieuDichVu> dsGoc = new ArrayList<>();
+        try {
+            dsGoc = controller.layDanhSachPhieuDichVuChuaThanhToan();
+        } catch (Exception ex) {
+            hienThiLoi("Lỗi nạp danh sách phiếu dịch vụ: " + ex.getMessage());
+        }
+
+        ObservableList<PhieuDichVu> dsHienThi = FXCollections.observableArrayList(dsGoc);
+        final List<PhieuDichVu> dsPhieuGocCuoi = dsGoc;
+        txtTimKiemPhieu.textProperty().addListener((obs, cu, moi) -> {
+            if (moi == null || moi.trim().isEmpty()) {
+                dsHienThi.setAll(dsPhieuGocCuoi);
+            } else {
+                String tuKhoa = moi.trim().toLowerCase();
+                dsHienThi.setAll(dsPhieuGocCuoi.stream().filter(p ->
+                        (p.getMaPhieuDichVu() != null && p.getMaPhieuDichVu().toLowerCase().contains(tuKhoa)) ||
+                        (p.getTenKhachHang() != null && p.getTenKhachHang().toLowerCase().contains(tuKhoa)) ||
+                        (p.getSoDienThoai() != null && p.getSoDienThoai().contains(tuKhoa))
+                ).toList());
+            }
+        });
+
+        TableView<PhieuDichVu> bang = new TableView<>(dsHienThi);
+        bang.getStyleClass().add("bang-du-lieu");
         bang.setPlaceholder(new Label("Hiện không có phiếu dịch vụ nào chờ thanh toán."));
+        VBox.setVgrow(bang, Priority.ALWAYS);
 
         TableColumn<PhieuDichVu, String> colMa = new TableColumn<>("Mã phiếu");
         colMa.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getMaPhieuDichVu()));
-        colMa.setPrefWidth(120);
+        colMa.setPrefWidth(130);
 
         TableColumn<PhieuDichVu, String> colKhach = new TableColumn<>("Khách hàng");
         colKhach.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getTenKhachHang() != null ? p.getValue().getTenKhachHang() : p.getValue().getMaKhachHang()));
         colKhach.setPrefWidth(160);
 
+        TableColumn<PhieuDichVu, String> colSdt = new TableColumn<>("SĐT");
+        colSdt.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getSoDienThoai() != null ? p.getValue().getSoDienThoai() : ""));
+        colSdt.setPrefWidth(110);
+        colSdt.setStyle("-fx-alignment: center;");
+
         TableColumn<PhieuDichVu, String> colNgay = new TableColumn<>("Ngày lập");
         colNgay.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getNgayLap() != null ? p.getValue().getNgayLap().format(DINH_DANG_NGAY) : ""));
         colNgay.setPrefWidth(100);
+        colNgay.setStyle("-fx-alignment: center;");
 
         TableColumn<PhieuDichVu, String> colTt = new TableColumn<>("Trạng thái");
         colTt.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getTrangThai()));
         colTt.setPrefWidth(110);
+        colTt.setStyle("-fx-alignment: center;");
 
-        bang.getColumns().addAll(colMa, colKhach, colNgay, colTt);
-
-        try {
-            List<PhieuDichVu> ds = controller.layDanhSachPhieuDichVuChuaThanhToan();
-            bang.setItems(FXCollections.observableArrayList(ds));
-        } catch (Exception ex) {
-            hienThiLoi("Lỗi nạp danh sách phiếu dịch vụ: " + ex.getMessage());
-        }
+        bang.getColumns().addAll(colMa, colKhach, colSdt, colNgay, colTt);
 
         Button btnChon = new Button("Chọn phiếu này");
         btnChon.getStyleClass().add("nut-chinh");
         btnChon.setOnAction(e -> {
             PhieuDichVu p = bang.getSelectionModel().getSelectedItem();
             if (p != null) {
+                // Chặn nạp trùng 1 phiếu dịch vụ vào 2 hóa đơn khác nhau
+                if (new com.petshop.bus.PhieuDichVuBUS().kiemTraPhieuDichVuDaCoHoaDon(p.getMaPhieuDichVu())) {
+                    hienThiCanhBao("Phiếu dịch vụ '" + p.getMaPhieuDichVu() + "' đã được lập hóa đơn thanh toán trước đó!");
+                    return;
+                }
+
                 if (p.getMaKhachHang() != null && !p.getMaKhachHang().isBlank()) {
                     try {
                         KhachHang kh = khachHangBUS.layTheoMa(p.getMaKhachHang());
@@ -1240,8 +1278,11 @@ public class LapHoaDonThanhToanView extends VBox {
         HBox pnlNut = new HBox(8, btnChon, btnHuy);
         pnlNut.setAlignment(Pos.CENTER_RIGHT);
 
-        pnlGoc.getChildren().addAll(lblTieuDe, bang, pnlNut);
-        Scene sc = new Scene(pnlGoc, 550, 380);
+        pnlGoc.getChildren().addAll(lblTieuDe, pnlTim, bang, pnlNut);
+        Scene sc = new Scene(pnlGoc, 650, 420);
+        if (LapHoaDonThanhToanView.class.getResource(CSS_CHUNG) != null) {
+            sc.getStylesheets().add(LapHoaDonThanhToanView.class.getResource(CSS_CHUNG).toExternalForm());
+        }
         dlg.setScene(sc);
         dlg.showAndWait();
     }

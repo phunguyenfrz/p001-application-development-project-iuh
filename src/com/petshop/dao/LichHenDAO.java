@@ -1,7 +1,10 @@
 package com.petshop.dao;
 
 import com.petshop.entity.ChiTietLichHen;
+import com.petshop.entity.KhachHang;
 import com.petshop.entity.LichHen;
+import com.petshop.entity.NhanVien;
+import com.petshop.entity.ThuCung;
 import com.petshop.util.DatabaseManager;
 
 import java.sql.Connection;
@@ -10,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -85,8 +89,12 @@ public class LichHenDAO {
                         for (ChiTietLichHen ct : danhSachChiTiet) {
                             psCt.setString(1, lichHen.getMaLichHen());
                             psCt.setString(2, ct.getMaDichVu());
-                            psCt.setBigDecimal(3, ct.getCanNangThuCung());
-                            psCt.setBigDecimal(4, ct.getDonGia());
+                            if (ct.getCanNangThuCung() > 0) {
+                                psCt.setDouble(3, ct.getCanNangThuCung());
+                            } else {
+                                psCt.setNull(3, Types.DOUBLE);
+                            }
+                            psCt.setDouble(4, ct.getDonGia());
                             psCt.executeUpdate();
                         }
                     }
@@ -145,8 +153,12 @@ public class LichHenDAO {
                             for (ChiTietLichHen ct : danhSachChiTiet) {
                                 psThem.setString(1, lichHen.getMaLichHen());
                                 psThem.setString(2, ct.getMaDichVu());
-                                psThem.setBigDecimal(3, ct.getCanNangThuCung());
-                                psThem.setBigDecimal(4, ct.getDonGia());
+                                if (ct.getCanNangThuCung() > 0) {
+                                    psThem.setDouble(3, ct.getCanNangThuCung());
+                                } else {
+                                    psThem.setNull(3, Types.DOUBLE);
+                                }
+                                psThem.setDouble(4, ct.getDonGia());
                                 psThem.executeUpdate();
                             }
                         }
@@ -166,7 +178,7 @@ public class LichHenDAO {
         }
     }
 
-    // Cập nhật trạng thái lịch hẹn (Đã đặt, Đã xác nhận, Đang thực hiện, Hoàn thành, Đã hủy)
+    // Cập nhật trạng thái lịch hẹn (Đã đặt, Đã xác nhận, Đã tiếp nhận, Đang thực hiện, Hoàn thành, Đã hủy)
     public boolean capNhatTrangThai(String maLichHen, String trangThaiMoi) {
         String sql = "UPDATE LichHen SET trangThai = ? WHERE maLichHen = ?";
 
@@ -177,6 +189,28 @@ public class LichHenDAO {
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new IllegalStateException("Lỗi khi cập nhật trạng thái lịch hẹn: " + e.getMessage(), e);
+        }
+    }
+
+    // Tự động hủy lịch hẹn kèm ghi chú lý do (áp dụng khi đến trễ > 2h hoặc đến sớm > 2h cần tiếp nhận mới)
+    public boolean huyLichHenTuDong(String maLichHen, String lyDoHuy) {
+        String sql = """
+                UPDATE LichHen
+                SET trangThai = N'Đã hủy',
+                    ghiChu = CASE 
+                        WHEN ghiChu IS NULL OR LTRIM(RTRIM(ghiChu)) = '' THEN ?
+                        ELSE ghiChu + ' | ' + ?
+                    END
+                WHERE maLichHen = ? AND trangThai IN (N'Đã đặt', N'Đã xác nhận')
+                """;
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, lyDoHuy);
+            ps.setString(2, lyDoHuy);
+            ps.setString(3, maLichHen);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Lỗi khi tự động hủy lịch hẹn: " + e.getMessage(), e);
         }
     }
 
@@ -245,9 +279,12 @@ public class LichHenDAO {
     // Lấy danh sách dịch vụ chi tiết của một lịch hẹn
     public List<ChiTietLichHen> layChiTietLichHen(String maLichHen) {
         String sql = """
-                SELECT ct.maLichHen, ct.maDichVu, dv.tenDichVu, ct.canNangThuCung, ct.donGia
+                SELECT ct.maLichHen, ct.maDichVu, dv.tenDichVu, ct.canNangThuCung, ct.donGia,
+                       tc.maThuCung, tc.tenThuCung
                 FROM ChiTietLichHen ct
                 LEFT JOIN DichVuChamSoc dv ON dv.maDichVu = ct.maDichVu
+                LEFT JOIN LichHen lh ON lh.maLichHen = ct.maLichHen
+                LEFT JOIN ThuCung tc ON tc.maThuCung = lh.maThuCung
                 WHERE ct.maLichHen = ?
                 """;
         List<ChiTietLichHen> danhSach = new ArrayList<>();
@@ -258,13 +295,19 @@ public class LichHenDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     String tenDv = rs.getString("tenDichVu");
+                    double canNang = rs.getDouble("canNangThuCung");
+                    double donGia = rs.getDouble("donGia");
                     ChiTietLichHen ct = new ChiTietLichHen(
                             rs.getString("maLichHen"),
                             rs.getString("maDichVu"),
                             tenDv != null ? tenDv : rs.getString("maDichVu"),
-                            rs.getBigDecimal("canNangThuCung"),
-                            rs.getBigDecimal("donGia")
+                            canNang,
+                            donGia
                     );
+                    String tenTc = rs.getString("tenThuCung");
+                    if (tenTc != null) {
+                        ct.setTenThuCung(tenTc);
+                    }
                     danhSach.add(ct);
                 }
             }
@@ -355,7 +398,7 @@ public class LichHenDAO {
         StringBuilder sql = new StringBuilder("""
                 SELECT COUNT(*) FROM LichHen
                 WHERE ngayHen = ? AND gioHen = CAST(? AS TIME) AND trangThai != N'Đã hủy'
-                  AND (maThuCung = ? OR maNhanVien = ?)
+                  AND maThuCung = ?
                 """);
 
         if (maLichHenBoQua != null && !maLichHenBoQua.trim().isEmpty()) {
@@ -367,9 +410,8 @@ public class LichHenDAO {
             ps.setDate(1, Date.valueOf(ngayHen));
             ps.setString(2, gioHen.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
             ps.setString(3, maThuCung);
-            ps.setString(4, maNhanVien);
             if (maLichHenBoQua != null && !maLichHenBoQua.trim().isEmpty()) {
-                ps.setString(5, maLichHenBoQua.trim());
+                ps.setString(4, maLichHenBoQua.trim());
             }
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -428,24 +470,55 @@ public class LichHenDAO {
             }
         }
 
+        String maKh = rs.getString("maKhachHang");
+        String tenKh = rs.getString("tenKhachHang");
+        String sdt = rs.getString("soDienThoai");
+
+        String maTc = rs.getString("maThuCung");
+        String tenTc = rs.getString("tenThuCung");
+
+        String maNv = rs.getString("maNhanVien");
+        String tenNv = rs.getString("tenNhanVien");
+
+        KhachHang kh = null;
+        if (maKh != null) {
+            kh = new KhachHang();
+            kh.setMaKhachHang(maKh);
+            kh.setHoTen(tenKh != null ? tenKh : maKh);
+            kh.setSoDienThoai(sdt != null ? sdt : "");
+        }
+
+        ThuCung tc = null;
+        if (maTc != null) {
+            tc = new ThuCung();
+            tc.setMaThuCung(maTc);
+            tc.setTenThuCung(tenTc != null ? tenTc : maTc);
+            if (kh != null) {
+                tc.setKhachHang(kh);
+            }
+        }
+
+        NhanVien nv = null;
+        if (maNv != null) {
+            nv = new NhanVien();
+            nv.setMaNhanVien(maNv);
+            nv.setHoTen(tenNv != null ? tenNv : maNv);
+        }
+
         LichHen lh = new LichHen(
                 rs.getString("maLichHen"),
-                rs.getString("maKhachHang"),
-                rs.getString("maThuCung"),
-                rs.getString("maNhanVien"),
+                kh,
+                tc,
+                nv,
                 ngayHen,
                 gioHen,
                 rs.getString("trangThai"),
                 rs.getString("ghiChu")
         );
-        String tenKh = rs.getString("tenKhachHang");
-        lh.setTenKhachHang(tenKh != null ? tenKh : rs.getString("maKhachHang"));
-        lh.setSoDienThoai(rs.getString("soDienThoai") != null ? rs.getString("soDienThoai") : "");
-        String tenTc = rs.getString("tenThuCung");
-        lh.setTenThuCung(tenTc != null ? tenTc : rs.getString("maThuCung"));
-        String tenNv = rs.getString("tenNhanVien");
-        lh.setTenNhanVien(tenNv != null ? tenNv : rs.getString("maNhanVien"));
+        lh.setTenKhachHang(tenKh != null ? tenKh : maKh);
+        lh.setSoDienThoai(sdt != null ? sdt : "");
+        lh.setTenThuCung(tenTc != null ? tenTc : maTc);
+        lh.setTenNhanVien(tenNv != null ? tenNv : maNv);
         return lh;
     }
 }
-
