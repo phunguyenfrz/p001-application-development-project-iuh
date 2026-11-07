@@ -264,6 +264,7 @@ class DonNhapHangBUSTest {
         @Override
         public boolean themDonNhapHang(DonNhapHang donHang, List<ChiTietDonNhap> danhSachChiTiet) {
             donHangDaLuu = true;
+            donHang.setDanhSachChiTiet(new ArrayList<>(danhSachChiTiet));
             donHangs.put(donHang.getMaDonHang(), donHang);
             chiTietTheoDon.put(donHang.getMaDonHang(), new ArrayList<>(danhSachChiTiet));
             return true;
@@ -288,7 +289,8 @@ class DonNhapHangBUSTest {
             donHang.setTrangThai(DonNhapHang.TRANG_THAI_HOAN_TAT);
             donHang.setMaNhanVienNhan(maNhanVienNhan);
             donHang.setNgayGioNhan(ngayGioNhan);
-donHang.setTongTienThucNhan(tongTienThucNhan);
+            donHang.setDanhSachChiTiet(new ArrayList<>(chiTietCapNhat));
+            chiTietTheoDon.put(maDonHang, new ArrayList<>(chiTietCapNhat));
             donHang.setLyDoHuy(ghiChuChenhLech);
 
             if (donNhapBu != null) {

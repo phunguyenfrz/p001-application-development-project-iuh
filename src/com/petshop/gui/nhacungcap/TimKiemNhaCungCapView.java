@@ -31,6 +31,7 @@ public class TimKiemNhaCungCapView extends VBox {
     private final ObservableList<NhaCungCap> danhSachHienThi = FXCollections.observableArrayList();
 
     private final TextField txtTuKhoa = new TextField();
+    private final TextField txtDiaChi = new TextField();
     private final ComboBox<String> cboTrangThai = new ComboBox<>();
     private final TableView<NhaCungCap> tblDanhSach = new TableView<>();
     private final Button btnXemChiTiet = new Button("Xem chi tiết");
@@ -42,7 +43,7 @@ public class TimKiemNhaCungCapView extends VBox {
 
         Label lblTieuDe = new Label("TÌM KIẾM & TRA CỨU NHÀ CUNG CẤP");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
-        Label lblMoTa = new Label("Tra cứu theo mã, tên, số điện thoại hoặc email; lọc theo trạng thái hợp tác.");
+        Label lblMoTa = new Label("Tra cứu theo mã, tên, số điện thoại, email hoặc địa chỉ; lọc theo trạng thái hợp tác.");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");
 
         VBox khungChinh = new VBox(12);
@@ -82,10 +83,15 @@ public class TimKiemNhaCungCapView extends VBox {
         congCu.getStyleClass().add("thanh-tac-vu");
         congCu.setAlignment(Pos.CENTER_LEFT);
 
-        txtTuKhoa.setPromptText("Mã, tên, số điện thoại hoặc email...");
-        txtTuKhoa.setPrefWidth(300);
+        txtTuKhoa.setPromptText("Mã, tên, SĐT, email hoặc địa chỉ...");
+        txtTuKhoa.setPrefWidth(250);
         txtTuKhoa.setOnAction(e -> taiDuLieu());
         txtTuKhoa.textProperty().addListener((obs, cu, moi) -> taiDuLieu());
+
+        txtDiaChi.setPromptText("Nhập địa chỉ...");
+        txtDiaChi.setPrefWidth(190);
+        txtDiaChi.setOnAction(e -> taiDuLieu());
+        txtDiaChi.textProperty().addListener((obs, cu, moi) -> taiDuLieu());
 
         cboTrangThai.setItems(FXCollections.observableArrayList(
                 "Đang hoạt động", "Ngừng hợp tác", "Tất cả trạng thái"));
@@ -100,6 +106,7 @@ public class TimKiemNhaCungCapView extends VBox {
         btnLamMoi.getStyleClass().add("nut-phu");
         btnLamMoi.setOnAction(e -> {
             txtTuKhoa.clear();
+            txtDiaChi.clear();
             cboTrangThai.setValue("Đang hoạt động");
             taiDuLieu();
             txtTuKhoa.requestFocus();
@@ -112,6 +119,7 @@ public class TimKiemNhaCungCapView extends VBox {
         Region khoangTrong = new Region();
         HBox.setHgrow(khoangTrong, Priority.ALWAYS);
         congCu.getChildren().addAll(new Label("Từ khóa:"), txtTuKhoa,
+                new Label("Địa chỉ:"), txtDiaChi,
                 new Label("Trạng thái:"), cboTrangThai, btnTim, btnLamMoi,
                 khoangTrong, btnXemChiTiet, lblKetQua);
         return congCu;
@@ -148,7 +156,7 @@ public class TimKiemNhaCungCapView extends VBox {
                 case "Tất cả trạng thái" -> null;
                 default -> true;
             };
-            List<NhaCungCap> ketQua = controller.timKiemNhaCungCap(txtTuKhoa.getText(), trangThai);
+            List<NhaCungCap> ketQua = controller.timKiemNhaCungCap(txtTuKhoa.getText(), txtDiaChi.getText(), trangThai);
             danhSachHienThi.setAll(ketQua);
             tblDanhSach.getSelectionModel().clearSelection();
             lblKetQua.setText("Tổng số: " + ketQua.size() + " nhà cung cấp");

@@ -49,12 +49,10 @@ public class LapDonNhapView extends VBox {
     private final DonNhapHangBUS donHangController = new DonNhapHangBUS();
 
     // --- Phần thông tin đơn hàng ---
-    private final TextField txtMaDon = new TextField();
     private final TextField txtNgayLap = new TextField();
     private final Spinner<Integer> spGio = new Spinner<>(0, 23, LocalTime.now().getHour());
     private final Spinner<Integer> spPhut = new Spinner<>(0, 59, LocalTime.now().getMinute());
     private final Spinner<Integer> spGiay = new Spinner<>(0, 59, LocalTime.now().getSecond());
-    private final TextField txtNhanVien = new TextField();
 
     // Nhà cung cấp được ghi nhận riêng theo từng sản phẩm để khi lưu tự tách đơn.
     private final Map<String, String> nhaCungCapTheoSanPham = new LinkedHashMap<>();
@@ -116,46 +114,18 @@ public class LapDonNhapView extends VBox {
         hopThongTin.getStyleClass().add("hop-noi-dung");
         hopThongTin.setPadding(new Insets(15));
 
-        // Hàng 1: Mã đơn + Ngày lập
-        HBox hang1 = new HBox(20);
-        hang1.setAlignment(Pos.CENTER_LEFT);
-
-        // Mã đơn (tự sinh, chỉ đọc)
-        VBox hopMaDon = new VBox(5);
-        Label lblMaDon = new Label("Mã đơn nhập:");
-        lblMaDon.setStyle("-fx-font-weight: bold;");
-        txtMaDon.setEditable(false);
-        txtMaDon.setPrefWidth(220);
-        txtMaDon.setPromptText("Tự sinh theo nhà cung cấp sau khi lưu");
-        txtMaDon.setStyle("-fx-background-color: #f0f0f0;");
-        hopMaDon.getChildren().addAll(lblMaDon, txtMaDon);
-        HBox.setHgrow(hopMaDon, Priority.ALWAYS);
+        HBox hangThongTin = new HBox(20);
+        hangThongTin.setAlignment(Pos.CENTER_LEFT);
 
         // Ngày lập (chỉ đọc, không dùng chọn lịch)
         VBox hopNgayLap = new VBox(5);
         Label lblNgayLap = new Label("Ngày lập:");
         lblNgayLap.setStyle("-fx-font-weight: bold;");
         txtNgayLap.setEditable(false);
-        txtNgayLap.setPrefWidth(220);
+        txtNgayLap.setPrefWidth(200);
         txtNgayLap.setStyle("-fx-background-color: #f0f0f0;");
         hopNgayLap.getChildren().addAll(lblNgayLap, txtNgayLap);
         HBox.setHgrow(hopNgayLap, Priority.ALWAYS);
-
-        hang1.getChildren().addAll(hopMaDon, hopNgayLap);
-
-        // Hàng 2: Nhân viên lập + Thời gian lập
-        HBox hang2 = new HBox(20);
-        hang2.setAlignment(Pos.CENTER_LEFT);
-
-        // Nhân viên lập
-        VBox hopNhanVien = new VBox(5);
-        Label lblNhanVien = new Label("Nhân viên lập:");
-        lblNhanVien.setStyle("-fx-font-weight: bold;");
-        txtNhanVien.setEditable(false);
-        txtNhanVien.setPrefWidth(220);
-        txtNhanVien.setStyle("-fx-background-color: #f0f0f0;");
-        hopNhanVien.getChildren().addAll(lblNhanVien, txtNhanVien);
-        HBox.setHgrow(hopNhanVien, Priority.ALWAYS);
 
         // Thời gian lập (giờ : phút : giây)
         Label lblThoiGian = new Label("Thời gian lập (giờ : phút : giây):");
@@ -180,9 +150,8 @@ public class LapDonNhapView extends VBox {
         VBox hopThoiGian = new VBox(5, lblThoiGian, hangThoiGian);
         HBox.setHgrow(hopThoiGian, Priority.ALWAYS);
 
-        hang2.getChildren().addAll(hopNhanVien, hopThoiGian);
-
-        hopThongTin.getChildren().addAll(hang1, hang2);
+        hangThongTin.getChildren().addAll(hopNgayLap, hopThoiGian);
+        hopThongTin.getChildren().add(hangThongTin);
         return hopThongTin;
     }
 
@@ -420,16 +389,6 @@ public class LapDonNhapView extends VBox {
      * Khởi tạo dữ liệu mặc định cho form.
      */
     private void khoiTaoDuLieuMacDinh() {
-        txtMaDon.setText("Tự sinh khi lưu (mỗi NCC một mã)");
-
-        // Hiển thị nhân viên đang đăng nhập
-        TaiKhoan taiKhoan = SessionManager.getTaiKhoanHienTai();
-        if (taiKhoan != null) {
-            String hoTen = taiKhoan.getHoTenNhanVien();
-            String maNV = taiKhoan.getMaNhanVien();
-            txtNhanVien.setText((hoTen != null ? hoTen : "") + " (" + (maNV != null ? maNV : "") + ")");
-        }
-
         // Ngày lập mặc định hôm nay (chỉ đọc)
         txtNgayLap.setText(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         LocalTime gioHienTai = LocalTime.now();
@@ -616,8 +575,6 @@ public class LapDonNhapView extends VBox {
         spGiay.getValueFactory().setValue(gioHienTai.getSecond());
         capNhatTongTien();
         bangChiTiet.refresh();
-
-        txtMaDon.setText("Tự sinh khi lưu (mỗi NCC một mã)");
     }
 
     // ========================= THÔNG BÁO =========================
@@ -689,12 +646,13 @@ public class LapDonNhapView extends VBox {
 
             root.getChildren().addAll(lblTieuDe, lblMoTa, khungChinh);
 
-            // Tạo scene
-            Scene scene = new Scene(root, 800, 520);
+            // Tạo scene đủ rộng để hiển thị trọn vẹn tất cả các cột mà không cần thanh cuộn ngang
+            Scene scene = new Scene(root, 1160, 560);
             try {
                 scene.getStylesheets().add(getClass().getResource("/com/petshop/gui/css/chung.css").toExternalForm());
             } catch (Exception ignored) {
             }
+            setMinWidth(1150);
             setScene(scene);
 
             // Tải dữ liệu

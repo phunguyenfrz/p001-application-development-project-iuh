@@ -120,7 +120,7 @@ public class NhaCungCapBUS {
     }
 
     /**
-     * Tìm kiếm nhà cung cấp theo từ khóa (mã, tên, SĐT hoặc email), chỉ lấy NCC đang hoạt động.
+     * Tìm kiếm nhà cung cấp theo từ khóa (mã, tên, SĐT, email hoặc địa chỉ), chỉ lấy NCC đang hoạt động.
      * Kiểm tra quyền NCC_TIM_KIEM.
      */
     public List<NhaCungCap> timKiemNhaCungCap(String tuKhoa) {
@@ -134,6 +134,14 @@ public class NhaCungCapBUS {
     public List<NhaCungCap> timKiemNhaCungCap(String tuKhoa, Boolean trangThai) {
         xacThucService.kiemTraQuyen("NCC_TIM_KIEM");
         return nhaCungCapDAO.timKiemNhaCungCap(tuKhoa, trangThai);
+    }
+
+    /**
+     * Tìm kiếm nhà cung cấp theo từ khóa, địa chỉ và trạng thái (null để lấy tất cả).
+     */
+    public List<NhaCungCap> timKiemNhaCungCap(String tuKhoa, String diaChi, Boolean trangThai) {
+        xacThucService.kiemTraQuyen("NCC_TIM_KIEM");
+        return nhaCungCapDAO.timKiemNhaCungCap(tuKhoa, diaChi, trangThai);
     }
 
     // =========================================================================

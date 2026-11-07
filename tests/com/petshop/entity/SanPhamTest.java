@@ -105,4 +105,19 @@ public class SanPhamTest {
         assertTrue(sp.isConHang());
         assertEquals("Còn hàng", sp.getTinhTrangTonKho());
     }
+
+    @Test
+    void testThamChieuDoiTuongNhaCungCap() {
+        NhaCungCap ncc = new NhaCungCap("NCC-20261005-000001", "Royal Canin Việt Nam");
+        SanPham sp = new SanPham(
+                "SP-20261005-000001", ncc, "Hạt Royal Canin", "8930001",
+                200000.0, 280000.0, 50, 10, "Gói", true
+        );
+
+        assertNotNull(sp.getNhaCungCap());
+        assertEquals("NCC-20261005-000001", sp.getNhaCungCap().getMaNhaCungCap());
+        assertEquals("Royal Canin Việt Nam", sp.getNhaCungCap().getTenNhaCungCap());
+        assertEquals("NCC-20261005-000001", sp.getMaNhaCungCap());
+        assertEquals("Royal Canin Việt Nam", sp.getTenNhaCungCap());
+    }
 }
