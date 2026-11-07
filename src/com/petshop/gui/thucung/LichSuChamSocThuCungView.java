@@ -239,7 +239,15 @@ public class LichSuChamSocThuCungView extends VBox {
 
     private void capNhatDanhSachGoiY(String tuKhoa) {
         try {
-            List<ThuCung> ketQua = thuCungController.timKiemThuCungCoLichSuChamSoc(tuKhoa);
+            String tuKhoaTim = tuKhoa;
+            if (tuKhoa.contains(" - ")) {
+                String[] parts = tuKhoa.split(" - ");
+                if (parts.length > 1 && parts[parts.length - 1].trim().startsWith("TC-")) {
+                    tuKhoaTim = parts[parts.length - 1].trim();
+                }
+            }
+
+            List<ThuCung> ketQua = thuCungController.timKiemThuCung(tuKhoaTim, "Tất cả");
             if (ketQua.isEmpty()) {
                 popupGoiY.hide();
                 return;
@@ -385,7 +393,7 @@ public class LichSuChamSocThuCungView extends VBox {
 
         // 3. Bảng dữ liệu TableView
         tblLichHen.getStyleClass().add("bang-du-lieu");
-        tblLichHen.setPlaceholder(new Label("Không có dữ liệu lịch hẹn chăm sóc phù hợp"));
+        tblLichHen.setPlaceholder(new Label("Thú cưng này chưa có lịch sử chăm sóc (lịch hẹn hoàn thành) nào trong hệ thống."));
         VBox.setVgrow(tblLichHen, Priority.ALWAYS);
 
         TableColumn<LichSuChamSoc, String> colMa = new TableColumn<>("Mã lịch hẹn");
@@ -454,7 +462,10 @@ public class LichSuChamSocThuCungView extends VBox {
     private void napThuCungMacDinh() {
         try {
             List<ThuCung> ds = thuCungController.layDanhSachThuCungCoLichSuChamSoc();
-            if (!ds.isEmpty()) {
+            if (ds == null || ds.isEmpty()) {
+                ds = thuCungController.layDanhSachThuCung();
+            }
+            if (ds != null && !ds.isEmpty()) {
                 chonThuCung(ds.get(0));
             }
         } catch (Exception ignored) {}
@@ -526,7 +537,27 @@ public class LichSuChamSocThuCungView extends VBox {
         }
 
         try {
-            List<ThuCung> ketQua = thuCungController.timKiemThuCungCoLichSuChamSoc(tuKhoa);
+            // 1. Nếu từ khóa có dạng "Tên - TC-xxx" (do chọn từ danh sách gợi ý), trích xuất mã thú cưng
+            String tuKhoaTim = tuKhoa;
+            if (tuKhoa.contains(" - ")) {
+                String[] parts = tuKhoa.split(" - ");
+                if (parts.length > 1 && parts[parts.length - 1].trim().startsWith("TC-")) {
+                    tuKhoaTim = parts[parts.length - 1].trim();
+                }
+            }
+
+            // 2. Nếu là mã chuẩn TC-..., ưu tiên tìm trực tiếp theo mã
+            if (tuKhoaTim.matches("^TC-\\d{8}-\\d{6}$")) {
+                ThuCung tc = thuCungController.layThuCungTheoMa(tuKhoaTim);
+                if (tc != null) {
+                    chonThuCung(tc);
+                    popupGoiY.hide();
+                    return;
+                }
+            }
+
+            // 3. Tìm kiếm theo từ khóa linh hoạt (mã, tên thú cưng, tên/SĐT khách hàng)
+            List<ThuCung> ketQua = thuCungController.timKiemThuCung(tuKhoaTim, "Tất cả");
             if (!ketQua.isEmpty()) {
                 chonThuCung(ketQua.get(0));
                 popupGoiY.hide();
