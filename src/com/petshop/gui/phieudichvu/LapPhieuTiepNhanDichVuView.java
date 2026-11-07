@@ -597,15 +597,15 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         if (tc != null) kiemTraVaChenLuuYDiUng(tc);
     }
 
-    private void dongBoTuLichHen(LichHen lh) {
-        if (lh == null) return;
-        this.lichHenHienTai = lh;
+    private boolean laLichHenTrongKhungGio(LichHen lh) {
+        if (lh == null || lh.getNgayHen() == null || lh.getGioHen() == null) return false;
+        LocalDateTime thoiGianHen = LocalDateTime.of(lh.getNgayHen(), lh.getGioHen());
+        long phut = java.time.Duration.between(thoiGianHen, LocalDateTime.now()).toMinutes();
+        return phut >= -120 && phut <= 120;
+    }
 
-        String tenTcBadge = (lh.getTenThuCung() != null && !lh.getTenThuCung().isBlank()) ? lh.getTenThuCung() : lh.getMaThuCung();
-        String gioBadge = (lh.getGioHen() != null) ? lh.getGioHen().toString() : "";
-        lblThongTinLichHen.setText("📅 Lịch: " + lh.getMaLichHen() + " (Bé " + tenTcBadge + " - " + gioBadge + ")");
-        pnlBadgeLichHen.setVisible(true);
-        pnlBadgeLichHen.setManaged(true);
+    private void dongBoKhachVaThuCungTuLich(LichHen lh) {
+        if (lh == null) return;
 
         // Đồng bộ khách hàng
         KhachHang kh = lh.getKhachHang();
@@ -616,8 +616,8 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             khachHangHienTai = kh;
             txtKhachHangHienThi.setText(kh.getHoTen() + " (" + kh.getSoDienThoai() + ")");
             txtTimKhach.setText(kh.getSoDienThoai());
-        } else {
-            txtKhachHangHienThi.setText(lh.getTenKhachHang() + " (" + lh.getSoDienThoai() + ")");
+        } else if (lh.getTenKhachHang() != null) {
+            txtKhachHangHienThi.setText(lh.getTenKhachHang() + " (" + (lh.getSoDienThoai() != null ? lh.getSoDienThoai() : "") + ")");
         }
 
         // Nạp thú cưng của lịch hẹn
@@ -637,6 +637,25 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
                 kiemTraVaChenLuuYDiUng(tcKhop);
             }
         }
+    }
+
+    private void dongBoTuLichHen(LichHen lh) {
+        if (lh == null) return;
+        if (!laLichHenTrongKhungGio(lh)) {
+            dongBoKhachVaThuCungTuLich(lh);
+            huyLienKetLichHen();
+            return;
+        }
+
+        this.lichHenHienTai = lh;
+
+        String tenTcBadge = (lh.getTenThuCung() != null && !lh.getTenThuCung().isBlank()) ? lh.getTenThuCung() : lh.getMaThuCung();
+        String gioBadge = (lh.getGioHen() != null) ? lh.getGioHen().toString() : "";
+        lblThongTinLichHen.setText("📅 Lịch: " + lh.getMaLichHen() + " (Bé " + tenTcBadge + " - " + gioBadge + ")");
+        pnlBadgeLichHen.setVisible(true);
+        pnlBadgeLichHen.setManaged(true);
+
+        dongBoKhachVaThuCungTuLich(lh);
 
         // Nạp chi tiết dịch vụ từ lịch hẹn
         dsChiTietChon.clear();
@@ -914,10 +933,14 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         txtTimKiem.setPromptText("🔍 Tìm theo SĐT, tên khách hàng, tên bé thú cưng, mã lịch...");
         HBox.setHgrow(txtTimKiem, Priority.ALWAYS);
 
+        CheckBox chkChiHienHopLe = new CheckBox("Chỉ hiện lịch trong khung tiếp nhận (±2h)");
+        chkChiHienHopLe.setSelected(true);
+        chkChiHienHopLe.setStyle("-fx-font-weight: bold; -fx-text-fill: #0369a1;");
+
         Button btnDong = new Button("Đóng");
         btnDong.getStyleClass().add("nut-phu");
         btnDong.setOnAction(e -> dlg.close());
-        pnlThanhTim.getChildren().addAll(txtTimKiem, btnDong);
+        pnlThanhTim.getChildren().addAll(txtTimKiem, chkChiHienHopLe, btnDong);
 
         TableView<LichHen> tbl = new TableView<>();
         tbl.getStyleClass().add("bang-du-lieu");
@@ -930,7 +953,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         colNgay.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getNgayHen() != null ? DateTimeFormatter.ofPattern("dd/MM/yyyy").format(c.getValue().getNgayHen()) : ""));
 
         TableColumn<LichHen, String> colGio = new TableColumn<>("Giờ hẹn");
-        colGio.setPrefWidth(80);
+        colGio.setPrefWidth(75);
         colGio.setStyle("-fx-alignment: CENTER;");
         colGio.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getGioHen() != null ? c.getValue().getGioHen().toString() : ""));
 
@@ -940,76 +963,77 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         colMa.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getMaLichHen()));
 
         TableColumn<LichHen, String> colKh = new TableColumn<>("Khách hàng");
-        colKh.setPrefWidth(150);
+        colKh.setPrefWidth(140);
         colKh.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getTenKhachHang()));
 
         TableColumn<LichHen, String> colSdt = new TableColumn<>("Số điện thoại");
-        colSdt.setPrefWidth(110);
+        colSdt.setPrefWidth(105);
         colSdt.setStyle("-fx-alignment: CENTER;");
         colSdt.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getSoDienThoai()));
 
         TableColumn<LichHen, String> colTc = new TableColumn<>("Thú cưng");
-        colTc.setPrefWidth(120);
+        colTc.setPrefWidth(110);
         colTc.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getTenThuCung()));
 
+        TableColumn<LichHen, String> colTrangThai = new TableColumn<>("Khung tiếp nhận");
+        colTrangThai.setPrefWidth(145);
+        colTrangThai.setStyle("-fx-alignment: CENTER;");
+        colTrangThai.setCellValueFactory(c -> {
+            LichHen lh = c.getValue();
+            if (lh == null || lh.getNgayHen() == null || lh.getGioHen() == null) {
+                return new SimpleStringProperty("—");
+            }
+            LocalDateTime thoiGianHen = LocalDateTime.of(lh.getNgayHen(), lh.getGioHen());
+            long phut = java.time.Duration.between(thoiGianHen, LocalDateTime.now()).toMinutes();
+            if (phut > 120) {
+                return new SimpleStringProperty("🔴 Quá hạn (> 2h)");
+            } else if (phut < -120) {
+                return new SimpleStringProperty("🟡 Đến sớm (> 2h)");
+            } else {
+                return new SimpleStringProperty("🟢 Hợp lệ (±2h)");
+            }
+        });
+
         TableColumn<LichHen, String> colGhiChu = new TableColumn<>("Ghi chú");
-        colGhiChu.setPrefWidth(160);
+        colGhiChu.setPrefWidth(150);
         colGhiChu.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getGhiChu() != null ? c.getValue().getGhiChu() : ""));
 
-        tbl.getColumns().addAll(List.of(colNgay, colGio, colMa, colKh, colSdt, colTc, colGhiChu));
+        tbl.getColumns().addAll(List.of(colNgay, colGio, colMa, colKh, colSdt, colTc, colTrangThai, colGhiChu));
 
         controller.quetVaHuyLichHenTreQua2Gio();
         List<LichHen> dsGoc = controller.layDanhSachLichHenChoTiepNhan();
-        ObservableList<LichHen> dsHienThi = FXCollections.observableArrayList(dsGoc);
-        tbl.setItems(dsHienThi);
 
-        txtTimKiem.textProperty().addListener((obs, cu, moi) -> {
-            String tuKhoa = (moi != null) ? moi.trim().toLowerCase() : "";
-            if (tuKhoa.isEmpty()) {
-                tbl.setItems(FXCollections.observableArrayList(dsGoc));
-            } else {
-                List<LichHen> loc = dsGoc.stream().filter(lh ->
-                        (lh.getSoDienThoai() != null && lh.getSoDienThoai().contains(tuKhoa)) ||
-                        (lh.getTenKhachHang() != null && lh.getTenKhachHang().toLowerCase().contains(tuKhoa)) ||
-                        (lh.getTenThuCung() != null && lh.getTenThuCung().toLowerCase().contains(tuKhoa)) ||
-                        (lh.getMaLichHen() != null && lh.getMaLichHen().toLowerCase().contains(tuKhoa))
-                ).toList();
-                tbl.setItems(FXCollections.observableArrayList(loc));
-            }
-        });
+        Runnable capNhatBang = () -> {
+            String tuKhoa = (txtTimKiem.getText() != null) ? txtTimKiem.getText().trim().toLowerCase() : "";
+            boolean chiHopLe = chkChiHienHopLe.isSelected();
+
+            List<LichHen> loc = dsGoc.stream().filter(lh -> {
+                if (chiHopLe && !laLichHenTrongKhungGio(lh)) {
+                    return false;
+                }
+                if (tuKhoa.isEmpty()) {
+                    return true;
+                }
+                return (lh.getSoDienThoai() != null && lh.getSoDienThoai().contains(tuKhoa)) ||
+                       (lh.getTenKhachHang() != null && lh.getTenKhachHang().toLowerCase().contains(tuKhoa)) ||
+                       (lh.getTenThuCung() != null && lh.getTenThuCung().toLowerCase().contains(tuKhoa)) ||
+                       (lh.getMaLichHen() != null && lh.getMaLichHen().toLowerCase().contains(tuKhoa));
+            }).toList();
+
+            tbl.setItems(FXCollections.observableArrayList(loc));
+        };
+
+        capNhatBang.run();
+
+        txtTimKiem.textProperty().addListener((obs, cu, moi) -> capNhatBang.run());
+        chkChiHienHopLe.selectedProperty().addListener((obs, cu, moi) -> capNhatBang.run());
 
         tbl.setRowFactory(tv -> {
             TableRow<LichHen> row = new TableRow<>();
             row.setOnMouseClicked(e -> {
                 if (e.getClickCount() == 2 && !row.isEmpty()) {
                     LichHen lh = row.getItem();
-                    if (lh != null && lh.getNgayHen() != null && lh.getGioHen() != null) {
-                        LocalDateTime thoiGianHen = LocalDateTime.of(lh.getNgayHen(), lh.getGioHen());
-                        LocalDateTime now = LocalDateTime.now();
-                        long phut = java.time.Duration.between(thoiGianHen, now).toMinutes();
-
-                        if (phut > 120) {
-                            controller.huyLichHenTuDong(lh.getMaLichHen(), "Hủy tự động: Khách đến trễ quá 2 giờ so với lịch hẹn");
-                            hienThiCanhBao("Lịch hẹn quá hạn", "Lịch hẹn " + lh.getMaLichHen() + " đã quá giờ hẹn hơn 2 giờ nên đã tự động bị hủy theo quy định!");
-                            dlg.close();
-                            return;
-                        } else if (phut < -120) {
-                            Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION,
-                                    "Lịch hẹn " + lh.getMaLichHen() + " được đặt lúc " + lh.getGioHen() + " ngày " + DateTimeFormatter.ofPattern("dd/MM/yyyy").format(lh.getNgayHen()) + " (trước giờ hẹn hơn 2 tiếng).\nTheo quy định, tiếp nhận ngay bây giờ sẽ tự động hủy lịch cũ để chuyển sang lập phiếu mới.\nBạn có đồng ý không?",
-                                    ButtonType.YES, ButtonType.NO);
-                            xacNhan.setTitle("Xác nhận đến sớm");
-                            xacNhan.setHeaderText(null);
-                            if (xacNhan.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-                                controller.huyLichHenTuDong(lh.getMaLichHen(), "Hủy tự động: Khách đến trước giờ hẹn > 2 giờ và lập phiếu mới tại quầy");
-                                dlg.close();
-                                return;
-                            } else {
-                                return;
-                            }
-                        }
-                    }
-                    dlg.close();
-                    dongBoTuLichHen(lh);
+                    xuLyTiepNhanLichHenTuPopup(lh, dlg);
                 }
             });
             return row;
@@ -1019,12 +1043,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
         btnTiepNhan.getStyleClass().add("nut-chinh");
         btnTiepNhan.setOnAction(e -> {
             LichHen lh = tbl.getSelectionModel().getSelectedItem();
-            if (lh == null) {
-                hienThiCanhBao("Chưa chọn lịch hẹn", "Vui lòng chọn một lịch hẹn trong bảng để tiếp nhận!");
-                return;
-            }
-            dlg.close();
-            dongBoTuLichHen(lh);
+            xuLyTiepNhanLichHenTuPopup(lh, dlg);
         });
 
         HBox pnlNut = new HBox(btnTiepNhan);
@@ -1039,12 +1058,67 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
 
         pnlGoc.getChildren().addAll(lblTieuDe, pnlThanhTim, tbl, pnlDay);
 
-        Scene sc = new Scene(pnlGoc, 820, 500);
+        Scene sc = new Scene(pnlGoc, 940, 500);
         if (LapPhieuTiepNhanDichVuView.class.getResource(CSS_CHUNG) != null) {
             sc.getStylesheets().add(LapPhieuTiepNhanDichVuView.class.getResource(CSS_CHUNG).toExternalForm());
         }
         dlg.setScene(sc);
         dlg.showAndWait();
+    }
+
+    private void xuLyTiepNhanLichHenTuPopup(LichHen lh, Stage dlg) {
+        if (lh == null) {
+            hienThiCanhBao("Chưa chọn lịch hẹn", "Vui lòng chọn một lịch hẹn trong bảng để tiếp nhận!");
+            return;
+        }
+
+        if (lh.getNgayHen() == null || lh.getGioHen() == null) {
+            hienThiCanhBao("Lịch hẹn không hợp lệ", "Lịch hẹn thiếu thông tin ngày giờ hẹn!");
+            return;
+        }
+
+        LocalDateTime thoiGianHen = LocalDateTime.of(lh.getNgayHen(), lh.getGioHen());
+        LocalDateTime now = LocalDateTime.now();
+        long phutChenhLech = java.time.Duration.between(thoiGianHen, now).toMinutes();
+
+        String ngayStr = DateTimeFormatter.ofPattern("dd/MM/yyyy").format(lh.getNgayHen());
+        String gioStr = lh.getGioHen().toString();
+        String tenTc = (lh.getTenThuCung() != null && !lh.getTenThuCung().isBlank()) ? lh.getTenThuCung() : "Thú cưng";
+
+        if (phutChenhLech > 120) {
+            // Trễ quá 2 giờ -> Tự động hủy
+            controller.huyLichHenTuDong(lh.getMaLichHen(), "Hủy tự động: Khách đến trễ quá 2 giờ so với lịch hẹn");
+
+            dongBoKhachVaThuCungTuLich(lh);
+            huyLienKetLichHen();
+
+            dlg.close();
+            hienThiCanhBao("Lịch hẹn quá hạn (Trễ > 2 giờ)",
+                    "Lịch hẹn " + lh.getMaLichHen() + " (Bé " + tenTc + " - " + ngayStr + " lúc " + gioStr + ") đã quá giờ hẹn hơn 2 giờ nên đã TỰ ĐỘNG HỦY theo quy định!\n\n"
+                    + "👉 Hệ thống đã nạp thông tin khách hàng và thú cưng lên form.\nVui lòng tư vấn dịch vụ và lập phiếu tiếp nhận mới trực tiếp tại quầy.");
+            return;
+        }
+
+        if (phutChenhLech < -120) {
+            // Đến trước giờ hẹn quá 2 giờ (ví dụ lịch hẹn ngày mai hoặc cách hiện tại > 2 tiếng)
+            controller.huyLichHenTuDong(lh.getMaLichHen(), "Hủy tự động: Khách đến trước giờ hẹn > 2 giờ và lập phiếu tiếp nhận mới tại quầy");
+
+            dongBoKhachVaThuCungTuLich(lh);
+            huyLienKetLichHen();
+
+            dlg.close();
+            hienThiCanhBao("Đến trước giờ hẹn > 2 giờ",
+                    "Khách hàng có lịch hẹn " + lh.getMaLichHen() + " (Bé " + tenTc + " - " + ngayStr + " lúc " + gioStr + ") đến TRƯỚC GIỜ HẸN quá 2 giờ.\n\n"
+                    + "👉 Theo quy định, không thể tiếp nhận theo lịch hẹn này do khách đến trước giờ hẹn quá 2 giờ!\n"
+                    + "Lịch hẹn cũ đã TỰ ĐỘNG HỦY để giải phóng slot đặt trước.\n"
+                    + "Hệ thống đã nạp sẵn thông tin khách hàng và thú cưng lên form.\n"
+                    + "Vui lòng chọn dịch vụ và lập phiếu tiếp nhận mới trực tiếp tại quầy.");
+            return;
+        }
+
+        // Nằm trong khung giờ hợp lệ [-120 phút, +120 phút] (trước/sau không quá 2 giờ)
+        dlg.close();
+        dongBoTuLichHen(lh);
     }
     private void moCuaSoThemKhachNhanh(String sdtBanDau) {
         Stage dlg = new Stage();
