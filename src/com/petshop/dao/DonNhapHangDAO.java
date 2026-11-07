@@ -19,114 +19,10 @@ import java.util.Map;
 
 /**
  * Lớp DAO truy xuất và thao tác dữ liệu bảng DonNhapHang & ChiTietDonNhap.
- * Tương thích ngược an toàn cho cả CSDL đã hoặc chưa chạy migration script.
  */
 public class DonNhapHangDAO {
 
     private static final DateTimeFormatter DINH_DANG_NGAY_MA = DateTimeFormatter.ofPattern("yyyyMMdd");
-
-    // Cache kiểm tra schema để tối ưu hiệu năng và tránh lỗi thiếu cột
-    private static volatile String tenBangDonNhap = null;
-    private static volatile String tenBangChiTiet = null;
-    private static volatile Boolean coCotGioLap = null;
-    private static volatile Boolean coCotThucNhan = null;
-    private static volatile Boolean coCotTruyVet = null;
-
-    private static boolean kiemTraBangTonTai(Connection conn, String tenBang) {
-        String sql = "SELECT OBJECT_ID(?, 'U')";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tenBang);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getObject(1) != null;
-                }
-            }
-        } catch (SQLException ignored) {}
-        try (ResultSet rs = conn.getMetaData().getTables(null, null, tenBang, null)) {
-            return rs.next();
-        } catch (SQLException ignored) {}
-        return false;
-    }
-
-    private static String getTenBangDonNhap(Connection conn) {
-        if (tenBangDonNhap != null) return tenBangDonNhap;
-        synchronized (DonNhapHangDAO.class) {
-            if (tenBangDonNhap != null) return tenBangDonNhap;
-            if (conn != null && kiemTraBangTonTai(conn, "DonHang") && !kiemTraBangTonTai(conn, "DonNhapHang")) {
-                tenBangDonNhap = "DonHang";
-            } else {
-                tenBangDonNhap = "DonNhapHang";
-            }
-            return tenBangDonNhap;
-        }
-    }
-
-    private static String getTenBangChiTiet(Connection conn) {
-        if (tenBangChiTiet != null) return tenBangChiTiet;
-        synchronized (DonNhapHangDAO.class) {
-            if (tenBangChiTiet != null) return tenBangChiTiet;
-            if (conn != null && kiemTraBangTonTai(conn, "ChiTietDonHang") && !kiemTraBangTonTai(conn, "ChiTietDonNhap")) {
-                tenBangChiTiet = "ChiTietDonHang";
-            } else {
-                tenBangChiTiet = "ChiTietDonNhap";
-            }
-            return tenBangChiTiet;
-        }
-    }
-
-    private static boolean kiemTraCotTonTai(Connection conn, String tenBang, String tenCot) {
-        String sql = "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? AND COLUMN_NAME = ?";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tenBang);
-            ps.setString(2, tenCot);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return true;
-                }
-            }
-        } catch (SQLException ignored) {}
-        String sqlLen = "SELECT COL_LENGTH(?, ?)";
-        try (PreparedStatement ps = conn.prepareStatement(sqlLen)) {
-            ps.setString(1, tenBang);
-            ps.setString(2, tenCot);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getObject(1) != null;
-                }
-            }
-        } catch (SQLException ignored) {}
-        return false;
-    }
-
-    private static boolean coCotGioLap(Connection conn) {
-        if (coCotGioLap != null) return coCotGioLap;
-        synchronized (DonNhapHangDAO.class) {
-            if (coCotGioLap != null) return coCotGioLap;
-            String bang = getTenBangDonNhap(conn);
-            coCotGioLap = kiemTraCotTonTai(conn, bang, "gioLap");
-            return coCotGioLap;
-        }
-    }
-
-    private static boolean coCotThucNhan(Connection conn) {
-        if (coCotThucNhan != null) return coCotThucNhan;
-        synchronized (DonNhapHangDAO.class) {
-            if (coCotThucNhan != null) return coCotThucNhan;
-            String bang = getTenBangChiTiet(conn);
-            coCotThucNhan = kiemTraCotTonTai(conn, bang, "soLuongThucNhan");
-            return coCotThucNhan;
-        }
-    }
-
-    private static boolean coCotTruyVet(Connection conn) {
-        if (coCotTruyVet != null) return coCotTruyVet;
-        synchronized (DonNhapHangDAO.class) {
-            if (coCotTruyVet != null) return coCotTruyVet;
-            String bang = getTenBangDonNhap(conn);
-            coCotTruyVet = kiemTraCotTonTai(conn, bang, "maNhanVienNhan");
-            return coCotTruyVet;
-        }
-    }
 
     /**
      * Tự động sinh mã đơn nhập hàng theo định dạng DH-yyyyMMdd-xxxxxx.
@@ -148,15 +44,12 @@ public class DonNhapHangDAO {
      */
     public String taoMaDonNhapHang(Connection conn) throws SQLException {
         String ngay = LocalDate.now().format(DINH_DANG_NGAY_MA);
-        String tienToMoi = "DH-" + ngay + "-";
-        String tienToCu = "PN-" + ngay + "-";
-        String bang = getTenBangDonNhap(conn);
-        String sql = "SELECT maDonHang FROM " + bang + " WHERE maDonHang LIKE ? OR maDonHang LIKE ?";
+        String tienTo = "DH-" + ngay + "-";
+        String sql = "SELECT maDonHang FROM DonNhapHang WHERE maDonHang LIKE ?";
 
         int maxStt = 0;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tienToMoi + "%");
-            ps.setString(2, tienToCu + "%");
+            ps.setString(1, tienTo + "%");
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     String ma = rs.getString("maDonHang");
@@ -174,7 +67,7 @@ public class DonNhapHangDAO {
                 }
             }
         }
-        return tienToMoi + String.format("%06d", maxStt + 1);
+        return tienTo + String.format("%06d", maxStt + 1);
     }
 
     /**
@@ -189,18 +82,8 @@ public class DonNhapHangDAO {
             }
             conn.setAutoCommit(false);
 
-            String bangDH = getTenBangDonNhap(conn);
-            String bangCT = getTenBangChiTiet(conn);
-            boolean coGio = coCotGioLap(conn);
-            boolean coTN = coCotThucNhan(conn);
-
-            String sqlDonHang = coGio ?
-                    "INSERT INTO " + bangDH + " (maDonHang, maNhaCungCap, maNhanVien, ngayLap, gioLap, tongTien, trangThai) VALUES (?, ?, ?, ?, ?, ?, ?)" :
-                    "INSERT INTO " + bangDH + " (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai) VALUES (?, ?, ?, ?, ?, ?)";
-
-            String sqlChiTiet = coTN ?
-                    "INSERT INTO " + bangCT + " (maDonHang, maSanPham, soLuong, soLuongThucNhan, donGia) VALUES (?, ?, ?, ?, ?)" :
-                    "INSERT INTO " + bangCT + " (maDonHang, maSanPham, soLuong, donGia) VALUES (?, ?, ?, ?)";
+            String sqlDonHang = "INSERT INTO DonNhapHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, gioLap, tongTien, trangThai) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            String sqlChiTiet = "INSERT INTO ChiTietDonNhap (maDonHang, maSanPham, soLuong, soLuongThucNhan, donGia) VALUES (?, ?, ?, ?, ?)";
 
             kiemTraNhaCungCapDangHoatDong(conn, donHang.getMaNhaCungCap());
 
@@ -209,14 +92,9 @@ public class DonNhapHangDAO {
                 psDH.setString(2, donHang.getMaNhaCungCap());
                 psDH.setString(3, donHang.getMaNhanVien());
                 psDH.setDate(4, Date.valueOf(donHang.getNgayLap()));
-                if (coGio) {
-                    psDH.setTime(5, Time.valueOf(donHang.getGioLap() != null ? donHang.getGioLap() : LocalTime.now().withNano(0)));
-                    psDH.setDouble(6, donHang.tinhTongTien());
-                    psDH.setNString(7, donHang.getTrangThai() != null ? donHang.getTrangThai() : DonNhapHang.TRANG_THAI_CHO_NHAN);
-                } else {
-                    psDH.setDouble(5, donHang.tinhTongTien());
-                    psDH.setNString(6, donHang.getTrangThai() != null ? donHang.getTrangThai() : DonNhapHang.TRANG_THAI_CHO_NHAN);
-                }
+                psDH.setTime(5, Time.valueOf(donHang.getGioLap() != null ? donHang.getGioLap() : LocalTime.now().withNano(0)));
+                psDH.setDouble(6, donHang.tinhTongTien());
+                psDH.setNString(7, donHang.getTrangThai() != null ? donHang.getTrangThai() : DonNhapHang.TRANG_THAI_CHO_NHAN);
 
                 int rowsDH = psDH.executeUpdate();
                 if (rowsDH <= 0) {
@@ -230,12 +108,8 @@ public class DonNhapHangDAO {
                     psCT.setString(1, donHang.getMaDonHang());
                     psCT.setString(2, ct.getMaSanPham());
                     psCT.setInt(3, ct.getSoLuong());
-                    if (coTN) {
-                        psCT.setInt(4, ct.getSoLuongThucNhan() != null ? ct.getSoLuongThucNhan() : ct.getSoLuong());
-                        psCT.setDouble(5, ct.getDonGia());
-                    } else {
-                        psCT.setDouble(4, ct.getDonGia());
-                    }
+                    psCT.setInt(4, ct.getSoLuongThucNhan() != null ? ct.getSoLuongThucNhan() : ct.getSoLuong());
+                    psCT.setDouble(5, ct.getDonGia());
                     psCT.addBatch();
                 }
                 psCT.executeBatch();
@@ -270,18 +144,8 @@ public class DonNhapHangDAO {
             }
             conn.setAutoCommit(false);
             try {
-                String bangDH = getTenBangDonNhap(conn);
-                String bangCT = getTenBangChiTiet(conn);
-                boolean coGio = coCotGioLap(conn);
-                boolean coTN = coCotThucNhan(conn);
-
-                String sqlDonHang = coGio ?
-                        "INSERT INTO " + bangDH + " (maDonHang, maNhaCungCap, maNhanVien, ngayLap, gioLap, tongTien, trangThai) VALUES (?, ?, ?, ?, ?, ?, ?)" :
-                        "INSERT INTO " + bangDH + " (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai) VALUES (?, ?, ?, ?, ?, ?)";
-
-                String sqlChiTiet = coTN ?
-                        "INSERT INTO " + bangCT + " (maDonHang, maSanPham, soLuong, soLuongThucNhan, donGia) VALUES (?, ?, ?, ?, ?)" :
-                        "INSERT INTO " + bangCT + " (maDonHang, maSanPham, soLuong, donGia) VALUES (?, ?, ?, ?)";
+                String sqlDonHang = "INSERT INTO DonNhapHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, gioLap, tongTien, trangThai) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                String sqlChiTiet = "INSERT INTO ChiTietDonNhap (maDonHang, maSanPham, soLuong, soLuongThucNhan, donGia) VALUES (?, ?, ?, ?, ?)";
 
                 for (DonNhapHang donHang : danhSachDonHang) {
                     kiemTraNhaCungCapDangHoatDong(conn, donHang.getMaNhaCungCap());
@@ -292,14 +156,9 @@ public class DonNhapHangDAO {
                         ps.setString(2, donHang.getMaNhaCungCap());
                         ps.setString(3, donHang.getMaNhanVien());
                         ps.setDate(4, Date.valueOf(donHang.getNgayLap()));
-                        if (coGio) {
-                            ps.setTime(5, Time.valueOf(donHang.getGioLap() != null ? donHang.getGioLap() : LocalTime.now().withNano(0)));
-                            ps.setDouble(6, donHang.tinhTongTien());
-                            ps.setNString(7, donHang.getTrangThai());
-                        } else {
-                            ps.setDouble(5, donHang.tinhTongTien());
-                            ps.setNString(6, donHang.getTrangThai());
-                        }
+                        ps.setTime(5, Time.valueOf(donHang.getGioLap() != null ? donHang.getGioLap() : LocalTime.now().withNano(0)));
+                        ps.setDouble(6, donHang.tinhTongTien());
+                        ps.setNString(7, donHang.getTrangThai());
                         ps.executeUpdate();
                     }
 
@@ -308,12 +167,8 @@ public class DonNhapHangDAO {
                             ps.setString(1, donHang.getMaDonHang());
                             ps.setString(2, chiTiet.getMaSanPham());
                             ps.setInt(3, chiTiet.getSoLuong());
-                            if (coTN) {
-                                ps.setInt(4, chiTiet.getSoLuongThucNhan() != null ? chiTiet.getSoLuongThucNhan() : chiTiet.getSoLuong());
-                                ps.setDouble(5, chiTiet.getDonGia());
-                            } else {
-                                ps.setDouble(4, chiTiet.getDonGia());
-                            }
+                            ps.setInt(4, chiTiet.getSoLuongThucNhan() != null ? chiTiet.getSoLuongThucNhan() : chiTiet.getSoLuong());
+                            ps.setDouble(5, chiTiet.getDonGia());
                             ps.addBatch();
                         }
                         ps.executeBatch();
@@ -341,9 +196,8 @@ public class DonNhapHangDAO {
             if (conn == null) {
                 throw new IllegalStateException("Lỗi khi tìm đơn nhập: không thể kết nối cơ sở dữ liệu");
             }
-            String bangDH = getTenBangDonNhap(conn);
             String sql = "SELECT dh.*, ncc.tenNhaCungCap, nv.hoTen AS tenNhanVien " +
-                    "FROM " + bangDH + " dh " +
+                    "FROM DonNhapHang dh " +
                     "LEFT JOIN NhaCungCap ncc ON dh.maNhaCungCap = ncc.maNhaCungCap " +
                     "LEFT JOIN NhanVien nv ON dh.maNhanVien = nv.maNhanVien " +
                     "WHERE dh.maDonHang = ?";
@@ -353,7 +207,6 @@ public class DonNhapHangDAO {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         DonNhapHang dh = anhXaDonNhapHang(rs);
-                        // Bổ sung tên nhân viên nhận/hủy an toàn nếu có
                         if (dh.getMaNhanVienNhan() != null) {
                             dh.setTenNhanVienNhan(layTenNhanVien(conn, dh.getMaNhanVienNhan()));
                         }
@@ -380,11 +233,8 @@ public class DonNhapHangDAO {
             if (conn == null) {
                 throw new IllegalStateException("Lỗi khi lấy chi tiết đơn nhập: không thể kết nối cơ sở dữ liệu");
             }
-            String bangCT = getTenBangChiTiet(conn);
-            boolean coTN = coCotThucNhan(conn);
-
             String sql = "SELECT ct.*, sp.tenSanPham, sp.donViTinh " +
-                    "FROM " + bangCT + " ct " +
+                    "FROM ChiTietDonNhap ct " +
                     "LEFT JOIN SanPham sp ON ct.maSanPham = sp.maSanPham " +
                     "WHERE ct.maDonHang = ?";
 
@@ -397,12 +247,8 @@ public class DonNhapHangDAO {
                         ct.setMaSanPham(rs.getString("maSanPham"));
                         int soLuong = rs.getInt("soLuong");
                         ct.setSoLuong(soLuong);
-                        if (coTN) {
-                            int thucNhan = rs.getInt("soLuongThucNhan");
-                            ct.setSoLuongThucNhan(rs.wasNull() ? soLuong : thucNhan);
-                        } else {
-                            ct.setSoLuongThucNhan(soLuong);
-                        }
+                        int thucNhan = rs.getInt("soLuongThucNhan");
+                        ct.setSoLuongThucNhan(rs.wasNull() ? soLuong : thucNhan);
                         ct.setDonGia(rs.getDouble("donGia"));
                         ct.setTenSanPham(rs.getNString("tenSanPham"));
                         ct.setDonViTinh(rs.getNString("donViTinh"));
@@ -444,12 +290,10 @@ public class DonNhapHangDAO {
             if (conn == null) {
                 throw new IllegalStateException("Lỗi khi tìm kiếm đơn nhập: không thể kết nối cơ sở dữ liệu");
             }
-            String bangDH = getTenBangDonNhap(conn);
-            String bangCT = getTenBangChiTiet(conn);
 
             StringBuilder sql = new StringBuilder(
                     "SELECT dh.*, ncc.tenNhaCungCap, nv.hoTen AS tenNhanVien " +
-                    "FROM " + bangDH + " dh " +
+                    "FROM DonNhapHang dh " +
                     "LEFT JOIN NhaCungCap ncc ON dh.maNhaCungCap = ncc.maNhaCungCap " +
                     "LEFT JOIN NhanVien nv ON dh.maNhanVien = nv.maNhanVien " +
                     "WHERE 1=1"
@@ -460,7 +304,7 @@ public class DonNhapHangDAO {
             if (keyword != null && !keyword.trim().isEmpty()) {
                 String kw = "%" + keyword.trim() + "%";
                 sql.append(" AND (dh.maDonHang LIKE ? OR ncc.tenNhaCungCap LIKE ? OR nv.hoTen LIKE ? " +
-                        "OR EXISTS (SELECT 1 FROM " + bangCT + " ct JOIN SanPham sp ON ct.maSanPham = sp.maSanPham " +
+                        "OR EXISTS (SELECT 1 FROM ChiTietDonNhap ct JOIN SanPham sp ON ct.maSanPham = sp.maSanPham " +
                         "WHERE ct.maDonHang = dh.maDonHang AND (sp.tenSanPham LIKE ? OR sp.maSanPham LIKE ?)))");
                 params.add(kw);
                 params.add(kw);
@@ -471,7 +315,7 @@ public class DonNhapHangDAO {
 
             if (tenHang != null && !tenHang.trim().isEmpty()) {
                 String th = "%" + tenHang.trim() + "%";
-                sql.append(" AND EXISTS (SELECT 1 FROM " + bangCT + " ct JOIN SanPham sp ON ct.maSanPham = sp.maSanPham " +
+                sql.append(" AND EXISTS (SELECT 1 FROM ChiTietDonNhap ct JOIN SanPham sp ON ct.maSanPham = sp.maSanPham " +
                         "WHERE ct.maDonHang = dh.maDonHang AND (sp.tenSanPham LIKE ? OR sp.maSanPham LIKE ?))");
                 params.add(th);
                 params.add(th);
@@ -497,11 +341,7 @@ public class DonNhapHangDAO {
                 params.add(trangThai.trim());
             }
 
-            if (coCotGioLap(conn)) {
-                sql.append(" ORDER BY dh.ngayLap DESC, dh.gioLap DESC, dh.maDonHang DESC");
-            } else {
-                sql.append(" ORDER BY dh.ngayLap DESC, dh.maDonHang DESC");
-            }
+            sql.append(" ORDER BY dh.ngayLap DESC, dh.gioLap DESC, dh.maDonHang DESC");
 
             try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
                 for (int i = 0; i < params.size(); i++) {
@@ -528,24 +368,14 @@ public class DonNhapHangDAO {
             if (conn == null) {
                 throw new IllegalStateException("Lỗi khi cập nhật trạng thái đơn nhập: không thể kết nối cơ sở dữ liệu");
             }
-            String bangDH = getTenBangDonNhap(conn);
-            boolean coTruyVet = coCotTruyVet(conn);
-
-            String sql = coTruyVet ?
-                    "UPDATE " + bangDH + " SET trangThai = ?, maNhanVienHuy = ?, lyDoHuy = ? WHERE maDonHang = ? AND trangThai = ?" :
-                    "UPDATE " + bangDH + " SET trangThai = ? WHERE maDonHang = ? AND trangThai = ?";
+            String sql = "UPDATE DonNhapHang SET trangThai = ?, maNhanVienHuy = ?, lyDoHuy = ? WHERE maDonHang = ? AND trangThai = ?";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setNString(1, DonNhapHang.TRANG_THAI_DA_HUY);
-                if (coTruyVet) {
-                    ps.setString(2, maNhanVienHuy);
-                    ps.setNString(3, lyDoHuy != null ? lyDoHuy.trim() : "");
-                    ps.setString(4, maDonHang);
-                    ps.setNString(5, DonNhapHang.TRANG_THAI_CHO_NHAN);
-                } else {
-                    ps.setString(2, maDonHang);
-                    ps.setNString(3, DonNhapHang.TRANG_THAI_CHO_NHAN);
-                }
+                ps.setString(2, maNhanVienHuy);
+                ps.setNString(3, lyDoHuy != null ? lyDoHuy.trim() : "");
+                ps.setString(4, maDonHang);
+                ps.setNString(5, DonNhapHang.TRANG_THAI_CHO_NHAN);
                 return ps.executeUpdate() > 0;
             }
         } catch (SQLException e) {
@@ -554,14 +384,7 @@ public class DonNhapHangDAO {
     }
 
     /**
-     * Xác nhận nhận hàng trong transaction:
-     * 1. Cập nhật trạng thái đơn thành 'Hoàn tất' (chỉ thực hiện nếu trạng thái hiện tại là 'Chờ nhận hàng').
-     * 2. Ghi nhận người nhận, ngày giờ nhận, tổng tiền thực nhận (nếu schema hỗ trợ).
-     * 3. Cập nhật soLuongThucNhan cho từng dòng chi tiết (nếu schema hỗ trợ).
-     * 4. Cộng số lượng tồn kho theo soLuongThucNhan (dòng có soLuongThucNhan = 0 thì bỏ qua update SanPham, không rollback).
-     */
-    /**
-     * Xác nhận nhận hàng và cộng tồn kho (tương thích ngược).
+     * Xác nhận nhận hàng và cộng tồn kho.
      */
     public boolean xacNhanNhanHangVaCongTonKho(String maDonHang, String maNhanVienNhan,
                                                 LocalDateTime ngayGioNhan, double tongTienThucNhan,
@@ -593,11 +416,6 @@ public class DonNhapHangDAO {
             }
             conn.setAutoCommit(false);
 
-            String bangDH = getTenBangDonNhap(conn);
-            String bangCT = getTenBangChiTiet(conn);
-            boolean coTN = coCotThucNhan(conn);
-            boolean coTruyVet = coCotTruyVet(conn);
-
             // 1. Kiểm tra danh sách chi tiết
             if (chiTietCapNhat == null || chiTietCapNhat.isEmpty()) {
                 conn.rollback();
@@ -605,23 +423,17 @@ public class DonNhapHangDAO {
             }
 
             // 2. Chuyển trạng thái có điều kiện (WHERE trangThai = 'Chờ nhận hàng')
-            String sqlUpdateDonHang = coTruyVet ?
-                    "UPDATE " + bangDH + " SET trangThai = ?, maNhanVienNhan = ?, ngayGioNhan = ?, tongTienThucNhan = ?, lyDoHuy = ? WHERE maDonHang = ? AND trangThai = ?" :
-                    "UPDATE " + bangDH + " SET trangThai = ? WHERE maDonHang = ? AND trangThai = ?";
+            String sqlUpdateDonHang = "UPDATE DonNhapHang SET trangThai = ?, maNhanVienNhan = ?, ngayGioNhan = ?, tongTien = ?, tongTienThucNhan = ?, lyDoHuy = ? WHERE maDonHang = ? AND trangThai = ?";
 
             try (PreparedStatement psUpdate = conn.prepareStatement(sqlUpdateDonHang)) {
                 psUpdate.setNString(1, DonNhapHang.TRANG_THAI_HOAN_TAT);
-                if (coTruyVet) {
-                    psUpdate.setString(2, maNhanVienNhan);
-                    psUpdate.setTimestamp(3, ngayGioNhan != null ? Timestamp.valueOf(ngayGioNhan) : Timestamp.valueOf(LocalDateTime.now()));
-                    psUpdate.setDouble(4, tongTienThucNhan);
-                    psUpdate.setNString(5, ghiChuChenhLech);
-                    psUpdate.setString(6, maDonHang);
-                    psUpdate.setNString(7, DonNhapHang.TRANG_THAI_CHO_NHAN);
-                } else {
-                    psUpdate.setString(2, maDonHang);
-                    psUpdate.setNString(3, DonNhapHang.TRANG_THAI_CHO_NHAN);
-                }
+                psUpdate.setString(2, maNhanVienNhan);
+                psUpdate.setTimestamp(3, ngayGioNhan != null ? Timestamp.valueOf(ngayGioNhan) : Timestamp.valueOf(LocalDateTime.now()));
+                psUpdate.setDouble(4, tongTienThucNhan);
+                psUpdate.setDouble(5, tongTienThucNhan);
+                psUpdate.setNString(6, ghiChuChenhLech);
+                psUpdate.setString(7, maDonHang);
+                psUpdate.setNString(8, DonNhapHang.TRANG_THAI_CHO_NHAN);
 
                 if (psUpdate.executeUpdate() != 1) {
                     conn.rollback();
@@ -629,18 +441,16 @@ public class DonNhapHangDAO {
                 }
             }
 
-            // 3. Cập nhật soLuongThucNhan vào ChiTietDonNhap (nếu có cột)
-            if (coTN) {
-                String sqlUpdateCT = "UPDATE " + bangCT + " SET soLuongThucNhan = ? WHERE maDonHang = ? AND maSanPham = ?";
-                try (PreparedStatement psCT = conn.prepareStatement(sqlUpdateCT)) {
-                    for (ChiTietDonNhap ct : chiTietCapNhat) {
-                        psCT.setInt(1, ct.getSoLuongThucNhan());
-                        psCT.setString(2, maDonHang);
-                        psCT.setString(3, ct.getMaSanPham());
-                        psCT.addBatch();
-                    }
-                    psCT.executeBatch();
+            // 3. Cập nhật soLuongThucNhan vào ChiTietDonNhap
+            String sqlUpdateCT = "UPDATE ChiTietDonNhap SET soLuongThucNhan = ? WHERE maDonHang = ? AND maSanPham = ?";
+            try (PreparedStatement psCT = conn.prepareStatement(sqlUpdateCT)) {
+                for (ChiTietDonNhap ct : chiTietCapNhat) {
+                    psCT.setInt(1, ct.getSoLuongThucNhan());
+                    psCT.setString(2, maDonHang);
+                    psCT.setString(3, ct.getMaSanPham());
+                    psCT.addBatch();
                 }
+                psCT.executeBatch();
             }
 
             // 4. Cộng tồn kho SanPham theo soLuongThucNhan
@@ -665,43 +475,28 @@ public class DonNhapHangDAO {
             if (donNhapBu != null && donNhapBu.getDanhSachChiTiet() != null && !donNhapBu.getDanhSachChiTiet().isEmpty()) {
                 maDonBu = taoMaDonNhapHang(conn);
                 donNhapBu.setMaDonHang(maDonBu);
-                boolean coGio = coCotGioLap(conn);
 
-                String sqlInsertBu = coGio ?
-                        "INSERT INTO " + bangDH + " (maDonHang, maNhaCungCap, maNhanVien, ngayLap, gioLap, tongTien, trangThai, lyDoHuy) VALUES (?, ?, ?, ?, ?, ?, ?, ?)" :
-                        "INSERT INTO " + bangDH + " (maDonHang, maNhaCungCap, maNhanVien, ngayLap, tongTien, trangThai, lyDoHuy) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                String sqlInsertBu = "INSERT INTO DonNhapHang (maDonHang, maNhaCungCap, maNhanVien, ngayLap, gioLap, tongTien, trangThai, lyDoHuy) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
                 try (PreparedStatement psBu = conn.prepareStatement(sqlInsertBu)) {
                     psBu.setString(1, maDonBu);
                     psBu.setString(2, donNhapBu.getMaNhaCungCap());
                     psBu.setString(3, donNhapBu.getMaNhanVien());
                     psBu.setDate(4, Date.valueOf(donNhapBu.getNgayLap() != null ? donNhapBu.getNgayLap() : LocalDate.now()));
-                    if (coGio) {
-                        psBu.setTime(5, Time.valueOf(donNhapBu.getGioLap() != null ? donNhapBu.getGioLap() : LocalTime.now().withNano(0)));
-                        psBu.setDouble(6, donNhapBu.tinhTongTien());
-                        psBu.setNString(7, DonNhapHang.TRANG_THAI_CHO_NHAN);
-                        psBu.setNString(8, donNhapBu.getLyDoHuy());
-                    } else {
-                        psBu.setDouble(5, donNhapBu.tinhTongTien());
-                        psBu.setNString(6, DonNhapHang.TRANG_THAI_CHO_NHAN);
-                        psBu.setNString(7, donNhapBu.getLyDoHuy());
-                    }
+                    psBu.setTime(5, Time.valueOf(donNhapBu.getGioLap() != null ? donNhapBu.getGioLap() : LocalTime.now().withNano(0)));
+                    psBu.setDouble(6, donNhapBu.tinhTongTien());
+                    psBu.setNString(7, DonNhapHang.TRANG_THAI_CHO_NHAN);
+                    psBu.setNString(8, donNhapBu.getLyDoHuy());
                     psBu.executeUpdate();
                 }
 
-                String sqlCTBu = coTN ?
-                        "INSERT INTO " + bangCT + " (maDonHang, maSanPham, soLuong, soLuongThucNhan, donGia) VALUES (?, ?, ?, ?, ?)" :
-                        "INSERT INTO " + bangCT + " (maDonHang, maSanPham, soLuong, donGia) VALUES (?, ?, ?, ?)";
+                String sqlCTBu = "INSERT INTO ChiTietDonNhap (maDonHang, maSanPham, soLuong, soLuongThucNhan, donGia) VALUES (?, ?, ?, ?, ?)";
                 try (PreparedStatement psCTBu = conn.prepareStatement(sqlCTBu)) {
                     for (ChiTietDonNhap ct : donNhapBu.getDanhSachChiTiet()) {
                         psCTBu.setString(1, maDonBu);
                         psCTBu.setString(2, ct.getMaSanPham());
                         psCTBu.setInt(3, ct.getSoLuong());
-                        if (coTN) {
-                            psCTBu.setInt(4, ct.getSoLuong());
-                            psCTBu.setDouble(5, ct.getDonGia());
-                        } else {
-                            psCTBu.setDouble(4, ct.getDonGia());
-                        }
+                        psCTBu.setInt(4, ct.getSoLuong());
+                        psCTBu.setDouble(5, ct.getDonGia());
                         psCTBu.addBatch();
                     }
                     psCTBu.executeBatch();
@@ -758,14 +553,12 @@ public class DonNhapHangDAO {
 
     private void napTenHangChoDanhSach(Connection conn, List<DonNhapHang> list) {
         if (list == null || list.isEmpty()) return;
-        String bangCT = getTenBangChiTiet(conn);
-        boolean coTN = coCotThucNhan(conn);
         Map<String, List<ChiTietDonNhap>> mapChiTiet = new HashMap<>();
         for (int i = 0; i < list.size(); i += 50) {
             List<DonNhapHang> sub = list.subList(i, Math.min(i + 50, list.size()));
             String placeholders = String.join(",", Collections.nCopies(sub.size(), "?"));
             String sql = "SELECT ct.*, sp.tenSanPham, sp.donViTinh " +
-                    "FROM " + bangCT + " ct " +
+                    "FROM ChiTietDonNhap ct " +
                     "LEFT JOIN SanPham sp ON ct.maSanPham = sp.maSanPham " +
                     "WHERE ct.maDonHang IN (" + placeholders + ")";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -782,12 +575,8 @@ public class DonNhapHangDAO {
                         ct.setDonViTinh(rs.getNString("donViTinh"));
                         int sl = rs.getInt("soLuong");
                         ct.setSoLuong(sl);
-                        if (coTN) {
-                            int tn = rs.getInt("soLuongThucNhan");
-                            ct.setSoLuongThucNhan(rs.wasNull() ? sl : tn);
-                        } else {
-                            ct.setSoLuongThucNhan(sl);
-                        }
+                        int tn = rs.getInt("soLuongThucNhan");
+                        ct.setSoLuongThucNhan(rs.wasNull() ? sl : tn);
                         ct.setDonGia(rs.getDouble("donGia"));
                         mapChiTiet.computeIfAbsent(maDH, k -> new ArrayList<>()).add(ct);
                     }
@@ -797,10 +586,13 @@ public class DonNhapHangDAO {
         for (DonNhapHang dh : list) {
             List<ChiTietDonNhap> cts = mapChiTiet.getOrDefault(dh.getMaDonHang(), new ArrayList<>());
             dh.setDanhSachChiTiet(cts);
+            boolean daHoanTat = DonNhapHang.TRANG_THAI_HOAN_TAT.equals(dh.getTrangThai());
             List<String> ds = new ArrayList<>();
             for (ChiTietDonNhap ct : cts) {
+                int slHienThi = daHoanTat && ct.getSoLuongThucNhan() != null ? ct.getSoLuongThucNhan() : ct.getSoLuong();
+                if (daHoanTat && slHienThi <= 0) continue;
                 String tenSP = ct.getTenSanPham() != null ? ct.getTenSanPham() : "SP";
-                ds.add(tenSP + " (x" + ct.getSoLuong() + ")");
+                ds.add(tenSP + " (x" + slHienThi + ")");
             }
             dh.setTenHang(String.join(", ", ds));
         }
@@ -828,40 +620,29 @@ public class DonNhapHangDAO {
         if (ngayLap != null) {
             dh.setNgayLap(ngayLap.toLocalDate());
         }
-        try {
-            Time gioLap = rs.getTime("gioLap");
-            dh.setGioLap(gioLap != null ? gioLap.toLocalTime() : LocalTime.MIDNIGHT);
-        } catch (SQLException ex) {
-            dh.setGioLap(LocalTime.MIDNIGHT);
-        }
+        Time gioLap = rs.getTime("gioLap");
+        dh.setGioLap(gioLap != null ? gioLap.toLocalTime() : LocalTime.MIDNIGHT);
+
         dh.setTrangThai(rs.getNString("trangThai"));
-        dh.setTongTien(rs.getDouble("tongTien"));
-        try {
-            dh.setTongTienThucNhan(rs.getDouble("tongTienThucNhan"));
-        } catch (SQLException ignored) {}
 
-        try {
-            String maNVNhan = rs.getString("maNhanVienNhan");
-            if (maNVNhan != null && !maNVNhan.isBlank()) {
-                NhanVien nvn = new NhanVien();
-                nvn.setMaNhanVien(maNVNhan);
-                dh.setNhanVienNhan(nvn);
-            }
-            Timestamp tsNhan = rs.getTimestamp("ngayGioNhan");
-            if (tsNhan != null) {
-                dh.setNgayGioNhan(tsNhan.toLocalDateTime());
-            }
-        } catch (SQLException ignored) {}
+        String maNVNhan = rs.getString("maNhanVienNhan");
+        if (maNVNhan != null && !maNVNhan.isBlank()) {
+            NhanVien nvn = new NhanVien();
+            nvn.setMaNhanVien(maNVNhan);
+            dh.setNhanVienNhan(nvn);
+        }
+        Timestamp tsNhan = rs.getTimestamp("ngayGioNhan");
+        if (tsNhan != null) {
+            dh.setNgayGioNhan(tsNhan.toLocalDateTime());
+        }
 
-        try {
-            String maNVHuy = rs.getString("maNhanVienHuy");
-            if (maNVHuy != null && !maNVHuy.isBlank()) {
-                NhanVien nvh = new NhanVien();
-                nvh.setMaNhanVien(maNVHuy);
-                dh.setNhanVienHuy(nvh);
-            }
-            dh.setLyDoHuy(rs.getNString("lyDoHuy"));
-        } catch (SQLException ignored) {}
+        String maNVHuy = rs.getString("maNhanVienHuy");
+        if (maNVHuy != null && !maNVHuy.isBlank()) {
+            NhanVien nvh = new NhanVien();
+            nvh.setMaNhanVien(maNVHuy);
+            dh.setNhanVienHuy(nvh);
+        }
+        dh.setLyDoHuy(rs.getNString("lyDoHuy"));
 
         return dh;
     }

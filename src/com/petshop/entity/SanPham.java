@@ -5,12 +5,12 @@ import java.util.Objects;
 /**
  * Thực thể Sản phẩm (hàng hóa) trong cửa hàng Happy Tails.
  * Khớp bảng SanPham trong CSDL SQL Server.
- * Tuân thủ quy định: sử dụng kiểu double cho tiền tệ.
+ * Tuân thủ quy định: sử dụng kiểu double cho tiền tệ và tham chiếu đối tượng NhaCungCap.
  */
 public class SanPham {
 
     private String maSanPham;
-    private String maNhaCungCap;
+    private NhaCungCap nhaCungCap;
     private String tenSanPham;
     private String maVach;
     private double giaNhap;
@@ -20,10 +20,8 @@ public class SanPham {
     private String donViTinh;
     private boolean trangThai; // true: đang kinh doanh, false: ngừng kinh doanh (xóa mềm)
 
-    // Tên nhà cung cấp hiển thị trên bảng biểu
-    private String tenNhaCungCap;
-
     public SanPham() {
+        this.nhaCungCap = new NhaCungCap();
         this.giaNhap = 0;
         this.giaBan = 0;
         this.soLuongTon = 0;
@@ -31,10 +29,10 @@ public class SanPham {
         this.trangThai = true;
     }
 
-    public SanPham(String maSanPham, String maNhaCungCap, String tenSanPham, String maVach,
+    public SanPham(String maSanPham, NhaCungCap nhaCungCap, String tenSanPham, String maVach,
                    double giaNhap, double giaBan, int soLuongTon, int nguongTonToiThieu, String donViTinh, boolean trangThai) {
         this.maSanPham = maSanPham;
-        this.maNhaCungCap = maNhaCungCap;
+        this.nhaCungCap = nhaCungCap != null ? nhaCungCap : new NhaCungCap();
         this.tenSanPham = tenSanPham;
         this.maVach = maVach;
         this.giaNhap = giaNhap;
@@ -45,6 +43,12 @@ public class SanPham {
         this.trangThai = trangThai;
     }
 
+    public SanPham(String maSanPham, String maNhaCungCap, String tenSanPham, String maVach,
+                   double giaNhap, double giaBan, int soLuongTon, int nguongTonToiThieu, String donViTinh, boolean trangThai) {
+        this(maSanPham, new NhaCungCap(maNhaCungCap, null), tenSanPham, maVach,
+                giaNhap, giaBan, soLuongTon, nguongTonToiThieu, donViTinh, trangThai);
+    }
+
     public String getMaSanPham() {
         return maSanPham;
     }
@@ -53,12 +57,34 @@ public class SanPham {
         this.maSanPham = maSanPham;
     }
 
+    public NhaCungCap getNhaCungCap() {
+        return nhaCungCap;
+    }
+
+    public void setNhaCungCap(NhaCungCap nhaCungCap) {
+        this.nhaCungCap = nhaCungCap;
+    }
+
     public String getMaNhaCungCap() {
-        return maNhaCungCap;
+        return nhaCungCap != null ? nhaCungCap.getMaNhaCungCap() : null;
     }
 
     public void setMaNhaCungCap(String maNhaCungCap) {
-        this.maNhaCungCap = maNhaCungCap;
+        if (this.nhaCungCap == null) {
+            this.nhaCungCap = new NhaCungCap();
+        }
+        this.nhaCungCap.setMaNhaCungCap(maNhaCungCap);
+    }
+
+    public String getTenNhaCungCap() {
+        return nhaCungCap != null ? nhaCungCap.getTenNhaCungCap() : null;
+    }
+
+    public void setTenNhaCungCap(String tenNhaCungCap) {
+        if (this.nhaCungCap == null) {
+            this.nhaCungCap = new NhaCungCap();
+        }
+        this.nhaCungCap.setTenNhaCungCap(tenNhaCungCap);
     }
 
     public String getTenSanPham() {
@@ -133,14 +159,6 @@ public class SanPham {
         this.trangThai = trangThai;
     }
 
-    public String getTenNhaCungCap() {
-        return tenNhaCungCap;
-    }
-
-    public void setTenNhaCungCap(String tenNhaCungCap) {
-        this.tenNhaCungCap = tenNhaCungCap;
-    }
-
     public boolean isSapHetHang() {
         return this.soLuongTon > 0 && this.soLuongTon <= this.nguongTonToiThieu;
     }
@@ -206,6 +224,7 @@ public class SanPham {
     public String toString() {
         return "SanPham{" +
                 "maSanPham='" + maSanPham + '\'' +
+                ", nhaCungCap=" + getMaNhaCungCap() +
                 ", tenSanPham='" + tenSanPham + '\'' +
                 ", giaNhap=" + giaNhap +
                 ", giaBan=" + giaBan +

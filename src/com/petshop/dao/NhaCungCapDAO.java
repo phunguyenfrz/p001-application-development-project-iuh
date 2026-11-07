@@ -120,42 +120,16 @@ public class NhaCungCapDAO {
         }
     }
 
-        private static volatile String tenBangDonNhap = null;
-
-    private static String layTenBangDonNhap(Connection conn) {
-        if (tenBangDonNhap != null) return tenBangDonNhap;
-        synchronized (NhaCungCapDAO.class) {
-            if (tenBangDonNhap != null) return tenBangDonNhap;
-            if (conn != null && kiemTraBangTonTai(conn, "DonHang") && !kiemTraBangTonTai(conn, "DonNhapHang")) {
-                tenBangDonNhap = "DonHang";
-            } else {
-                tenBangDonNhap = "DonNhapHang";
-            }
-            return tenBangDonNhap;
-        }
-    }
-
-    private static boolean kiemTraBangTonTai(Connection conn, String tenBang) {
-        String sql = "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tenBang);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
-            }
-        } catch (SQLException e) {
-            return false;
-        }
-    }
-
     /** Xóa nhà cung cấp chỉ khi chưa liên kết sản phẩm hoặc phát sinh đơn nhập. */
     public boolean xoaNhaCungCap(String maNhaCungCap) {
+        String sql = """
+                DELETE FROM NhaCungCap
+                WHERE maNhaCungCap = ?
+                  AND NOT EXISTS (SELECT 1 FROM SanPham WHERE maNhaCungCap = ?)
+                  AND NOT EXISTS (SELECT 1 FROM DonNhapHang WHERE maNhaCungCap = ?)
+                """;
         try (Connection conn = DatabaseManager.getConnection()) {
             if (conn == null) return false;
-            String bangDH = layTenBangDonNhap(conn);
-            String sql = "DELETE FROM NhaCungCap\n" +
-                    "WHERE maNhaCungCap = ?\n" +
-                    "  AND NOT EXISTS (SELECT 1 FROM SanPham WHERE maNhaCungCap = ?)\n" +
-                    "  AND NOT EXISTS (SELECT 1 FROM " + bangDH + " WHERE maNhaCungCap = ?)";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, maNhaCungCap);
                 ps.setString(2, maNhaCungCap);
@@ -229,16 +203,23 @@ public class NhaCungCapDAO {
     }
 
     /**
-     * Tìm kiếm nhà cung cấp theo từ khóa (khớp mã, tên, SĐT hoặc email), chỉ lấy NCC đang hoạt động (trangThai = 1).
+     * Tìm kiếm nhà cung cấp theo từ khóa (khớp mã, tên, SĐT, email hoặc địa chỉ), chỉ lấy NCC đang hoạt động (trangThai = 1).
      */
     public List<NhaCungCap> timKiemNhaCungCap(String tuKhoa) {
-        return timKiemNhaCungCap(tuKhoa, true);
+        return timKiemNhaCungCap(tuKhoa, null, true);
     }
 
     /**
      * Tìm kiếm theo từ khóa và trạng thái. Trạng thái null nghĩa là lấy tất cả.
      */
     public List<NhaCungCap> timKiemNhaCungCap(String tuKhoa, Boolean trangThai) {
+        return timKiemNhaCungCap(tuKhoa, null, trangThai);
+    }
+
+    /**
+     * Tìm kiếm theo từ khóa (mã, tên, SĐT, email, địa chỉ), lọc riêng theo địa chỉ và trạng thái.
+     */
+    public List<NhaCungCap> timKiemNhaCungCap(String tuKhoa, String diaChi, Boolean trangThai) {
         List<NhaCungCap> danhSach = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
                 "SELECT maNhaCungCap, tenNhaCungCap, soDienThoai, diaChi, email, trangThai "
@@ -250,7 +231,12 @@ public class NhaCungCapDAO {
 
         boolean coTuKhoa = tuKhoa != null && !tuKhoa.trim().isEmpty();
         if (coTuKhoa) {
-            sql.append(" AND (maNhaCungCap LIKE ? OR tenNhaCungCap LIKE ? OR soDienThoai LIKE ? OR email LIKE ?)");
+            sql.append(" AND (maNhaCungCap LIKE ? OR tenNhaCungCap LIKE ? OR soDienThoai LIKE ? OR email LIKE ? OR diaChi LIKE ?)");
+        }
+
+        boolean coDiaChi = diaChi != null && !diaChi.trim().isEmpty();
+        if (coDiaChi) {
+            sql.append(" AND diaChi LIKE ?");
         }
         sql.append(" ORDER BY tenNhaCungCap ASC");
 
@@ -267,7 +253,11 @@ public class NhaCungCapDAO {
                     ps.setString(viTri++, pattern);
                     ps.setString(viTri++, pattern);
                     ps.setString(viTri++, pattern);
-                    ps.setString(viTri, pattern);
+                    ps.setString(viTri++, pattern);
+                    ps.setString(viTri++, pattern);
+                }
+                if (coDiaChi) {
+                    ps.setString(viTri, "%" + diaChi.trim() + "%");
                 }
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
