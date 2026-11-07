@@ -22,10 +22,16 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.util.StringConverter;
 
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -130,7 +136,7 @@ public class TongQuanView extends VBox {
         VBox noiDungChinh = new VBox(16, pnlChaoMung, pnlThongKe, pnlBieuDo);
         ScrollPane scroll = new ScrollPane(noiDungChinh);
         scroll.setFitToWidth(true);
-        scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
+        scroll.setStyle("-fx-background-color: transparent; -fx-background: #f4f6f8; -fx-border-color: transparent;");
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
         getChildren().add(scroll);
@@ -153,39 +159,84 @@ public class TongQuanView extends VBox {
     }
 
     /**
-     * Biểu đồ cột (BarChart): Thống kê doanh thu 7 ngày gần nhất.
+     * Biểu đồ cột (BarChart): Thống kê doanh thu 7 ngày gần nhất theo đúng lịch.
      */
     private VBox taoBieuDoDoanhThu7Ngay() {
         VBox card = new VBox(10);
         card.setPadding(new Insets(16, 18, 16, 18));
         card.setStyle("-fx-background-color: white; -fx-background-radius: 10px; -fx-border-color: #eaecf0; -fx-border-radius: 10px;");
 
-        Label lblTieuDe = new Label("BIỂU ĐỒ DOANH THU 7 NGÀY GẦN NHẤT");
+        LocalDate homNay = LocalDate.now();
+        LocalDate tuNgay = homNay.minusDays(6);
+        DateTimeFormatter fmtDayDu = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+        Label lblTieuDe = new Label("BIỂU ĐỒ DOANH THU 7 NGÀY GẦN NHẤT (" + tuNgay.format(fmtDayDu) + " - " + homNay.format(fmtDayDu) + ")");
         lblTieuDe.setStyle("-fx-font-size: 13.5px; -fx-font-weight: bold; -fx-text-fill: #101828;");
 
         CategoryAxis trucNgay = new CategoryAxis();
         trucNgay.setLabel("Ngày");
+        trucNgay.setTickLabelFill(Color.web("#1e293b"));
+        trucNgay.setTickLabelFont(Font.font("Segoe UI", FontWeight.BOLD, 11.5));
+        trucNgay.setTickLabelRotation(0);
+        trucNgay.setTickLabelGap(6);
+        trucNgay.setTickMarkVisible(true);
+        trucNgay.setTickLabelsVisible(true);
+        trucNgay.setAnimated(false);
 
         NumberAxis trucTien = new NumberAxis();
         trucTien.setLabel("Doanh thu (VNĐ)");
+        trucTien.setTickLabelFill(Color.web("#475569"));
+        trucTien.setTickLabelFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 11));
+        trucTien.setTickMarkVisible(true);
+        trucTien.setTickLabelsVisible(true);
+        trucTien.setAnimated(false);
+        trucTien.setTickLabelFormatter(new StringConverter<Number>() {
+            @Override
+            public String toString(Number object) {
+                if (object == null) return "0";
+                return DINH_DANG_TIEN.format(object.doubleValue());
+            }
+
+            @Override
+            public Number fromString(String string) {
+                return 0;
+            }
+        });
 
         BarChart<String, Number> barChart = new BarChart<>(trucNgay, trucTien);
         barChart.setLegendVisible(false);
         barChart.setAnimated(false);
-        barChart.setPrefHeight(270);
+        barChart.setCategoryGap(18);
+        barChart.setBarGap(4);
+        barChart.setPrefHeight(290);
         VBox.setVgrow(barChart, Priority.ALWAYS);
 
         XYChart.Series<String, Number> chuoiDuLieu = new XYChart.Series<>();
         chuoiDuLieu.setName("Doanh thu thuần");
 
+        List<String> danhSachNhanNgay = new ArrayList<>();
         try {
             Map<String, Double> duLieu7Ngay = tongQuanService.layDoanhThu7NgayGanNhat();
             for (Map.Entry<String, Double> muc : duLieu7Ngay.entrySet()) {
+                String nhanNgay = muc.getKey();
                 double giaTri = muc.getValue() != null ? muc.getValue() : 0.0;
-                chuoiDuLieu.getData().add(new XYChart.Data<>(muc.getKey(), giaTri));
+                danhSachNhanNgay.add(nhanNgay);
+
+                XYChart.Data<String, Number> diemDuLieu = new XYChart.Data<>(nhanNgay, giaTri);
+                diemDuLieu.nodeProperty().addListener((obs, oldNode, newNode) -> {
+                    if (newNode != null) {
+                        Tooltip tp = new Tooltip("Ngày " + nhanNgay.replace("\n", " - ")
+                                + "\nDoanh thu: " + DINH_DANG_TIEN.format(giaTri) + " ₫");
+                        Tooltip.install(newNode, tp);
+                    }
+                });
+                chuoiDuLieu.getData().add(diemDuLieu);
             }
         } catch (Exception ignored) {}
 
+        if (!danhSachNhanNgay.isEmpty()) {
+            trucNgay.setCategories(FXCollections.observableArrayList(danhSachNhanNgay));
+        }
         barChart.getData().add(chuoiDuLieu);
 
         card.getChildren().addAll(lblTieuDe, barChart);
