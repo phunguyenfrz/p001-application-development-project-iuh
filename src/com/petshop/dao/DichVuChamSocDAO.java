@@ -223,6 +223,11 @@ public class DichVuChamSocDAO {
 
     // Lấy toàn bộ danh sách bảng giá của tất cả dịch vụ
     public List<BangGiaDichVu> layTatCaBangGia() {
+        return layDanhSachBangGia();
+    }
+
+    // Chuẩn quy ước tên hàm: layDanhSach...
+    public List<BangGiaDichVu> layDanhSachBangGia() {
         List<BangGiaDichVu> danhSach = new ArrayList<>();
         String sql = """
                 SELECT maBangGia, maDichVu, gia, phanLoaiKichThuoc, ngayApDung, ngayHetHieuLuc

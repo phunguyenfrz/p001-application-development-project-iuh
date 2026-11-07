@@ -215,8 +215,7 @@ public class TaiKhoanDAO {
             ps.setString(2, maTaiKhoan);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new IllegalStateException("Lỗi đổi mật khẩu tài khoản " + maTaiKhoan + ": " + e.getMessage(), e);
         }
     }
 
@@ -230,8 +229,7 @@ public class TaiKhoanDAO {
             ps.setString(1, maTaiKhoan);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new IllegalStateException("Lỗi khóa tài khoản " + maTaiKhoan + ": " + e.getMessage(), e);
         }
     }
 
@@ -245,8 +243,7 @@ public class TaiKhoanDAO {
             ps.setString(1, maTaiKhoan);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new IllegalStateException("Lỗi mở khóa tài khoản " + maTaiKhoan + ": " + e.getMessage(), e);
         }
     }
 
@@ -261,8 +258,7 @@ public class TaiKhoanDAO {
             ps.setString(2, maTaiKhoan);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new IllegalStateException("Lỗi cập nhật quyền tài khoản " + maTaiKhoan + ": " + e.getMessage(), e);
         }
     }
 
@@ -298,7 +294,7 @@ public class TaiKhoanDAO {
                 danhSach.add(tk);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Lỗi tải danh sách tài khoản: " + e.getMessage(), e);
         }
         return danhSach;
     }

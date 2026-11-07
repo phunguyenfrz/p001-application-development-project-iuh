@@ -175,6 +175,14 @@ public class KhachHangBUS {
         return khachHangDAO.taoMaKhachHang();
     }
 
+    public String taoMaKhachHang() {
+        return taoMaKhachHangMoi();
+    }
+
+    public boolean kiemTraTrungSoDienThoai(String soDienThoai, String maKhachHangBoQua) {
+        return khachHangDAO.kiemTraTrungSoDienThoai(soDienThoai, maKhachHangBoQua);
+    }
+
     /**
      * Kiểm tra toàn diện tính hợp lệ của dữ liệu khách hàng trước khi lưu vào CSDL.
      */

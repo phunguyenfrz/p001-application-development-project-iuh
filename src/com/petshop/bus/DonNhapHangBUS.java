@@ -416,10 +416,17 @@ public class DonNhapHangBUS {
      * Lấy tất cả đơn nhập hàng.
      */
     public List<DonNhapHang> layTatCaDonHang() {
+        return layDanhSachDonNhap();
+    }
+
+    /**
+     * Chuẩn quy ước tên hàm: layDanhSach...
+     */
+    public List<DonNhapHang> layDanhSachDonNhap() {
         if (!xacThucService.coQuyen("DN_CAP_NHAT") && !xacThucService.coQuyen("DN_TIM_KIEM")) {
             xacThucService.kiemTraQuyen("DN_CAP_NHAT");
         }
-        return donNhapHangDAO.layTatCaDonHang();
+        return donNhapHangDAO.layDanhSachDonNhap();
     }
 
     /**

@@ -453,8 +453,12 @@ public class PhieuDoiTraBUS {
     }
 
     public List<PhieuDoiTra> layTatCaPhieuDoiTra() {
+        return layDanhSachPhieuDoiTra();
+    }
+
+    public List<PhieuDoiTra> layDanhSachPhieuDoiTra() {
         kiemTraQuyenDoiTra("RET_SEARCH");
-        return phieuDoiTraDAO.layTatCaPhieuDoiTra();
+        return phieuDoiTraDAO.layDanhSachPhieuDoiTra();
     }
 
     public List<PhieuDoiTra> timKiemPhieuDoiTra(String tuKhoa, LocalDate tuNgay, LocalDate denNgay,

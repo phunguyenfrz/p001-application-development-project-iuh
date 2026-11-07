@@ -342,6 +342,13 @@ public class PhieuDoiTraDAO {
      * Lấy toàn bộ danh sách phiếu đổi trả trong hệ thống.
      */
     public List<PhieuDoiTra> layTatCaPhieuDoiTra() {
+        return layDanhSachPhieuDoiTra();
+    }
+
+    /**
+     * Chuẩn quy ước tên hàm: layDanhSach...
+     */
+    public List<PhieuDoiTra> layDanhSachPhieuDoiTra() {
         return timKiemPhieuDoiTra(null, null, null, null, null);
     }
 

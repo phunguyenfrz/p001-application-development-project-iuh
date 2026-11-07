@@ -23,15 +23,24 @@ public class LichHenBUS {
 
     private final LichHenDAO lichHenDAO;
     private final XacThucBUS xacThucService;
+    private final KhachHangBUS khachHangBUS;
+    private final ThuCungBUS thuCungBUS;
+    private final DichVuChamSocBUS dichVuChamSocBUS;
 
     public LichHenBUS() {
         this.lichHenDAO = new LichHenDAO();
         this.xacThucService = new XacThucBUS();
+        this.khachHangBUS = new KhachHangBUS();
+        this.thuCungBUS = new ThuCungBUS();
+        this.dichVuChamSocBUS = new DichVuChamSocBUS();
     }
 
     public LichHenBUS(LichHenDAO lichHenDAO, XacThucBUS xacThucService) {
         this.lichHenDAO = lichHenDAO;
         this.xacThucService = xacThucService;
+        this.khachHangBUS = new KhachHangBUS();
+        this.thuCungBUS = new ThuCungBUS();
+        this.dichVuChamSocBUS = new DichVuChamSocBUS();
     }
 
     // Đặt lịch hẹn mới kèm danh sách dịch vụ (vai trò CHAM_SOC, ADMIN)
@@ -202,7 +211,7 @@ public class LichHenBUS {
         if (!sdt.matches("^0\\d{9}$")) {
             throw new IllegalArgumentException("Số điện thoại không đúng định dạng (phải có 10 chữ số, bắt đầu bằng số 0)!");
         }
-        return new KhachHangDAO().layKhachHangTheoSoDienThoai(sdt);
+        return khachHangBUS.layKhachHangTheoSoDienThoai(sdt);
     }
 
     // Lấy danh sách thú cưng của một khách hàng
@@ -210,42 +219,42 @@ public class LichHenBUS {
         if (maKhachHang == null || maKhachHang.trim().isEmpty()) {
             return List.of();
         }
-        return new ThuCungDAO().layDanhSachTheoKhachHang(maKhachHang.trim());
+        return thuCungBUS.layDanhSachTheoKhachHang(maKhachHang.trim());
     }
 
     // Lấy danh sách dịch vụ chăm sóc đang kinh doanh
     public List<DichVuChamSoc> layDanhSachDichVu() {
-        return new DichVuChamSocDAO().layDanhSachDichVuDangKinhDoanh();
+        return dichVuChamSocBUS.layDanhSachDichVuDangKinhDoanh();
     }
 
     // Tra đơn giá dịch vụ theo cân nặng
     public double traGiaDichVuTheoCanNang(String maDichVu, double canNang) {
-        return new DichVuChamSocDAO().traGiaTheoCanNang(maDichVu, canNang);
+        return dichVuChamSocBUS.traGiaTheoCanNang(maDichVu, canNang);
     }
 
     // Thêm khách hàng nhanh
     public boolean themKhachHang(KhachHang kh) {
-        return new KhachHangDAO().themKhachHang(kh);
+        return khachHangBUS.themKhachHang(kh);
     }
 
     // Sinh mã khách hàng mới
     public String taoMaKhachHang() {
-        return new KhachHangDAO().taoMaKhachHang();
+        return khachHangBUS.taoMaKhachHang();
     }
 
     // Kiểm tra trùng số điện thoại khách hàng
     public boolean kiemTraTrungSoDienThoai(String soDienThoai) {
-        return new KhachHangDAO().kiemTraTrungSoDienThoai(soDienThoai, null);
+        return khachHangBUS.kiemTraTrungSoDienThoai(soDienThoai, null);
     }
 
     // Thêm thú cưng nhanh
     public boolean themThuCung(ThuCung tc) {
-        return new ThuCungBUS().themThuCung(tc);
+        return thuCungBUS.themThuCung(tc);
     }
 
     // Sinh mã thú cưng mới
     public String taoMaThuCungMoi() {
-        return new ThuCungDAO().taoMaThuCung();
+        return thuCungBUS.taoMaThuCung();
     }
 
     // Kiểm tra tính hợp lệ của dữ liệu lịch hẹn trước khi lưu CSDL
