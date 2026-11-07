@@ -493,7 +493,7 @@ VALUES
 
 INSERT INTO LichHen (maLichHen, maKhachHang, maThuCung, maNhanVien, ngayHen, gioHen, trangThai, ghiChu)
 VALUES
-('LH-20261005-000001', 'KH-20261005-000001', 'TC-20261005-000001', '260003', '2026-10-06', '09:00:00', N'Đã xác nhận', N'Bé Mochi đặt lịch tắm');
+('LH-20261005-000001', 'KH-20261005-000001', 'TC-20261005-000001', '260003', '2026-10-06', '09:00:00', N'Hoàn thành', N'Bé Mochi đặt lịch tắm');
 
 INSERT INTO ChiTietLichHen (maLichHen, maDichVu, canNangThuCung, donGia)
 VALUES
@@ -501,7 +501,7 @@ VALUES
 
 INSERT INTO PhieuDichVu (maPhieuDichVu, maKhachHang, maNhanVien, maLichHen, ngayTiepNhan, gioTiepNhan, trangThai, ghiChu)
 VALUES
-('PDV-20261005-000001', 'KH-20261005-000001', '260003', 'LH-20261005-000001', '2026-10-06', '08:55:00', N'Đang thực hiện', N'Tiếp nhận bé Mochi từ lịch hẹn');
+('PDV-20261005-000001', 'KH-20261005-000001', '260003', 'LH-20261005-000001', '2026-10-06', '08:55:00', N'Hoàn thành', N'Tiếp nhận bé Mochi từ lịch hẹn');
 
 INSERT INTO ChiTietPhieuDichVu (maPhieuDichVu, maThuCung, maDichVu, donGia)
 VALUES

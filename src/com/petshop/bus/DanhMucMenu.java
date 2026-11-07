@@ -153,11 +153,12 @@ public class DanhMucMenu {
                 Set<TaiKhoan.VaiTro> dsVaiTro = new HashSet<>();
                 dsVaiTro.add(TaiKhoan.VaiTro.ADMIN);
 
-                // Quản lý: Quản trị nhân sự, ca trực, danh mục dịch vụ, khuyến mãi và báo cáo
+                // Quản lý: Quản trị nhân sự, ca trực, danh mục dịch vụ, khuyến mãi, sản phẩm, thú cưng và báo cáo
                 if (nhom.getMaNhom().equals("NHAN_VIEN") || nhom.getMaNhom().equals("CA_TRUC") ||
                     nhom.getMaNhom().equals("NHA_CUNG_CAP") || nhom.getMaNhom().equals("DON_NHAP") || nhom.getMaNhom().equals("DICH_VU_CHAM_SOC") ||
                     nhom.getMaNhom().equals("KHUYEN_MAI") || nhom.getMaNhom().equals("SAN_PHAM") ||
-                    nhom.getMaNhom().equals("THONG_KE") || chucNang.getMaChucNang().equals("TK_DOANH_THU") ||
+                    nhom.getMaNhom().equals("THONG_KE") || nhom.getMaNhom().equals("THU_CUNG") ||
+                    chucNang.getMaChucNang().equals("TK_DOANH_THU") ||
                     chucNang.getMaChucNang().equals("HD_DOANH_THU")) {
                     dsVaiTro.add(TaiKhoan.VaiTro.QUAN_LY);
                 }
