@@ -646,12 +646,13 @@ public class LapDonNhapView extends VBox {
 
             root.getChildren().addAll(lblTieuDe, lblMoTa, khungChinh);
 
-            // Tạo scene
-            Scene scene = new Scene(root, 800, 520);
+            // Tạo scene đủ rộng để hiển thị trọn vẹn tất cả các cột mà không cần thanh cuộn ngang
+            Scene scene = new Scene(root, 1160, 560);
             try {
                 scene.getStylesheets().add(getClass().getResource("/com/petshop/gui/css/chung.css").toExternalForm());
             } catch (Exception ignored) {
             }
+            setMinWidth(1150);
             setScene(scene);
 
             // Tải dữ liệu
