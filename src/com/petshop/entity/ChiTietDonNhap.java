@@ -32,32 +32,15 @@ public class ChiTietDonNhap {
         this.donGia = 0.0;
     }
 
-    public ChiTietDonNhap(String maDonHang, SanPham sanPham, int soLuong, double donGia) {
-        this.maDonHang = maDonHang;
-        this.sanPham = sanPham != null ? sanPham : new SanPham();
-        this.soLuong = soLuong;
-        this.soLuongThucNhan = soLuong;
-        this.donGia = Math.max(0.0, donGia);
-    }
-
-    public ChiTietDonNhap(String maDonHang, String maSanPham, int soLuong, double donGia) {
+    public ChiTietDonNhap(String maDonHang, String maSanPham, String tenSanPham, String donViTinh, int soLuong, Integer soLuongThucNhan, double donGia) {
         this.maDonHang = maDonHang;
         this.sanPham = new SanPham();
         this.sanPham.setMaSanPham(maSanPham);
-        this.soLuong = soLuong;
-        this.soLuongThucNhan = soLuong;
-        this.donGia = Math.max(0.0, donGia);
-    }
-
-    public ChiTietDonNhap(String maDonHang, String maSanPham, String tenSanPham, String donViTinh, int soLuong, double donGia) {
-        this(maDonHang, maSanPham, soLuong, donGia);
         this.sanPham.setTenSanPham(tenSanPham);
         this.sanPham.setDonViTinh(donViTinh);
-    }
-
-    public ChiTietDonNhap(String maDonHang, String maSanPham, String tenSanPham, String donViTinh, int soLuong, Integer soLuongThucNhan, double donGia) {
-        this(maDonHang, maSanPham, tenSanPham, donViTinh, soLuong, donGia);
+        this.soLuong = soLuong;
         this.soLuongThucNhan = soLuongThucNhan != null ? soLuongThucNhan : soLuong;
+        this.donGia = Math.max(0.0, donGia);
     }
 
     public String getMaDonHang() {
@@ -66,14 +49,6 @@ public class ChiTietDonNhap {
 
     public void setMaDonHang(String maDonHang) {
         this.maDonHang = maDonHang;
-    }
-
-    public String getMaDonNhap() {
-        return maDonHang;
-    }
-
-    public void setMaDonNhap(String maDonNhap) {
-        this.maDonHang = maDonNhap;
     }
 
     public SanPham getSanPham() {

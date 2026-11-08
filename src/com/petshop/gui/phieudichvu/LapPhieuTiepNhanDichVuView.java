@@ -1387,7 +1387,7 @@ public class LapPhieuTiepNhanDichVuView extends VBox {
             try {
                 ThuCung tc = new ThuCung(
                         txtMaThuCung.getText().trim(),
-                        khachHangHienTai.getMaKhachHang(),
+                        khachHangHienTai,
                         ten,
                         cboLoai.getValue(),
                         txtGiongLoai.getText() != null ? txtGiongLoai.getText().trim() : "",

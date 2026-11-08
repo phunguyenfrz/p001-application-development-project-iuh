@@ -18,30 +18,14 @@ public class ChiTietHoaDonDichVu {
         this.donGia = 0.0;
     }
 
-    public ChiTietHoaDonDichVu(DichVuChamSoc dichVu, ThuCung thuCung, double donGia) {
+    public ChiTietHoaDonDichVu(String maHoaDon, String maDichVu, String tenDichVu, String maThuCung, String tenThuCung, double donGia) {
         this();
-        this.dichVu = dichVu;
-        this.thuCung = thuCung;
-        this.donGia = donGia;
-    }
-
-    public ChiTietHoaDonDichVu(String maHoaDon, DichVuChamSoc dichVu, ThuCung thuCung, double donGia) {
-        this(dichVu, thuCung, donGia);
-        this.maHoaDon = maHoaDon;
-    }
-
-    public ChiTietHoaDonDichVu(String maHoaDon, String maDichVu, int soLuong, double donGia) {
         this.maHoaDon = maHoaDon;
         setMaDichVu(maDichVu);
-        this.soLuong = 1;
-        this.donGia = donGia;
-    }
-
-    public ChiTietHoaDonDichVu(String maHoaDon, String maDichVu, String tenDichVu, String maThuCung, String tenThuCung, double donGia) {
-        this(maHoaDon, maDichVu, 1, donGia);
         setTenDichVu(tenDichVu);
         setMaThuCung(maThuCung);
         setTenThuCung(tenThuCung);
+        this.donGia = donGia;
     }
 
     /**

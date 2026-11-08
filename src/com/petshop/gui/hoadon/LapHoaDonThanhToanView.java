@@ -1232,8 +1232,8 @@ public class LapHoaDonThanhToanView extends VBox {
         colSdt.setPrefWidth(110);
         colSdt.setStyle("-fx-alignment: center;");
 
-        TableColumn<PhieuDichVu, String> colNgay = new TableColumn<>("Ngày lập");
-        colNgay.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getNgayLap() != null ? p.getValue().getNgayLap().format(DINH_DANG_NGAY) : ""));
+        TableColumn<PhieuDichVu, String> colNgay = new TableColumn<>("Ngày tiếp nhận");
+        colNgay.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getNgayTiepNhan() != null ? p.getValue().getNgayTiepNhan().format(DINH_DANG_NGAY) : ""));
         colNgay.setPrefWidth(100);
         colNgay.setStyle("-fx-alignment: center;");
 

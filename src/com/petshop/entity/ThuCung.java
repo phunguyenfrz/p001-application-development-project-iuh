@@ -42,19 +42,6 @@ public class ThuCung {
         this.gioiTinh = "Đực";
     }
 
-    public ThuCung(String maThuCung, String maKhachHang, String tenThuCung, String loaiThuCung,
-                   String giongLoai, double canNang, LocalDate ngaySinh, String diUng, String gioiTinh) {
-        this.maThuCung = maThuCung;
-        setMaKhachHang(maKhachHang);
-        this.tenThuCung = tenThuCung;
-        this.loaiThuCung = loaiThuCung;
-        this.giongLoai = giongLoai;
-        this.canNang = canNang;
-        this.ngaySinh = ngaySinh;
-        this.diUng = diUng;
-        this.gioiTinh = gioiTinh;
-    }
-
     public ThuCung(String maThuCung, KhachHang khachHang, String tenThuCung, String loaiThuCung,
                    String giongLoai, double canNang, LocalDate ngaySinh, String diUng, String gioiTinh) {
         this.maThuCung = maThuCung;
@@ -66,14 +53,6 @@ public class ThuCung {
         this.ngaySinh = ngaySinh;
         this.diUng = diUng;
         this.gioiTinh = gioiTinh;
-    }
-
-    public ThuCung(String maThuCung, String maKhachHang, String tenThuCung, String loaiThuCung,
-                   String giongLoai, double canNang, LocalDate ngaySinh, String diUng, String gioiTinh,
-                   String tenKhachHang, String soDienThoaiKhachHang) {
-        this(maThuCung, maKhachHang, tenThuCung, loaiThuCung, giongLoai, canNang, ngaySinh, diUng, gioiTinh);
-        setTenKhachHang(tenKhachHang);
-        setSoDienThoaiKhachHang(soDienThoaiKhachHang);
     }
 
     // =========================================================================

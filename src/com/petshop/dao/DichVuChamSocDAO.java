@@ -239,9 +239,11 @@ public class DichVuChamSocDAO {
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Date ngayHet = rs.getDate("ngayHetHieuLuc");
+                DichVuChamSoc dv = new DichVuChamSoc();
+                dv.setMaDichVu(rs.getString("maDichVu"));
                 BangGiaDichVu bg = new BangGiaDichVu(
                         rs.getString("maBangGia"),
-                        rs.getString("maDichVu"),
+                        dv,
                         rs.getDouble("gia"),
                         rs.getString("phanLoaiKichThuoc"),
                         rs.getDate("ngayApDung").toLocalDate(),
@@ -375,7 +377,10 @@ public class DichVuChamSocDAO {
                 rs.getString("tenDichVu"),
                 rs.getString("moTa"),
                 rs.getInt("thoiLuong"),
-                rs.getBoolean("trangThai")
+                rs.getBoolean("trangThai"),
+                0.0,
+                0.0,
+                0.0
         );
     }
 

@@ -415,11 +415,7 @@ public class PhanCaNhanVienView extends VBox {
         for (Ca ca : dsCaDuocChon) {
             try {
                 String maPhanCa = caTrucController.taoMaPhanCa();
-                PhanCa phanCaMoi = new PhanCa(maPhanCa, nv.getMaNhanVien(), ca.getMaCa(), ngay, PhanCa.TRANG_THAI_DA_PHAN_CONG);
-                phanCaMoi.setTenNhanVien(nv.getHoTen());
-                phanCaMoi.setTenCa(ca.getTenCa());
-                phanCaMoi.setGioBatDau(ca.getGioBatDau());
-                phanCaMoi.setGioKetThuc(ca.getGioKetThuc());
+                PhanCa phanCaMoi = new PhanCa(maPhanCa, nv, ca, ngay, PhanCa.TRANG_THAI_DA_PHAN_CONG);
 
                 caTrucController.phanCa(phanCaMoi);
                 thanhCong++;

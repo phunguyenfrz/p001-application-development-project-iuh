@@ -67,19 +67,6 @@ public class KhachHang {
         this.trangThai = trangThai;
     }
 
-    /**
-     * Hàm khởi tạo nhanh khi tạo mới khách hàng từ giao diện (chưa có mã và mặc định hoạt động).
-     */
-    public KhachHang(String hoTen, String soDienThoai, String email, String diaChi, String ghiChu) {
-        this.hoTen = hoTen;
-        this.soDienThoai = soDienThoai;
-        this.email = email;
-        this.diaChi = diaChi;
-        this.ghiChu = ghiChu;
-        this.diemTichLuy = 0;
-        this.trangThai = true;
-    }
-
     // =========================================================================
     // GETTERS VÀ SETTERS
     // =========================================================================

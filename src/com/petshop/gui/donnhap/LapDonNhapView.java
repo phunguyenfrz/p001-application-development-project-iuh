@@ -522,7 +522,7 @@ public class LapDonNhapView extends VBox {
             donHang.setGioLap(LocalTime.of(spGio.getValue(), spPhut.getValue(), spGiay.getValue()));
             List<ChiTietDonNhap> dsBanSao = entry.getValue().stream()
                     .map(ct -> new ChiTietDonNhap(null, ct.getMaSanPham(), ct.getTenSanPham(),
-                            ct.getDonViTinh(), ct.getSoLuong(), ct.getDonGia()))
+                            ct.getDonViTinh(), ct.getSoLuong(), ct.getSoLuong(), ct.getDonGia()))
                     .collect(Collectors.toList());
             donHang.setDanhSachChiTiet(dsBanSao);
             danhSachDonHang.add(donHang);

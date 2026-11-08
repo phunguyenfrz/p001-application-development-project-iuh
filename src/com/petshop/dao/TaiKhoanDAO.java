@@ -81,13 +81,10 @@ public class TaiKhoanDAO {
                                 rs.getString("trangThaiNhanVien")
                         );
 
-                        TaiKhoan tk = new TaiKhoan(
-                                rs.getString("maNhanVien"),
-                                rs.getString("tenDangNhap"),
-                                rs.getString("hoTen"),
-                                TaiKhoan.VaiTro.tuTenHienThi(rs.getString("phanQuyen"))
-                        );
+                        TaiKhoan tk = new TaiKhoan();
                         tk.setMaTaiKhoan(rs.getString("maTaiKhoan"));
+                        tk.setTenDangNhap(rs.getString("tenDangNhap"));
+                        tk.setPhanQuyen(TaiKhoan.VaiTro.tuTenHienThi(rs.getString("phanQuyen")));
                         tk.setTrangThai(rs.getBoolean("trangThai"));
                         tk.setNhanVien(nv); // Gán Object Reference chuẩn Điều 2 & 5 IUH
 
@@ -283,13 +280,12 @@ public class TaiKhoanDAO {
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                TaiKhoan tk = new TaiKhoan(
-                        rs.getString("maNhanVien"),
-                        rs.getString("tenDangNhap"),
-                        rs.getString("hoTen"),
-                        TaiKhoan.VaiTro.tuTenHienThi(rs.getString("phanQuyen"))
-                );
+                TaiKhoan tk = new TaiKhoan();
                 tk.setMaTaiKhoan(rs.getString("maTaiKhoan"));
+                tk.setMaNhanVien(rs.getString("maNhanVien"));
+                tk.setTenDangNhap(rs.getString("tenDangNhap"));
+                tk.setHoTenNhanVien(rs.getString("hoTen"));
+                tk.setPhanQuyen(TaiKhoan.VaiTro.tuTenHienThi(rs.getString("phanQuyen")));
                 tk.setTrangThai(rs.getBoolean("trangThai"));
                 danhSach.add(tk);
             }

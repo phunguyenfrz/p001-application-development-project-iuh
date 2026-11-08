@@ -16,13 +16,6 @@ public class ChiTietPhieuDichVu {
         this.donGia = 0.0;
     }
 
-    public ChiTietPhieuDichVu(String maPhieuDichVu, String maThuCung, String maDichVu, double donGia) {
-        this.maPhieuDichVu = maPhieuDichVu;
-        setMaThuCung(maThuCung);
-        setMaDichVu(maDichVu);
-        this.donGia = donGia;
-    }
-
     public ChiTietPhieuDichVu(String maPhieuDichVu, String maThuCung, String tenThuCung,
                               String maDichVu, String tenDichVu, double donGia) {
         this.maPhieuDichVu = maPhieuDichVu;
@@ -30,13 +23,6 @@ public class ChiTietPhieuDichVu {
         setTenThuCung(tenThuCung);
         setMaDichVu(maDichVu);
         setTenDichVu(tenDichVu);
-        this.donGia = donGia;
-    }
-
-    public ChiTietPhieuDichVu(String maPhieuDichVu, ThuCung thuCung, DichVuChamSoc dichVu, double donGia) {
-        this.maPhieuDichVu = maPhieuDichVu;
-        this.thuCung = thuCung;
-        this.dichVu = dichVu;
         this.donGia = donGia;
     }
 

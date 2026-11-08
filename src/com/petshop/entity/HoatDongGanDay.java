@@ -12,14 +12,6 @@ public class HoatDongGanDay {
 
     public HoatDongGanDay() {}
 
-    public HoatDongGanDay(String thoiGian, String loaiHoatDong, String chiTiet) {
-        this.thoiGian = thoiGian;
-        this.loaiHoatDong = loaiHoatDong;
-        this.chiTiet = chiTiet;
-        this.doiTuong = "--";
-        this.trangThai = "Bình thường";
-    }
-
     public HoatDongGanDay(String thoiGian, String loaiHoatDong, String doiTuong, String chiTiet, String trangThai) {
         this.thoiGian = thoiGian;
         this.loaiHoatDong = loaiHoatDong;

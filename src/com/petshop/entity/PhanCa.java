@@ -36,14 +36,6 @@ public class PhanCa {
         this.trangThai = trangThai;
     }
 
-    public PhanCa(String maPhanCa, String maNhanVien, String maCa, LocalDate ngayLam, String trangThai) {
-        this.maPhanCa = maPhanCa;
-        setMaNhanVien(maNhanVien);
-        setMaCa(maCa);
-        this.ngayLam = ngayLam;
-        this.trangThai = trangThai;
-    }
-
     public String getMaPhanCa() {
         return maPhanCa;
     }
