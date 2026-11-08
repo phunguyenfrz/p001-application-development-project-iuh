@@ -86,13 +86,13 @@ public class LapPhieuDoiTraView extends VBox {
             this.cboLyDo = new ComboBox<>(FXCollections.observableArrayList(
                     "Lỗi sản phẩm", "Hết hạn", "Không phù hợp", "Khác"
             ));
-            this.cboLyDo.setPromptText("-- Chọn lý do --");
+            this.cboLyDo.setValue("Không phù hợp");
             this.cboLyDo.setPrefWidth(140);
 
             this.cboTinhTrang = new ComboBox<>(FXCollections.observableArrayList(
                     "Nguyên vẹn", "Đã mở", "Hư hỏng"
             ));
-            this.cboTinhTrang.setPromptText("-- Tình trạng --");
+            this.cboTinhTrang.setValue("Nguyên vẹn");
             this.cboTinhTrang.setPrefWidth(130);
 
             this.txtGhiChu = new TextField();
@@ -326,13 +326,16 @@ public class LapPhieuDoiTraView extends VBox {
             private final CheckBox cb = new CheckBox();
             {
                 cb.setOnAction(e -> {
-                    DongTraHang d = getTableView().getItems().get(getIndex());
+                    int idx = getIndex();
+                    if (idx < 0 || idx >= getTableView().getItems().size()) return;
+                    DongTraHang d = getTableView().getItems().get(idx);
                     if (d.isLaDichVu()) {
                         cb.setSelected(false);
                         hienThongBaoCanhBao("Dòng dịch vụ chăm sóc thú cưng không được phép đổi trả!");
                         return;
                     }
                     d.setChon(cb.isSelected());
+                    d.getLblThanhTien().setText(DINH_DANG_TIEN.format(d.tinhThanhTien()));
                     kiemTraLaiMaTran(d);
                     tinhToanLaiTaiChinh();
                 });
@@ -340,10 +343,11 @@ public class LapPhieuDoiTraView extends VBox {
             @Override
             protected void updateItem(Boolean item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                int idx = getIndex();
+                if (empty || getTableView() == null || idx < 0 || idx >= getTableView().getItems().size()) {
                     setGraphic(null);
                 } else {
-                    DongTraHang d = getTableRow().getItem();
+                    DongTraHang d = getTableView().getItems().get(idx);
                     cb.setSelected(d.isChon());
                     cb.setDisable(d.isLaDichVu() || (d.getSoLuongDaMua() - d.getSoLuongDaTraTruoc()) <= 0);
                     setGraphic(cb);
@@ -937,12 +941,32 @@ public class LapPhieuDoiTraView extends VBox {
             return;
         }
 
+        int soMatHangTra = dsChiTiet.size();
+        StringBuilder dsTenMatHang = new StringBuilder();
+        for (ChiTietPhieuDoiTra ct : dsChiTiet) {
+            if (!dsTenMatHang.isEmpty()) dsTenMatHang.append(", ");
+            dsTenMatHang.append(ct.getTenSanPham()).append(" (x").append(ct.getSoLuong()).append(")");
+        }
+
         if (rdoDoiHang.isSelected() && !dsSanPhamDoiMoi.isEmpty() && !dsChiTiet.isEmpty()) {
-            DongDoiHang doiDau = dsSanPhamDoiMoi.get(0);
-            ChiTietPhieuDoiTra ctDau = dsChiTiet.get(0);
-            ctDau.setSanPhamDoi(doiDau.getSanPham());
-            ctDau.setSoLuongDoi(doiDau.getSoLuong());
-            ctDau.setDonGiaDoi(doiDau.getDonGia());
+            for (int i = 0; i < dsSanPhamDoiMoi.size(); i++) {
+                DongDoiHang doi = dsSanPhamDoiMoi.get(i);
+                if (i < soMatHangTra) {
+                    ChiTietPhieuDoiTra ctTarget = dsChiTiet.get(i);
+                    ctTarget.setSanPhamDoi(doi.getSanPham());
+                    ctTarget.setSoLuongDoi(doi.getSoLuong());
+                    ctTarget.setDonGiaDoi(doi.getDonGia());
+                } else {
+                    ChiTietPhieuDoiTra ctPhu = new ChiTietPhieuDoiTra();
+                    ctPhu.setHoaDon(hoaDonDangChon);
+                    ctPhu.setSoLuong(0);
+                    ctPhu.setDonGia(0.0);
+                    ctPhu.setSanPhamDoi(doi.getSanPham());
+                    ctPhu.setSoLuongDoi(doi.getSoLuong());
+                    ctPhu.setDonGiaDoi(doi.getDonGia());
+                    dsChiTiet.add(ctPhu);
+                }
+            }
         }
 
         PhieuDoiTra phieu = new PhieuDoiTra();
@@ -979,8 +1003,8 @@ public class LapPhieuDoiTraView extends VBox {
         Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION);
         xacNhan.setTitle("Xác nhận lưu phiếu đổi trả");
         xacNhan.setHeaderText("Xác nhận lưu phiếu đổi trả với khách hàng?");
-        xacNhan.setContentText(String.format("Mã phiếu mới: %s\nHóa đơn gốc: %s\nSố mặt hàng trả: %d\nKết quả tài chính: %s",
-                phieu.getMaPhieuDoiTra(), phieu.getMaHoaDon(), dsChiTiet.size(), lblChenhLechCuoi.getText()));
+        xacNhan.setContentText(String.format("Mã phiếu mới: %s\nHóa đơn gốc: %s\nSố mặt hàng trả (%d SP - tổng SL %d): %s\nKết quả tài chính: %s",
+                phieu.getMaPhieuDoiTra(), phieu.getMaHoaDon(), soMatHangTra, tongSoLuongTra, dsTenMatHang, lblChenhLechCuoi.getText()));
 
         if (xacNhan.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
             try {

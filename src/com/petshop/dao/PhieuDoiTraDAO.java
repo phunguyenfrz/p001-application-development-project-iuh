@@ -20,7 +20,77 @@ import java.util.List;
  */
 public class PhieuDoiTraDAO {
 
+    private static final String DAU_TACH_SP_DOI_PHU = "||DOI:";
+
     public PhieuDoiTraDAO() {
+    }
+
+    private void chenDanhSachChiTiet(PreparedStatement psChiTiet, PhieuDoiTra phieu) throws SQLException {
+        List<ChiTietPhieuDoiTra> dsHangTra = new ArrayList<>();
+        List<ChiTietPhieuDoiTra> dsHangDoi = new ArrayList<>();
+
+        if (phieu.getDanhSachSanPham() != null) {
+            for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
+                if (ct.getMaSanPham() != null && !ct.getMaSanPham().isBlank() && ct.getSoLuong() > 0) {
+                    dsHangTra.add(ct);
+                }
+                if (ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().isBlank() && ct.getSoLuongDoi() > 0) {
+                    dsHangDoi.add(ct);
+                }
+            }
+        }
+
+        StringBuilder chuoiDoiPhu = new StringBuilder();
+        if (dsHangDoi.size() > dsHangTra.size()) {
+            for (int i = dsHangTra.size(); i < dsHangDoi.size(); i++) {
+                ChiTietPhieuDoiTra doiPhu = dsHangDoi.get(i);
+                if (!chuoiDoiPhu.isEmpty()) {
+                    chuoiDoiPhu.append(";");
+                }
+                chuoiDoiPhu.append(doiPhu.getMaSanPhamDoi().trim())
+                        .append(":")
+                        .append(doiPhu.getSoLuongDoi());
+            }
+        }
+
+        for (int i = 0; i < dsHangTra.size(); i++) {
+            ChiTietPhieuDoiTra ct = dsHangTra.get(i);
+            String ghiChuGoc = ct.getGhiChu() != null ? ct.getGhiChu().trim() : "";
+            int viTriTagCu = ghiChuGoc.indexOf(DAU_TACH_SP_DOI_PHU);
+            if (viTriTagCu >= 0) {
+                ghiChuGoc = ghiChuGoc.substring(0, viTriTagCu).trim();
+            }
+
+            String ghiChuLuu = ghiChuGoc;
+            if (i == 0 && !chuoiDoiPhu.isEmpty()) {
+                ghiChuLuu = ghiChuGoc + DAU_TACH_SP_DOI_PHU + chuoiDoiPhu;
+            }
+
+            String maSpDoi = null;
+            int slDoi = 0;
+            if (i < dsHangDoi.size()) {
+                maSpDoi = dsHangDoi.get(i).getMaSanPhamDoi();
+                slDoi = dsHangDoi.get(i).getSoLuongDoi();
+            }
+
+            psChiTiet.setString(1, phieu.getMaPhieuDoiTra());
+            psChiTiet.setString(2, phieu.getMaHoaDon());
+            psChiTiet.setString(3, ct.getMaSanPham());
+            psChiTiet.setInt(4, ct.getSoLuong());
+            psChiTiet.setDouble(5, ct.getDonGia());
+            psChiTiet.setString(6, ct.getLyDo());
+            psChiTiet.setString(7, ct.getTinhTrang() != null ? ct.getTinhTrang() : "Nguyên vẹn");
+            psChiTiet.setString(8, ct.getHuongXuLy());
+            psChiTiet.setString(9, ghiChuLuu.isEmpty() ? null : ghiChuLuu);
+            psChiTiet.setString(10, maSpDoi);
+            if (slDoi > 0 && maSpDoi != null && !maSpDoi.isBlank()) {
+                psChiTiet.setInt(11, slDoi);
+            } else {
+                psChiTiet.setNull(11, Types.INTEGER);
+            }
+            psChiTiet.addBatch();
+        }
+        psChiTiet.executeBatch();
     }
 
     /**
@@ -92,25 +162,7 @@ public class PhieuDoiTraDAO {
                 psPhieu.setString(11, phieu.getTrangThai() != null ? phieu.getTrangThai() : "Chờ xử lý");
                 psPhieu.executeUpdate();
 
-                for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
-                    psChiTiet.setString(1, phieu.getMaPhieuDoiTra());
-                    psChiTiet.setString(2, phieu.getMaHoaDon());
-                    psChiTiet.setString(3, ct.getMaSanPham());
-                    psChiTiet.setInt(4, ct.getSoLuong());
-                    psChiTiet.setDouble(5, ct.getDonGia());
-                    psChiTiet.setString(6, ct.getLyDo());
-                    psChiTiet.setString(7, ct.getTinhTrang() != null ? ct.getTinhTrang() : "Nguyên vẹn");
-                    psChiTiet.setString(8, ct.getHuongXuLy());
-                    psChiTiet.setString(9, ct.getGhiChu());
-                    psChiTiet.setString(10, ct.getMaSanPhamDoi());
-                    if (ct.getSoLuongDoi() > 0) {
-                        psChiTiet.setInt(11, ct.getSoLuongDoi());
-                    } else {
-                        psChiTiet.setNull(11, Types.INTEGER);
-                    }
-                    psChiTiet.addBatch();
-                }
-                psChiTiet.executeBatch();
+                chenDanhSachChiTiet(psChiTiet, phieu);
 
                 conn.commit();
                 return true;
@@ -167,24 +219,7 @@ public class PhieuDoiTraDAO {
                 psXoa.setString(1, phieu.getMaPhieuDoiTra());
                 psXoa.executeUpdate();
 
-                for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
-                    psChiTiet.setString(1, phieu.getMaPhieuDoiTra());
-                    psChiTiet.setString(2, phieu.getMaHoaDon());
-                    psChiTiet.setString(3, ct.getMaSanPham());
-                    psChiTiet.setInt(4, ct.getSoLuong());
-                    psChiTiet.setDouble(5, ct.getDonGia());
-                    psChiTiet.setString(6, ct.getLyDo());
-                    psChiTiet.setString(7, ct.getTinhTrang() != null ? ct.getTinhTrang() : "Nguyên vẹn");
-                    psChiTiet.setString(8, ct.getHuongXuLy());
-                    psChiTiet.setString(9, ct.getGhiChu());
-                    psChiTiet.setString(10, ct.getMaSanPhamDoi());
-                    if (ct.getSoLuongDoi() > 0) {
-                        psChiTiet.setInt(11, ct.getSoLuongDoi());
-                    } else {
-                        psChiTiet.setNull(11, Types.INTEGER);
-                    }
-                    psChiTiet.executeUpdate();
-                }
+                chenDanhSachChiTiet(psChiTiet, phieu);
 
                 conn.commit();
                 return true;
@@ -254,27 +289,29 @@ public class PhieuDoiTraDAO {
                  PreparedStatement psTruDiem = conn.prepareStatement(sqlTruDiemKhach)) {
 
                 for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
-                    String huong = ct.getHuongXuLy() != null ? ct.getHuongXuLy().trim() : "";
+                    if (ct.getMaSanPham() != null && !ct.getMaSanPham().trim().isEmpty() && ct.getSoLuong() > 0) {
+                        String huong = ct.getHuongXuLy() != null ? ct.getHuongXuLy().trim() : "";
 
-                    if (!huong.isEmpty()) {
-                        psHuong.setString(1, huong);
-                        psHuong.setString(2, phieu.getMaPhieuDoiTra());
-                        psHuong.setString(3, ct.getMaSanPham());
-                        psHuong.executeUpdate();
-                    }
+                        if (!huong.isEmpty()) {
+                            psHuong.setString(1, huong);
+                            psHuong.setString(2, phieu.getMaPhieuDoiTra());
+                            psHuong.setString(3, ct.getMaSanPham());
+                            psHuong.executeUpdate();
+                        }
 
-                    boolean thuLaiVaoKho;
-                    if (!huong.isEmpty()) {
-                        thuLaiVaoKho = "Thu lại vào kho".equalsIgnoreCase(huong)
-                                || "Nhập lại kho bán".equalsIgnoreCase(huong);
-                    } else {
-                        thuLaiVaoKho = "Nguyên vẹn".equalsIgnoreCase(ct.getTinhTrang());
-                    }
+                        boolean thuLaiVaoKho;
+                        if (!huong.isEmpty()) {
+                            thuLaiVaoKho = "Thu lại vào kho".equalsIgnoreCase(huong)
+                                    || "Nhập lại kho bán".equalsIgnoreCase(huong);
+                        } else {
+                            thuLaiVaoKho = "Nguyên vẹn".equalsIgnoreCase(ct.getTinhTrang());
+                        }
 
-                    if (thuLaiVaoKho) {
-                        psCong.setInt(1, ct.getSoLuong());
-                        psCong.setString(2, ct.getMaSanPham());
-                        psCong.executeUpdate();
+                        if (thuLaiVaoKho) {
+                            psCong.setInt(1, ct.getSoLuong());
+                            psCong.setString(2, ct.getMaSanPham());
+                            psCong.executeUpdate();
+                        }
                     }
 
                     if (ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().trim().isEmpty() && ct.getSoLuongDoi() > 0) {
@@ -542,6 +579,8 @@ public class PhieuDoiTraDAO {
                 WHERE ct.maPhieuDoiTra = ?
                 """;
 
+        List<String> dsChuoiDoiPhu = new ArrayList<>();
+
         try (PreparedStatement ps = conn.prepareStatement(sqlChiTiet)) {
             ps.setString(1, phieu.getMaPhieuDoiTra());
             try (ResultSet rs = ps.executeQuery()) {
@@ -558,7 +597,19 @@ public class PhieuDoiTraDAO {
                     ct.setLyDo(rs.getString("lyDo"));
                     ct.setTinhTrang(rs.getString("tinhTrang"));
                     ct.setHuongXuLy(rs.getString("huongXuLy"));
-                    ct.setGhiChu(rs.getString("ghiChu"));
+
+                    String ghiChuRaw = rs.getString("ghiChu");
+                    if (ghiChuRaw != null && ghiChuRaw.contains(DAU_TACH_SP_DOI_PHU)) {
+                        int idx = ghiChuRaw.indexOf(DAU_TACH_SP_DOI_PHU);
+                        String ghiChuSach = ghiChuRaw.substring(0, idx).trim();
+                        String phanDoiPhu = ghiChuRaw.substring(idx + DAU_TACH_SP_DOI_PHU.length()).trim();
+                        ct.setGhiChu(ghiChuSach.isEmpty() ? null : ghiChuSach);
+                        if (!phanDoiPhu.isEmpty()) {
+                            dsChuoiDoiPhu.add(phanDoiPhu);
+                        }
+                    } else {
+                        ct.setGhiChu(ghiChuRaw);
+                    }
 
                     ct.setMaSanPhamDoi(rs.getString("maSanPhamDoi"));
                     ct.setTenSanPhamDoi(rs.getString("tenSanPhamDoi"));
@@ -566,6 +617,45 @@ public class PhieuDoiTraDAO {
                     ct.setDonGiaDoi(rs.getDouble("donGiaDoi"));
 
                     phieu.themChiTiet(ct);
+                }
+            }
+        }
+
+        if (!dsChuoiDoiPhu.isEmpty()) {
+            String sqlSpDoi = "SELECT tenSanPham, giaBan FROM dbo.SanPham WHERE maSanPham = ?";
+            try (PreparedStatement psSp = conn.prepareStatement(sqlSpDoi)) {
+                for (String chuoi : dsChuoiDoiPhu) {
+                    String[] cacMuc = chuoi.split(";");
+                    for (String muc : cacMuc) {
+                        String[] cap = muc.split(":");
+                        if (cap.length >= 2) {
+                            String maSpDoi = cap[0].trim();
+                            int slDoi = 1;
+                            try {
+                                slDoi = Integer.parseInt(cap[1].trim());
+                            } catch (NumberFormatException ignored) {}
+                            if (!maSpDoi.isEmpty() && slDoi > 0) {
+                                ChiTietPhieuDoiTra ctPhu = new ChiTietPhieuDoiTra();
+                                ctPhu.setMaPhieuDoiTra(phieu.getMaPhieuDoiTra());
+                                ctPhu.setMaHoaDon(phieu.getMaHoaDon());
+                                ctPhu.setSoLuong(0);
+                                ctPhu.setDonGia(0.0);
+                                ctPhu.setMaSanPhamDoi(maSpDoi);
+                                ctPhu.setSoLuongDoi(slDoi);
+
+                                psSp.setString(1, maSpDoi);
+                                try (ResultSet rsSp = psSp.executeQuery()) {
+                                    if (rsSp.next()) {
+                                        ctPhu.setTenSanPhamDoi(rsSp.getString("tenSanPham"));
+                                        ctPhu.setDonGiaDoi(rsSp.getDouble("giaBan"));
+                                    } else {
+                                        ctPhu.setTenSanPhamDoi(maSpDoi);
+                                    }
+                                }
+                                phieu.themChiTiet(ctPhu);
+                            }
+                        }
+                    }
                 }
             }
         }
