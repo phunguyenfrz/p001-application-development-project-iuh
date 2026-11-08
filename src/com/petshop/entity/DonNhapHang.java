@@ -69,29 +69,12 @@ public class DonNhapHang {
         this.trangThai = trangThai != null ? trangThai : TRANG_THAI_CHO_NHAN;
     }
 
-    public DonNhapHang(String maDonHang, String maNhaCungCap, String maNhanVien, LocalDate ngayLap, String trangThai) {
-        this.maDonHang = maDonHang;
-        this.nhaCungCap = new NhaCungCap(maNhaCungCap, null);
-        this.nhanVien = new NhanVien(maNhanVien, null, null, null, true, "Đang làm");
-        this.ngayLap = ngayLap != null ? ngayLap : LocalDate.now();
-        this.gioLap = LocalTime.now().withNano(0);
-        this.trangThai = trangThai != null ? trangThai : TRANG_THAI_CHO_NHAN;
-    }
-
     public String getMaDonHang() {
         return maDonHang;
     }
 
     public void setMaDonHang(String maDonHang) {
         this.maDonHang = maDonHang;
-    }
-
-    public String getMaDonNhap() {
-        return maDonHang;
-    }
-
-    public void setMaDonNhap(String maDonNhap) {
-        this.maDonHang = maDonNhap;
     }
 
     // --- Object Reference: NhaCungCap ---

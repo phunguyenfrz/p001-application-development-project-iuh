@@ -249,17 +249,16 @@ public class CaTrucBUS {
             if (cacThuTrongTuan.contains(ngayHienTai.getDayOfWeek())) {
                 for (Ca ca : dsCa) {
                     try {
+                        NhanVien nv = new NhanVien();
+                        nv.setMaNhanVien(maNhanVien);
+                        nv.setHoTen(tenNhanVien);
                         PhanCa phanCaMoi = new PhanCa(
                                 phanCaDAO.taoMaPhanCa(),
-                                maNhanVien,
-                                ca.getMaCa(),
+                                nv,
+                                ca,
                                 ngayHienTai,
                                 PhanCa.TRANG_THAI_DA_PHAN_CONG
                         );
-                        phanCaMoi.setTenNhanVien(tenNhanVien);
-                        phanCaMoi.setTenCa(ca.getTenCa());
-                        phanCaMoi.setGioBatDau(ca.getGioBatDau());
-                        phanCaMoi.setGioKetThuc(ca.getGioKetThuc());
 
                         phanCa(phanCaMoi);
                         thanhCong++;

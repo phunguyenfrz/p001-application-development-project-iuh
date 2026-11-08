@@ -19,23 +19,13 @@ public class ChiTietHoaDonSanPham {
         this.donGia = 0.0;
     }
 
-    public ChiTietHoaDonSanPham(SanPham sanPham, int soLuong, double donGia) {
-        this.sanPham = sanPham;
-        this.soLuong = soLuong;
-        this.donGia = donGia;
-    }
-
-    public ChiTietHoaDonSanPham(String maHoaDon, String maSanPham, int soLuong, double donGia) {
+    public ChiTietHoaDonSanPham(String maHoaDon, String maSanPham, String tenSanPham, String donViTinh, int soLuong, double donGia) {
         this.maHoaDon = maHoaDon;
         setMaSanPham(maSanPham);
-        this.soLuong = soLuong;
-        this.donGia = donGia;
-    }
-
-    public ChiTietHoaDonSanPham(String maHoaDon, String maSanPham, String tenSanPham, String donViTinh, int soLuong, double donGia) {
-        this(maHoaDon, maSanPham, soLuong, donGia);
         setTenSanPham(tenSanPham);
         setDonViTinh(donViTinh);
+        this.soLuong = soLuong;
+        this.donGia = donGia;
     }
 
     /**

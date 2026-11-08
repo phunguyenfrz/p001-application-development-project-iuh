@@ -477,10 +477,10 @@ public class NhanVienDAO {
 
     private List<NhanVien> taoDuLieuGiaNhanVien() {
         List<NhanVien> ds = new ArrayList<>();
-        ds.add(new NhanVien("260001", "Nguyễn Thị Lan", "0901234567", "Quản lý", false, "Đang làm"));
-        ds.add(new NhanVien("260002", "Trần Văn Minh", "0902345678", "Bán hàng", true, "Đang làm"));
-        ds.add(new NhanVien("260003", "Phạm Thị Hoa", "0903456789", "Chăm sóc", false, "Đang làm"));
-        ds.add(new NhanVien("260000", "Quản trị hệ thống", "0909000000", "Quản lý", true, "Đang làm"));
+        ds.add(new NhanVien("260001", "Nguyễn Thị Lan", "0901234567", "Quản lý", null, false, "Đang làm"));
+        ds.add(new NhanVien("260002", "Trần Văn Minh", "0902345678", "Bán hàng", null, true, "Đang làm"));
+        ds.add(new NhanVien("260003", "Phạm Thị Hoa", "0903456789", "Chăm sóc", null, false, "Đang làm"));
+        ds.add(new NhanVien("260000", "Quản trị hệ thống", "0909000000", "Quản lý", null, true, "Đang làm"));
         return ds;
     }
 }

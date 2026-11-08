@@ -12,17 +12,14 @@ public class LichSuGiaoDich {
     /** Mã định danh hóa đơn (HD-yyyyMMdd-xxxxxx) */
     private final String maHoaDon;
 
-    /** Mã khách hàng sở hữu giao dịch */
-    private final String maKhachHang;
-
-    /** Họ tên khách hàng */
-    private final String tenKhachHang;
+    /** Tham chiếu đối tượng Khách hàng sở hữu giao dịch */
+    private final KhachHang khachHang;
 
     /** Ngày lập hóa đơn */
     private final LocalDate ngayLap;
 
-    /** Tên nhân viên phụ trách lập hóa đơn */
-    private final String tenNhanVien;
+    /** Tham chiếu đối tượng Nhân viên phụ trách lập hóa đơn */
+    private final NhanVien nhanVien;
 
     /** Hình thức thanh toán: Tiền mặt, Chuyển khoản, POS */
     private final String hinhThucThanhToan;
@@ -37,10 +34,12 @@ public class LichSuGiaoDich {
                           LocalDate ngayLap, String tenNhanVien, String hinhThucThanhToan,
                           String trangThaiThanhToan, double tongTien) {
         this.maHoaDon = maHoaDon;
-        this.maKhachHang = maKhachHang;
-        this.tenKhachHang = tenKhachHang;
+        this.khachHang = new KhachHang();
+        this.khachHang.setMaKhachHang(maKhachHang);
+        this.khachHang.setHoTen(tenKhachHang);
         this.ngayLap = ngayLap;
-        this.tenNhanVien = tenNhanVien;
+        this.nhanVien = new NhanVien();
+        this.nhanVien.setHoTen(tenNhanVien);
         this.hinhThucThanhToan = hinhThucThanhToan;
         this.trangThaiThanhToan = trangThaiThanhToan;
         this.tongTien = Math.max(0.0, tongTien);
@@ -50,20 +49,28 @@ public class LichSuGiaoDich {
         return maHoaDon;
     }
 
+    public KhachHang getKhachHang() {
+        return khachHang;
+    }
+
     public String getMaKhachHang() {
-        return maKhachHang;
+        return khachHang != null ? khachHang.getMaKhachHang() : null;
     }
 
     public String getTenKhachHang() {
-        return tenKhachHang;
+        return khachHang != null ? khachHang.getHoTen() : null;
     }
 
     public LocalDate getNgayLap() {
         return ngayLap;
     }
 
+    public NhanVien getNhanVien() {
+        return nhanVien;
+    }
+
     public String getTenNhanVien() {
-        return tenNhanVien;
+        return nhanVien != null ? nhanVien.getHoTen() : null;
     }
 
     public String getHinhThucThanhToan() {

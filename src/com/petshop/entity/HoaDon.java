@@ -59,22 +59,6 @@ public class HoaDon {
         this.hinhThucThanhToan = hinhThucThanhToan != null ? hinhThucThanhToan : "Tiền mặt";
     }
 
-    // Constructor tương thích các tầng cũ (đã xóa tongTien, tienGiam khỏi tham số theo Điều 2)
-    public HoaDon(String maHoaDon, String maLichHen, String maPhieuDichVu, String maNhanVien,
-                   String maKhachHang, LocalDate ngayLap, String hinhThucThanhToan,
-                   String trangThaiThanhToan, String maKhuyenMai) {
-        this();
-        this.maHoaDon = maHoaDon;
-        setMaLichHen(maLichHen);
-        setMaPhieuDichVu(maPhieuDichVu);
-        setMaNhanVien(maNhanVien);
-        setMaKhachHang(maKhachHang);
-        this.ngayLap = ngayLap != null ? ngayLap : LocalDate.now();
-        this.hinhThucThanhToan = hinhThucThanhToan;
-        this.trangThaiThanhToan = trangThaiThanhToan != null ? trangThaiThanhToan : "Đã thanh toán";
-        setMaKhuyenMai(maKhuyenMai);
-    }
-
     /**
      * Phương thức tự tính toán: Tính tổng tiền gốc từ danh sách sản phẩm và dịch vụ (Điều 2).
      */
@@ -115,17 +99,6 @@ public class HoaDon {
         double tongGoc = tinhTongTienGoc();
         double giamGia = tinhTongGiamGia();
         return Math.max(0.0, tongGoc - giamGia);
-    }
-
-    public int getTongSoLuongMatHang() {
-        int tong = 0;
-        if (danhSachSanPham != null) {
-            for (ChiTietHoaDonSanPham sp : danhSachSanPham) tong += sp.getSoLuong();
-        }
-        if (danhSachDichVu != null) {
-            tong += danhSachDichVu.size();
-        }
-        return tong;
     }
 
     /**

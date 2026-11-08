@@ -17,24 +17,10 @@ public class ChiTietLichHen {
         this.donGia = 0.0;
     }
 
-    public ChiTietLichHen(String maLichHen, String maDichVu, double canNangThuCung, double donGia) {
-        this.maLichHen = maLichHen;
-        setMaDichVu(maDichVu);
-        this.canNangThuCung = canNangThuCung;
-        this.donGia = donGia;
-    }
-
     public ChiTietLichHen(String maLichHen, String maDichVu, String tenDichVu, double canNangThuCung, double donGia) {
         this.maLichHen = maLichHen;
         setMaDichVu(maDichVu);
         setTenDichVu(tenDichVu);
-        this.canNangThuCung = canNangThuCung;
-        this.donGia = donGia;
-    }
-
-    public ChiTietLichHen(String maLichHen, DichVuChamSoc dichVu, double canNangThuCung, double donGia) {
-        this.maLichHen = maLichHen;
-        this.dichVu = dichVu;
         this.canNangThuCung = canNangThuCung;
         this.donGia = donGia;
     }
@@ -121,9 +107,5 @@ public class ChiTietLichHen {
 
     public String getMaThuCung() {
         return thuCung != null ? thuCung.getMaThuCung() : null;
-    }
-
-    public double tinhThanhTien() {
-        return donGia;
     }
 }

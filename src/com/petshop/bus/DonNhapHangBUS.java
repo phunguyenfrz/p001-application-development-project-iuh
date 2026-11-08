@@ -296,7 +296,7 @@ public class DonNhapHangBUS {
             if (thieu > 0) {
                 tongSoLuongThieu += thieu;
                 ChiTietDonNhap ctBu = new ChiTietDonNhap(null, ct.getMaSanPham(), ct.getTenSanPham(),
-                        ct.getDonViTinh(), thieu, ct.getDonGia());
+                        ct.getDonViTinh(), thieu, thieu, ct.getDonGia());
                 dsHangThieu.add(ctBu);
             }
         }

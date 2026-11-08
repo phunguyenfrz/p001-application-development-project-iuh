@@ -28,10 +28,6 @@ public class NhanVien {
         this.gioiTinh = true;
     }
 
-    public NhanVien(String maNhanVien, String hoTen, String soDienThoai, String chucVu, boolean gioiTinh, String trangThai) {
-        this(maNhanVien, hoTen, soDienThoai, chucVu, null, gioiTinh, trangThai);
-    }
-
     public NhanVien(String maNhanVien, String hoTen, String soDienThoai, String chucVu,
                     LocalDate ngaySinh, boolean gioiTinh, String trangThai) {
         this.maNhanVien = maNhanVien;

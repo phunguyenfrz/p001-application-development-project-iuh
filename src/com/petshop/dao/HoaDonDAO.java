@@ -239,7 +239,7 @@ public class HoaDonDAO {
                 psLaySp.setString(1, maHoaDon);
                 try (ResultSet rsSp = psLaySp.executeQuery()) {
                     while (rsSp.next()) {
-                        dsSp.add(new ChiTietHoaDonSanPham(maHoaDon, rsSp.getString("maSanPham"), rsSp.getInt("soLuong"), 0.0));
+                        dsSp.add(new ChiTietHoaDonSanPham(maHoaDon, rsSp.getString("maSanPham"), null, null, rsSp.getInt("soLuong"), 0.0));
                     }
                 }
             }

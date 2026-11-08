@@ -8,12 +8,9 @@ import java.time.LocalDate;
 public class LichSuChamSoc {
 
     private final String maLichHen;
-    private final String maThuCung;
-    private final String tenThuCung;
-    private final String maKhachHang;
-    private final String tenKhachHang;
-    private final String maNhanVien;
-    private final String tenNhanVien;
+    private final ThuCung thuCung;
+    private final KhachHang khachHang;
+    private final NhanVien nhanVien;
     private final LocalDate ngayHen;
     private final String gioHen;
     private final String trangThai;
@@ -25,12 +22,15 @@ public class LichSuChamSoc {
                          LocalDate ngayHen, String gioHen,
                          String trangThai, String ghiChu) {
         this.maLichHen = maLichHen;
-        this.maThuCung = maThuCung;
-        this.tenThuCung = tenThuCung;
-        this.maKhachHang = maKhachHang;
-        this.tenKhachHang = tenKhachHang;
-        this.maNhanVien = maNhanVien;
-        this.tenNhanVien = tenNhanVien;
+        this.thuCung = new ThuCung();
+        this.thuCung.setMaThuCung(maThuCung);
+        this.thuCung.setTenThuCung(tenThuCung);
+        this.khachHang = new KhachHang();
+        this.khachHang.setMaKhachHang(maKhachHang);
+        this.khachHang.setHoTen(tenKhachHang);
+        this.nhanVien = new NhanVien();
+        this.nhanVien.setMaNhanVien(maNhanVien);
+        this.nhanVien.setHoTen(tenNhanVien);
         this.ngayHen = ngayHen;
         this.gioHen = gioHen;
         this.trangThai = trangThai != null ? trangThai : "Hoàn thành";
@@ -41,28 +41,40 @@ public class LichSuChamSoc {
         return maLichHen;
     }
 
+    public ThuCung getThuCung() {
+        return thuCung;
+    }
+
     public String getMaThuCung() {
-        return maThuCung;
+        return thuCung != null ? thuCung.getMaThuCung() : null;
     }
 
     public String getTenThuCung() {
-        return tenThuCung;
+        return thuCung != null ? thuCung.getTenThuCung() : null;
+    }
+
+    public KhachHang getKhachHang() {
+        return khachHang;
     }
 
     public String getMaKhachHang() {
-        return maKhachHang;
+        return khachHang != null ? khachHang.getMaKhachHang() : null;
     }
 
     public String getTenKhachHang() {
-        return tenKhachHang;
+        return khachHang != null ? khachHang.getHoTen() : null;
+    }
+
+    public NhanVien getNhanVien() {
+        return nhanVien;
     }
 
     public String getMaNhanVien() {
-        return maNhanVien;
+        return nhanVien != null ? nhanVien.getMaNhanVien() : null;
     }
 
     public String getTenNhanVien() {
-        return tenNhanVien;
+        return nhanVien != null ? nhanVien.getHoTen() : null;
     }
 
     public LocalDate getNgayHen() {

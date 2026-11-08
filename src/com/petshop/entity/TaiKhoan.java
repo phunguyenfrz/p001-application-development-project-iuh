@@ -56,22 +56,6 @@ public class TaiKhoan {
         this.trangThai = trangThai;
     }
 
-    public TaiKhoan(String maNhanVien, String tenDangNhap, String hoTenNhanVien, VaiTro phanQuyen) {
-        setMaNhanVien(maNhanVien);
-        this.tenDangNhap = tenDangNhap;
-        setHoTenNhanVien(hoTenNhanVien);
-        this.phanQuyen = phanQuyen;
-        this.trangThai = true;
-    }
-
-    public TaiKhoan(NhanVien nhanVien, String tenDangNhap, String matKhau, VaiTro phanQuyen) {
-        this.setNhanVien(nhanVien);
-        this.tenDangNhap = tenDangNhap;
-        this.matKhau = matKhau;
-        this.phanQuyen = phanQuyen;
-        this.trangThai = true;
-    }
-
     public String getMaTaiKhoan() {
         return maTaiKhoan;
     }
@@ -152,26 +136,5 @@ public class TaiKhoan {
             this.nhanVien = new NhanVien();
         }
         this.nhanVien.setHoTen(hoTenNhanVien);
-    }
-
-    // Các phương thức nghiệp vụ khớp với Class Diagram
-    public void doiMatKhau(String matKhauMoi) {
-        this.matKhau = matKhauMoi;
-    }
-
-    public void khoaTaiKhoan() {
-        this.trangThai = false;
-    }
-
-    public void moKhoaTaiKhoan() {
-        this.trangThai = true;
-    }
-
-    public void capNhatQuyen(VaiTro quyenMoi) {
-        this.phanQuyen = quyenMoi;
-    }
-
-    public void resetMatKhau(String matKhauMacDinh) {
-        this.matKhau = matKhauMacDinh;
     }
 }

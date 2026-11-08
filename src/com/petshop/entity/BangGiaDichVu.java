@@ -29,16 +29,6 @@ public class BangGiaDichVu {
     public BangGiaDichVu() {
     }
 
-    public BangGiaDichVu(String maBangGia, String maDichVu, double gia,
-                         String phanLoaiKichThuoc, LocalDate ngayApDung, LocalDate ngayHetHieuLuc) {
-        this.maBangGia = maBangGia;
-        setMaDichVu(maDichVu);
-        this.gia = gia;
-        this.phanLoaiKichThuoc = phanLoaiKichThuoc;
-        this.ngayApDung = ngayApDung;
-        this.ngayHetHieuLuc = ngayHetHieuLuc;
-    }
-
     public BangGiaDichVu(String maBangGia, DichVuChamSoc dichVu, double gia,
                          String phanLoaiKichThuoc, LocalDate ngayApDung, LocalDate ngayHetHieuLuc) {
         this.maBangGia = maBangGia;

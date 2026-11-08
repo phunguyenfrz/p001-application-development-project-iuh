@@ -30,19 +30,6 @@ public class PhieuDichVu {
         this.danhSachChiTiet = new ArrayList<>();
     }
 
-    public PhieuDichVu(String maPhieuDichVu, String maKhachHang, String maNhanVien, String maLichHen,
-                       LocalDate ngayTiepNhan, LocalTime gioTiepNhan, String trangThai, String ghiChu) {
-        this.maPhieuDichVu = maPhieuDichVu;
-        setMaKhachHang(maKhachHang);
-        setMaNhanVien(maNhanVien);
-        setMaLichHen(maLichHen);
-        this.ngayTiepNhan = ngayTiepNhan != null ? ngayTiepNhan : LocalDate.now();
-        this.gioTiepNhan = gioTiepNhan != null ? gioTiepNhan : LocalTime.now();
-        this.trangThai = trangThai != null ? trangThai : "Đang chờ";
-        this.ghiChu = ghiChu;
-        this.danhSachChiTiet = new ArrayList<>();
-    }
-
     public PhieuDichVu(String maPhieuDichVu, KhachHang khachHang, NhanVien nhanVien, LichHen lichHen,
                        LocalDate ngayTiepNhan, LocalTime gioTiepNhan, String trangThai, String ghiChu) {
         this.maPhieuDichVu = maPhieuDichVu;
@@ -187,16 +174,8 @@ public class PhieuDichVu {
         return ngayTiepNhan;
     }
 
-    public LocalDate getNgayLap() {
-        return ngayTiepNhan;
-    }
-
     public void setNgayTiepNhan(LocalDate ngayTiepNhan) {
         this.ngayTiepNhan = ngayTiepNhan;
-    }
-
-    public void setNgayLap(LocalDate ngayLap) {
-        this.ngayTiepNhan = ngayLap;
     }
 
     public LocalTime getGioTiepNhan() {

@@ -21,17 +21,13 @@ public class DichVuChamSoc {
         this.trangThai = true;
     }
 
-    public DichVuChamSoc(String maDichVu, String tenDichVu, String moTa, int thoiLuong, boolean trangThai) {
+    public DichVuChamSoc(String maDichVu, String tenDichVu, String moTa, int thoiLuong, boolean trangThai,
+                         double giaNho, double giaVua, double giaLon) {
         this.maDichVu = maDichVu;
         this.tenDichVu = tenDichVu;
         this.moTa = moTa;
         this.thoiLuong = thoiLuong;
         this.trangThai = trangThai;
-    }
-
-    public DichVuChamSoc(String maDichVu, String tenDichVu, String moTa, int thoiLuong, boolean trangThai,
-                         double giaNho, double giaVua, double giaLon) {
-        this(maDichVu, tenDichVu, moTa, thoiLuong, trangThai);
         this.giaNho = giaNho;
         this.giaVua = giaVua;
         this.giaLon = giaLon;

@@ -7,8 +7,7 @@ import java.util.List;
 
 /**
  * Thực thể lịch hẹn dịch vụ chăm sóc thú cưng của khách hàng.
- * Chuẩn hóa OOP với Object Reference (KhachHang, ThuCung, NhanVien),
- * kiểu nguyên thủy double, thuộc tính dẫn xuất tinhTongTien() (IUH Directive).
+ * Chuẩn hóa OOP với Object Reference (KhachHang, ThuCung, NhanVien).
  */
 public class LichHen {
 
@@ -25,19 +24,6 @@ public class LichHen {
 
     public LichHen() {
         this.trangThai = "Đã đặt";
-        this.danhSachChiTiet = new ArrayList<>();
-    }
-
-    public LichHen(String maLichHen, String maKhachHang, String maThuCung, String maNhanVien,
-                   LocalDate ngayHen, LocalTime gioHen, String trangThai, String ghiChu) {
-        this.maLichHen = maLichHen;
-        setMaKhachHang(maKhachHang);
-        setMaThuCung(maThuCung);
-        setMaNhanVien(maNhanVien);
-        this.ngayHen = ngayHen;
-        this.gioHen = gioHen;
-        this.trangThai = trangThai != null ? trangThai : "Đã đặt";
-        this.ghiChu = ghiChu;
         this.danhSachChiTiet = new ArrayList<>();
     }
 
@@ -235,31 +221,6 @@ public class LichHen {
 
     public void setDanhSachChiTiet(List<ChiTietLichHen> danhSachChiTiet) {
         this.danhSachChiTiet = danhSachChiTiet != null ? danhSachChiTiet : new ArrayList<>();
-    }
-
-    // =========================================================================
-    // THUỘC TÍNH DẪN XUẤT (DERIVED ATTRIBUTES - ĐIỀU 2)
-    // CẤM LƯU BIẾN THÀNH VIÊN, CẤM TRUYỀN VÀO CONSTRUCTOR, CẤM CÓ SETTER
-    // =========================================================================
-
-    /**
-     * Phương thức tự tính toán tổng tiền dự kiến từ các dịch vụ trong lịch hẹn.
-     */
-    public double tinhTongTien() {
-        double tong = 0.0;
-        if (danhSachChiTiet != null) {
-            for (ChiTietLichHen ct : danhSachChiTiet) {
-                tong += ct.tinhThanhTien();
-            }
-        }
-        return tong;
-    }
-
-    /**
-     * Delegate getter cho TableView PropertyValueFactory nếu cần.
-     */
-    public double getTongTien() {
-        return tinhTongTien();
     }
 
     /**

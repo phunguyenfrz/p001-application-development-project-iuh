@@ -43,12 +43,6 @@ public class SanPham {
         this.trangThai = trangThai;
     }
 
-    public SanPham(String maSanPham, String maNhaCungCap, String tenSanPham, String maVach,
-                   double giaNhap, double giaBan, int soLuongTon, int nguongTonToiThieu, String donViTinh, boolean trangThai) {
-        this(maSanPham, new NhaCungCap(maNhaCungCap, null), tenSanPham, maVach,
-                giaNhap, giaBan, soLuongTon, nguongTonToiThieu, donViTinh, trangThai);
-    }
-
     public String getMaSanPham() {
         return maSanPham;
     }
@@ -115,16 +109,8 @@ public class SanPham {
         return giaBan;
     }
 
-    public double getGiaBanDouble() {
-        return giaBan;
-    }
-
     public void setGiaBan(double giaBan) {
         this.giaBan = giaBan;
-    }
-
-    public void setGiaBan(java.math.BigDecimal giaBan) {
-        this.giaBan = giaBan != null ? giaBan.doubleValue() : 0.0;
     }
 
     public int getSoLuongTon() {
@@ -185,26 +171,6 @@ public class SanPham {
             return "Sắp hết hàng";
         }
         return "Còn hàng";
-    }
-
-    /**
-     * Trạng thái hiển thị sản phẩm:
-     * - Nếu trangThai == false: "Ngừng kinh doanh"
-     * - Nếu trangThai == true và soLuongTon <= 0: "Hết hàng"
-     * - Nếu trangThai == true và soLuongTon > 0 và <= nguong: "Sắp hết hàng"
-     * - Nếu trangThai == true và soLuongTon > nguong: "Đang kinh doanh"
-     */
-    public String getTrangThaiHienThi() {
-        if (!this.trangThai) {
-            return "Ngừng kinh doanh";
-        }
-        if (this.soLuongTon <= 0) {
-            return "Hết hàng";
-        }
-        if (isSapHetHang()) {
-            return "Sắp hết hàng";
-        }
-        return "Đang kinh doanh";
     }
 
     @Override

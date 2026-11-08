@@ -542,9 +542,12 @@ public class SanPhamDAO {
         if ("CÃ¡i".equals(donViTinh)) {
             donViTinh = "Cái";
         }
-        SanPham sp = new SanPham(
+        NhaCungCap ncc = new NhaCungCap();
+        ncc.setMaNhaCungCap(rs.getString("maNhaCungCap"));
+        ncc.setTenNhaCungCap(rs.getString("tenNhaCungCap"));
+        return new SanPham(
                 rs.getString("maSanPham"),
-                rs.getString("maNhaCungCap"),
+                ncc,
                 rs.getString("tenSanPham"),
                 rs.getString("maVach"),
                 rs.getDouble("giaNhap"),
@@ -554,7 +557,5 @@ public class SanPhamDAO {
                 donViTinh,
                 rs.getBoolean("trangThai")
         );
-        sp.setTenNhaCungCap(rs.getString("tenNhaCungCap"));
-        return sp;
     }
 }

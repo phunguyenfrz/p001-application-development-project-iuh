@@ -47,20 +47,6 @@ public class PhieuDoiTra {
         this.trangThai = trangThai != null ? trangThai : "Chờ xử lý";
     }
 
-    public PhieuDoiTra(String maPhieuDoiTra, String maHoaDon, String maNhanVien, String maKhachHang,
-                       LocalDate ngayLap, String lyDo, int soLuong, String loaiXuLy, String trangThai) {
-        this();
-        this.maPhieuDoiTra = maPhieuDoiTra;
-        setMaHoaDon(maHoaDon);
-        setMaNhanVien(maNhanVien);
-        setMaKhachHang(maKhachHang);
-        this.ngayLap = ngayLap != null ? ngayLap : LocalDate.now();
-        this.lyDo = lyDo;
-        this.soLuong = soLuong;
-        this.loaiXuLy = loaiXuLy != null ? loaiXuLy : "Hoàn tiền";
-        this.trangThai = trangThai != null ? trangThai : "Chờ xử lý";
-    }
-
     // =========================================================================
     // CÁC PHƯƠNG THỨC TÍNH TOÁN DẪN XUẤT (KHÔNG LƯU BIẾN THÀNH VIÊN, KHÔNG SETTER)
     // =========================================================================

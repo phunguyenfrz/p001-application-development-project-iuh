@@ -17,28 +17,6 @@ public class NhaCungCap {
     public NhaCungCap() {
     }
 
-    public NhaCungCap(String maNhaCungCap, String tenNhaCungCap) {
-        this.maNhaCungCap = maNhaCungCap;
-        this.tenNhaCungCap = tenNhaCungCap;
-        this.trangThai = true;
-    }
-
-    public NhaCungCap(String maNhaCungCap, String tenNhaCungCap, String soDienThoai, String diaChi) {
-        this.maNhaCungCap = maNhaCungCap;
-        this.tenNhaCungCap = tenNhaCungCap;
-        this.soDienThoai = soDienThoai;
-        this.diaChi = diaChi;
-        this.trangThai = true;
-    }
-
-    public NhaCungCap(String maNhaCungCap, String tenNhaCungCap, String soDienThoai, String diaChi, boolean trangThai) {
-        this.maNhaCungCap = maNhaCungCap;
-        this.tenNhaCungCap = tenNhaCungCap;
-        this.soDienThoai = soDienThoai;
-        this.diaChi = diaChi;
-        this.trangThai = trangThai;
-    }
-
     public NhaCungCap(String maNhaCungCap, String tenNhaCungCap, String soDienThoai, String diaChi, String email, boolean trangThai) {
         this.maNhaCungCap = maNhaCungCap;
         this.tenNhaCungCap = tenNhaCungCap;

@@ -354,11 +354,16 @@ public class PhanCaDAO {
     }
 
     private PhanCa taoPhanCaGia(String ma, String maNV, String tenNV, String maCa, String tenCa, LocalTime batDau, LocalTime ketThuc, LocalDate ngay) {
-        PhanCa pc = new PhanCa(ma, maNV, maCa, ngay, PhanCa.TRANG_THAI_DA_PHAN_CONG);
+        PhanCa pc = new PhanCa();
+        pc.setMaPhanCa(ma);
+        pc.setMaNhanVien(maNV);
         pc.setTenNhanVien(tenNV);
+        pc.setMaCa(maCa);
         pc.setTenCa(tenCa);
         pc.setGioBatDau(batDau);
         pc.setGioKetThuc(ketThuc);
+        pc.setNgayLam(ngay);
+        pc.setTrangThai(PhanCa.TRANG_THAI_DA_PHAN_CONG);
         return pc;
     }
 }
