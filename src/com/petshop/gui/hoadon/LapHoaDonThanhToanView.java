@@ -9,6 +9,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -90,8 +91,8 @@ public class LapHoaDonThanhToanView extends VBox {
     private boolean dangChonGoiY = false;
 
     // Quản lý đơn hàng tạm (Hold Orders - xử lý khách thiếu tiền / đổi ý)
-    private final ObservableList<DonHangTam> dsDonTam = FXCollections.observableArrayList();
-    private int demDonTam = 1;
+    private static final ObservableList<DonHangTam> dsDonTam = FXCollections.observableArrayList();
+    private static int demDonTam = 1;
     private final Button btnLuuTam = new Button("⏸ Lưu tạm (F6)");
     private final Button btnDonTam = new Button("📂 Đơn tạm (0)");
 
@@ -718,7 +719,11 @@ public class LapHoaDonThanhToanView extends VBox {
     }
 
     private void napDuLieuBanDau() {
-        txtMaHoaDon.setText(controller.taoMaHoaDonMoi());
+        try {
+            txtMaHoaDon.setText(controller.taoMaHoaDonMoi());
+        } catch (Exception e) {
+            txtMaHoaDon.setText("HD-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd")) + "-0001");
+        }
         lblNoiDungCk.setText("Nội dung CK: " + txtMaHoaDon.getText());
 
         // Nhân viên thu ngân tự động lấy từ phiên đăng nhập (Điều 5 IUH)
@@ -726,6 +731,9 @@ public class LapHoaDonThanhToanView extends VBox {
         if (tk != null && tk.getNhanVien() != null) {
             this.nhanVienHienTai = tk.getNhanVien();
         }
+
+        // Cập nhật nhãn nút đơn tạm nếu đã có đơn lưu tạm trước đó
+        capNhatNhanNutDonTam();
 
         // Khuyến mãi
         try {
@@ -743,32 +751,43 @@ public class LapHoaDonThanhToanView extends VBox {
         } catch (Exception ignored) {}
     }
 
+    private EventHandler<KeyEvent> boLocPhimTat;
+
     private void caiDatPhimTat() {
+        boLocPhimTat = event -> {
+            // Chỉ bắt phím tắt khi màn hình Lập hóa đơn đang được hiển thị trên Scene
+            if (getScene() == null || getParent() == null || !isVisible()) {
+                return;
+            }
+            if (event.getCode() == KeyCode.F4) {
+                txtMaVachSanPham.requestFocus();
+                txtMaVachSanPham.selectAll();
+                event.consume();
+            } else if (event.getCode() == KeyCode.F2) {
+                txtTimKhach.requestFocus();
+                txtTimKhach.selectAll();
+                event.consume();
+            } else if (event.getCode() == KeyCode.F5) {
+                lamMoiToanBoForm();
+                event.consume();
+            } else if (event.getCode() == KeyCode.F6) {
+                xuLyLuuTamDonHang();
+                event.consume();
+            } else if (event.getCode() == KeyCode.F7) {
+                moCuaSoDonHangTam();
+                event.consume();
+            } else if (event.getCode() == KeyCode.F9) {
+                xuLyThanhToan(true);
+                event.consume();
+            }
+        };
+
         sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene != null) {
-                newScene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-                    if (event.getCode() == KeyCode.F4) {
-                        txtMaVachSanPham.requestFocus();
-                        txtMaVachSanPham.selectAll();
-                        event.consume();
-                    } else if (event.getCode() == KeyCode.F2) {
-                        txtTimKhach.requestFocus();
-                        txtTimKhach.selectAll();
-                        event.consume();
-                    } else if (event.getCode() == KeyCode.F5) {
-                        lamMoiToanBoForm();
-                        event.consume();
-                    } else if (event.getCode() == KeyCode.F6) {
-                        xuLyLuuTamDonHang();
-                        event.consume();
-                    } else if (event.getCode() == KeyCode.F7) {
-                        moCuaSoDonHangTam();
-                        event.consume();
-                    } else if (event.getCode() == KeyCode.F9) {
-                        xuLyThanhToan(true);
-                        event.consume();
-                    }
-                });
+            if (oldScene != null && boLocPhimTat != null) {
+                oldScene.removeEventFilter(KeyEvent.KEY_PRESSED, boLocPhimTat);
+            }
+            if (newScene != null && boLocPhimTat != null) {
+                newScene.addEventFilter(KeyEvent.KEY_PRESSED, boLocPhimTat);
             }
         });
     }

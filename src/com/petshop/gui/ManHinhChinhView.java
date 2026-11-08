@@ -92,6 +92,9 @@ public class ManHinhChinhView extends BorderPane {
     private String maChucNangDangChon;
     private Label lblDuongDan;
 
+    // Giữ màn hình Lập hóa đơn trong suốt phiên làm việc để không mất giỏ hàng & đơn tạm khi chuyển màn hình
+    private LapHoaDonThanhToanView manHinhLapHoaDon;
+
     public ManHinhChinhView(Stage stage) {
         this.stage = stage;
         if (stage != null) {
@@ -574,7 +577,10 @@ public class ManHinhChinhView extends BorderPane {
                 } else if ("HD_CAP_NHAT".equals(chucNang.getMaChucNang())) {
                     yield new CapNhatHoaDonView();
                 }
-                yield new LapHoaDonThanhToanView();
+                if (manHinhLapHoaDon == null) {
+                    manHinhLapHoaDon = new LapHoaDonThanhToanView();
+                }
+                yield manHinhLapHoaDon;
             }
             case "PHIEU_DOI_TRA" -> {
                 if ("DT_XU_LY".equals(chucNang.getMaChucNang()) || "RET_CONFIRM".equals(chucNang.getMaChucNang())) {
@@ -661,6 +667,7 @@ public class ManHinhChinhView extends BorderPane {
     }
 
     public void dangXuat() {
+        manHinhLapHoaDon = null;
         xacThucService.dangXuat();
         stage.setTitle("Happy Tails - Đăng nhập");
         Scene scene = new Scene(new DangNhapView(stage), 540, 420);
