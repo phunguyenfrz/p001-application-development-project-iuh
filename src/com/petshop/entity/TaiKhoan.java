@@ -39,19 +39,17 @@ public class TaiKhoan {
 
     private String maTaiKhoan;
     private NhanVien nhanVien; // Object Reference nhân viên sở hữu tài khoản (Điều 2 & 5 IUH)
-    private String maNhanVien;
     private String tenDangNhap;
     private String matKhau;
     private VaiTro phanQuyen;
     private boolean trangThai; // true: hoạt động, false: bị khóa
-    private String hoTenNhanVien; // Tên nhân viên hiển thị trên giao diện
 
     public TaiKhoan() {
     }
 
     public TaiKhoan(String maTaiKhoan, String maNhanVien, String tenDangNhap, String matKhau, VaiTro phanQuyen, boolean trangThai) {
         this.maTaiKhoan = maTaiKhoan;
-        this.maNhanVien = maNhanVien;
+        setMaNhanVien(maNhanVien);
         this.tenDangNhap = tenDangNhap;
         this.matKhau = matKhau;
         this.phanQuyen = phanQuyen;
@@ -59,9 +57,9 @@ public class TaiKhoan {
     }
 
     public TaiKhoan(String maNhanVien, String tenDangNhap, String hoTenNhanVien, VaiTro phanQuyen) {
-        this.maNhanVien = maNhanVien;
+        setMaNhanVien(maNhanVien);
         this.tenDangNhap = tenDangNhap;
-        this.hoTenNhanVien = hoTenNhanVien;
+        setHoTenNhanVien(hoTenNhanVien);
         this.phanQuyen = phanQuyen;
         this.trangThai = true;
     }
@@ -83,33 +81,28 @@ public class TaiKhoan {
     }
 
     public NhanVien getNhanVien() {
-        if (nhanVien == null && maNhanVien != null && !maNhanVien.isBlank()) {
-            nhanVien = new NhanVien();
-            nhanVien.setMaNhanVien(maNhanVien);
-            nhanVien.setHoTen(hoTenNhanVien);
-        }
         return nhanVien;
     }
 
     public void setNhanVien(NhanVien nhanVien) {
         this.nhanVien = nhanVien;
-        if (nhanVien != null) {
-            this.maNhanVien = nhanVien.getMaNhanVien();
-            if (nhanVien.getHoTen() != null && !nhanVien.getHoTen().isBlank()) {
-                this.hoTenNhanVien = nhanVien.getHoTen();
-            }
-        }
     }
 
     public String getMaNhanVien() {
-        return nhanVien != null ? nhanVien.getMaNhanVien() : maNhanVien;
+        return nhanVien != null ? nhanVien.getMaNhanVien() : null;
     }
 
     public void setMaNhanVien(String maNhanVien) {
-        this.maNhanVien = maNhanVien;
-        if (this.nhanVien != null) {
-            this.nhanVien.setMaNhanVien(maNhanVien);
+        if (maNhanVien == null) {
+            if (this.nhanVien != null) {
+                this.nhanVien.setMaNhanVien(null);
+            }
+            return;
         }
+        if (this.nhanVien == null) {
+            this.nhanVien = new NhanVien();
+        }
+        this.nhanVien.setMaNhanVien(maNhanVien);
     }
 
     public String getTenDangNhap() {
@@ -145,17 +138,20 @@ public class TaiKhoan {
     }
 
     public String getHoTenNhanVien() {
-        if (nhanVien != null && nhanVien.getHoTen() != null && !nhanVien.getHoTen().isBlank()) {
-            return nhanVien.getHoTen();
-        }
-        return hoTenNhanVien;
+        return nhanVien != null ? nhanVien.getHoTen() : null;
     }
 
     public void setHoTenNhanVien(String hoTenNhanVien) {
-        this.hoTenNhanVien = hoTenNhanVien;
-        if (this.nhanVien != null) {
-            this.nhanVien.setHoTen(hoTenNhanVien);
+        if (hoTenNhanVien == null) {
+            if (this.nhanVien != null) {
+                this.nhanVien.setHoTen(null);
+            }
+            return;
         }
+        if (this.nhanVien == null) {
+            this.nhanVien = new NhanVien();
+        }
+        this.nhanVien.setHoTen(hoTenNhanVien);
     }
 
     // Các phương thức nghiệp vụ khớp với Class Diagram

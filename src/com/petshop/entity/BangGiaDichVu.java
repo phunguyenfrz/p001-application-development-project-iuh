@@ -21,7 +21,6 @@ public class BangGiaDichVu {
 
     private String maBangGia;
     private DichVuChamSoc dichVu;
-    private String maDichVu;
     private double gia;
     private String phanLoaiKichThuoc; // "Nhỏ", "Vừa", "Lớn"
     private LocalDate ngayApDung;
@@ -33,7 +32,7 @@ public class BangGiaDichVu {
     public BangGiaDichVu(String maBangGia, String maDichVu, double gia,
                          String phanLoaiKichThuoc, LocalDate ngayApDung, LocalDate ngayHetHieuLuc) {
         this.maBangGia = maBangGia;
-        this.maDichVu = maDichVu;
+        setMaDichVu(maDichVu);
         this.gia = gia;
         this.phanLoaiKichThuoc = phanLoaiKichThuoc;
         this.ngayApDung = ngayApDung;
@@ -44,9 +43,6 @@ public class BangGiaDichVu {
                          String phanLoaiKichThuoc, LocalDate ngayApDung, LocalDate ngayHetHieuLuc) {
         this.maBangGia = maBangGia;
         this.dichVu = dichVu;
-        if (dichVu != null) {
-            this.maDichVu = dichVu.getMaDichVu();
-        }
         this.gia = gia;
         this.phanLoaiKichThuoc = phanLoaiKichThuoc;
         this.ngayApDung = ngayApDung;
@@ -78,17 +74,19 @@ public class BangGiaDichVu {
 
     public void setDichVu(DichVuChamSoc dichVu) {
         this.dichVu = dichVu;
-        if (dichVu != null) {
-            this.maDichVu = dichVu.getMaDichVu();
-        }
     }
 
     public String getMaDichVu() {
-        return dichVu != null ? dichVu.getMaDichVu() : maDichVu;
+        return dichVu != null ? dichVu.getMaDichVu() : null;
     }
 
     public void setMaDichVu(String maDichVu) {
-        this.maDichVu = maDichVu;
+        if (maDichVu == null) {
+            if (this.dichVu != null) {
+                this.dichVu.setMaDichVu(null);
+            }
+            return;
+        }
         if (this.dichVu == null) {
             this.dichVu = new DichVuChamSoc();
         }
