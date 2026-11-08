@@ -189,8 +189,8 @@ public class PhieuDoiTraBUS {
      * - Các trường hợp được thông qua:
      *   + "Lỗi sản phẩm": "Nguyên vẹn", "Đã mở"
      *   + "Hết hạn": tất cả trường hợp ("Nguyên vẹn", "Đã mở")
-     *   + "Không phù hợp": "Nguyên vẹn"
-     *   + "Khác": "Nguyên vẹn"
+     *   + "Khác": tất cả trường hợp ("Nguyên vẹn", "Đã mở")
+     *   + "Không phù hợp": chỉ "Nguyên vẹn"
      * - Các trường hợp còn lại không được phép.
      */
     public void kiemTraQuyTacMaTran(String lyDo, String tinhTrang, String ghiChu) {
@@ -212,11 +212,9 @@ public class PhieuDoiTraBUS {
         }
 
         boolean duocPhep;
-        if ("Lỗi sản phẩm".equalsIgnoreCase(ld)) {
+        if ("Lỗi sản phẩm".equalsIgnoreCase(ld) || "Hết hạn".equalsIgnoreCase(ld) || "Khác".equalsIgnoreCase(ld)) {
             duocPhep = laNguyenVen || laDaMo;
-        } else if ("Hết hạn".equalsIgnoreCase(ld)) {
-            duocPhep = laNguyenVen || laDaMo;
-        } else if ("Không phù hợp".equalsIgnoreCase(ld) || "Khác".equalsIgnoreCase(ld)) {
+        } else if ("Không phù hợp".equalsIgnoreCase(ld)) {
             duocPhep = laNguyenVen;
         } else {
             duocPhep = false;
