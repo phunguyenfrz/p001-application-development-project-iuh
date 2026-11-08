@@ -13,7 +13,7 @@ import javafx.scene.layout.*;
 import java.util.List;
 
 /**
- * Màn hình báo cáo thống kê danh mục sản phẩm và giá trị tồn kho (PRD_REPORT).
+ * Màn hình báo cáo thống kê danh mục sản phẩm và giá trị tồn kho (SP_BAO_CAO).
  * Thiết kế giao diện đồng bộ hoàn toàn theo phân hệ Dịch vụ.
  */
 public class BaoCaoSanPhamView extends VBox {

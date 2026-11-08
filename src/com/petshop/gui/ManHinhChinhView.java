@@ -551,11 +551,11 @@ public class ManHinhChinhView extends BorderPane {
                 yield new LapDonNhapView();
             }
             case "SAN_PHAM"           -> {
-                if ("PRD_SEARCH".equals(chucNang.getMaChucNang())) {
+                if ("SP_TIM_KIEM".equals(chucNang.getMaChucNang())) {
                     yield new TimKiemSanPhamView();
-                } else if ("PRD_INVENTORY".equals(chucNang.getMaChucNang())) {
+                } else if ("SP_TON_KHO".equals(chucNang.getMaChucNang())) {
                     yield new TheoDoiTonKhoView();
-                } else if ("PRD_REPORT".equals(chucNang.getMaChucNang())) {
+                } else if ("SP_BAO_CAO".equals(chucNang.getMaChucNang())) {
                     yield new BaoCaoSanPhamView();
                 }
                 yield new CapNhatSanPhamView();
@@ -577,9 +577,9 @@ public class ManHinhChinhView extends BorderPane {
                 yield new LapHoaDonThanhToanView();
             }
             case "PHIEU_DOI_TRA" -> {
-                if ("DT_XU_LY".equals(chucNang.getMaChucNang()) || "RET_CONFIRM".equals(chucNang.getMaChucNang())) {
+                if ("DT_XU_LY".equals(chucNang.getMaChucNang())) {
                     yield new XuLyPhieuDoiTraView();
-                } else if ("DT_TIM_KIEM".equals(chucNang.getMaChucNang()) || "RET_SEARCH".equals(chucNang.getMaChucNang())) {
+                } else if ("DT_TIM_KIEM".equals(chucNang.getMaChucNang())) {
                     yield new TimKiemPhieuDoiTraView();
                 }
                 yield new LapPhieuDoiTraView();
@@ -641,7 +641,7 @@ public class ManHinhChinhView extends BorderPane {
      */
     public void moManHinhTheoDoiTonKhoSapHetTuDashboard() {
         maNhomDangChon = "SAN_PHAM";
-        maChucNangDangChon = "PRD_INVENTORY";
+        maChucNangDangChon = "SP_TON_KHO";
         hienThiThanhDieuHuong();
         if (lblDuongDan != null) {
             lblDuongDan.setText(layTenVaiTroHienTai() + " / Quản lý sản phẩm / Theo dõi tồn kho (Sắp hết)");

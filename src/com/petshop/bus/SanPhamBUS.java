@@ -24,11 +24,17 @@ public class SanPhamBUS {
         this.xacThucService = xacThucService;
     }
 
+    private void kiemTraQuyen(String maQuyenChinh) {
+        if (xacThucService != null) {
+            xacThucService.kiemTraQuyen(maQuyenChinh);
+        }
+    }
+
     /**
      * Thêm mới sản phẩm (Quyền SP_CAP_NHAT).
      */
     public boolean themSanPham(SanPham sp) {
-        xacThucService.kiemTraQuyen("SP_CAP_NHAT");
+        kiemTraQuyen("SP_CAP_NHAT");
 
         if (sp == null) {
             throw new IllegalArgumentException("Thông tin sản phẩm không được để trống!");
@@ -62,7 +68,7 @@ public class SanPhamBUS {
      * Cập nhật thông tin sản phẩm (Quyền SP_CAP_NHAT).
      */
     public boolean capNhatSanPham(SanPham sp) {
-        xacThucService.kiemTraQuyen("SP_CAP_NHAT");
+        kiemTraQuyen("SP_CAP_NHAT");
         if (sp == null || sp.getMaSanPham() == null || sp.getMaSanPham().trim().isEmpty()) {
             throw new IllegalArgumentException("Mã sản phẩm cần cập nhật không được để trống!");
         }
@@ -77,7 +83,7 @@ public class SanPhamBUS {
 
     /** Xóa sản phẩm nếu không còn tồn kho và chưa phát sinh giao dịch. */
     public boolean xoaSanPham(String maSanPham) {
-        xacThucService.kiemTraQuyen("SP_CAP_NHAT");
+        kiemTraQuyen("SP_CAP_NHAT");
         if (maSanPham == null || maSanPham.trim().isEmpty()) {
             throw new IllegalArgumentException("Mã sản phẩm cần xóa không được để trống!");
         }
@@ -86,7 +92,7 @@ public class SanPhamBUS {
 
     /** Ngừng kinh doanh hoặc kinh doanh lại sản phẩm, giữ nguyên lịch sử. */
     public boolean capNhatTrangThaiSanPham(String maSanPham, boolean trangThai) {
-        xacThucService.kiemTraQuyen("SP_CAP_NHAT");
+        kiemTraQuyen("SP_CAP_NHAT");
         if (maSanPham == null || maSanPham.isBlank()) {
             throw new IllegalArgumentException("Mã sản phẩm không được để trống!");
         }
@@ -124,7 +130,7 @@ public class SanPhamBUS {
      * Tìm kiếm sản phẩm theo từ khóa và trạng thái (Quyền SP_TIM_KIEM).
      */
     public List<SanPham> timKiemSanPham(String tuKhoa, Boolean trangThai) {
-        xacThucService.kiemTraQuyen("SP_TIM_KIEM");
+        kiemTraQuyen("SP_TIM_KIEM");
         return sanPhamDAO.timKiemSanPham(tuKhoa, trangThai);
     }
 
@@ -132,7 +138,7 @@ public class SanPhamBUS {
      * Lấy danh sách sản phẩm tồn kho dưới ngưỡng an toàn (Quyền SP_TON_KHO).
      */
     public List<SanPham> layDanhSachSanPhamSapHet() {
-        xacThucService.kiemTraQuyen("SP_TON_KHO");
+        kiemTraQuyen("SP_TON_KHO");
         return sanPhamDAO.layDanhSachSanPhamSapHet();
     }
 

@@ -153,9 +153,9 @@ public class PhieuDichVuBUS {
         if (tk.getPhanQuyen() == TaiKhoan.VaiTro.ADMIN) {
             return;
         }
-        if (DanhMucMenu.kiemTraQuyen(tk.getPhanQuyen(), "PDV_TIM_KIEM")
-                || DanhMucMenu.kiemTraQuyen(tk.getPhanQuyen(), "PDV_CAP_NHAT")
-                || DanhMucMenu.kiemTraQuyen(tk.getPhanQuyen(), "PDV_TAO")) {
+        if (DanhMucMenu.kiemTraQuyen(tk, "PDV_TIM_KIEM")
+                || DanhMucMenu.kiemTraQuyen(tk, "PDV_CAP_NHAT")
+                || DanhMucMenu.kiemTraQuyen(tk, "PDV_TAO")) {
             return;
         }
         throw new SecurityException("Tài khoản của bạn không có quyền xem thông tin phiếu dịch vụ!");

@@ -36,7 +36,7 @@ public class HoaDonBUS {
     }
 
     /**
-     * Lập và thanh toán hóa đơn mới (INV_CREATE).
+     * Lập và thanh toán hóa đơn mới (HD_TAO).
      * Yêu cầu quyền: HD_TAO.
      */
     public boolean lapHoaDon(HoaDon hoaDon) {
@@ -117,7 +117,7 @@ public class HoaDonBUS {
     }
 
     /**
-     * Hủy hóa đơn bán hàng và hoàn lại tồn kho sản phẩm (INV_CANCEL).
+     * Hủy hóa đơn bán hàng và hoàn lại tồn kho sản phẩm (HD_CAP_NHAT).
      * Yêu cầu quyền: HD_CAP_NHAT.
      */
     public boolean huyHoaDon(String maHoaDon, String lyDoHuy) {
@@ -140,7 +140,7 @@ public class HoaDonBUS {
     }
 
     /**
-     * Cập nhật hóa đơn đã thanh toán khi có thay đổi mặt hàng hoặc số lượng (INV_UPDATE).
+     * Cập nhật hóa đơn đã thanh toán khi có thay đổi mặt hàng hoặc số lượng (HD_CAP_NHAT).
      * Yêu cầu quyền: HD_CAP_NHAT. Tuân thủ 100% kiểu nguyên thủy double (Điều 1 IUH).
      */
     public boolean capNhatHoaDon(HoaDon hoaDonCu, HoaDon hoaDonMoi, double tienThanhToanThem, double tienHoanLai) {
@@ -180,7 +180,7 @@ public class HoaDonBUS {
     }
 
     /**
-     * Tra cứu danh sách hóa đơn theo các tiêu chí tìm kiếm (INV_SEARCH).
+     * Tra cứu danh sách hóa đơn theo các tiêu chí tìm kiếm (HD_TIM_KIEM).
      * Yêu cầu quyền: HD_TIM_KIEM.
      */
     public List<HoaDon> timKiemHoaDon(String tuKhoa, LocalDate tuNgay, LocalDate denNgay, String hinhThucThanhToan, String trangThai) {
@@ -233,16 +233,16 @@ public class HoaDonBUS {
     }
 
     /**
-     * Lấy báo cáo thống kê doanh thu (INV_REVENUE).
-     * Yêu cầu quyền: HD_DOANH_THU.
+     * Lấy báo cáo thống kê doanh thu (TK_DOANH_THU).
+     * Yêu cầu quyền: TK_DOANH_THU.
      */
     public Map<String, Object> layBaoCaoDoanhThu(LocalDate tuNgay, LocalDate denNgay) {
-        kiemTraQuyenHoaDon("HD_DOANH_THU");
+        kiemTraQuyenHoaDon("TK_DOANH_THU");
         return hoaDonDAO.layBaoCaoDoanhThu(tuNgay, denNgay);
     }
 
     public Map<String, Object> layBaoCaoDoanhThu(LocalDate tuNgay, LocalDate denNgay, String trangThai) {
-        kiemTraQuyenHoaDon("HD_DOANH_THU");
+        kiemTraQuyenHoaDon("TK_DOANH_THU");
         return hoaDonDAO.layBaoCaoDoanhThu(tuNgay, denNgay, trangThai);
     }
 
@@ -322,31 +322,8 @@ public class HoaDonBUS {
     }
 
     private void kiemTraQuyenHoaDon(String maQuyenChinh) {
-        if (xacThucService == null) return;
-        try {
+        if (xacThucService != null) {
             xacThucService.kiemTraQuyen(maQuyenChinh);
-        } catch (SecurityException e) {
-            // Hỗ trợ mã quyền alias INV_...
-            String alias = switch (maQuyenChinh) {
-                case "HD_TAO" -> "INV_CREATE";
-                case "HD_TIM_KIEM" -> "INV_SEARCH";
-                case "HD_CAP_NHAT" -> "INV_CANCEL";
-                case "HD_DOANH_THU", "TK_DOANH_THU" -> "INV_REVENUE";
-                default -> null;
-            };
-            if (alias != null) {
-                try {
-                    xacThucService.kiemTraQuyen(alias);
-                    return;
-                } catch (SecurityException ignored) {}
-            }
-            if ("TK_DOANH_THU".equals(maQuyenChinh)) {
-                try {
-                    xacThucService.kiemTraQuyen("HD_DOANH_THU");
-                    return;
-                } catch (SecurityException ignored) {}
-            }
-            throw e;
         }
     }
 
