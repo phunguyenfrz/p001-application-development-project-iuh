@@ -11,9 +11,6 @@ public class ChiTietHoaDonSanPham {
 
     private String maHoaDon;
     private SanPham sanPham;
-    private String maSanPham;
-    private String tenSanPham;
-    private String donViTinh;
     private int soLuong;
     private double donGia;
 
@@ -26,24 +23,19 @@ public class ChiTietHoaDonSanPham {
         this.sanPham = sanPham;
         this.soLuong = soLuong;
         this.donGia = donGia;
-        if (sanPham != null) {
-            this.maSanPham = sanPham.getMaSanPham();
-            this.tenSanPham = sanPham.getTenSanPham();
-            this.donViTinh = sanPham.getDonViTinh();
-        }
     }
 
     public ChiTietHoaDonSanPham(String maHoaDon, String maSanPham, int soLuong, double donGia) {
         this.maHoaDon = maHoaDon;
-        this.maSanPham = maSanPham;
+        setMaSanPham(maSanPham);
         this.soLuong = soLuong;
         this.donGia = donGia;
     }
 
     public ChiTietHoaDonSanPham(String maHoaDon, String maSanPham, String tenSanPham, String donViTinh, int soLuong, double donGia) {
         this(maHoaDon, maSanPham, soLuong, donGia);
-        this.tenSanPham = tenSanPham;
-        this.donViTinh = donViTinh;
+        setTenSanPham(tenSanPham);
+        setDonViTinh(donViTinh);
     }
 
     /**
@@ -75,36 +67,46 @@ public class ChiTietHoaDonSanPham {
 
     public void setSanPham(SanPham sanPham) {
         this.sanPham = sanPham;
-        if (sanPham != null) {
-            this.maSanPham = sanPham.getMaSanPham();
-            this.tenSanPham = sanPham.getTenSanPham();
-            this.donViTinh = sanPham.getDonViTinh();
-        }
     }
 
     // Delegate Getters bảo toàn tương thích và binding TableView
     public String getMaSanPham() {
-        return sanPham != null ? sanPham.getMaSanPham() : maSanPham;
+        return sanPham != null ? sanPham.getMaSanPham() : null;
     }
 
     public void setMaSanPham(String maSanPham) {
-        this.maSanPham = maSanPham;
+        if (maSanPham == null) {
+            if (this.sanPham != null) {
+                this.sanPham.setMaSanPham(null);
+            }
+            return;
+        }
+        if (this.sanPham == null) {
+            this.sanPham = new SanPham();
+        }
+        this.sanPham.setMaSanPham(maSanPham);
     }
 
     public String getTenSanPham() {
-        return sanPham != null ? sanPham.getTenSanPham() : tenSanPham;
+        return sanPham != null ? sanPham.getTenSanPham() : null;
     }
 
     public void setTenSanPham(String tenSanPham) {
-        this.tenSanPham = tenSanPham;
+        if (this.sanPham == null) {
+            this.sanPham = new SanPham();
+        }
+        this.sanPham.setTenSanPham(tenSanPham);
     }
 
     public String getDonViTinh() {
-        return sanPham != null ? sanPham.getDonViTinh() : donViTinh;
+        return sanPham != null ? sanPham.getDonViTinh() : null;
     }
 
     public void setDonViTinh(String donViTinh) {
-        this.donViTinh = donViTinh;
+        if (this.sanPham == null) {
+            this.sanPham = new SanPham();
+        }
+        this.sanPham.setDonViTinh(donViTinh);
     }
 
     public int getSoLuong() {

@@ -8,10 +8,7 @@ public class ChiTietLichHen {
 
     private String maLichHen;
     private DichVuChamSoc dichVu;
-    private String maDichVuTam;
-    private String tenDichVuTam;
     private ThuCung thuCung;
-    private String tenThuCungTam;
     private double canNangThuCung;
     private double donGia;
 
@@ -22,15 +19,15 @@ public class ChiTietLichHen {
 
     public ChiTietLichHen(String maLichHen, String maDichVu, double canNangThuCung, double donGia) {
         this.maLichHen = maLichHen;
-        this.maDichVuTam = maDichVu;
+        setMaDichVu(maDichVu);
         this.canNangThuCung = canNangThuCung;
         this.donGia = donGia;
     }
 
     public ChiTietLichHen(String maLichHen, String maDichVu, String tenDichVu, double canNangThuCung, double donGia) {
         this.maLichHen = maLichHen;
-        this.maDichVuTam = maDichVu;
-        this.tenDichVuTam = tenDichVu;
+        setMaDichVu(maDichVu);
+        setTenDichVu(tenDichVu);
         this.canNangThuCung = canNangThuCung;
         this.donGia = donGia;
     }
@@ -38,10 +35,6 @@ public class ChiTietLichHen {
     public ChiTietLichHen(String maLichHen, DichVuChamSoc dichVu, double canNangThuCung, double donGia) {
         this.maLichHen = maLichHen;
         this.dichVu = dichVu;
-        if (dichVu != null) {
-            this.maDichVuTam = dichVu.getMaDichVu();
-            this.tenDichVuTam = dichVu.getTenDichVu();
-        }
         this.canNangThuCung = canNangThuCung;
         this.donGia = donGia;
     }
@@ -60,19 +53,20 @@ public class ChiTietLichHen {
 
     public void setDichVu(DichVuChamSoc dichVu) {
         this.dichVu = dichVu;
-        if (dichVu != null) {
-            this.maDichVuTam = dichVu.getMaDichVu();
-            this.tenDichVuTam = dichVu.getTenDichVu();
-        }
     }
 
     // Delegate Getters / Setters để TableView không bị gãy
     public String getMaDichVu() {
-        return dichVu != null ? dichVu.getMaDichVu() : maDichVuTam;
+        return dichVu != null ? dichVu.getMaDichVu() : null;
     }
 
     public void setMaDichVu(String maDichVu) {
-        this.maDichVuTam = maDichVu;
+        if (maDichVu == null) {
+            if (this.dichVu != null) {
+                this.dichVu.setMaDichVu(null);
+            }
+            return;
+        }
         if (this.dichVu == null) {
             this.dichVu = new DichVuChamSoc();
         }
@@ -80,11 +74,10 @@ public class ChiTietLichHen {
     }
 
     public String getTenDichVu() {
-        return dichVu != null ? dichVu.getTenDichVu() : (tenDichVuTam != null ? tenDichVuTam : "");
+        return (dichVu != null && dichVu.getTenDichVu() != null) ? dichVu.getTenDichVu() : "";
     }
 
     public void setTenDichVu(String tenDichVu) {
-        this.tenDichVuTam = tenDichVu;
         if (this.dichVu == null) {
             this.dichVu = new DichVuChamSoc();
         }
@@ -107,25 +100,19 @@ public class ChiTietLichHen {
         this.donGia = donGia;
     }
 
-    // Phương thức tự tính thành tiền (Thuộc tính dẫn xuất - Điều 2)
-    
     public ThuCung getThuCung() {
         return thuCung;
     }
 
     public void setThuCung(ThuCung thuCung) {
         this.thuCung = thuCung;
-        if (thuCung != null) {
-            this.tenThuCungTam = thuCung.getTenThuCung();
-        }
     }
 
     public String getTenThuCung() {
-        return thuCung != null ? thuCung.getTenThuCung() : (tenThuCungTam != null ? tenThuCungTam : "");
+        return (thuCung != null && thuCung.getTenThuCung() != null) ? thuCung.getTenThuCung() : "";
     }
 
     public void setTenThuCung(String tenThuCung) {
-        this.tenThuCungTam = tenThuCung;
         if (this.thuCung == null) {
             this.thuCung = new ThuCung();
         }

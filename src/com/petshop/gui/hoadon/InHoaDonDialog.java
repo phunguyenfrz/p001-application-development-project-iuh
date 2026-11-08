@@ -19,7 +19,7 @@ import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Hộp thoại hiển thị và in hóa đơn bán lẻ chuẩn khổ A6 / K80 (kiểu Bách Hóa Xanh / WinMart).
+ * Hộp thoại hiển thị và in hóa đơn chuẩn khổ A6 / K80 (kiểu Bách Hóa Xanh / WinMart).
  * Thiết kế nhỏ gọn, hiện đại, tối ưu cho máy in bill nhiệt hoặc in khổ A6/A4.
  */
 public class InHoaDonDialog extends Stage {
@@ -39,7 +39,7 @@ public class InHoaDonDialog extends Stage {
 
         initModality(Modality.APPLICATION_MODAL);
         if (chuSoHuu != null) initOwner(chuSoHuu);
-        setTitle("Hóa đơn bán lẻ A6 - " + hoaDon.getMaHoaDon());
+        setTitle("Hóa đơn A6 - " + hoaDon.getMaHoaDon());
 
         VBox pnlHoaDonGiay = taoNoiDungHoaDon(hoaDon, false);
 
@@ -105,7 +105,7 @@ public class InHoaDonDialog extends Stage {
         Region lblPhanCach1 = taoDuongPhanCach();
 
         // 2. Tiêu đề và mã hóa đơn
-        Label lblTieuDe = new Label("HÓA ĐƠN BÁN LẺ");
+        Label lblTieuDe = new Label("HÓA ĐƠN");
         lblTieuDe.setStyle("-fx-font-size: 13.5px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
 
         Label lblMaHd = new Label("Số: " + hd.getMaHoaDon());

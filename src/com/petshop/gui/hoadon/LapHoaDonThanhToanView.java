@@ -156,7 +156,7 @@ public class LapHoaDonThanhToanView extends VBox {
     private void khoiTaoGiaoDien() {
         // Tiêu đề
         VBox pnlTieuDe = new VBox(3);
-        Label lblTieuDe = new Label("LẬP HÓA ĐƠN & THANH TOÁN BÁN LẺ (POS)");
+        Label lblTieuDe = new Label("LẬP HÓA ĐƠN & THANH TOÁN BÁN LẺ");
         lblTieuDe.getStyleClass().add("tieu-de-phan-he");
         Label lblMoTa = new Label("Bán hàng siêu tốc: Quét mã vạch SP (F4), tra cứu SĐT khách (F2), Lưu tạm đơn (F6), Đơn tạm (F7), thanh toán & in bill A6 (F9).");
         lblMoTa.getStyleClass().add("mo-ta-phan-he");

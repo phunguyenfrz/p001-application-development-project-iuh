@@ -10,10 +10,6 @@ public class ChiTietPhieuDichVu {
     private String maPhieuDichVu;
     private ThuCung thuCung;
     private DichVuChamSoc dichVu;
-    private String maThuCungTam;
-    private String tenThuCungTam;
-    private String maDichVuTam;
-    private String tenDichVuTam;
     private double donGia;
 
     public ChiTietPhieuDichVu() {
@@ -22,18 +18,18 @@ public class ChiTietPhieuDichVu {
 
     public ChiTietPhieuDichVu(String maPhieuDichVu, String maThuCung, String maDichVu, double donGia) {
         this.maPhieuDichVu = maPhieuDichVu;
-        this.maThuCungTam = maThuCung;
-        this.maDichVuTam = maDichVu;
+        setMaThuCung(maThuCung);
+        setMaDichVu(maDichVu);
         this.donGia = donGia;
     }
 
     public ChiTietPhieuDichVu(String maPhieuDichVu, String maThuCung, String tenThuCung,
                               String maDichVu, String tenDichVu, double donGia) {
         this.maPhieuDichVu = maPhieuDichVu;
-        this.maThuCungTam = maThuCung;
-        this.tenThuCungTam = tenThuCung;
-        this.maDichVuTam = maDichVu;
-        this.tenDichVuTam = tenDichVu;
+        setMaThuCung(maThuCung);
+        setTenThuCung(tenThuCung);
+        setMaDichVu(maDichVu);
+        setTenDichVu(tenDichVu);
         this.donGia = donGia;
     }
 
@@ -41,14 +37,6 @@ public class ChiTietPhieuDichVu {
         this.maPhieuDichVu = maPhieuDichVu;
         this.thuCung = thuCung;
         this.dichVu = dichVu;
-        if (thuCung != null) {
-            this.maThuCungTam = thuCung.getMaThuCung();
-            this.tenThuCungTam = thuCung.getTenThuCung();
-        }
-        if (dichVu != null) {
-            this.maDichVuTam = dichVu.getMaDichVu();
-            this.tenDichVuTam = dichVu.getTenDichVu();
-        }
         this.donGia = donGia;
     }
 
@@ -70,18 +58,19 @@ public class ChiTietPhieuDichVu {
 
     public void setThuCung(ThuCung thuCung) {
         this.thuCung = thuCung;
-        if (thuCung != null) {
-            this.maThuCungTam = thuCung.getMaThuCung();
-            this.tenThuCungTam = thuCung.getTenThuCung();
-        }
     }
 
     public String getMaThuCung() {
-        return thuCung != null ? thuCung.getMaThuCung() : maThuCungTam;
+        return thuCung != null ? thuCung.getMaThuCung() : null;
     }
 
     public void setMaThuCung(String maThuCung) {
-        this.maThuCungTam = maThuCung;
+        if (maThuCung == null) {
+            if (this.thuCung != null) {
+                this.thuCung.setMaThuCung(null);
+            }
+            return;
+        }
         if (this.thuCung == null) {
             this.thuCung = new ThuCung();
         }
@@ -92,11 +81,10 @@ public class ChiTietPhieuDichVu {
         if (thuCung != null && thuCung.getTenThuCung() != null) {
             return thuCung.getTenThuCung();
         }
-        return tenThuCungTam != null ? tenThuCungTam : "";
+        return "";
     }
 
     public void setTenThuCung(String tenThuCung) {
-        this.tenThuCungTam = tenThuCung;
         if (this.thuCung == null) {
             this.thuCung = new ThuCung();
         }
@@ -109,18 +97,19 @@ public class ChiTietPhieuDichVu {
 
     public void setDichVu(DichVuChamSoc dichVu) {
         this.dichVu = dichVu;
-        if (dichVu != null) {
-            this.maDichVuTam = dichVu.getMaDichVu();
-            this.tenDichVuTam = dichVu.getTenDichVu();
-        }
     }
 
     public String getMaDichVu() {
-        return dichVu != null ? dichVu.getMaDichVu() : maDichVuTam;
+        return dichVu != null ? dichVu.getMaDichVu() : null;
     }
 
     public void setMaDichVu(String maDichVu) {
-        this.maDichVuTam = maDichVu;
+        if (maDichVu == null) {
+            if (this.dichVu != null) {
+                this.dichVu.setMaDichVu(null);
+            }
+            return;
+        }
         if (this.dichVu == null) {
             this.dichVu = new DichVuChamSoc();
         }
@@ -131,11 +120,10 @@ public class ChiTietPhieuDichVu {
         if (dichVu != null && dichVu.getTenDichVu() != null) {
             return dichVu.getTenDichVu();
         }
-        return tenDichVuTam != null ? tenDichVuTam : "";
+        return "";
     }
 
     public void setTenDichVu(String tenDichVu) {
-        this.tenDichVuTam = tenDichVu;
         if (this.dichVu == null) {
             this.dichVu = new DichVuChamSoc();
         }

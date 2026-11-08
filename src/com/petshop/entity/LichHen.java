@@ -21,15 +21,6 @@ public class LichHen {
     private String trangThai; // "Đã đặt", "Đã xác nhận", "Đã tiếp nhận", "Đang thực hiện", "Hoàn thành", "Đã hủy"
     private String ghiChu;
 
-    // Biến phụ lưu trữ mã tạm khi chưa kịp liên kết đối tượng
-    private String maKhachHangTam;
-    private String maThuCungTam;
-    private String maNhanVienTam;
-    private String tenKhachHangTam;
-    private String soDienThoaiTam;
-    private String tenThuCungTam;
-    private String tenNhanVienTam;
-
     private List<ChiTietLichHen> danhSachChiTiet;
 
     public LichHen() {
@@ -40,9 +31,9 @@ public class LichHen {
     public LichHen(String maLichHen, String maKhachHang, String maThuCung, String maNhanVien,
                    LocalDate ngayHen, LocalTime gioHen, String trangThai, String ghiChu) {
         this.maLichHen = maLichHen;
-        this.maKhachHangTam = maKhachHang;
-        this.maThuCungTam = maThuCung;
-        this.maNhanVienTam = maNhanVien;
+        setMaKhachHang(maKhachHang);
+        setMaThuCung(maThuCung);
+        setMaNhanVien(maNhanVien);
         this.ngayHen = ngayHen;
         this.gioHen = gioHen;
         this.trangThai = trangThai != null ? trangThai : "Đã đặt";
@@ -81,19 +72,19 @@ public class LichHen {
 
     public void setKhachHang(KhachHang khachHang) {
         this.khachHang = khachHang;
-        if (khachHang != null) {
-            this.maKhachHangTam = khachHang.getMaKhachHang();
-            this.tenKhachHangTam = khachHang.getHoTen();
-            this.soDienThoaiTam = khachHang.getSoDienThoai();
-        }
     }
 
     public String getMaKhachHang() {
-        return khachHang != null ? khachHang.getMaKhachHang() : maKhachHangTam;
+        return khachHang != null ? khachHang.getMaKhachHang() : null;
     }
 
     public void setMaKhachHang(String maKhachHang) {
-        this.maKhachHangTam = maKhachHang;
+        if (maKhachHang == null) {
+            if (this.khachHang != null) {
+                this.khachHang.setMaKhachHang(null);
+            }
+            return;
+        }
         if (this.khachHang == null) {
             this.khachHang = new KhachHang();
         }
@@ -104,11 +95,10 @@ public class LichHen {
         if (khachHang != null && khachHang.getHoTen() != null) {
             return khachHang.getHoTen();
         }
-        return tenKhachHangTam != null ? tenKhachHangTam : "Khách vãng lai";
+        return "Khách vãng lai";
     }
 
     public void setTenKhachHang(String tenKhachHang) {
-        this.tenKhachHangTam = tenKhachHang;
         if (this.khachHang == null) {
             this.khachHang = new KhachHang();
         }
@@ -119,11 +109,10 @@ public class LichHen {
         if (khachHang != null && khachHang.getSoDienThoai() != null) {
             return khachHang.getSoDienThoai();
         }
-        return soDienThoaiTam != null ? soDienThoaiTam : "";
+        return "";
     }
 
     public void setSoDienThoai(String soDienThoai) {
-        this.soDienThoaiTam = soDienThoai;
         if (this.khachHang == null) {
             this.khachHang = new KhachHang();
         }
@@ -136,18 +125,19 @@ public class LichHen {
 
     public void setThuCung(ThuCung thuCung) {
         this.thuCung = thuCung;
-        if (thuCung != null) {
-            this.maThuCungTam = thuCung.getMaThuCung();
-            this.tenThuCungTam = thuCung.getTenThuCung();
-        }
     }
 
     public String getMaThuCung() {
-        return thuCung != null ? thuCung.getMaThuCung() : maThuCungTam;
+        return thuCung != null ? thuCung.getMaThuCung() : null;
     }
 
     public void setMaThuCung(String maThuCung) {
-        this.maThuCungTam = maThuCung;
+        if (maThuCung == null) {
+            if (this.thuCung != null) {
+                this.thuCung.setMaThuCung(null);
+            }
+            return;
+        }
         if (this.thuCung == null) {
             this.thuCung = new ThuCung();
         }
@@ -158,11 +148,10 @@ public class LichHen {
         if (thuCung != null && thuCung.getTenThuCung() != null) {
             return thuCung.getTenThuCung();
         }
-        return tenThuCungTam != null ? tenThuCungTam : "";
+        return "";
     }
 
     public void setTenThuCung(String tenThuCung) {
-        this.tenThuCungTam = tenThuCung;
         if (this.thuCung == null) {
             this.thuCung = new ThuCung();
         }
@@ -175,18 +164,19 @@ public class LichHen {
 
     public void setNhanVien(NhanVien nhanVien) {
         this.nhanVien = nhanVien;
-        if (nhanVien != null) {
-            this.maNhanVienTam = nhanVien.getMaNhanVien();
-            this.tenNhanVienTam = nhanVien.getHoTen();
-        }
     }
 
     public String getMaNhanVien() {
-        return nhanVien != null ? nhanVien.getMaNhanVien() : maNhanVienTam;
+        return nhanVien != null ? nhanVien.getMaNhanVien() : null;
     }
 
     public void setMaNhanVien(String maNhanVien) {
-        this.maNhanVienTam = maNhanVien;
+        if (maNhanVien == null) {
+            if (this.nhanVien != null) {
+                this.nhanVien.setMaNhanVien(null);
+            }
+            return;
+        }
         if (this.nhanVien == null) {
             this.nhanVien = new NhanVien();
         }
@@ -197,11 +187,10 @@ public class LichHen {
         if (nhanVien != null && nhanVien.getHoTen() != null) {
             return nhanVien.getHoTen();
         }
-        return tenNhanVienTam != null ? tenNhanVienTam : "";
+        return "";
     }
 
     public void setTenNhanVien(String tenNhanVien) {
-        this.tenNhanVienTam = tenNhanVien;
         if (this.nhanVien == null) {
             this.nhanVien = new NhanVien();
         }
@@ -260,7 +249,7 @@ public class LichHen {
         double tong = 0.0;
         if (danhSachChiTiet != null) {
             for (ChiTietLichHen ct : danhSachChiTiet) {
-                tong += ct.getDonGia();
+                tong += ct.tinhThanhTien();
             }
         }
         return tong;

@@ -285,14 +285,13 @@ public class DonNhapHang {
      * Tuyệt đối không lưu biến thành viên tongTien.
      */
     public double tinhTongTien() {
-        if (danhSachChiTiet == null || danhSachChiTiet.isEmpty()) {
-            return 0.0;
+        double tong = 0.0;
+        if (danhSachChiTiet != null) {
+            for (ChiTietDonNhap ct : danhSachChiTiet) {
+                tong += ct.tinhThanhTien();
+            }
         }
-        double sum = 0.0;
-        for (ChiTietDonNhap ct : danhSachChiTiet) {
-            sum += ct.tinhThanhTien();
-        }
-        return sum;
+        return tong;
     }
 
     /**
@@ -307,14 +306,13 @@ public class DonNhapHang {
      * Tuyệt đối không lưu biến thành viên tongTienThucNhan.
      */
     public double tinhTongTienThucNhan() {
-        if (danhSachChiTiet == null || danhSachChiTiet.isEmpty()) {
-            return 0.0;
+        double tong = 0.0;
+        if (danhSachChiTiet != null) {
+            for (ChiTietDonNhap ct : danhSachChiTiet) {
+                tong += ct.tinhThanhTienThucNhan();
+            }
         }
-        double sum = 0.0;
-        for (ChiTietDonNhap ct : danhSachChiTiet) {
-            sum += ct.tinhThanhTienThucNhan();
-        }
-        return sum;
+        return tong;
     }
 
     /**

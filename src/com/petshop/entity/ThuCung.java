@@ -36,9 +36,6 @@ public class ThuCung {
     /** Giới tính: Đực hoặc Cái */
     private String gioiTinh;
 
-    // Biến phụ lưu trữ mã khách khi chưa kịp liên kết đối tượng KhachHang
-    private String maKhachHangTam;
-
     public ThuCung() {
         this.canNang = 0.0;
         this.loaiThuCung = "Chó";
@@ -48,7 +45,7 @@ public class ThuCung {
     public ThuCung(String maThuCung, String maKhachHang, String tenThuCung, String loaiThuCung,
                    String giongLoai, double canNang, LocalDate ngaySinh, String diUng, String gioiTinh) {
         this.maThuCung = maThuCung;
-        this.maKhachHangTam = maKhachHang;
+        setMaKhachHang(maKhachHang);
         this.tenThuCung = tenThuCung;
         this.loaiThuCung = loaiThuCung;
         this.giongLoai = giongLoai;
@@ -62,9 +59,6 @@ public class ThuCung {
                    String giongLoai, double canNang, LocalDate ngaySinh, String diUng, String gioiTinh) {
         this.maThuCung = maThuCung;
         this.khachHang = khachHang;
-        if (khachHang != null) {
-            this.maKhachHangTam = khachHang.getMaKhachHang();
-        }
         this.tenThuCung = tenThuCung;
         this.loaiThuCung = loaiThuCung;
         this.giongLoai = giongLoai;
@@ -78,12 +72,8 @@ public class ThuCung {
                    String giongLoai, double canNang, LocalDate ngaySinh, String diUng, String gioiTinh,
                    String tenKhachHang, String soDienThoaiKhachHang) {
         this(maThuCung, maKhachHang, tenThuCung, loaiThuCung, giongLoai, canNang, ngaySinh, diUng, gioiTinh);
-        if (this.khachHang == null) {
-            this.khachHang = new KhachHang();
-            this.khachHang.setMaKhachHang(maKhachHang);
-            this.khachHang.setHoTen(tenKhachHang);
-            this.khachHang.setSoDienThoai(soDienThoaiKhachHang);
-        }
+        setTenKhachHang(tenKhachHang);
+        setSoDienThoaiKhachHang(soDienThoaiKhachHang);
     }
 
     // =========================================================================
@@ -104,21 +94,20 @@ public class ThuCung {
 
     public void setKhachHang(KhachHang khachHang) {
         this.khachHang = khachHang;
-        if (khachHang != null) {
-            this.maKhachHangTam = khachHang.getMaKhachHang();
-        }
     }
 
     // Delegate Getters / Setters để không làm gãy TableView và code cũ
     public String getMaKhachHang() {
-        if (khachHang != null && khachHang.getMaKhachHang() != null) {
-            return khachHang.getMaKhachHang();
-        }
-        return maKhachHangTam;
+        return khachHang != null ? khachHang.getMaKhachHang() : null;
     }
 
     public void setMaKhachHang(String maKhachHang) {
-        this.maKhachHangTam = maKhachHang;
+        if (maKhachHang == null) {
+            if (this.khachHang != null) {
+                this.khachHang.setMaKhachHang(null);
+            }
+            return;
+        }
         if (this.khachHang == null) {
             this.khachHang = new KhachHang();
         }
@@ -126,7 +115,7 @@ public class ThuCung {
     }
 
     public String getTenKhachHang() {
-        return khachHang != null ? khachHang.getHoTen() : "";
+        return (khachHang != null && khachHang.getHoTen() != null) ? khachHang.getHoTen() : "";
     }
 
     public void setTenKhachHang(String tenKhachHang) {
@@ -137,7 +126,7 @@ public class ThuCung {
     }
 
     public String getSoDienThoaiKhachHang() {
-        return khachHang != null ? khachHang.getSoDienThoai() : "";
+        return (khachHang != null && khachHang.getSoDienThoai() != null) ? khachHang.getSoDienThoai() : "";
     }
 
     public void setSoDienThoaiKhachHang(String soDienThoai) {
