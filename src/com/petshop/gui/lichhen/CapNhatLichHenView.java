@@ -116,11 +116,9 @@ public class CapNhatLichHenView extends VBox {
                         d.getValue().getNgayHen() != null ? d.getValue().getNgayHen().format(DINH_DANG_NGAY) : "")),
                 taoCot("Giờ hẹn", 90, d -> new SimpleStringProperty(
                         d.getValue().getGioHen() != null ? d.getValue().getGioHen().format(DINH_DANG_GIO) : "")),
-                taoCot("Người chăm sóc", 160, d -> new SimpleStringProperty(
-                        d.getValue().getTenNhanVien() != null ? d.getValue().getTenNhanVien() : d.getValue().getMaNhanVien())),
-                taoCot("Dịch vụ thực hiện", 240, d -> new SimpleStringProperty(d.getValue().getChuoiDichVu())),
+                taoCot("Dịch vụ thực hiện", 260, d -> new SimpleStringProperty(d.getValue().getChuoiDichVu())),
                 taoCot("Trạng thái", 130, d -> new SimpleStringProperty(d.getValue().getTrangThai())),
-                taoCot("Ghi chú", 160, d -> new SimpleStringProperty(
+                taoCot("Ghi chú", 220, d -> new SimpleStringProperty(
                         d.getValue().getGhiChu() != null ? d.getValue().getGhiChu() : ""))
         ));
 
@@ -275,12 +273,6 @@ public class CapNhatLichHenView extends VBox {
         }
         if (lichHen.getGioHen() != null) cboGio.setValue(lichHen.getGioHen().format(DINH_DANG_GIO));
 
-        ComboBox<String[]> cboNv = new ComboBox<>();
-        List<String[]> dsNv = ctrl.layDanhSachNhanVienChamSoc();
-        cboNv.getItems().setAll(dsNv);
-        cboNv.setConverter(taoConverter(nv -> nv[1] + " (" + nv[2] + ")"));
-        dsNv.stream().filter(n -> n[0].equalsIgnoreCase(lichHen.getMaNhanVien())).findFirst().ifPresent(cboNv::setValue);
-
         TextField txtGhiChu = new TextField(lichHen.getGhiChu() != null ? lichHen.getGhiChu() : "");
         txtGhiChu.setPromptText("Nhập ghi chú yêu cầu thêm nếu có...");
 
@@ -288,8 +280,7 @@ public class CapNhatLichHenView extends VBox {
         luoi.add(new Label("Thú cưng:"), 2, 0); luoi.add(txtThuCung, 3, 0);
         luoi.add(new Label("Ngày hẹn mới (*):"), 0, 1); luoi.add(dpNgay, 1, 1);
         luoi.add(new Label("Giờ hẹn mới (*):"), 2, 1); luoi.add(cboGio, 3, 1);
-        luoi.add(new Label("Người chăm sóc (*):"), 0, 2); luoi.add(cboNv, 1, 2);
-        luoi.add(new Label("Ghi chú:"), 2, 2); luoi.add(txtGhiChu, 3, 2);
+        luoi.add(new Label("Ghi chú:"), 0, 2); luoi.add(txtGhiChu, 1, 2, 3, 1);
 
         VBox pnlThongTin = new VBox(10, luoi);
         pnlThongTin.getStyleClass().add("hop-noi-dung");
@@ -415,13 +406,10 @@ public class CapNhatLichHenView extends VBox {
                 if (ngayMoi == null) throw new IllegalArgumentException("Vui lòng chọn ngày hẹn mới!");
                 String gioMoiStr = cboGio.getValue();
                 if (gioMoiStr == null || gioMoiStr.trim().isEmpty()) throw new IllegalArgumentException("Vui lòng chọn khung giờ hẹn mới!");
-                String[] nvChon = cboNv.getValue();
-                if (nvChon == null) throw new IllegalArgumentException("Vui lòng chọn người chăm sóc phụ trách!");
                 if (dsChiTiet.isEmpty()) throw new IllegalArgumentException("Lịch hẹn phải có ít nhất một dịch vụ chăm sóc!");
 
                 lichHen.setNgayHen(ngayMoi);
                 lichHen.setGioHen(LocalTime.parse(gioMoiStr, DINH_DANG_GIO));
-                lichHen.setMaNhanVien(nvChon[0]);
                 lichHen.setGhiChu(txtGhiChu.getText() != null ? txtGhiChu.getText().trim() : "");
 
                 ctrl.capNhatLichHen(lichHen, new ArrayList<>(dsChiTiet));

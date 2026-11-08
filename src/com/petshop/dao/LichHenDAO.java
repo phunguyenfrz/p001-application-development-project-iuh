@@ -393,12 +393,12 @@ public class LichHenDAO {
         return danhSach;
     }
 
-    // Kiểm tra trùng lịch hẹn: cùng thú cưng hoặc cùng nhân viên trong một khung giờ
-    public boolean kiemTraTrungLich(String maNhanVien, String maThuCung, LocalDate ngayHen, LocalTime gioHen, String maLichHenBoQua) {
+    // Kiểm tra trùng lịch hẹn trong cùng ngày và khung giờ (bỏ qua lịch đã hủy hoặc đã hoàn thành)
+    public boolean kiemTraTrungLich(LocalDate ngayHen, LocalTime gioHen, String maLichHenBoQua) {
         StringBuilder sql = new StringBuilder("""
                 SELECT COUNT(*) FROM LichHen
-                WHERE ngayHen = ? AND gioHen = CAST(? AS TIME) AND trangThai != N'Đã hủy'
-                  AND maThuCung = ?
+                WHERE ngayHen = ? AND gioHen = CAST(? AS TIME)
+                  AND trangThai NOT IN (N'Đã hủy', N'Hoàn thành')
                 """);
 
         if (maLichHenBoQua != null && !maLichHenBoQua.trim().isEmpty()) {
@@ -409,9 +409,8 @@ public class LichHenDAO {
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             ps.setDate(1, Date.valueOf(ngayHen));
             ps.setString(2, gioHen.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-            ps.setString(3, maThuCung);
             if (maLichHenBoQua != null && !maLichHenBoQua.trim().isEmpty()) {
-                ps.setString(4, maLichHenBoQua.trim());
+                ps.setString(3, maLichHenBoQua.trim());
             }
 
             try (ResultSet rs = ps.executeQuery()) {

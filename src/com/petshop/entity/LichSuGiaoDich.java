@@ -9,8 +9,8 @@ import java.time.LocalDate;
  */
 public class LichSuGiaoDich {
 
-    /** Mã định danh hóa đơn (HD-yyyyMMdd-xxxxxx) */
-    private final String maHoaDon;
+    /** Tham chiếu đối tượng Hóa đơn của giao dịch */
+    private final HoaDon hoaDon;
 
     /** Tham chiếu đối tượng Khách hàng sở hữu giao dịch */
     private final KhachHang khachHang;
@@ -33,7 +33,8 @@ public class LichSuGiaoDich {
     public LichSuGiaoDich(String maHoaDon, String maKhachHang, String tenKhachHang,
                           LocalDate ngayLap, String tenNhanVien, String hinhThucThanhToan,
                           String trangThaiThanhToan, double tongTien) {
-        this.maHoaDon = maHoaDon;
+        this.hoaDon = new HoaDon();
+        this.hoaDon.setMaHoaDon(maHoaDon);
         this.khachHang = new KhachHang();
         this.khachHang.setMaKhachHang(maKhachHang);
         this.khachHang.setHoTen(tenKhachHang);
@@ -45,8 +46,12 @@ public class LichSuGiaoDich {
         this.tongTien = Math.max(0.0, tongTien);
     }
 
+    public HoaDon getHoaDon() {
+        return hoaDon;
+    }
+
     public String getMaHoaDon() {
-        return maHoaDon;
+        return hoaDon != null ? hoaDon.getMaHoaDon() : null;
     }
 
     public KhachHang getKhachHang() {

@@ -24,8 +24,7 @@ public class DongHoaDon {
     private int soLuong;
     private double donGia;
     private String ghiChu;
-    private String maThuCung;
-    private String tenThuCung;
+    private ThuCung thuCung;
 
     public DongHoaDon() {
         this.soLuong = 1;
@@ -121,9 +120,34 @@ public class DongHoaDon {
     public String getGhiChu() { return ghiChu; }
     public void setGhiChu(String ghiChu) { this.ghiChu = ghiChu; }
 
-    public String getMaThuCung() { return maThuCung; }
-    public void setMaThuCung(String maThuCung) { this.maThuCung = maThuCung; }
+    public ThuCung getThuCung() { return thuCung; }
+    public void setThuCung(ThuCung thuCung) { this.thuCung = thuCung; }
 
-    public String getTenThuCung() { return tenThuCung; }
-    public void setTenThuCung(String tenThuCung) { this.tenThuCung = tenThuCung; }
+    public String getMaThuCung() { return thuCung != null ? thuCung.getMaThuCung() : null; }
+    public void setMaThuCung(String maThuCung) {
+        if (maThuCung == null) {
+            if (this.thuCung != null) {
+                this.thuCung.setMaThuCung(null);
+            }
+            return;
+        }
+        if (this.thuCung == null) {
+            this.thuCung = new ThuCung();
+        }
+        this.thuCung.setMaThuCung(maThuCung);
+    }
+
+    public String getTenThuCung() { return thuCung != null ? thuCung.getTenThuCung() : null; }
+    public void setTenThuCung(String tenThuCung) {
+        if (tenThuCung == null) {
+            if (this.thuCung != null) {
+                this.thuCung.setTenThuCung(null);
+            }
+            return;
+        }
+        if (this.thuCung == null) {
+            this.thuCung = new ThuCung();
+        }
+        this.thuCung.setTenThuCung(tenThuCung);
+    }
 }

@@ -9,7 +9,7 @@ package com.petshop.entity;
  */
 public class ChiTietPhieuDoiTra {
 
-    private String maPhieuDoiTra;
+    private PhieuDoiTra phieuDoiTra;
     private HoaDon hoaDon;
     private SanPham sanPham;
     private int soLuong;
@@ -38,7 +38,7 @@ public class ChiTietPhieuDoiTra {
                               int soLuong, double donGia, String lyDo, String tinhTrang,
                               String huongXuLy, String ghiChu) {
         this();
-        this.maPhieuDoiTra = maPhieuDoiTra;
+        setMaPhieuDoiTra(maPhieuDoiTra);
         setMaHoaDon(maHoaDon);
         setMaSanPham(maSanPham);
         setTenSanPham(tenSanPham);
@@ -91,12 +91,27 @@ public class ChiTietPhieuDoiTra {
     // OBJECT REFERENCES & DELEGATE GETTERS / SETTERS
     // =========================================================================
 
+    public PhieuDoiTra getPhieuDoiTra() {
+        return phieuDoiTra;
+    }
+
+    public void setPhieuDoiTra(PhieuDoiTra phieuDoiTra) {
+        this.phieuDoiTra = phieuDoiTra;
+    }
+
     public String getMaPhieuDoiTra() {
-        return maPhieuDoiTra;
+        return phieuDoiTra != null ? phieuDoiTra.getMaPhieuDoiTra() : null;
     }
 
     public void setMaPhieuDoiTra(String maPhieuDoiTra) {
-        this.maPhieuDoiTra = maPhieuDoiTra;
+        if (maPhieuDoiTra == null) {
+            this.phieuDoiTra = null;
+            return;
+        }
+        if (this.phieuDoiTra == null) {
+            this.phieuDoiTra = new PhieuDoiTra();
+        }
+        this.phieuDoiTra.setMaPhieuDoiTra(maPhieuDoiTra);
     }
 
     public HoaDon getHoaDon() {

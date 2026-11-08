@@ -6,18 +6,23 @@ package com.petshop.entity;
  */
 public class ChiTietDichVuLichHen {
 
-    private final String tenDichVu;
+    private final DichVuChamSoc dichVu;
     private final double canNangThuCung;
     private final double donGia;
 
     public ChiTietDichVuLichHen(String tenDichVu, double canNangThuCung, double donGia) {
-        this.tenDichVu = tenDichVu;
+        this.dichVu = new DichVuChamSoc();
+        this.dichVu.setTenDichVu(tenDichVu);
         this.canNangThuCung = canNangThuCung;
         this.donGia = donGia;
     }
 
+    public DichVuChamSoc getDichVu() {
+        return dichVu;
+    }
+
     public String getTenDichVu() {
-        return tenDichVu;
+        return dichVu != null ? dichVu.getTenDichVu() : null;
     }
 
     public double getCanNangThuCung() {
