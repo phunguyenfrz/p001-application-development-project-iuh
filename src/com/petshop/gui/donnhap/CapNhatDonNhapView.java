@@ -192,7 +192,10 @@ public class CapNhatDonNhapView extends VBox {
 
         // Cột tên nhân viên
         TableColumn<DonNhapHang, String> cotNV = new TableColumn<>("Nhân viên");
-        cotNV.setCellValueFactory(new PropertyValueFactory<>("tenNhanVien"));
+        cotNV.setCellValueFactory(cellData -> {
+            String tenNV = cellData.getValue().getTenNhanVien();
+            return new SimpleStringProperty(tenNV != null ? tenNV : "");
+        });
         cotNV.setPrefWidth(140);
 
         // Cột ngày lập (định dạng dd/MM/yyyy)
@@ -227,7 +230,10 @@ public class CapNhatDonNhapView extends VBox {
 
         // Cột trạng thái (tô màu theo trạng thái)
         TableColumn<DonNhapHang, String> cotTrangThai = new TableColumn<>("Trạng thái");
-        cotTrangThai.setCellValueFactory(new PropertyValueFactory<>("trangThai"));
+        cotTrangThai.setCellValueFactory(cellData -> {
+            String tt = cellData.getValue().getTrangThai();
+            return new SimpleStringProperty(tt != null ? tt : "");
+        });
         cotTrangThai.setPrefWidth(130);
         cotTrangThai.setCellFactory(col -> new TableCell<DonNhapHang, String>() {
             @Override
@@ -295,6 +301,9 @@ public class CapNhatDonNhapView extends VBox {
             tatCaDonHang = controller.layTatCaDonHang();
             capNhatDanhSachNhanVien();
             apDungBoLoc();
+            if (bangDonHang != null) {
+                bangDonHang.refresh();
+            }
         } catch (Exception ex) {
             hienThongBaoLoi("Lỗi tải dữ liệu", "Không thể tải danh sách đơn nhập hàng.\n" + ex.getMessage());
         }
@@ -337,6 +346,7 @@ public class CapNhatDonNhapView extends VBox {
         }
 
         bangDonHang.setItems(FXCollections.observableArrayList(danhSachLoc));
+        bangDonHang.refresh();
 
         long soChoNhan = danhSachLoc.stream()
                 .filter(dh -> DonNhapHang.TRANG_THAI_CHO_NHAN.equals(dh.getTrangThai()))
@@ -584,6 +594,8 @@ public class CapNhatDonNhapView extends VBox {
                     String res = controller.xacNhanNhanHangThieu(donHang.getMaDonHang(),
                             new ArrayList<>(dsObservable), taoDonBu, lyDo);
 
+                    donHang.setTrangThai(DonNhapHang.TRANG_THAI_HOAN_TAT);
+                    dialog.close();
                     if (taoDonBu && res != null && !res.equals(donHang.getMaDonHang())) {
                         hienThongBaoThanhCong("Xác nhận thành công",
                                 "Đã nhận hàng cho đơn " + donHang.getMaDonHang() + ".\n"
@@ -593,14 +605,14 @@ public class CapNhatDonNhapView extends VBox {
                                 "Đã nhận hàng và đóng đơn " + donHang.getMaDonHang() + " theo số lượng thực nhận.\n"
                                 + "Lý do thiếu hàng: " + (lyDo != null ? lyDo : ""));
                     }
-                    dialog.close();
                     taiDuLieu();
                 } else {
                     boolean ok = controller.xacNhanNhanHang(donHang.getMaDonHang(), new ArrayList<>(dsObservable));
                     if (ok) {
+                        donHang.setTrangThai(DonNhapHang.TRANG_THAI_HOAN_TAT);
+                        dialog.close();
                         hienThongBaoThanhCong("Thành công",
                                 "Đã xác nhận nhận đủ hàng và cập nhật tồn kho cho đơn: " + donHang.getMaDonHang());
-                        dialog.close();
                         taiDuLieu();
                     } else {
                         hienThongBaoLoi("Không thể nhận hàng",
@@ -622,6 +634,7 @@ public class CapNhatDonNhapView extends VBox {
         }
         dialog.setScene(scene);
         dialog.showAndWait();
+        taiDuLieu();
     }
 
     /**
@@ -646,6 +659,7 @@ public class CapNhatDonNhapView extends VBox {
             try {
                 boolean daHuy = controller.huyDonNhapHang(donHang.getMaDonHang(), noiDungLyDo);
                 if (daHuy) {
+                    donHang.setTrangThai(DonNhapHang.TRANG_THAI_DA_HUY);
                     hienThongBaoThanhCong("Thành công", "Đã hủy đơn nhập hàng: " + donHang.getMaDonHang());
                     taiDuLieu();
                 } else {
