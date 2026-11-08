@@ -184,7 +184,14 @@ public class PhieuDoiTraBUS {
     }
 
     /**
-     * Kiểm tra ma trận quy tắc đổi trả QL5, QL5a, QL5b.
+     * Kiểm tra ma trận quy tắc đổi trả:
+     * - Tình trạng hợp lệ chỉ gồm: "Nguyên vẹn", "Đã mở" (không có "Hư hỏng").
+     * - Các trường hợp được thông qua:
+     *   + "Lỗi sản phẩm": "Nguyên vẹn", "Đã mở"
+     *   + "Hết hạn": tất cả trường hợp ("Nguyên vẹn", "Đã mở")
+     *   + "Không phù hợp": "Nguyên vẹn"
+     *   + "Khác": "Nguyên vẹn"
+     * - Các trường hợp còn lại không được phép.
      */
     public void kiemTraQuyTacMaTran(String lyDo, String tinhTrang, String ghiChu) {
         if (lyDo == null || lyDo.trim().isEmpty()) {
@@ -194,21 +201,30 @@ public class PhieuDoiTraBUS {
             throw new IllegalArgumentException("Vui lòng chọn tình trạng mặt hàng!");
         }
 
-        boolean laKhongPhuHopHoacKhac = "Không phù hợp".equalsIgnoreCase(lyDo) || "Khác".equalsIgnoreCase(lyDo);
-        if (laKhongPhuHopHoacKhac && !"Nguyên vẹn".equalsIgnoreCase(tinhTrang)) {
-            throw new IllegalArgumentException("Lý do '" + lyDo + "' chỉ được đổi trả khi sản phẩm còn nguyên vẹn! Không chấp nhận hàng đã mở hoặc hư hỏng.");
+        String ld = lyDo.trim();
+        String tt = tinhTrang.trim();
+
+        boolean laNguyenVen = "Nguyên vẹn".equalsIgnoreCase(tt);
+        boolean laDaMo = "Đã mở".equalsIgnoreCase(tt);
+
+        if (!laNguyenVen && !laDaMo) {
+            throw new IllegalArgumentException("Tình trạng mặt hàng '" + tt + "' không hợp lệ! Chỉ chấp nhận 'Nguyên vẹn' hoặc 'Đã mở'.");
         }
 
-        if ("Khác".equalsIgnoreCase(lyDo)) {
-            if (ghiChu == null || ghiChu.trim().isEmpty()) {
-                throw new IllegalArgumentException("Khi chọn lý do 'Khác', bắt buộc phải nhập ghi chú giải thích chi tiết!");
-            }
+        boolean duocPhep;
+        if ("Lỗi sản phẩm".equalsIgnoreCase(ld)) {
+            duocPhep = laNguyenVen || laDaMo;
+        } else if ("Hết hạn".equalsIgnoreCase(ld)) {
+            duocPhep = laNguyenVen || laDaMo;
+        } else if ("Không phù hợp".equalsIgnoreCase(ld) || "Khác".equalsIgnoreCase(ld)) {
+            duocPhep = laNguyenVen;
+        } else {
+            duocPhep = false;
         }
 
-        if ("Lỗi sản phẩm".equalsIgnoreCase(lyDo) && !"Nguyên vẹn".equalsIgnoreCase(tinhTrang)) {
-            if (ghiChu == null || ghiChu.trim().isEmpty()) {
-                throw new IllegalArgumentException("Sản phẩm lỗi ở tình trạng '" + tinhTrang + "' bắt buộc phải nhập ghi chú mô tả chi tiết lỗi!");
-            }
+        if (!duocPhep) {
+            throw new IllegalArgumentException("Lý do '" + ld + "' với tình trạng '" + tt
+                    + "' không được phép đổi trả! (Lý do '" + ld + "' chỉ được thông qua khi tình trạng là 'Nguyên vẹn').");
         }
     }
 

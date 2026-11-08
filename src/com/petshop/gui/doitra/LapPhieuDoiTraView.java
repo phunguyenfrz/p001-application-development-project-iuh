@@ -90,7 +90,7 @@ public class LapPhieuDoiTraView extends VBox {
             this.cboLyDo.setPrefWidth(140);
 
             this.cboTinhTrang = new ComboBox<>(FXCollections.observableArrayList(
-                    "Nguyên vẹn", "Đã mở", "Hư hỏng"
+                    "Nguyên vẹn", "Đã mở"
             ));
             this.cboTinhTrang.setValue("Nguyên vẹn");
             this.cboTinhTrang.setPrefWidth(130);

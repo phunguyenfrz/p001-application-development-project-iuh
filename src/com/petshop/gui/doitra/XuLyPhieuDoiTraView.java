@@ -512,7 +512,7 @@ public class XuLyPhieuDoiTraView extends VBox {
         TableColumn<ChiTietPhieuDoiTra, String> colTinhTrang = new TableColumn<>("Tình trạng");
         colTinhTrang.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTinhTrang()));
         colTinhTrang.setCellFactory(col -> new TableCell<>() {
-            private final ComboBox<String> cbo = new ComboBox<>(FXCollections.observableArrayList("Nguyên vẹn", "Đã mở", "Hư hỏng"));
+            private final ComboBox<String> cbo = new ComboBox<>(FXCollections.observableArrayList("Nguyên vẹn", "Đã mở"));
             private boolean dangCapNhat = false;
             {
                 cbo.setPrefWidth(130);
@@ -632,7 +632,7 @@ public class XuLyPhieuDoiTraView extends VBox {
         cboLyDoThem.setValue("Lỗi sản phẩm");
         cboLyDoThem.setPrefWidth(125);
 
-        cboTinhTrangThem.getItems().addAll("Nguyên vẹn", "Đã mở", "Hư hỏng");
+        cboTinhTrangThem.getItems().addAll("Nguyên vẹn", "Đã mở");
         cboTinhTrangThem.setValue("Nguyên vẹn");
         cboTinhTrangThem.setPrefWidth(110);
 
@@ -1124,6 +1124,13 @@ public class XuLyPhieuDoiTraView extends VBox {
         int slThem = spnSoLuongTraThem.getValue();
         String lyDo = cboLyDoThem.getValue();
         String tinhTrang = cboTinhTrangThem.getValue();
+
+        try {
+            controller.kiemTraQuyTacMaTran(lyDo, tinhTrang, txtGhiChuThem.getText());
+        } catch (IllegalArgumentException ex) {
+            hienCanhBao(ex.getMessage());
+            return;
+        }
 
         for (ChiTietPhieuDoiTra ct : dsChiTietTra) {
             if (ct.getMaSanPham().equalsIgnoreCase(spGoc.getMaSanPham())) {

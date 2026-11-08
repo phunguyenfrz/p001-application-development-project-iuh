@@ -17,7 +17,7 @@ public class ChiTietPhieuDoiTra {
 
     // Các thuộc tính nghiệp vụ kiểm tra hàng hoàn trả
     private String lyDo;           // "Lỗi sản phẩm", "Hết hạn", "Không phù hợp", "Khác"
-    private String tinhTrang;      // "Nguyên vẹn", "Đã mở", "Hư hỏng"
+    private String tinhTrang;      // "Nguyên vẹn", "Đã mở"
     private String huongXuLy;      // "Thu lại vào kho", "Nhập lại kho bán", "Hủy bỏ", "Trả nhà cung cấp", "Tiêu hủy"
     private String ghiChu;
 
@@ -69,16 +69,16 @@ public class ChiTietPhieuDoiTra {
     }
 
     /**
-     * Tự động gợi ý hướng xử lý hàng nhận lại theo quy tắc QL26:
+     * Tự động gợi ý hướng xử lý hàng nhận lại:
      * - Hàng Nguyên vẹn + Lý do Không phù hợp/Khác -> "Nhập lại kho bán"
      * - Hàng Lỗi sản phẩm -> "Trả nhà cung cấp"
-     * - Hàng Hết hạn hoặc Hư hỏng -> "Tiêu hủy"
+     * - Hàng Hết hạn -> "Tiêu hủy"
      */
     public static String tuDongGoiYHuongXuLy(String lyDo, String tinhTrang) {
         if ("Lỗi sản phẩm".equalsIgnoreCase(lyDo)) {
             return "Trả nhà cung cấp";
         }
-        if ("Hết hạn".equalsIgnoreCase(lyDo) || "Hư hỏng".equalsIgnoreCase(tinhTrang)) {
+        if ("Hết hạn".equalsIgnoreCase(lyDo)) {
             return "Tiêu hủy";
         }
         if ("Nguyên vẹn".equalsIgnoreCase(tinhTrang)) {
