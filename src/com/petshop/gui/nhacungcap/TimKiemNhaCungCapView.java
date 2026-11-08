@@ -78,32 +78,53 @@ public class TimKiemNhaCungCapView extends VBox {
         taiDuLieu();
     }
 
-    private HBox taoThanhTimKiem() {
-        HBox congCu = new HBox(10);
-        congCu.getStyleClass().add("thanh-tac-vu");
-        congCu.setAlignment(Pos.CENTER_LEFT);
+    private VBox taoThanhTimKiem() {
+        VBox thanhLoc = new VBox(10);
 
-        txtTuKhoa.setPromptText("Mã, tên, SĐT, email hoặc địa chỉ...");
-        txtTuKhoa.setPrefWidth(250);
+        // Hàng 1: Từ khóa + Địa chỉ + Trạng thái
+        HBox hang1 = new HBox(10);
+        hang1.setAlignment(Pos.CENTER_LEFT);
+
+        Label lblTuKhoa = new Label("Từ khóa:");
+        lblTuKhoa.setMinWidth(Region.USE_PREF_SIZE);
+
+        txtTuKhoa.setPromptText("Mã, tên, SĐT, email...");
+        txtTuKhoa.setPrefWidth(260);
         txtTuKhoa.setOnAction(e -> taiDuLieu());
         txtTuKhoa.textProperty().addListener((obs, cu, moi) -> taiDuLieu());
 
+        Label lblDiaChi = new Label("Địa chỉ:");
+        lblDiaChi.setMinWidth(Region.USE_PREF_SIZE);
+
         txtDiaChi.setPromptText("Nhập địa chỉ...");
-        txtDiaChi.setPrefWidth(190);
+        txtDiaChi.setPrefWidth(200);
         txtDiaChi.setOnAction(e -> taiDuLieu());
         txtDiaChi.textProperty().addListener((obs, cu, moi) -> taiDuLieu());
+
+        Label lblTrangThai = new Label("Trạng thái:");
+        lblTrangThai.setMinWidth(Region.USE_PREF_SIZE);
 
         cboTrangThai.setItems(FXCollections.observableArrayList(
                 "Đang hoạt động", "Ngừng hợp tác", "Tất cả trạng thái"));
         cboTrangThai.setValue("Đang hoạt động");
+        cboTrangThai.setPrefWidth(160);
+        cboTrangThai.setMinWidth(Region.USE_PREF_SIZE);
         cboTrangThai.setOnAction(e -> taiDuLieu());
+
+        hang1.getChildren().addAll(lblTuKhoa, txtTuKhoa, lblDiaChi, txtDiaChi, lblTrangThai, cboTrangThai);
+
+        // Hàng 2: Tìm kiếm + Làm mới + Xem chi tiết + Kết quả
+        HBox hang2 = new HBox(10);
+        hang2.setAlignment(Pos.CENTER_LEFT);
 
         Button btnTim = new Button("Tìm kiếm");
         btnTim.getStyleClass().add("nut-chinh");
+        btnTim.setMinWidth(Region.USE_PREF_SIZE);
         btnTim.setOnAction(e -> taiDuLieu());
 
         Button btnLamMoi = new Button("Làm mới");
         btnLamMoi.getStyleClass().add("nut-phu");
+        btnLamMoi.setMinWidth(Region.USE_PREF_SIZE);
         btnLamMoi.setOnAction(e -> {
             txtTuKhoa.clear();
             txtDiaChi.clear();
@@ -113,16 +134,19 @@ public class TimKiemNhaCungCapView extends VBox {
         });
 
         btnXemChiTiet.getStyleClass().add("nut-phu");
+        btnXemChiTiet.setMinWidth(Region.USE_PREF_SIZE);
         btnXemChiTiet.setOnAction(e -> moXemChiTiet());
+
         lblKetQua.setStyle("-fx-font-weight: 600; -fx-text-fill: #475569; -fx-font-size: 13px;");
+        lblKetQua.setMinWidth(Region.USE_PREF_SIZE);
 
         Region khoangTrong = new Region();
         HBox.setHgrow(khoangTrong, Priority.ALWAYS);
-        congCu.getChildren().addAll(new Label("Từ khóa:"), txtTuKhoa,
-                new Label("Địa chỉ:"), txtDiaChi,
-                new Label("Trạng thái:"), cboTrangThai, btnTim, btnLamMoi,
-                khoangTrong, btnXemChiTiet, lblKetQua);
-        return congCu;
+
+        hang2.getChildren().addAll(btnTim, btnLamMoi, khoangTrong, btnXemChiTiet, lblKetQua);
+
+        thanhLoc.getChildren().addAll(hang1, hang2);
+        return thanhLoc;
     }
 
     private TableView<NhaCungCap> taoBang() {

@@ -7,6 +7,9 @@ import com.petshop.entity.DonNhapHang;
 import com.petshop.entity.SanPham;
 import com.petshop.entity.TaiKhoan;
 import com.petshop.util.SessionManager;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -20,6 +23,7 @@ import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.util.Duration;
 import javafx.util.StringConverter;
 
 import java.text.DecimalFormat;
@@ -42,17 +46,17 @@ import java.util.stream.Collectors;
  */
 public class LapDonNhapView extends VBox {
 
-    // Định dạng số tiền
+    // Định dạng số tiền và ngày giờ
     private static final DecimalFormat DINH_DANG_TIEN = new DecimalFormat("#,##0");
+    private static final DateTimeFormatter DINH_DANG_NGAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter DINH_DANG_GIO = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     // Controller
     private final DonNhapHangBUS donHangController = new DonNhapHangBUS();
 
     // --- Phần thông tin đơn hàng ---
     private final TextField txtNgayLap = new TextField();
-    private final Spinner<Integer> spGio = new Spinner<>(0, 23, LocalTime.now().getHour());
-    private final Spinner<Integer> spPhut = new Spinner<>(0, 59, LocalTime.now().getMinute());
-    private final Spinner<Integer> spGiay = new Spinner<>(0, 59, LocalTime.now().getSecond());
+    private final TextField txtGioLap = new TextField();
 
     // Nhà cung cấp được ghi nhận riêng theo từng sản phẩm để khi lưu tự tách đơn.
     private final Map<String, String> nhaCungCapTheoSanPham = new LinkedHashMap<>();
@@ -117,37 +121,24 @@ public class LapDonNhapView extends VBox {
         HBox hangThongTin = new HBox(20);
         hangThongTin.setAlignment(Pos.CENTER_LEFT);
 
-        // Ngày lập (chỉ đọc, không dùng chọn lịch)
+        // Ngày lập (chỉ đọc)
         VBox hopNgayLap = new VBox(5);
         Label lblNgayLap = new Label("Ngày lập:");
         lblNgayLap.setStyle("-fx-font-weight: bold;");
         txtNgayLap.setEditable(false);
         txtNgayLap.setPrefWidth(200);
-        txtNgayLap.setStyle("-fx-background-color: #f0f0f0;");
+        txtNgayLap.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #475569;");
         hopNgayLap.getChildren().addAll(lblNgayLap, txtNgayLap);
         HBox.setHgrow(hopNgayLap, Priority.ALWAYS);
 
-        // Thời gian lập (giờ : phút : giây)
-        Label lblThoiGian = new Label("Thời gian lập (giờ : phút : giây):");
+        // Thời gian lập (chạy thời gian thực liên tục từng giây như Lập phiếu tiếp nhận)
+        VBox hopThoiGian = new VBox(5);
+        Label lblThoiGian = new Label("Thời gian lập:");
         lblThoiGian.setStyle("-fx-font-weight: bold;");
-        HBox hangThoiGian = new HBox(6, spGio, new Label(":"), spPhut, new Label(":"), spGiay);
-        hangThoiGian.setAlignment(Pos.CENTER_LEFT);
-        for (Spinner<Integer> spinner : List.of(spGio, spPhut, spGiay)) {
-            spinner.setEditable(false);
-            spinner.setPrefWidth(78);
-            spinner.getValueFactory().setConverter(new StringConverter<>() {
-                @Override
-                public String toString(Integer value) {
-                    return value == null ? "00" : String.format("%02d", value);
-                }
-
-                @Override
-                public Integer fromString(String value) {
-                    return Integer.parseInt(value.trim());
-                }
-            });
-        }
-        VBox hopThoiGian = new VBox(5, lblThoiGian, hangThoiGian);
+        txtGioLap.setEditable(false);
+        txtGioLap.setPrefWidth(200);
+        txtGioLap.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #475569; -fx-font-weight: bold;");
+        hopThoiGian.getChildren().addAll(lblThoiGian, txtGioLap);
         HBox.setHgrow(hopThoiGian, Priority.ALWAYS);
 
         hangThongTin.getChildren().addAll(hopNgayLap, hopThoiGian);
@@ -389,12 +380,21 @@ public class LapDonNhapView extends VBox {
      * Khởi tạo dữ liệu mặc định cho form.
      */
     private void khoiTaoDuLieuMacDinh() {
-        // Ngày lập mặc định hôm nay (chỉ đọc)
-        txtNgayLap.setText(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-        LocalTime gioHienTai = LocalTime.now();
-        spGio.getValueFactory().setValue(gioHienTai.getHour());
-        spPhut.getValueFactory().setValue(gioHienTai.getMinute());
-        spGiay.getValueFactory().setValue(gioHienTai.getSecond());
+        txtNgayLap.setText(LocalDate.now().format(DINH_DANG_NGAY));
+        txtGioLap.setText(LocalTime.now().format(DINH_DANG_GIO));
+        khoiTaoDongHoThoiGianThuc();
+    }
+
+    /**
+     * Đồng hồ chạy thời gian thực liên tục từng giây (đồng bộ như Lập phiếu tiếp nhận).
+     */
+    private void khoiTaoDongHoThoiGianThuc() {
+        Timeline dongHo = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+            txtGioLap.setText(LocalTime.now().format(DINH_DANG_GIO));
+            txtNgayLap.setText(LocalDate.now().format(DINH_DANG_NGAY));
+        }));
+        dongHo.setCycleCount(Animation.INDEFINITE);
+        dongHo.play();
     }
 
     // ========================= XỬ LÝ SỰ KIỆN =========================
@@ -514,12 +514,19 @@ public class LapDonNhapView extends VBox {
         }
 
         List<DonNhapHang> danhSachDonHang = new ArrayList<>();
+        LocalTime gioHienTai;
+        try {
+            gioHienTai = LocalTime.parse(txtGioLap.getText().trim(), DINH_DANG_GIO);
+        } catch (Exception ex) {
+            gioHienTai = LocalTime.now().withNano(0);
+        }
+
         for (Map.Entry<String, List<ChiTietDonNhap>> entry : chiTietTheoNhaCungCap.entrySet()) {
             DonNhapHang donHang = new DonNhapHang();
             donHang.setMaNhaCungCap(entry.getKey());
             donHang.setMaNhanVien(taiKhoan.getMaNhanVien());
             donHang.setNgayLap(LocalDate.now());
-            donHang.setGioLap(LocalTime.of(spGio.getValue(), spPhut.getValue(), spGiay.getValue()));
+            donHang.setGioLap(gioHienTai);
             List<ChiTietDonNhap> dsBanSao = entry.getValue().stream()
                     .map(ct -> new ChiTietDonNhap(null, ct.getMaSanPham(), ct.getTenSanPham(),
                             ct.getDonViTinh(), ct.getSoLuong(), ct.getDonGia()))
@@ -568,11 +575,8 @@ public class LapDonNhapView extends VBox {
         danhSachChiTiet.clear();
         nhaCungCapTheoSanPham.clear();
         tenNhaCungCapTheoSanPham.clear();
-        txtNgayLap.setText(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-        LocalTime gioHienTai = LocalTime.now();
-        spGio.getValueFactory().setValue(gioHienTai.getHour());
-        spPhut.getValueFactory().setValue(gioHienTai.getMinute());
-        spGiay.getValueFactory().setValue(gioHienTai.getSecond());
+        txtNgayLap.setText(LocalDate.now().format(DINH_DANG_NGAY));
+        txtGioLap.setText(LocalTime.now().format(DINH_DANG_GIO));
         capNhatTongTien();
         bangChiTiet.refresh();
     }
