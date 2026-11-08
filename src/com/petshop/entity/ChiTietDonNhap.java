@@ -19,7 +19,7 @@ import java.util.Objects;
  */
 public class ChiTietDonNhap {
 
-    private String maDonHang;
+    private DonNhapHang donNhapHang;
     private SanPham sanPham;
     private int soLuong;
     private Integer soLuongThucNhan;
@@ -33,7 +33,7 @@ public class ChiTietDonNhap {
     }
 
     public ChiTietDonNhap(String maDonHang, String maSanPham, String tenSanPham, String donViTinh, int soLuong, Integer soLuongThucNhan, double donGia) {
-        this.maDonHang = maDonHang;
+        setMaDonHang(maDonHang);
         this.sanPham = new SanPham();
         this.sanPham.setMaSanPham(maSanPham);
         this.sanPham.setTenSanPham(tenSanPham);
@@ -43,12 +43,27 @@ public class ChiTietDonNhap {
         this.donGia = Math.max(0.0, donGia);
     }
 
+    public DonNhapHang getDonNhapHang() {
+        return donNhapHang;
+    }
+
+    public void setDonNhapHang(DonNhapHang donNhapHang) {
+        this.donNhapHang = donNhapHang;
+    }
+
     public String getMaDonHang() {
-        return maDonHang;
+        return donNhapHang != null ? donNhapHang.getMaDonHang() : null;
     }
 
     public void setMaDonHang(String maDonHang) {
-        this.maDonHang = maDonHang;
+        if (maDonHang == null) {
+            this.donNhapHang = null;
+            return;
+        }
+        if (this.donNhapHang == null) {
+            this.donNhapHang = new DonNhapHang();
+        }
+        this.donNhapHang.setMaDonHang(maDonHang);
     }
 
     public SanPham getSanPham() {
@@ -157,7 +172,7 @@ public class ChiTietDonNhap {
     @Override
     public String toString() {
         return "ChiTietDonNhap{" +
-                "maDonHang='" + maDonHang + '\'' +
+                "maDonHang='" + getMaDonHang() + '\'' +
                 ", maSanPham='" + getMaSanPham() + '\'' +
                 ", tenSanPham='" + getTenSanPham() + '\'' +
                 ", soLuong=" + soLuong +
@@ -172,12 +187,12 @@ public class ChiTietDonNhap {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ChiTietDonNhap that = (ChiTietDonNhap) o;
-        return Objects.equals(maDonHang, that.maDonHang) &&
+        return Objects.equals(getMaDonHang(), that.getMaDonHang()) &&
                 Objects.equals(getMaSanPham(), that.getMaSanPham());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(maDonHang, getMaSanPham());
+        return Objects.hash(getMaDonHang(), getMaSanPham());
     }
 }

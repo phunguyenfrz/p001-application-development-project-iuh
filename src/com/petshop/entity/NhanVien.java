@@ -17,11 +17,9 @@ public class NhanVien {
     private boolean gioiTinh; // true: Nam, false: Nữ
     private String trangThai; // "Đang làm", "Đã nghỉ việc"
 
-    // Thông tin tài khoản đăng nhập liên kết (bảng TaiKhoan)
-    private String maTaiKhoan;
-    private String tenDangNhap;
-    private String phanQuyen; // "Quản lý", "Bán hàng", "Chăm sóc", "Admin"
-    private Boolean trangThaiTaiKhoan; // true: Hoạt động, false: Bị khóa
+    // Thông tin tài khoản đăng nhập liên kết (Object Reference TaiKhoan)
+    private TaiKhoan taiKhoan;
+    private Boolean trangThaiTaiKhoan; // true: Hoạt động, false: Bị khóa, null: Chưa cấp tài khoản
 
     public NhanVien() {
         this.trangThai = "Đang làm";
@@ -108,29 +106,66 @@ public class NhanVien {
         return Period.between(ngaySinh, LocalDate.now()).getYears();
     }
 
-    // Getter / Setter cho thông tin tài khoản liên kết
+    // Getter / Setter cho thông tin tài khoản liên kết (Object Reference + Delegate Getters/Setters)
+    public TaiKhoan getTaiKhoan() {
+        return taiKhoan;
+    }
+
+    public void setTaiKhoan(TaiKhoan taiKhoan) {
+        this.taiKhoan = taiKhoan;
+    }
+
     public String getMaTaiKhoan() {
-        return maTaiKhoan;
+        return taiKhoan != null ? taiKhoan.getMaTaiKhoan() : null;
     }
 
     public void setMaTaiKhoan(String maTaiKhoan) {
-        this.maTaiKhoan = maTaiKhoan;
+        if (maTaiKhoan == null) {
+            if (this.taiKhoan != null) {
+                this.taiKhoan.setMaTaiKhoan(null);
+            }
+            return;
+        }
+        if (this.taiKhoan == null) {
+            this.taiKhoan = new TaiKhoan();
+        }
+        this.taiKhoan.setMaTaiKhoan(maTaiKhoan);
     }
 
     public String getTenDangNhap() {
-        return tenDangNhap;
+        return taiKhoan != null ? taiKhoan.getTenDangNhap() : null;
     }
 
     public void setTenDangNhap(String tenDangNhap) {
-        this.tenDangNhap = tenDangNhap;
+        if (tenDangNhap == null) {
+            if (this.taiKhoan != null) {
+                this.taiKhoan.setTenDangNhap(null);
+            }
+            return;
+        }
+        if (this.taiKhoan == null) {
+            this.taiKhoan = new TaiKhoan();
+        }
+        this.taiKhoan.setTenDangNhap(tenDangNhap);
     }
 
     public String getPhanQuyen() {
-        return phanQuyen;
+        return (taiKhoan != null && taiKhoan.getPhanQuyen() != null)
+                ? taiKhoan.getPhanQuyen().getTenHienThi()
+                : null;
     }
 
     public void setPhanQuyen(String phanQuyen) {
-        this.phanQuyen = phanQuyen;
+        if (phanQuyen == null || phanQuyen.isBlank()) {
+            if (this.taiKhoan != null) {
+                this.taiKhoan.setPhanQuyen(null);
+            }
+            return;
+        }
+        if (this.taiKhoan == null) {
+            this.taiKhoan = new TaiKhoan();
+        }
+        this.taiKhoan.setPhanQuyen(TaiKhoan.VaiTro.tuTenHienThi(phanQuyen));
     }
 
     public Boolean getTrangThaiTaiKhoan() {
@@ -139,6 +174,12 @@ public class NhanVien {
 
     public void setTrangThaiTaiKhoan(Boolean trangThaiTaiKhoan) {
         this.trangThaiTaiKhoan = trangThaiTaiKhoan;
+        if (trangThaiTaiKhoan != null) {
+            if (this.taiKhoan == null) {
+                this.taiKhoan = new TaiKhoan();
+            }
+            this.taiKhoan.setTrangThai(trangThaiTaiKhoan);
+        }
     }
 
     public boolean isTaiKhoanHoatDong() {

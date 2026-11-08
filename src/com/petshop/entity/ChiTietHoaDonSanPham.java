@@ -9,7 +9,7 @@ package com.petshop.entity;
  */
 public class ChiTietHoaDonSanPham {
 
-    private String maHoaDon;
+    private HoaDon hoaDon;
     private SanPham sanPham;
     private int soLuong;
     private double donGia;
@@ -20,7 +20,7 @@ public class ChiTietHoaDonSanPham {
     }
 
     public ChiTietHoaDonSanPham(String maHoaDon, String maSanPham, String tenSanPham, String donViTinh, int soLuong, double donGia) {
-        this.maHoaDon = maHoaDon;
+        setMaHoaDon(maHoaDon);
         setMaSanPham(maSanPham);
         setTenSanPham(tenSanPham);
         setDonViTinh(donViTinh);
@@ -43,12 +43,27 @@ public class ChiTietHoaDonSanPham {
     }
 
     // Getters and Setters
+    public HoaDon getHoaDon() {
+        return hoaDon;
+    }
+
+    public void setHoaDon(HoaDon hoaDon) {
+        this.hoaDon = hoaDon;
+    }
+
     public String getMaHoaDon() {
-        return maHoaDon;
+        return hoaDon != null ? hoaDon.getMaHoaDon() : null;
     }
 
     public void setMaHoaDon(String maHoaDon) {
-        this.maHoaDon = maHoaDon;
+        if (maHoaDon == null) {
+            this.hoaDon = null;
+            return;
+        }
+        if (this.hoaDon == null) {
+            this.hoaDon = new HoaDon();
+        }
+        this.hoaDon.setMaHoaDon(maHoaDon);
     }
 
     public SanPham getSanPham() {

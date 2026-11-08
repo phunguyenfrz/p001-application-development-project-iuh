@@ -6,7 +6,7 @@ package com.petshop.entity;
  */
 public class ChiTietLichHen {
 
-    private String maLichHen;
+    private LichHen lichHen;
     private DichVuChamSoc dichVu;
     private ThuCung thuCung;
     private double canNangThuCung;
@@ -18,19 +18,34 @@ public class ChiTietLichHen {
     }
 
     public ChiTietLichHen(String maLichHen, String maDichVu, String tenDichVu, double canNangThuCung, double donGia) {
-        this.maLichHen = maLichHen;
+        setMaLichHen(maLichHen);
         setMaDichVu(maDichVu);
         setTenDichVu(tenDichVu);
         this.canNangThuCung = canNangThuCung;
         this.donGia = donGia;
     }
 
+    public LichHen getLichHen() {
+        return lichHen;
+    }
+
+    public void setLichHen(LichHen lichHen) {
+        this.lichHen = lichHen;
+    }
+
     public String getMaLichHen() {
-        return maLichHen;
+        return lichHen != null ? lichHen.getMaLichHen() : null;
     }
 
     public void setMaLichHen(String maLichHen) {
-        this.maLichHen = maLichHen;
+        if (maLichHen == null) {
+            this.lichHen = null;
+            return;
+        }
+        if (this.lichHen == null) {
+            this.lichHen = new LichHen();
+        }
+        this.lichHen.setMaLichHen(maLichHen);
     }
 
     public DichVuChamSoc getDichVu() {

@@ -7,7 +7,7 @@ package com.petshop.entity;
  */
 public class ChiTietHoaDonDichVu {
 
-    private String maHoaDon;
+    private HoaDon hoaDon;
     private DichVuChamSoc dichVu;
     private ThuCung thuCung;
     private int soLuong; // Mặc định là 1 theo ràng buộc CHECK (soLuong = 1)
@@ -20,7 +20,7 @@ public class ChiTietHoaDonDichVu {
 
     public ChiTietHoaDonDichVu(String maHoaDon, String maDichVu, String tenDichVu, String maThuCung, String tenThuCung, double donGia) {
         this();
-        this.maHoaDon = maHoaDon;
+        setMaHoaDon(maHoaDon);
         setMaDichVu(maDichVu);
         setTenDichVu(tenDichVu);
         setMaThuCung(maThuCung);
@@ -40,8 +40,22 @@ public class ChiTietHoaDonDichVu {
     }
 
     // Getters and Setters
-    public String getMaHoaDon() { return maHoaDon; }
-    public void setMaHoaDon(String maHoaDon) { this.maHoaDon = maHoaDon; }
+    public HoaDon getHoaDon() { return hoaDon; }
+    public void setHoaDon(HoaDon hoaDon) { this.hoaDon = hoaDon; }
+
+    public String getMaHoaDon() {
+        return hoaDon != null ? hoaDon.getMaHoaDon() : null;
+    }
+    public void setMaHoaDon(String maHoaDon) {
+        if (maHoaDon == null) {
+            this.hoaDon = null;
+            return;
+        }
+        if (this.hoaDon == null) {
+            this.hoaDon = new HoaDon();
+        }
+        this.hoaDon.setMaHoaDon(maHoaDon);
+    }
 
     public DichVuChamSoc getDichVu() { return dichVu; }
     public void setDichVu(DichVuChamSoc dichVu) {

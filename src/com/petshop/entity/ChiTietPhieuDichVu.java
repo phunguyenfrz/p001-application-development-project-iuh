@@ -7,7 +7,7 @@ package com.petshop.entity;
  */
 public class ChiTietPhieuDichVu {
 
-    private String maPhieuDichVu;
+    private PhieuDichVu phieuDichVu;
     private ThuCung thuCung;
     private DichVuChamSoc dichVu;
     private double donGia;
@@ -18,7 +18,7 @@ public class ChiTietPhieuDichVu {
 
     public ChiTietPhieuDichVu(String maPhieuDichVu, String maThuCung, String tenThuCung,
                               String maDichVu, String tenDichVu, double donGia) {
-        this.maPhieuDichVu = maPhieuDichVu;
+        setMaPhieuDichVu(maPhieuDichVu);
         setMaThuCung(maThuCung);
         setTenThuCung(tenThuCung);
         setMaDichVu(maDichVu);
@@ -30,12 +30,27 @@ public class ChiTietPhieuDichVu {
     // GETTERS & SETTERS (OOP & DELEGATE GETTERS)
     // =========================================================================
 
+    public PhieuDichVu getPhieuDichVu() {
+        return phieuDichVu;
+    }
+
+    public void setPhieuDichVu(PhieuDichVu phieuDichVu) {
+        this.phieuDichVu = phieuDichVu;
+    }
+
     public String getMaPhieuDichVu() {
-        return maPhieuDichVu;
+        return phieuDichVu != null ? phieuDichVu.getMaPhieuDichVu() : null;
     }
 
     public void setMaPhieuDichVu(String maPhieuDichVu) {
-        this.maPhieuDichVu = maPhieuDichVu;
+        if (maPhieuDichVu == null) {
+            this.phieuDichVu = null;
+            return;
+        }
+        if (this.phieuDichVu == null) {
+            this.phieuDichVu = new PhieuDichVu();
+        }
+        this.phieuDichVu.setMaPhieuDichVu(maPhieuDichVu);
     }
 
     public ThuCung getThuCung() {

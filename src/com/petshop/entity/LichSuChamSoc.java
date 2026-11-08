@@ -7,7 +7,7 @@ import java.time.LocalDate;
  */
 public class LichSuChamSoc {
 
-    private final String maLichHen;
+    private final LichHen lichHen;
     private final ThuCung thuCung;
     private final KhachHang khachHang;
     private final NhanVien nhanVien;
@@ -21,7 +21,8 @@ public class LichSuChamSoc {
                          String maNhanVien, String tenNhanVien,
                          LocalDate ngayHen, String gioHen,
                          String trangThai, String ghiChu) {
-        this.maLichHen = maLichHen;
+        this.lichHen = new LichHen();
+        this.lichHen.setMaLichHen(maLichHen);
         this.thuCung = new ThuCung();
         this.thuCung.setMaThuCung(maThuCung);
         this.thuCung.setTenThuCung(tenThuCung);
@@ -37,8 +38,12 @@ public class LichSuChamSoc {
         this.ghiChu = ghiChu != null ? ghiChu : "";
     }
 
+    public LichHen getLichHen() {
+        return lichHen;
+    }
+
     public String getMaLichHen() {
-        return maLichHen;
+        return lichHen != null ? lichHen.getMaLichHen() : null;
     }
 
     public ThuCung getThuCung() {

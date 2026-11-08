@@ -490,10 +490,6 @@ public class DatLichHenView extends VBox {
                 throw new IllegalArgumentException("Vui lòng chọn thú cưng làm dịch vụ!");
             }
 
-            if (nhanVienHienTai == null) {
-                throw new IllegalArgumentException("Không xác định được nhân viên phụ trách từ phiên đăng nhập!");
-            }
-
             LocalDate ngay = dpNgayHen.getValue();
             if (ngay == null) {
                 throw new IllegalArgumentException("Vui lòng chọn ngày hẹn dịch vụ!");

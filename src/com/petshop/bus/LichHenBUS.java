@@ -273,9 +273,17 @@ public class LichHenBUS {
             throw new IllegalArgumentException("Vui lòng chọn thú cưng làm dịch vụ!");
         }
 
-        // 3. Kiểm tra nhân viên phụ trách
+        // 3. Tự động gán nhân viên đang đăng nhập nếu chưa có (lịch hẹn không yêu cầu chọn nhân viên chăm sóc trước)
         if (lichHen.getMaNhanVien() == null || lichHen.getMaNhanVien().trim().isEmpty()) {
-            throw new IllegalArgumentException("Vui lòng chọn nhân viên phụ trách chăm sóc!");
+            TaiKhoan tk = xacThucService.getTaiKhoanHienTai();
+            if (tk != null && tk.getMaNhanVien() != null && !tk.getMaNhanVien().trim().isEmpty()) {
+                lichHen.setMaNhanVien(tk.getMaNhanVien().trim());
+            } else {
+                List<String[]> dsNv = lichHenDAO.layDanhSachNhanVienChamSoc();
+                if (!dsNv.isEmpty()) {
+                    lichHen.setMaNhanVien(dsNv.get(0)[0]);
+                }
+            }
         }
 
         // 4. Kiểm tra ngày hẹn và giờ hẹn
@@ -313,18 +321,17 @@ public class LichHenBUS {
             }
         }
 
-        // 6. Kiểm tra trùng lịch hẹn: cùng thú cưng hoặc cùng nhân viên tại khung giờ đó
+        // 6. Kiểm tra trùng lịch hẹn tại khung giờ đó
         String maLichBoQua = laCapNhat ? lichHen.getMaLichHen() : null;
         boolean trungLich = lichHenDAO.kiemTraTrungLich(
-                lichHen.getMaNhanVien(),
-                lichHen.getMaThuCung(),
                 lichHen.getNgayHen(),
                 lichHen.getGioHen(),
                 maLichBoQua
         );
         if (trungLich) {
-            throw new IllegalArgumentException("Bé thú cưng này đã có lịch hẹn khác vào thời điểm "
-                    + lichHen.getGioHen().toString() + " ngày " + lichHen.getNgayHen().toString() + "!");
+            throw new IllegalArgumentException("Khung giờ "
+                    + lichHen.getGioHen().toString() + " ngày " + lichHen.getNgayHen().toString()
+                    + " đã có lịch hẹn khác được đặt! Vui lòng chọn khung giờ khác.");
         }
     }
 
