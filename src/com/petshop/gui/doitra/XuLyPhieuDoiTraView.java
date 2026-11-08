@@ -254,16 +254,37 @@ public class XuLyPhieuDoiTraView extends VBox {
         colLoai.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getLoaiXuLy() != null ? d.getValue().getLoaiXuLy() : "Hoàn tiền"));
         colLoai.setPrefWidth(95);
 
+        TableColumn<PhieuDoiTra, String> colSpTra = new TableColumn<>("SP hoàn trả");
+        colSpTra.setCellValueFactory(d -> {
+            PhieuDoiTra p = d.getValue();
+            if (p.getDanhSachSanPham() != null && !p.getDanhSachSanPham().isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                for (ChiTietPhieuDoiTra ct : p.getDanhSachSanPham()) {
+                    if (ct.getSoLuong() > 0) {
+                        if (!sb.isEmpty()) sb.append(", ");
+                        String ten = ct.getTenSanPham() != null ? ct.getTenSanPham() : ct.getMaSanPham();
+                        sb.append(ten).append(" (x").append(ct.getSoLuong()).append(")");
+                    }
+                }
+                if (!sb.isEmpty()) return new SimpleStringProperty(sb.toString());
+            }
+            return new SimpleStringProperty("-");
+        });
+        colSpTra.setPrefWidth(180);
+
         TableColumn<PhieuDoiTra, String> colSpDoi = new TableColumn<>("SP đổi mới");
         colSpDoi.setCellValueFactory(d -> {
             PhieuDoiTra p = d.getValue();
             if (p.getDanhSachSanPham() != null) {
+                StringBuilder sb = new StringBuilder();
                 for (ChiTietPhieuDoiTra ct : p.getDanhSachSanPham()) {
-                    if (ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().isBlank()) {
+                    if (ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().isBlank() && ct.getSoLuongDoi() > 0) {
+                        if (!sb.isEmpty()) sb.append(", ");
                         String ten = ct.getTenSanPhamDoi() != null ? ct.getTenSanPhamDoi() : ct.getMaSanPhamDoi();
-                        return new SimpleStringProperty(ten + " (x" + ct.getSoLuongDoi() + ")");
+                        sb.append(ten).append(" (x").append(ct.getSoLuongDoi()).append(")");
                     }
                 }
+                if (!sb.isEmpty()) return new SimpleStringProperty(sb.toString());
             }
             return new SimpleStringProperty("-");
         });
@@ -304,7 +325,7 @@ public class XuLyPhieuDoiTraView extends VBox {
         colTrangThai.setPrefWidth(95);
         colTrangThai.setStyle("-fx-alignment: center; -fx-font-weight: bold;");
 
-        bangDanhSachPhieu.getColumns().addAll(colStt, colMaP, colMaHd, colNgay, colKhach, colLoai, colSpDoi, colXuLySp, colTongTra, colHoan, colBu, colTrangThai);
+        bangDanhSachPhieu.getColumns().addAll(colStt, colMaP, colMaHd, colNgay, colKhach, colLoai, colSpTra, colSpDoi, colXuLySp, colTongTra, colHoan, colBu, colTrangThai);
     }
 
     private void khoiTaoManHinhChinhSua() {
@@ -409,28 +430,41 @@ public class XuLyPhieuDoiTraView extends VBox {
         colSlTra.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().getSoLuong()));
         colSlTra.setCellFactory(col -> new TableCell<>() {
             private final Spinner<Integer> spn = new Spinner<>(1, 9999, 1);
+            private boolean dangCapNhat = false;
             {
                 spn.setPrefWidth(75);
                 spn.valueProperty().addListener((obs, cu, moi) -> {
-                    if (getTableRow() != null && getTableRow().getItem() != null && moi != null) {
-                        ChiTietPhieuDoiTra ct = getTableRow().getItem();
-                        ct.setSoLuong(moi);
-                        bangSanPhamDoiTra.refresh();
-                        tinhToanLaiTaiChinh();
+                    if (dangCapNhat || moi == null) return;
+                    int idx = getIndex();
+                    if (getTableView() != null && idx >= 0 && idx < getTableView().getItems().size()) {
+                        ChiTietPhieuDoiTra ct = getTableView().getItems().get(idx);
+                        if (ct.getSoLuong() != moi) {
+                            ct.setSoLuong(moi);
+                            tinhToanLaiTaiChinh();
+                            bangSanPhamDoiTra.refresh();
+                        }
                     }
                 });
             }
             @Override
             protected void updateItem(Integer item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                int idx = getIndex();
+                if (empty || getTableView() == null || idx < 0 || idx >= getTableView().getItems().size()) {
                     setGraphic(null);
                 } else {
-                    ChiTietPhieuDoiTra ct = getTableRow().getItem();
+                    ChiTietPhieuDoiTra ct = getTableView().getItems().get(idx);
                     boolean choPhepSua = phieuDangChon != null && "Chờ xử lý".equalsIgnoreCase(phieuDangChon.getTrangThai());
                     spn.setDisable(!choPhepSua);
-                    if (spn.getValue() == null || spn.getValue() != ct.getSoLuong()) {
-                        spn.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 9999, ct.getSoLuong()));
+                    dangCapNhat = true;
+                    try {
+                        if (spn.getValueFactory() == null) {
+                            spn.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 9999, Math.max(1, ct.getSoLuong())));
+                        } else {
+                            spn.getValueFactory().setValue(Math.max(1, ct.getSoLuong()));
+                        }
+                    } finally {
+                        dangCapNhat = false;
                     }
                     setGraphic(spn);
                 }
@@ -442,22 +476,31 @@ public class XuLyPhieuDoiTraView extends VBox {
         colLyDo.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getLyDo()));
         colLyDo.setCellFactory(col -> new TableCell<>() {
             private final ComboBox<String> cbo = new ComboBox<>(FXCollections.observableArrayList("Lỗi sản phẩm", "Hết hạn", "Không phù hợp", "Khác"));
+            private boolean dangCapNhat = false;
             {
                 cbo.setPrefWidth(140);
                 cbo.setOnAction(e -> {
-                    if (getTableRow() != null && getTableRow().getItem() != null) {
-                        getTableRow().getItem().setLyDo(cbo.getValue());
+                    if (dangCapNhat) return;
+                    int idx = getIndex();
+                    if (getTableView() != null && idx >= 0 && idx < getTableView().getItems().size()) {
+                        getTableView().getItems().get(idx).setLyDo(cbo.getValue());
                     }
                 });
             }
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                int idx = getIndex();
+                if (empty || getTableView() == null || idx < 0 || idx >= getTableView().getItems().size()) {
                     setGraphic(null);
                 } else {
-                    ChiTietPhieuDoiTra ct = getTableRow().getItem();
-                    cbo.setValue(ct.getLyDo());
+                    ChiTietPhieuDoiTra ct = getTableView().getItems().get(idx);
+                    dangCapNhat = true;
+                    try {
+                        cbo.setValue(ct.getLyDo());
+                    } finally {
+                        dangCapNhat = false;
+                    }
                     boolean choPhepSua = phieuDangChon != null && "Chờ xử lý".equalsIgnoreCase(phieuDangChon.getTrangThai());
                     cbo.setDisable(!choPhepSua);
                     setGraphic(cbo);
@@ -470,22 +513,31 @@ public class XuLyPhieuDoiTraView extends VBox {
         colTinhTrang.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTinhTrang()));
         colTinhTrang.setCellFactory(col -> new TableCell<>() {
             private final ComboBox<String> cbo = new ComboBox<>(FXCollections.observableArrayList("Nguyên vẹn", "Đã mở", "Hư hỏng"));
+            private boolean dangCapNhat = false;
             {
                 cbo.setPrefWidth(130);
                 cbo.setOnAction(e -> {
-                    if (getTableRow() != null && getTableRow().getItem() != null) {
-                        getTableRow().getItem().setTinhTrang(cbo.getValue());
+                    if (dangCapNhat) return;
+                    int idx = getIndex();
+                    if (getTableView() != null && idx >= 0 && idx < getTableView().getItems().size()) {
+                        getTableView().getItems().get(idx).setTinhTrang(cbo.getValue());
                     }
                 });
             }
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                int idx = getIndex();
+                if (empty || getTableView() == null || idx < 0 || idx >= getTableView().getItems().size()) {
                     setGraphic(null);
                 } else {
-                    ChiTietPhieuDoiTra ct = getTableRow().getItem();
-                    cbo.setValue(ct.getTinhTrang());
+                    ChiTietPhieuDoiTra ct = getTableView().getItems().get(idx);
+                    dangCapNhat = true;
+                    try {
+                        cbo.setValue(ct.getTinhTrang());
+                    } finally {
+                        dangCapNhat = false;
+                    }
                     boolean choPhepSua = phieuDangChon != null && "Chờ xử lý".equalsIgnoreCase(phieuDangChon.getTrangThai());
                     cbo.setDisable(!choPhepSua);
                     setGraphic(cbo);
@@ -498,21 +550,30 @@ public class XuLyPhieuDoiTraView extends VBox {
         colGhiChu.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getGhiChu()));
         colGhiChu.setCellFactory(col -> new TableCell<>() {
             private final TextField txt = new TextField();
+            private boolean dangCapNhat = false;
             {
                 txt.textProperty().addListener((obs, cu, moi) -> {
-                    if (getTableRow() != null && getTableRow().getItem() != null) {
-                        getTableRow().getItem().setGhiChu(moi);
+                    if (dangCapNhat) return;
+                    int idx = getIndex();
+                    if (getTableView() != null && idx >= 0 && idx < getTableView().getItems().size()) {
+                        getTableView().getItems().get(idx).setGhiChu(moi);
                     }
                 });
             }
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                int idx = getIndex();
+                if (empty || getTableView() == null || idx < 0 || idx >= getTableView().getItems().size()) {
                     setGraphic(null);
                 } else {
-                    ChiTietPhieuDoiTra ct = getTableRow().getItem();
-                    txt.setText(ct.getGhiChu() != null ? ct.getGhiChu() : "");
+                    ChiTietPhieuDoiTra ct = getTableView().getItems().get(idx);
+                    dangCapNhat = true;
+                    try {
+                        txt.setText(ct.getGhiChu() != null ? ct.getGhiChu() : "");
+                    } finally {
+                        dangCapNhat = false;
+                    }
                     boolean choPhepSua = phieuDangChon != null && "Chờ xử lý".equalsIgnoreCase(phieuDangChon.getTrangThai());
                     txt.setDisable(!choPhepSua);
                     setGraphic(txt);
@@ -995,16 +1056,18 @@ public class XuLyPhieuDoiTraView extends VBox {
         dsChiTietTra.clear();
         if (phieuDangChon.getDanhSachSanPham() != null) {
             for (ChiTietPhieuDoiTra ct : phieuDangChon.getDanhSachSanPham()) {
-                ChiTietPhieuDoiTra copy = new ChiTietPhieuDoiTra(
-                        ct.getMaPhieuDoiTra(), ct.getMaHoaDon(), ct.getMaSanPham(), ct.getTenSanPham(),
-                        ct.getSoLuong(), ct.getDonGia(), ct.getLyDo(), ct.getTinhTrang(),
-                        ct.getHuongXuLy(), ct.getGhiChu()
-                );
-                copy.setMaSanPhamDoi(ct.getMaSanPhamDoi());
-                copy.setTenSanPhamDoi(ct.getTenSanPhamDoi());
-                copy.setSoLuongDoi(ct.getSoLuongDoi());
-                copy.setDonGiaDoi(ct.getDonGiaDoi());
-                dsChiTietTra.add(copy);
+                if (ct.getMaSanPham() != null && !ct.getMaSanPham().isBlank() && ct.getSoLuong() > 0) {
+                    ChiTietPhieuDoiTra copy = new ChiTietPhieuDoiTra(
+                            ct.getMaPhieuDoiTra(), ct.getMaHoaDon(), ct.getMaSanPham(), ct.getTenSanPham(),
+                            ct.getSoLuong(), ct.getDonGia(), ct.getLyDo(), ct.getTinhTrang(),
+                            ct.getHuongXuLy(), ct.getGhiChu()
+                    );
+                    copy.setMaSanPhamDoi(ct.getMaSanPhamDoi());
+                    copy.setTenSanPhamDoi(ct.getTenSanPhamDoi());
+                    copy.setSoLuongDoi(ct.getSoLuongDoi());
+                    copy.setDonGiaDoi(ct.getDonGiaDoi());
+                    dsChiTietTra.add(copy);
+                }
             }
         }
 
@@ -1101,27 +1164,42 @@ public class XuLyPhieuDoiTraView extends VBox {
         }
 
         int tongSoLuongTra = 0;
+        List<ChiTietPhieuDoiTra> dsLuu = new ArrayList<>();
         for (ChiTietPhieuDoiTra ct : dsChiTietTra) {
             tongSoLuongTra += ct.getSoLuong();
+            ct.setSanPhamDoi(null);
+            ct.setSoLuongDoi(0);
+            ct.setDonGiaDoi(0.0);
+            dsLuu.add(ct);
         }
 
-        if (rdoDoiHang.isSelected() && !dsSanPhamDoiMoi.isEmpty() && !dsChiTietTra.isEmpty()) {
-            DongDoiHang doiDau = dsSanPhamDoiMoi.get(0);
-            ChiTietPhieuDoiTra ctDau = dsChiTietTra.get(0);
-            ctDau.setSanPhamDoi(doiDau.getSanPham());
-            ctDau.setSoLuongDoi(doiDau.getSoLuong());
-            ctDau.setDonGiaDoi(doiDau.getDonGia());
+        if (rdoDoiHang.isSelected() && !dsSanPhamDoiMoi.isEmpty() && !dsLuu.isEmpty()) {
+            int soMatHangTra = dsLuu.size();
+            for (int i = 0; i < dsSanPhamDoiMoi.size(); i++) {
+                DongDoiHang doi = dsSanPhamDoiMoi.get(i);
+                if (i < soMatHangTra) {
+                    ChiTietPhieuDoiTra ctTarget = dsLuu.get(i);
+                    ctTarget.setSanPhamDoi(doi.getSanPham());
+                    ctTarget.setSoLuongDoi(doi.getSoLuong());
+                    ctTarget.setDonGiaDoi(doi.getDonGia());
+                } else {
+                    ChiTietPhieuDoiTra ctPhu = new ChiTietPhieuDoiTra();
+                    ctPhu.setMaPhieuDoiTra(phieuDangChon.getMaPhieuDoiTra());
+                    ctPhu.setMaHoaDon(phieuDangChon.getMaHoaDon());
+                    ctPhu.setSoLuong(0);
+                    ctPhu.setDonGia(0.0);
+                    ctPhu.setSanPhamDoi(doi.getSanPham());
+                    ctPhu.setSoLuongDoi(doi.getSoLuong());
+                    ctPhu.setDonGiaDoi(doi.getDonGia());
+                    dsLuu.add(ctPhu);
+                }
+            }
         }
 
         phieuDangChon.setSoLuong(tongSoLuongTra);
         if (rdoTraHang.isSelected()) {
             phieuDangChon.setLoaiXuLy("Hoàn tiền");
             phieuDangChon.setHinhThucHoan(cboHinhThucHoan.getValue());
-            for (ChiTietPhieuDoiTra ct : dsChiTietTra) {
-                ct.setSanPhamDoi(null);
-                ct.setSoLuongDoi(0);
-                ct.setDonGiaDoi(0.0);
-            }
         } else {
             phieuDangChon.setLoaiXuLy("Đổi hàng");
             phieuDangChon.setHinhThucHoan(null);
@@ -1129,11 +1207,11 @@ public class XuLyPhieuDoiTraView extends VBox {
 
         try {
             phieuDangChon.getDanhSachSanPham().clear();
-            phieuDangChon.getDanhSachSanPham().addAll(dsChiTietTra);
+            phieuDangChon.getDanhSachSanPham().addAll(dsLuu);
 
             boolean kq = controller.capNhatPhieuDoiTra(phieuDangChon);
             if (kq) {
-                hienThanhCong("Đã lưu cập nhật phiếu đổi trả thành công!");
+                hienThanhCong("Đã lưu cập nhật phiếu đổi trả thành công (" + dsChiTietTra.size() + " mặt hàng hoàn trả)!");
                 chuyenManHinh(false);
             }
         } catch (Exception ex) {
@@ -1147,6 +1225,11 @@ public class XuLyPhieuDoiTraView extends VBox {
             return;
         }
 
+        PhieuDoiTra phieuDayDu = controller.layPhieuDoiTraTheoMa(phieu.getMaPhieuDoiTra());
+        if (phieuDayDu != null) {
+            phieu = phieuDayDu;
+        }
+
         if (!"Chờ xử lý".equalsIgnoreCase(phieu.getTrangThai())) {
             hienCanhBao("Phiếu đổi trả đã ở trạng thái [" + phieu.getTrangThai() + "], không thể duyệt lại!");
             return;
@@ -1155,11 +1238,25 @@ public class XuLyPhieuDoiTraView extends VBox {
         String xuLySpChon = cboXuLySanPhamNhanh.getValue() != null ? cboXuLySanPhamNhanh.getValue() : "Thu lại vào kho";
         int diemTruDuKien = controller.tinhSoDiemTichLuyCanTru(phieu);
 
+        StringBuilder dsSpHoan = new StringBuilder();
+        int demSp = 0;
+        if (phieu.getDanhSachSanPham() != null) {
+            for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
+                if (ct.getSoLuong() > 0) {
+                    demSp++;
+                    dsSpHoan.append("  + ")
+                            .append(ct.getTenSanPham() != null ? ct.getTenSanPham() : ct.getMaSanPham())
+                            .append(" (SL hoàn: ").append(ct.getSoLuong()).append(")\n");
+                }
+            }
+        }
+
         Alert xacNhan = new Alert(Alert.AlertType.CONFIRMATION);
         xacNhan.setTitle("Xác nhận duyệt phiếu & Xử lý sản phẩm hoàn");
-        xacNhan.setHeaderText("Duyệt phiếu đổi trả: " + phieu.getMaPhieuDoiTra());
-        xacNhan.setContentText("Chọn hướng xử lý đối với sản phẩm khách hoàn trả:\n"
-                + "• Thu lại vào kho: Cộng lại số lượng sản phẩm hoàn vào tồn kho (soLuongTon + ?).\n"
+        xacNhan.setHeaderText("Duyệt phiếu đổi trả: " + phieu.getMaPhieuDoiTra() + " (" + demSp + " mặt hàng)");
+        xacNhan.setContentText("Danh sách mặt hàng khách hoàn trả:\n" + dsSpHoan
+                + "\nChọn hướng xử lý đối với toàn bộ " + demSp + " sản phẩm khách hoàn trả:\n"
+                + "• Thu lại vào kho: Cộng lại số lượng từng sản phẩm hoàn vào tồn kho (soLuongTon + ?).\n"
                 + "• Hủy bỏ: Hủy sản phẩm hoàn, không cộng lại vào tồn kho.\n"
                 + "• Điểm tích lũy khách hàng tự động trừ khi duyệt: " + diemTruDuKien + " điểm.\n\n"
                 + "(Mặc định đang chọn trên thanh công cụ: " + xuLySpChon + ")");
@@ -1180,7 +1277,7 @@ public class XuLyPhieuDoiTraView extends VBox {
             boolean kq = controller.duyetPhieuDoiTra(phieu.getMaPhieuDoiTra(), huongXuLyQuyetDinh);
             if (kq) {
                 hienThanhCong("Đã duyệt phiếu đổi trả thành công!\n"
-                        + "• Hướng xử lý sản phẩm hoàn: " + huongXuLyQuyetDinh + "\n"
+                        + "• Đã xử lý (" + huongXuLyQuyetDinh + ") cho " + demSp + " mặt hàng:\n" + dsSpHoan
                         + "• Đã trừ điểm tích lũy khách hàng: " + diemTruDuKien + " điểm.");
                 chuyenManHinh(false);
             }

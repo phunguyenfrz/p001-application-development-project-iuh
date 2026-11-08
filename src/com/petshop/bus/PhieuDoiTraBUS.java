@@ -252,42 +252,48 @@ public class PhieuDoiTraBUS {
         int tongSoLuongTra = 0;
 
         for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
-            if (ct.getMaSanPham() != null && ct.getMaSanPham().toUpperCase().startsWith("DV")) {
-                throw new IllegalArgumentException("Chỉ cho phép đổi trả sản phẩm, không đổi trả dịch vụ!");
-            }
-            if (ct.getSoLuong() <= 0) {
-                throw new IllegalArgumentException("Số lượng đổi trả của sản phẩm '" + ct.getTenSanPham() + "' phải lớn hơn 0!");
-            }
+            boolean coHangTra = ct.getMaSanPham() != null && !ct.getMaSanPham().trim().isEmpty();
 
-            kiemTraQuyTacMaTran(ct.getLyDo(), ct.getTinhTrang(), ct.getGhiChu());
-
-            if (ct.getHuongXuLy() == null || ct.getHuongXuLy().trim().isEmpty()) {
-                ct.setHuongXuLy(ChiTietPhieuDoiTra.tuDongGoiYHuongXuLy(ct.getLyDo(), ct.getTinhTrang()));
-            }
-
-            int soLuongDaMua = 0;
-            for (ChiTietHoaDonSanPham spMua : hdGoc.getDanhSachSanPham()) {
-                if (spMua.getMaSanPham().equalsIgnoreCase(ct.getMaSanPham())) {
-                    soLuongDaMua += spMua.getSoLuong();
+            if (coHangTra) {
+                if (ct.getMaSanPham().toUpperCase().startsWith("DV")) {
+                    throw new IllegalArgumentException("Chỉ cho phép đổi trả sản phẩm, không đổi trả dịch vụ!");
                 }
-            }
-            if (soLuongDaMua <= 0) {
-                throw new IllegalArgumentException("Sản phẩm '" + ct.getTenSanPham() + "' không thuộc danh sách sản phẩm của hóa đơn gốc!");
-            }
+                if (ct.getSoLuong() <= 0) {
+                    throw new IllegalArgumentException("Số lượng đổi trả của sản phẩm '" + ct.getTenSanPham() + "' phải lớn hơn 0!");
+                }
 
-            int soLuongDaTraTruoc = phieuDoiTraDAO.laySoLuongDaDoiTra(phieu.getMaHoaDon(), ct.getMaSanPham());
-            int soLuongToiDaConLai = soLuongDaMua - soLuongDaTraTruoc;
+                kiemTraQuyTacMaTran(ct.getLyDo(), ct.getTinhTrang(), ct.getGhiChu());
 
-            if (ct.getSoLuong() > soLuongToiDaConLai) {
-                throw new IllegalArgumentException("Sản phẩm '" + ct.getTenSanPham() + "' đã mua " + soLuongDaMua
-                        + ", đã đổi trả trước đó " + soLuongDaTraTruoc + ". Số lượng trả lần này (" + ct.getSoLuong()
-                        + ") vượt quá số lượng tối đa được phép đổi trả (" + soLuongToiDaConLai + ")!");
+                if (ct.getHuongXuLy() == null || ct.getHuongXuLy().trim().isEmpty()) {
+                    ct.setHuongXuLy(ChiTietPhieuDoiTra.tuDongGoiYHuongXuLy(ct.getLyDo(), ct.getTinhTrang()));
+                }
+
+                int soLuongDaMua = 0;
+                for (ChiTietHoaDonSanPham spMua : hdGoc.getDanhSachSanPham()) {
+                    if (spMua.getMaSanPham().equalsIgnoreCase(ct.getMaSanPham())) {
+                        soLuongDaMua += spMua.getSoLuong();
+                    }
+                }
+                if (soLuongDaMua <= 0) {
+                    throw new IllegalArgumentException("Sản phẩm '" + ct.getTenSanPham() + "' không thuộc danh sách sản phẩm của hóa đơn gốc!");
+                }
+
+                int soLuongDaTraTruoc = phieuDoiTraDAO.laySoLuongDaDoiTra(phieu.getMaHoaDon(), ct.getMaSanPham());
+                int soLuongToiDaConLai = soLuongDaMua - soLuongDaTraTruoc;
+
+                if (ct.getSoLuong() > soLuongToiDaConLai) {
+                    throw new IllegalArgumentException("Sản phẩm '" + ct.getTenSanPham() + "' đã mua " + soLuongDaMua
+                            + ", đã đổi trả trước đó " + soLuongDaTraTruoc + ". Số lượng trả lần này (" + ct.getSoLuong()
+                            + ") vượt quá số lượng tối đa được phép đổi trả (" + soLuongToiDaConLai + ")!");
+                }
+
+                tongSoLuongTra += ct.getSoLuong();
             }
 
             if (laDoiHang(phieu.getLoaiXuLy())) {
                 if (ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().trim().isEmpty()) {
                     if (ct.getSoLuongDoi() <= 0) {
-                        throw new IllegalArgumentException("Vui lòng nhập số lượng sản phẩm đổi lấy mới cho '" + ct.getTenSanPham() + "'!");
+                        throw new IllegalArgumentException("Vui lòng nhập số lượng sản phẩm đổi lấy mới!");
                     }
                     int tonKho = sanPhamDAO.traCuuTonKho(ct.getMaSanPhamDoi());
                     if (tonKho < ct.getSoLuongDoi()) {
@@ -302,8 +308,10 @@ public class PhieuDoiTraBUS {
                     }
                 }
             }
+        }
 
-            tongSoLuongTra += ct.getSoLuong();
+        if (tongSoLuongTra <= 0) {
+            throw new IllegalArgumentException("Vui lòng chọn ít nhất một sản phẩm hợp lệ cần đổi trả!");
         }
 
         phieu.setSoLuong(tongSoLuongTra);
@@ -341,16 +349,19 @@ public class PhieuDoiTraBUS {
 
         int tongSoLuongTra = 0;
         for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
-            if (ct.getSoLuong() <= 0) {
-                throw new IllegalArgumentException("Số lượng trả của '" + ct.getTenSanPham() + "' phải > 0!");
-            }
-            kiemTraQuyTacMaTran(ct.getLyDo(), ct.getTinhTrang(), ct.getGhiChu());
+            boolean coHangTra = ct.getMaSanPham() != null && !ct.getMaSanPham().trim().isEmpty();
+            if (coHangTra) {
+                if (ct.getSoLuong() <= 0) {
+                    throw new IllegalArgumentException("Số lượng trả của '" + ct.getTenSanPham() + "' phải > 0!");
+                }
+                kiemTraQuyTacMaTran(ct.getLyDo(), ct.getTinhTrang(), ct.getGhiChu());
 
-            if (ct.getHuongXuLy() == null || ct.getHuongXuLy().trim().isEmpty()) {
-                ct.setHuongXuLy(ChiTietPhieuDoiTra.tuDongGoiYHuongXuLy(ct.getLyDo(), ct.getTinhTrang()));
-            }
+                if (ct.getHuongXuLy() == null || ct.getHuongXuLy().trim().isEmpty()) {
+                    ct.setHuongXuLy(ChiTietPhieuDoiTra.tuDongGoiYHuongXuLy(ct.getLyDo(), ct.getTinhTrang()));
+                }
 
-            tongSoLuongTra += ct.getSoLuong();
+                tongSoLuongTra += ct.getSoLuong();
+            }
             if (laDoiHang(phieu.getLoaiXuLy()) && ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().trim().isEmpty()) {
                 if (ct.getDonGiaDoi() <= 0) {
                     SanPham spDoi = sanPhamDAO.layTheoMa(ct.getMaSanPhamDoi());
@@ -359,6 +370,10 @@ public class PhieuDoiTraBUS {
                     }
                 }
             }
+        }
+
+        if (tongSoLuongTra <= 0) {
+            throw new IllegalArgumentException("Phiếu đổi trả phải có ít nhất một mặt hàng hoàn trả!");
         }
 
         phieu.setSoLuong(tongSoLuongTra);

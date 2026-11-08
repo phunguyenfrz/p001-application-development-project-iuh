@@ -251,16 +251,37 @@ public class TimKiemPhieuDoiTraView extends VBox {
         colLoai.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getLoaiXuLy()));
         colLoai.setPrefWidth(85);
 
+        TableColumn<PhieuDoiTra, String> colSpTra = new TableColumn<>("SP hoàn trả");
+        colSpTra.setCellValueFactory(d -> {
+            PhieuDoiTra p = d.getValue();
+            if (p.getDanhSachSanPham() != null && !p.getDanhSachSanPham().isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                for (ChiTietPhieuDoiTra ct : p.getDanhSachSanPham()) {
+                    if (ct.getSoLuong() > 0) {
+                        if (!sb.isEmpty()) sb.append(", ");
+                        String ten = ct.getTenSanPham() != null ? ct.getTenSanPham() : ct.getMaSanPham();
+                        sb.append(ten).append(" (x").append(ct.getSoLuong()).append(")");
+                    }
+                }
+                if (!sb.isEmpty()) return new SimpleStringProperty(sb.toString());
+            }
+            return new SimpleStringProperty("-");
+        });
+        colSpTra.setPrefWidth(160);
+
         TableColumn<PhieuDoiTra, String> colSpDoi = new TableColumn<>("SP đổi mới");
         colSpDoi.setCellValueFactory(d -> {
             PhieuDoiTra p = d.getValue();
             if (p.getDanhSachSanPham() != null) {
+                StringBuilder sb = new StringBuilder();
                 for (ChiTietPhieuDoiTra ct : p.getDanhSachSanPham()) {
-                    if (ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().isBlank()) {
+                    if (ct.getMaSanPhamDoi() != null && !ct.getMaSanPhamDoi().isBlank() && ct.getSoLuongDoi() > 0) {
+                        if (!sb.isEmpty()) sb.append(", ");
                         String ten = ct.getTenSanPhamDoi() != null ? ct.getTenSanPhamDoi() : ct.getMaSanPhamDoi();
-                        return new SimpleStringProperty(ten + " (x" + ct.getSoLuongDoi() + ")");
+                        sb.append(ten).append(" (x").append(ct.getSoLuongDoi()).append(")");
                     }
                 }
+                if (!sb.isEmpty()) return new SimpleStringProperty(sb.toString());
             }
             return new SimpleStringProperty("-");
         });
@@ -302,7 +323,7 @@ public class TimKiemPhieuDoiTraView extends VBox {
         });
         colThaoTac.setPrefWidth(70);
 
-        tblKetQua.getColumns().addAll(colMa, colMaHD, colNgay, colKhach, colSdt, colLoai, colSpDoi, colTongTien, colTienHoan, colTienBu, colTrangThai, colThaoTac);
+        tblKetQua.getColumns().addAll(colMa, colMaHD, colNgay, colKhach, colSdt, colLoai, colSpTra, colSpDoi, colTongTien, colTienHoan, colTienBu, colTrangThai, colThaoTac);
         tblKetQua.setItems(dsKetQua);
 
         card.getChildren().addAll(lblTieuDe, tblKetQua);
@@ -586,7 +607,11 @@ public class TimKiemPhieuDoiTraView extends VBox {
 
         dsSanPhamTra.clear();
         if (phieu.getDanhSachSanPham() != null) {
-            dsSanPhamTra.addAll(phieu.getDanhSachSanPham());
+            for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
+                if (ct.getMaSanPham() != null && !ct.getMaSanPham().isBlank() && ct.getSoLuong() > 0) {
+                    dsSanPhamTra.add(ct);
+                }
+            }
         }
 
         dsSanPhamDoiMoi.clear();

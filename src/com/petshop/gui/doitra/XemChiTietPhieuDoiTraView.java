@@ -164,7 +164,13 @@ public class XemChiTietPhieuDoiTraView extends Stage {
 
         tblTra.getColumns().addAll(colMaSp, colTenSp, colGiaTra, colSlTra, colThanhTien, colLyDo, colTinhTrang, colGhiChu);
         if (phieu.getDanhSachSanPham() != null) {
-            tblTra.setItems(FXCollections.observableArrayList(phieu.getDanhSachSanPham()));
+            ObservableList<ChiTietPhieuDoiTra> dsTra = FXCollections.observableArrayList();
+            for (ChiTietPhieuDoiTra ct : phieu.getDanhSachSanPham()) {
+                if (ct.getMaSanPham() != null && !ct.getMaSanPham().isBlank() && ct.getSoLuong() > 0) {
+                    dsTra.add(ct);
+                }
+            }
+            tblTra.setItems(dsTra);
         }
 
         cardBangTra.getChildren().addAll(lblTieuDeCard2, tblTra);
