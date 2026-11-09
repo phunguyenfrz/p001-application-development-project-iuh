@@ -158,10 +158,14 @@ public class NhaCungCapBUS {
         if (tk == null) {
             throw new SecurityException("Chưa đăng nhập hệ thống!");
         }
-        TaiKhoan.VaiTro vaiTro = tk.getPhanQuyen();
-        if (vaiTro != TaiKhoan.VaiTro.ADMIN && vaiTro != TaiKhoan.VaiTro.QUAN_LY && vaiTro != TaiKhoan.VaiTro.BAN_HANG) {
-            throw new SecurityException("Tài khoản của bạn không có quyền chọn nhà cung cấp!");
+        if (DanhMucMenu.kiemTraQuyen(tk, "DN_TAO")
+                || DanhMucMenu.kiemTraQuyen(tk, "NCC_TIM_KIEM")
+                || tk.getPhanQuyen() == TaiKhoan.VaiTro.ADMIN
+                || tk.getPhanQuyen() == TaiKhoan.VaiTro.QUAN_LY
+                || tk.getPhanQuyen() == TaiKhoan.VaiTro.BAN_HANG) {
+            return;
         }
+        throw new SecurityException("Tài khoản của bạn không có quyền chọn nhà cung cấp!");
     }
 
     /**

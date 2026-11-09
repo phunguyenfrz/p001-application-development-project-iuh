@@ -22,7 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
- * Màn hình 3: Tìm kiếm & Tra cứu phiếu đổi trả (RET_SEARCH / DT_TIM_KIEM).
+ * Màn hình 3: Tìm kiếm & Tra cứu phiếu đổi trả (DT_TIM_KIEM).
  * Tuân thủ Bộ chỉ thị kỹ thuật IUH: 100% tiền tệ dùng kiểu nguyên thủy double.
  */
 public class TimKiemPhieuDoiTraView extends VBox {

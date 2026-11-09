@@ -148,7 +148,7 @@ public class XacThucBUS {
         if (tk.getPhanQuyen() == TaiKhoan.VaiTro.ADMIN) {
             return true;
         }
-        return DanhMucMenu.kiemTraQuyen(tk.getPhanQuyen(), maChucNang);
+        return DanhMucMenu.kiemTraQuyen(tk, maChucNang);
     }
 
     /**

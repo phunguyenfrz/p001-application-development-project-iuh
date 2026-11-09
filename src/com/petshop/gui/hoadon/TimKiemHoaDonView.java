@@ -17,7 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
- * Giao diện Tra cứu và quản lý lịch sử hóa đơn bán lẻ (INV_SEARCH / HD_TIM_KIEM).
+ * Giao diện Tra cứu và quản lý lịch sử hóa đơn bán lẻ (HD_TIM_KIEM).
  * Cho phép lọc hóa đơn theo khoảng ngày, hình thức thanh toán, trạng thái, xem chi tiết và in hóa đơn.
  */
 public class TimKiemHoaDonView extends VBox {

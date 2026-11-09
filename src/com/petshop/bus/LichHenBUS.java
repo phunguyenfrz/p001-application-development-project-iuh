@@ -146,9 +146,9 @@ public class LichHenBUS {
         if (tk.getPhanQuyen() == TaiKhoan.VaiTro.ADMIN) {
             return;
         }
-        if (DanhMucMenu.kiemTraQuyen(tk.getPhanQuyen(), "LH_TIM_KIEM")
-                || DanhMucMenu.kiemTraQuyen(tk.getPhanQuyen(), "LH_CAP_NHAT")
-                || DanhMucMenu.kiemTraQuyen(tk.getPhanQuyen(), "LH_TAO")) {
+        if (DanhMucMenu.kiemTraQuyen(tk, "LH_TIM_KIEM")
+                || DanhMucMenu.kiemTraQuyen(tk, "LH_CAP_NHAT")
+                || DanhMucMenu.kiemTraQuyen(tk, "LH_TAO")) {
             return;
         }
         throw new SecurityException("Tài khoản của bạn không có quyền xem thông tin lịch hẹn!");

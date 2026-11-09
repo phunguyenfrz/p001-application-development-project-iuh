@@ -108,10 +108,10 @@ public class DanhMucMenu {
 
         // 9. Sản phẩm
         TAT_CA_MENU.add(new NhomMenu("SAN_PHAM", "Sản phẩm", "SAN_PHAM", List.of(
-                new ChucNangMenu("PRD_CRUD", "Cập nhật sản phẩm", null),
-                new ChucNangMenu("PRD_SEARCH", "Tìm kiếm sản phẩm", "Ctrl+F"),
-                new ChucNangMenu("PRD_INVENTORY", "Tồn kho", null),
-                new ChucNangMenu("PRD_REPORT", "Báo cáo sản phẩm", null)
+                new ChucNangMenu("SP_CAP_NHAT", "Cập nhật sản phẩm", null),
+                new ChucNangMenu("SP_TIM_KIEM", "Tìm kiếm sản phẩm", "Ctrl+F"),
+                new ChucNangMenu("SP_TON_KHO", "Tồn kho", null),
+                new ChucNangMenu("SP_BAO_CAO", "Báo cáo sản phẩm", null)
         )));
 
         // 10. Dịch vụ chăm sóc
@@ -153,13 +153,17 @@ public class DanhMucMenu {
                 Set<TaiKhoan.VaiTro> dsVaiTro = new HashSet<>();
                 dsVaiTro.add(TaiKhoan.VaiTro.ADMIN);
 
-                // Quản lý: Quản trị nhân sự, ca trực, danh mục dịch vụ, khuyến mãi, sản phẩm, thú cưng và báo cáo
+                // Quản lý: Quản trị nhân sự, ca trực, danh mục dịch vụ, khuyến mãi, sản phẩm, thú cưng, khách hàng, đổi trả, tra cứu hóa đơn và báo cáo
                 if (nhom.getMaNhom().equals("NHAN_VIEN") || nhom.getMaNhom().equals("CA_TRUC") ||
                     nhom.getMaNhom().equals("NHA_CUNG_CAP") || nhom.getMaNhom().equals("DON_NHAP") || nhom.getMaNhom().equals("DICH_VU_CHAM_SOC") ||
                     nhom.getMaNhom().equals("KHUYEN_MAI") || nhom.getMaNhom().equals("SAN_PHAM") ||
                     nhom.getMaNhom().equals("THONG_KE") || nhom.getMaNhom().equals("THU_CUNG") ||
+                    nhom.getMaNhom().equals("KHACH_HANG") || nhom.getMaNhom().equals("PHIEU_DOI_TRA") ||
                     chucNang.getMaChucNang().equals("TK_DOANH_THU") ||
-                    chucNang.getMaChucNang().equals("HD_DOANH_THU")) {
+                    chucNang.getMaChucNang().equals("HD_DOANH_THU") ||
+                    chucNang.getMaChucNang().equals("HD_TIM_KIEM") ||
+                    chucNang.getMaChucNang().equals("LH_TIM_KIEM") ||
+                    chucNang.getMaChucNang().equals("PDV_TIM_KIEM")) {
                     dsVaiTro.add(TaiKhoan.VaiTro.QUAN_LY);
                 }
 
@@ -170,25 +174,20 @@ public class DanhMucMenu {
                     dsVaiTro.add(TaiKhoan.VaiTro.BAN_HANG);
                 }
 
-                // Chăm sóc: Lịch hẹn, phiếu dịch vụ, thú cưng, tra cứu khách hàng và dịch vụ
+                // Chăm sóc: Lịch hẹn, phiếu dịch vụ, thú cưng, tra cứu/thêm khách hàng và xem bảng giá dịch vụ
                 if (nhom.getMaNhom().equals("LICH_HEN") || nhom.getMaNhom().equals("PHIEU_DICH_VU") ||
-                    nhom.getMaNhom().equals("THU_CUNG") || chucNang.getMaChucNang().equals("KH_TIM_KIEM") || chucNang.getMaChucNang().equals("DVCS_TIM_KIEM")) {
+                    nhom.getMaNhom().equals("THU_CUNG") || 
+                    chucNang.getMaChucNang().equals("KH_TIM_KIEM") || 
+                    chucNang.getMaChucNang().equals("KH_CAP_NHAT") || 
+                    chucNang.getMaChucNang().equals("KH_LICH_SU") ||
+                    chucNang.getMaChucNang().equals("DVCS_TIM_KIEM") ||
+                    chucNang.getMaChucNang().equals("DVCS_BANG_GIA")) {
                     dsVaiTro.add(TaiKhoan.VaiTro.CHAM_SOC);
                 }
 
                 BANG_PHAN_QUYEN.put(chucNang.getMaChucNang(), dsVaiTro);
             }
         }
-        BANG_PHAN_QUYEN.put("PRD_LOW_STOCK", Set.of(TaiKhoan.VaiTro.ADMIN, TaiKhoan.VaiTro.QUAN_LY, TaiKhoan.VaiTro.BAN_HANG));
-        // Các service sản phẩm vẫn kiểm tra quyền bằng mã SP_*, song song với mã PRD_* trên menu.
-        Set<TaiKhoan.VaiTro> quyenSanPham = Set.of(
-                TaiKhoan.VaiTro.ADMIN,
-                TaiKhoan.VaiTro.QUAN_LY,
-                TaiKhoan.VaiTro.BAN_HANG
-        );
-        BANG_PHAN_QUYEN.put("SP_CAP_NHAT", quyenSanPham);
-        BANG_PHAN_QUYEN.put("SP_TIM_KIEM", quyenSanPham);
-        BANG_PHAN_QUYEN.put("SP_TON_KHO", quyenSanPham);
     }
 
     public static List<NhomMenu> layTatCaMenu() {

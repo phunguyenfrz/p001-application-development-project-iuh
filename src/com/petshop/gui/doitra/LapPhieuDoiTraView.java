@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Màn hình 1: Lập phiếu đổi trả (RET_CREATE / DT_TAO).
+ * Màn hình 1: Lập phiếu đổi trả (DT_TAO).
  * Tuân thủ 100% Bộ chỉ thị kỹ thuật IUH:
  * - Kiểu tiền tệ: double (0% BigDecimal).
  * - Không nạp toàn bộ CSDL lên ComboBox trên RAM: tra cứu hóa đơn trực tiếp theo SĐT/Mã HĐ dưới DB;

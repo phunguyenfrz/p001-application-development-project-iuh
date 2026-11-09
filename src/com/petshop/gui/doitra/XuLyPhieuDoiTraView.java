@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Màn hình Xử lý đổi trả (RET_CONFIRM / DT_XU_LY).
+ * Màn hình Xử lý đổi trả (DT_XU_LY).
  * Tuân thủ 100% Bộ chỉ thị kỹ thuật IUH:
  * - Kiểu tiền tệ: double (0% BigDecimal).
  * - Không nạp toàn bộ sản phẩm dưới CSDL lên ComboBox trên RAM; sử dụng ô quét mã vạch / tìm kiếm trực tiếp dưới DB.

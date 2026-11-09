@@ -54,23 +54,8 @@ public class PhieuDoiTraBUS {
     }
 
     private void kiemTraQuyenDoiTra(String maQuyenChinh) {
-        if (xacThucService == null) return;
-        try {
+        if (xacThucService != null) {
             xacThucService.kiemTraQuyen(maQuyenChinh);
-        } catch (SecurityException e) {
-            String alias = switch (maQuyenChinh) {
-                case "RET_CREATE" -> "DT_TAO";
-                case "RET_CONFIRM" -> "DT_XU_LY";
-                case "RET_SEARCH" -> "DT_TIM_KIEM";
-                default -> null;
-            };
-            if (alias != null) {
-                try {
-                    xacThucService.kiemTraQuyen(alias);
-                    return;
-                } catch (SecurityException ignored) {}
-            }
-            throw e;
         }
     }
 
@@ -78,7 +63,7 @@ public class PhieuDoiTraBUS {
      * Lấy danh sách hóa đơn hợp lệ trong 7 ngày gần nhất.
      */
     public List<HoaDon> layDanhSachHoaDonTrong7Ngay() {
-        kiemTraQuyenDoiTra("RET_CREATE");
+        kiemTraQuyenDoiTra("DT_TAO");
         LocalDate tuNgay = LocalDate.now().minusDays(SO_NGAY_DOI_TRA_TOI_DA);
         LocalDate denNgay = LocalDate.now();
         List<HoaDon> ds = hoaDonDAO.timKiemHoaDon(null, tuNgay, denNgay, "Tất cả", "Đã thanh toán");
@@ -99,7 +84,7 @@ public class PhieuDoiTraBUS {
      * Tra cứu hóa đơn trực tiếp dưới CSDL theo từ khóa (Mã HĐ, SĐT khách hàng ^0\d{9}$, Tên KH).
      */
     public List<HoaDon> traCuuDanhSachHoaDonDeDoiTra(String tuKhoa) {
-        kiemTraQuyenDoiTra("RET_CREATE");
+        kiemTraQuyenDoiTra("DT_TAO");
 
         if (tuKhoa == null || tuKhoa.trim().isEmpty()) {
             throw new IllegalArgumentException("Vui lòng nhập Mã hóa đơn hoặc Số điện thoại khách hàng để tra cứu!");
@@ -241,10 +226,10 @@ public class PhieuDoiTraBUS {
     }
 
     /**
-     * Lập phiếu đổi trả mới và lưu vào cơ sở dữ liệu (RET_CREATE).
+     * Lập phiếu đổi trả mới và lưu vào cơ sở dữ liệu (DT_TAO).
      */
     public boolean lapPhieuDoiTra(PhieuDoiTra phieu) {
-        kiemTraQuyenDoiTra("RET_CREATE");
+        kiemTraQuyenDoiTra("DT_TAO");
 
         if (phieu == null) {
             throw new IllegalArgumentException("Dữ liệu phiếu đổi trả không được để trống!");
@@ -341,7 +326,7 @@ public class PhieuDoiTraBUS {
      * Cập nhật thông tin phiếu đổi trả khi ở trạng thái Chờ xử lý.
      */
     public boolean capNhatPhieuDoiTra(PhieuDoiTra phieu) {
-        kiemTraQuyenDoiTra("RET_CREATE");
+        kiemTraQuyenDoiTra("DT_TAO");
 
         if (phieu == null || phieu.getMaPhieuDoiTra() == null) {
             throw new IllegalArgumentException("Dữ liệu phiếu đổi trả không hợp lệ!");
@@ -395,7 +380,7 @@ public class PhieuDoiTraBUS {
     }
 
     /**
-     * Duyệt phiếu đổi trả (RET_CONFIRM).
+     * Duyệt phiếu đổi trả (DT_XU_LY).
      */
     public boolean duyetPhieuDoiTra(String maPhieuDoiTra) {
         return duyetPhieuDoiTra(maPhieuDoiTra, null);
@@ -407,7 +392,7 @@ public class PhieuDoiTraBUS {
      * - Tự động trừ điểm tích lũy của khách hàng tương ứng với số tiền hoàn trả.
      */
     public boolean duyetPhieuDoiTra(String maPhieuDoiTra, String huongXuLySanPham) {
-        kiemTraQuyenDoiTra("RET_CONFIRM");
+        kiemTraQuyenDoiTra("DT_XU_LY");
 
         PhieuDoiTra phieu = phieuDoiTraDAO.layPhieuDoiTraTheoMa(maPhieuDoiTra);
         if (phieu == null) {
@@ -462,7 +447,7 @@ public class PhieuDoiTraBUS {
     }
 
     public boolean tuChoiPhieuDoiTra(String maPhieuDoiTra, String lyDoTuChoi) {
-        kiemTraQuyenDoiTra("RET_CONFIRM");
+        kiemTraQuyenDoiTra("DT_XU_LY");
 
         if (lyDoTuChoi == null || lyDoTuChoi.trim().isEmpty()) {
             throw new IllegalArgumentException("Vui lòng nhập lý do từ chối phiếu đổi trả!");
@@ -486,18 +471,18 @@ public class PhieuDoiTraBUS {
     }
 
     public List<PhieuDoiTra> layDanhSachPhieuDoiTra() {
-        kiemTraQuyenDoiTra("RET_SEARCH");
+        kiemTraQuyenDoiTra("DT_TIM_KIEM");
         return phieuDoiTraDAO.layDanhSachPhieuDoiTra();
     }
 
     public List<PhieuDoiTra> timKiemPhieuDoiTra(String tuKhoa, LocalDate tuNgay, LocalDate denNgay,
                                                 String trangThai, String loaiXuLy) {
-        kiemTraQuyenDoiTra("RET_SEARCH");
+        kiemTraQuyenDoiTra("DT_TIM_KIEM");
         return phieuDoiTraDAO.timKiemPhieuDoiTra(tuKhoa, tuNgay, denNgay, trangThai, loaiXuLy);
     }
 
     public PhieuDoiTra layPhieuDoiTraTheoMa(String maPhieuDoiTra) {
-        kiemTraQuyenDoiTra("RET_SEARCH");
+        kiemTraQuyenDoiTra("DT_TIM_KIEM");
         return phieuDoiTraDAO.layPhieuDoiTraTheoMa(maPhieuDoiTra);
     }
 

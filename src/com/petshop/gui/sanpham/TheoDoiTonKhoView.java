@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Màn hình theo dõi số lượng tồn kho và cảnh báo dưới ngưỡng an toàn (PRD_INVENTORY, PRD_LOW_STOCK).
+ * Màn hình theo dõi số lượng tồn kho và cảnh báo dưới ngưỡng an toàn (SP_TON_KHO).
  * Phân loại chính xác 3 trạng thái: "Còn hàng", "Sắp hết hàng" (dưới ngưỡng an toàn), "Hết hàng".
  * Thiết kế giao diện đồng bộ hoàn toàn theo phân hệ Dịch vụ.
  */

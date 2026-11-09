@@ -427,7 +427,7 @@ public class SanPhamDAO {
     }
 
     /**
-     * Lấy danh sách sản phẩm dưới ngưỡng tồn an toàn (phục vụ PRD_LOW_STOCK và Issue #72).
+     * Lấy danh sách sản phẩm dưới ngưỡng tồn an toàn (phục vụ SP_TON_KHO và Issue #72).
      */
     public List<SanPham> layDanhSachSanPhamSapHet() {
         List<SanPham> danhSach = new ArrayList<>();

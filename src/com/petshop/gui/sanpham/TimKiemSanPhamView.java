@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Màn hình tra cứu, tìm kiếm sản phẩm theo từ khóa và trạng thái kinh doanh (PRD_SEARCH).
+ * Màn hình tra cứu, tìm kiếm sản phẩm theo từ khóa và trạng thái kinh doanh (SP_TIM_KIEM).
  * Thiết kế giao diện đồng bộ hoàn toàn theo phân hệ Dịch vụ (TimKiemDichVuView).
  */
 public class TimKiemSanPhamView extends VBox {

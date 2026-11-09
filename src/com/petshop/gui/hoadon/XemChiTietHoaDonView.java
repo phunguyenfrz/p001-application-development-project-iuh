@@ -22,7 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
 /**
- * Cửa sổ xem chi tiết hóa đơn bán lẻ, hỗ trợ in hóa đơn và hủy hóa đơn (INV_CANCEL) hoàn lại tồn kho.
+ * Cửa sổ xem chi tiết hóa đơn bán lẻ, hỗ trợ in hóa đơn và hủy hóa đơn (HD_CAP_NHAT) hoàn lại tồn kho.
  */
 public class XemChiTietHoaDonView extends Stage {
 
