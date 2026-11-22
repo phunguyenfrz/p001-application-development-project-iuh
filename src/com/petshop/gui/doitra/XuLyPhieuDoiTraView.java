@@ -1203,7 +1203,6 @@ public class XuLyPhieuDoiTraView extends VBox {
             }
         }
 
-        phieuDangChon.setSoLuong(tongSoLuongTra);
         if (rdoTraHang.isSelected()) {
             phieuDangChon.setLoaiXuLy("Hoàn tiền");
             phieuDangChon.setHinhThucHoan(cboHinhThucHoan.getValue());

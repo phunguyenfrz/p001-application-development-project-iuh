@@ -55,19 +55,21 @@ public class HoaDonBUS {
         kiemTraHopLeHoaDon(hoaDon);
 
         // Áp dụng khuyến mãi nếu có
-        double tongGoc = hoaDon.tinhTongTienGoc();
-        double tienSauKm = tongGoc;
         if (hoaDon.getMaKhuyenMai() != null && !hoaDon.getMaKhuyenMai().trim().isEmpty()) {
             String maKm = hoaDon.getMaKhuyenMai().trim();
             if (!khuyenMaiService.kiemTraKhuyenMaiHopLe(maKm)) {
                 throw new IllegalArgumentException("Mã khuyến mãi '" + maKm + "' không hợp lệ hoặc đã hết hạn!");
             }
-            double soTienGiam = khuyenMaiService.tinhSoTienGiam(maKm, tongGoc);
-            hoaDon.setTienGiam(soTienGiam);
-            tienSauKm = Math.max(0.0, tongGoc - soTienGiam);
+            KhuyenMai km = khuyenMaiService.layKhuyenMaiTheoMa(maKm);
+            if (km != null) {
+                hoaDon.setKhuyenMai(km);
+            }
         } else {
-            hoaDon.setTienGiam(0.0);
+            hoaDon.setKhuyenMai(null);
         }
+
+        double tongGoc = hoaDon.tinhTongTienGoc();
+        double tienSauKm = Math.max(0.0, tongGoc - hoaDon.tinhTienGiamKhuyenMai());
 
         // Áp dụng điểm tích lũy nếu có (1 điểm = 1.000 VNĐ)
         boolean laKhachHang = hoaDon.getMaKhachHang() != null && !hoaDon.getMaKhachHang().trim().isEmpty();
@@ -80,18 +82,7 @@ public class HoaDonBUS {
             if (hoaDon.getDiemTichLuySuDung() > diemToiDa) {
                 hoaDon.setDiemTichLuySuDung(diemToiDa);
             }
-            double giaTriDiem = hoaDon.getDiemTichLuySuDung() * 1000.0;
-            double tienGiamTuDiem = Math.min(tienSauKm, giaTriDiem);
-            hoaDon.setTienGiamTuDiem(tienGiamTuDiem);
-        } else {
-            hoaDon.setTienGiamTuDiem(0.0);
         }
-
-        double tongThucThu = Math.max(0.0, tienSauKm - hoaDon.getTienGiamTuDiem());
-
-        // Tính điểm tích lũy mới được cộng (Chỉ tính cho khách hàng chính thức, khách vãng lai = 0)
-        int diemCong = tinhDiemTichLuy(tongThucThu, laKhachHang);
-        hoaDon.setDiemTichLuyCong(diemCong);
 
         return hoaDonDAO.luuHoaDon(hoaDon);
     }
@@ -159,11 +150,6 @@ public class HoaDonBUS {
                 && (hoaDonMoi.getDanhSachDichVu() == null || hoaDonMoi.getDanhSachDichVu().isEmpty())) {
             throw new IllegalArgumentException("Hóa đơn sau cập nhật phải có ít nhất một mặt hàng hoặc dịch vụ!");
         }
-
-        // Tính lại điểm tích lũy mới cho khách hàng nếu có
-        boolean laKhachHang = hoaDonMoi.getMaKhachHang() != null && !hoaDonMoi.getMaKhachHang().trim().isEmpty();
-        int diemMoi = tinhDiemTichLuy(hoaDonMoi.getTongTien(), laKhachHang);
-        hoaDonMoi.setDiemTichLuyCong(diemMoi);
 
         return hoaDonDAO.capNhatHoaDon(hoaDonCu, hoaDonMoi, tienThanhToanThem, tienHoanLai);
     }

@@ -3,47 +3,31 @@ package com.petshop.entity;
 import java.time.LocalDate;
 
 /**
- * Thực thể Lịch sử giao dịch của khách hàng (ánh xạ thông tin hóa đơn từ bảng HoaDon).
- * Dùng để hiển thị danh sách hóa đơn mua sắm sản phẩm và sử dụng dịch vụ của khách hàng.
- * Tuân thủ 100% Điều 1 IUH: Sử dụng kiểu nguyên thủy double cho tiền tệ (0% BigDecimal).
+ * Thực thể Lịch sử giao dịch của khách hàng (ánh xạ thông qua Object Reference HoaDon).
+ * Tuân thủ 100% Điều 1 & Điều 2 IUH:
+ * - Không lưu biến thành viên tongTien, không truyền tongTien vào constructor.
+ * - Toàn bộ thông tin và tổng tiền được ủy quyền/tính toán trực tiếp từ đối tượng HoaDon.
  */
 public class LichSuGiaoDich {
 
     /** Tham chiếu đối tượng Hóa đơn của giao dịch */
     private final HoaDon hoaDon;
 
-    /** Tham chiếu đối tượng Khách hàng sở hữu giao dịch */
-    private final KhachHang khachHang;
-
-    /** Ngày lập hóa đơn */
-    private final LocalDate ngayLap;
-
-    /** Tham chiếu đối tượng Nhân viên phụ trách lập hóa đơn */
-    private final NhanVien nhanVien;
-
-    /** Hình thức thanh toán: Tiền mặt, Chuyển khoản, POS */
-    private final String hinhThucThanhToan;
-
-    /** Trạng thái thanh toán: Đã thanh toán, Chưa thanh toán, Đã hủy */
-    private final String trangThaiThanhToan;
-
-    /** Tổng thanh toán thực tế của hóa đơn (double nguyên thủy) */
-    private final double tongTien;
+    public LichSuGiaoDich(HoaDon hoaDon) {
+        this.hoaDon = hoaDon != null ? hoaDon : new HoaDon();
+    }
 
     public LichSuGiaoDich(String maHoaDon, String maKhachHang, String tenKhachHang,
                           LocalDate ngayLap, String tenNhanVien, String hinhThucThanhToan,
-                          String trangThaiThanhToan, double tongTien) {
+                          String trangThaiThanhToan) {
         this.hoaDon = new HoaDon();
         this.hoaDon.setMaHoaDon(maHoaDon);
-        this.khachHang = new KhachHang();
-        this.khachHang.setMaKhachHang(maKhachHang);
-        this.khachHang.setHoTen(tenKhachHang);
-        this.ngayLap = ngayLap;
-        this.nhanVien = new NhanVien();
-        this.nhanVien.setHoTen(tenNhanVien);
-        this.hinhThucThanhToan = hinhThucThanhToan;
-        this.trangThaiThanhToan = trangThaiThanhToan;
-        this.tongTien = Math.max(0.0, tongTien);
+        this.hoaDon.setMaKhachHang(maKhachHang);
+        this.hoaDon.setTenKhachHang(tenKhachHang);
+        this.hoaDon.setNgayLap(ngayLap);
+        this.hoaDon.setTenNhanVien(tenNhanVien);
+        this.hoaDon.setHinhThucThanhToan(hinhThucThanhToan);
+        this.hoaDon.setTrangThaiThanhToan(trangThaiThanhToan);
     }
 
     public HoaDon getHoaDon() {
@@ -55,39 +39,46 @@ public class LichSuGiaoDich {
     }
 
     public KhachHang getKhachHang() {
-        return khachHang;
+        return hoaDon != null ? hoaDon.getKhachHang() : null;
     }
 
     public String getMaKhachHang() {
-        return khachHang != null ? khachHang.getMaKhachHang() : null;
+        return hoaDon != null ? hoaDon.getMaKhachHang() : null;
     }
 
     public String getTenKhachHang() {
-        return khachHang != null ? khachHang.getHoTen() : null;
+        return hoaDon != null ? hoaDon.getTenKhachHang() : null;
     }
 
     public LocalDate getNgayLap() {
-        return ngayLap;
+        return hoaDon != null ? hoaDon.getNgayLap() : null;
     }
 
     public NhanVien getNhanVien() {
-        return nhanVien;
+        return hoaDon != null ? hoaDon.getNhanVien() : null;
     }
 
     public String getTenNhanVien() {
-        return nhanVien != null ? nhanVien.getHoTen() : null;
+        return hoaDon != null ? hoaDon.getTenNhanVien() : null;
     }
 
     public String getHinhThucThanhToan() {
-        return hinhThucThanhToan;
+        return hoaDon != null ? hoaDon.getHinhThucThanhToan() : null;
     }
 
     public String getTrangThaiThanhToan() {
-        return trangThaiThanhToan;
+        return hoaDon != null ? hoaDon.getTrangThaiThanhToan() : null;
+    }
+
+    /**
+     * Phương thức tự tính toán tổng tiền thanh toán từ đối tượng HoaDon (Điều 2 IUH).
+     */
+    public double tinhTongTien() {
+        return hoaDon != null ? hoaDon.tinhTongThanhToan() : 0.0;
     }
 
     public double getTongTien() {
-        return tongTien;
+        return tinhTongTien();
     }
 }
 

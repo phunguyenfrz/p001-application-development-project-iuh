@@ -1824,20 +1824,12 @@ public class LapHoaDonThanhToanView extends VBox {
         KhuyenMai km = cboKhuyenMai.getValue();
         hd.setKhuyenMai(km);
 
-        hd.setTienGiam(tienGiamKMHienTai);
-
-        // Thiết lập điểm tích lũy
+        // Thiết lập điểm tích lũy sử dụng
         if (khachHangHienTai != null && chkDungDiem.isSelected() && spnDiemDung.getValue() != null && spnDiemDung.getValue() > 0) {
             hd.setDiemTichLuySuDung(spnDiemDung.getValue());
-            hd.setTienGiamTuDiem(tienGiamDiemHienTai);
         } else {
             hd.setDiemTichLuySuDung(0);
-            hd.setTienGiamTuDiem(0.0);
         }
-
-        hd.setDiemTichLuyCong(diemCongMoiHienTai);
-        hd.setTienKhachDua(tienDua);
-        hd.setTienThoiLai(tienThoi);
 
         // Nạp danh sách chi tiết (Điều 1: donGia kiểu double)
         for (DongHoaDon d : dsDongHang) {
@@ -1877,7 +1869,7 @@ public class LapHoaDonThanhToanView extends VBox {
                 hienThiThongBao("Thanh toán thành công", msg.toString());
 
                 if (inHoaDonSauThanhToan) {
-                    new InHoaDonDialog(hd, (Stage) getScene().getWindow()).showAndWait();
+                    new InHoaDonDialog(hd, (Stage) getScene().getWindow(), tienDua).showAndWait();
                 }
 
                 lamMoiToanBoForm();

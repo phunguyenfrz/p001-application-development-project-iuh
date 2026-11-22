@@ -4,15 +4,16 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Thực thể ánh xạ bảng HoaDon trong cơ sở dữ liệu SQL Server.
  * Đại diện cho hóa đơn thanh toán bán lẻ sản phẩm và dịch vụ của cửa hàng Happy Tails.
  * Tuân thủ Bộ chỉ thị kỹ thuật IUH:
  * - Điều 1: Tiền tệ dùng 100% kiểu double, không dùng BigDecimal.
- * - Điều 2: Khóa ngoại dùng Object Reference (KhachHang, NhanVien, KhuyenMai, PhieuDichVu).
- *           Thuộc tính dẫn xuất tongTien, tienGiam được tính qua phương thức tinhTongThanhToan(),
- *           không có setter/constructor nhận trực tiếp.
+ * - Điều 2: Khóa ngoại dùng Object Reference (KhachHang, NhanVien, KhuyenMai, PhieuDichVu, LichHen).
+ *           Toàn bộ thuộc tính dẫn xuất (tongTien, tienGiam, tienThoiLai, diemTichLuyCong...) KHÔNG lưu biến thành viên,
+ *           KHÔNG có setter/constructor nhận trực tiếp, 100% được tính qua phương thức.
  *           Giữ lại toàn bộ Delegate Getters để không làm vỡ TableView và các giao diện khác.
  */
 public class HoaDon {
@@ -28,14 +29,8 @@ public class HoaDon {
     private LocalTime gioLap;
     private String hinhThucThanhToan; // "Tiền mặt", "Chuyển khoản"
     private String trangThaiThanhToan; // "Chưa thanh toán", "Đã thanh toán", "Đã hủy"
-    private double tienGiam; // Tiền giảm trực tiếp từ khuyến mãi
 
-    private int diemTichLuySuDung = 0; // Số điểm dùng giảm trừ
-    private int diemTichLuyCong = 0;   // Số điểm mới tích lũy được
-    private double tienKhachDua = 0.0;
-    private double tienThoiLai = 0.0;
-    private double tienThanhToanThem = 0.0;
-    private double tienHoanLai = 0.0;
+    private int diemTichLuySuDung = 0; // Số điểm khách hàng dùng giảm trừ
     private String ghiChu;
 
     // Danh sách dòng chi tiết
@@ -47,7 +42,6 @@ public class HoaDon {
         this.gioLap = LocalTime.now();
         this.hinhThucThanhToan = "Tiền mặt";
         this.trangThaiThanhToan = "Đã thanh toán";
-        this.tienGiam = 0.0;
     }
 
     public HoaDon(String maHoaDon, NhanVien nhanVien, KhachHang khachHang, LocalDate ngayLap, String hinhThucThanhToan) {
@@ -78,18 +72,33 @@ public class HoaDon {
     }
 
     /**
-     * Phương thức tự tính toán: Tiền giảm từ điểm tích lũy (1 điểm = 1.000 VNĐ).
+     * Phương thức tự tính toán: Tiền giảm giá từ chương trình khuyến mãi (Điều 2).
+     */
+    public double tinhTienGiamKhuyenMai() {
+        if (khuyenMai == null) {
+            return 0.0;
+        }
+        double tongGoc = tinhTongTienGoc();
+        if (tongGoc <= 0.0) {
+            return 0.0;
+        }
+        return Math.min(tongGoc, Math.round(khuyenMai.tinhTienGiam(tongGoc)));
+    }
+
+    /**
+     * Phương thức tự tính toán: Tiền giảm từ điểm tích lũy (1 điểm = 1.000 VNĐ), tối đa bằng số tiền sau khuyến mãi.
      */
     public double tinhTienGiamTuDiem() {
         if (diemTichLuySuDung <= 0) return 0.0;
-        return diemTichLuySuDung * 1000.0;
+        double tienSauKm = Math.max(0.0, tinhTongTienGoc() - tinhTienGiamKhuyenMai());
+        return Math.min(tienSauKm, diemTichLuySuDung * 1000.0);
     }
 
     /**
      * Phương thức tự tính toán: Tổng số tiền được giảm giá (Khuyến mãi + Điểm tích lũy).
      */
     public double tinhTongGiamGia() {
-        return this.tienGiam + tinhTienGiamTuDiem();
+        return tinhTienGiamKhuyenMai() + tinhTienGiamTuDiem();
     }
 
     /**
@@ -102,13 +111,57 @@ public class HoaDon {
     }
 
     /**
+     * Phương thức tự tính toán: Số điểm tích lũy mới được cộng từ hóa đơn (Điều 2).
+     * - Khách vãng lai: 0 điểm
+     * - Khách hàng có tài khoản:
+     *   + Hóa đơn < 1.000.000 VNĐ: mỗi 100.000 VNĐ tính 5 điểm
+     *   + Hóa đơn >= 1.000.000 VNĐ: mỗi 100.000 VNĐ tính 10 điểm
+     */
+    public int tinhDiemTichLuyCong() {
+        String maKh = getMaKhachHang();
+        if (maKh == null || maKh.trim().isEmpty()) {
+            return 0;
+        }
+        long tien = (long) tinhTongThanhToan();
+        if (tien <= 0L) {
+            return 0;
+        }
+        long soBlock100k = tien / 100_000L;
+        return (int) (tien >= 1_000_000L ? soBlock100k * 10L : soBlock100k * 5L);
+    }
+
+    /**
+     * Phương thức tự tính toán tiền thối lại từ số tiền khách đưa (không lưu biến thành viên).
+     */
+    public double tinhTienThoiLai(double tienKhachDua) {
+        return Math.max(0.0, tienKhachDua - tinhTongThanhToan());
+    }
+
+    /**
+     * Phương thức tự tính toán số tiền khách cần thanh toán thêm khi cập nhật hóa đơn.
+     */
+    public double tinhTienThanhToanThem(HoaDon hoaDonCu) {
+        if (hoaDonCu == null) return 0.0;
+        return Math.max(0.0, this.tinhTongThanhToan() - hoaDonCu.tinhTongThanhToan());
+    }
+
+    /**
+     * Phương thức tự tính toán số tiền hoàn lại cho khách khi cập nhật hóa đơn.
+     */
+    public double tinhTienHoanLai(HoaDon hoaDonCu) {
+        if (hoaDonCu == null) return 0.0;
+        return Math.max(0.0, hoaDonCu.tinhTongThanhToan() - this.tinhTongThanhToan());
+    }
+
+    /**
      * Mô tả chi tiết các khoản ưu đãi (khuyến mãi và điểm tích lũy) áp dụng trên hóa đơn.
      */
     public String getMoTaGiamGia() {
         List<String> ds = new ArrayList<>();
+        double tienGiamKm = tinhTienGiamKhuyenMai();
         if (getMaKhuyenMai() != null && !getMaKhuyenMai().isBlank()) {
-            if (tienGiam > 0.0) {
-                ds.add(getMaKhuyenMai() + " (-" + String.format("%,.0f", tienGiam) + "đ)");
+            if (tienGiamKm > 0.0) {
+                ds.add(getMaKhuyenMai() + " (-" + String.format("%,.0f", tienGiamKm) + "đ)");
             } else {
                 ds.add(getMaKhuyenMai());
             }
@@ -320,8 +373,9 @@ public class HoaDon {
         this.khuyenMai.setTenKhuyenMai(tenKhuyenMai);
     }
 
-    public double getTienGiam() { return tienGiam; }
-    public void setTienGiam(double tienGiam) { this.tienGiam = Math.max(0.0, tienGiam); }
+    public double getTienGiam() {
+        return tinhTienGiamKhuyenMai();
+    }
 
     public double getTongTienGiam() {
         return tinhTongGiamGia();
@@ -344,30 +398,13 @@ public class HoaDon {
         this.diemTichLuySuDung = Math.max(0, diemTichLuySuDung);
     }
 
-    public int getDiemTichLuyCong() { return diemTichLuyCong; }
-    public void setDiemTichLuyCong(int diemTichLuyCong) { this.diemTichLuyCong = Math.max(0, diemTichLuyCong); }
+    public int getDiemTichLuyCong() {
+        return tinhDiemTichLuyCong();
+    }
 
     public double getTienGiamTuDiem() {
         return tinhTienGiamTuDiem();
     }
-
-    public void setTienGiamTuDiem(double tienGiamTuDiem) {
-        if (this.diemTichLuySuDung <= 0 && tienGiamTuDiem > 0.0) {
-            this.diemTichLuySuDung = (int) Math.round(tienGiamTuDiem / 1000.0);
-        }
-    }
-
-    public double getTienKhachDua() { return tienKhachDua; }
-    public void setTienKhachDua(double tienKhachDua) { this.tienKhachDua = tienKhachDua; }
-
-    public double getTienThoiLai() { return tienThoiLai; }
-    public void setTienThoiLai(double tienThoiLai) { this.tienThoiLai = tienThoiLai; }
-
-    public double getTienThanhToanThem() { return tienThanhToanThem; }
-    public void setTienThanhToanThem(double tienThanhToanThem) { this.tienThanhToanThem = tienThanhToanThem; }
-
-    public double getTienHoanLai() { return tienHoanLai; }
-    public void setTienHoanLai(double tienHoanLai) { this.tienHoanLai = tienHoanLai; }
 
     public String getGhiChu() { return ghiChu; }
     public void setGhiChu(String ghiChu) { this.ghiChu = ghiChu; }
@@ -377,4 +414,17 @@ public class HoaDon {
 
     public List<ChiTietHoaDonDichVu> getDanhSachDichVu() { return danhSachDichVu; }
     public void setDanhSachDichVu(List<ChiTietHoaDonDichVu> danhSachDichVu) { this.danhSachDichVu = danhSachDichVu; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        HoaDon hoaDon = (HoaDon) o;
+        return Objects.equals(maHoaDon, hoaDon.maHoaDon);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maHoaDon);
+    }
 }

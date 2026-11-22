@@ -593,15 +593,6 @@ public class DonNhapHangDAO {
         for (DonNhapHang dh : list) {
             List<ChiTietDonNhap> cts = mapChiTiet.getOrDefault(dh.getMaDonHang(), new ArrayList<>());
             dh.setDanhSachChiTiet(cts);
-            boolean daHoanTat = DonNhapHang.TRANG_THAI_HOAN_TAT.equals(dh.getTrangThai());
-            List<String> ds = new ArrayList<>();
-            for (ChiTietDonNhap ct : cts) {
-                int slHienThi = daHoanTat && ct.getSoLuongThucNhan() != null ? ct.getSoLuongThucNhan() : ct.getSoLuong();
-                if (daHoanTat && slHienThi <= 0) continue;
-                String tenSP = ct.getTenSanPham() != null ? ct.getTenSanPham() : "SP";
-                ds.add(tenSP + " (x" + slHienThi + ")");
-            }
-            dh.setTenHang(String.join(", ", ds));
         }
     }
 

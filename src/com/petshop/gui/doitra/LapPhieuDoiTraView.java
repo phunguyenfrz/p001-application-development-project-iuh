@@ -976,7 +976,6 @@ public class LapPhieuDoiTraView extends VBox {
         phieu.setMaKhachHang(hoaDonDangChon.getMaKhachHang());
         phieu.setTenKhachHang(hoaDonDangChon.getTenKhachHang());
         phieu.setSoDienThoaiKhachHang(hoaDonDangChon.getSoDienThoaiKhachHang());
-        phieu.setSoLuong(tongSoLuongTra);
 
         // Tự động lấy Nhân viên từ SessionManager.getTaiKhoanHienTai().getNhanVien()
         TaiKhoan tkHienTai = SessionManager.getTaiKhoanHienTai();

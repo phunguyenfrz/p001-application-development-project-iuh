@@ -1044,29 +1044,14 @@ public class CapNhatHoaDonView extends VBox {
         hdMoi.setNgayLap(hoaDonGoc.getNgayLap());
         hdMoi.setGioLap(hoaDonGoc.getGioLap());
         hdMoi.setTrangThaiThanhToan(hoaDonGoc.getTrangThaiThanhToan());
-        hdMoi.setMaKhuyenMai(hoaDonGoc.getMaKhuyenMai());
-        hdMoi.setTenKhuyenMai(hoaDonGoc.getTenKhuyenMai());
-        hdMoi.setTienGiam(hoaDonGoc.getTienGiam());
+        hdMoi.setKhuyenMai(hoaDonGoc.getKhuyenMai());
         hdMoi.setDiemTichLuySuDung(hoaDonGoc.getDiemTichLuySuDung());
-        hdMoi.setDiemTichLuyCong(hoaDonGoc.getDiemTichLuyCong());
 
         // Hình thức thanh toán: nếu có thanh toán thêm thì ghi nhận hình thức trả thêm
         if (tienChenhLech > 0.0) {
             hdMoi.setHinhThucThanhToan(radChuyenKhoan.isSelected() ? "Chuyển khoản" : "Tiền mặt");
-            hdMoi.setTienThanhToanThem(tienChenhLech);
-            hdMoi.setTienHoanLai(0.0);
-            if (radTienMat.isSelected()) {
-                hdMoi.setTienKhachDua(tienKhachDua);
-                hdMoi.setTienThoiLai(tienKhachDua - tienChenhLech);
-            }
-        } else if (tienChenhLech < 0.0) {
-            hdMoi.setHinhThucThanhToan(hoaDonGoc.getHinhThucThanhToan());
-            hdMoi.setTienThanhToanThem(0.0);
-            hdMoi.setTienHoanLai(Math.abs(tienChenhLech));
         } else {
             hdMoi.setHinhThucThanhToan(hoaDonGoc.getHinhThucThanhToan());
-            hdMoi.setTienThanhToanThem(0.0);
-            hdMoi.setTienHoanLai(0.0);
         }
 
         for (DongHoaDon d : dsDongHang) {
@@ -1091,22 +1076,25 @@ public class CapNhatHoaDonView extends VBox {
             }
         }
 
+        double tienThanhToanThem = hdMoi.tinhTienThanhToanThem(hoaDonGoc);
+        double tienHoanLai = hdMoi.tinhTienHoanLai(hoaDonGoc);
+
         try {
-            boolean thanhCong = controller.capNhatHoaDon(hoaDonGoc, hdMoi, hdMoi.getTienThanhToanThem(), hdMoi.getTienHoanLai());
+            boolean thanhCong = controller.capNhatHoaDon(hoaDonGoc, hdMoi, tienThanhToanThem, tienHoanLai);
             if (thanhCong) {
                 StringBuilder thongBao = new StringBuilder("Đã cập nhật hóa đơn " + hdMoi.getMaHoaDon() + " thành công!\n");
                 thongBao.append("Tổng tiền mới: ").append(DINH_DANG_TIEN.format(hdMoi.getTongTien())).append("\n");
-                if (hdMoi.getTienThanhToanThem() > 0) {
-                    thongBao.append("Đã thu thêm: ").append(DINH_DANG_TIEN.format(hdMoi.getTienThanhToanThem()))
+                if (tienThanhToanThem > 0) {
+                    thongBao.append("Đã thu thêm: ").append(DINH_DANG_TIEN.format(tienThanhToanThem))
                             .append(" (").append(hdMoi.getHinhThucThanhToan()).append(")\n");
-                } else if (hdMoi.getTienHoanLai() > 0) {
-                    thongBao.append("Đã hoàn lại tiền mặt: ").append(DINH_DANG_TIEN.format(hdMoi.getTienHoanLai())).append("\n");
+                } else if (tienHoanLai > 0) {
+                    thongBao.append("Đã hoàn lại tiền mặt: ").append(DINH_DANG_TIEN.format(tienHoanLai)).append("\n");
                 }
 
                 hienThiThongBao("Cập nhật thành công", thongBao.toString());
 
                 if (inHoaDon) {
-                    new InHoaDonDialog(hdMoi, (Stage) getScene().getWindow()).showAndWait();
+                    new InHoaDonDialog(hdMoi, (Stage) getScene().getWindow(), tienKhachDua, tienThanhToanThem, tienHoanLai).showAndWait();
                 }
 
                 // Quay lại màn hình danh sách và tải lại dữ liệu mới nhất

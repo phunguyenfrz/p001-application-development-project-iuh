@@ -467,7 +467,6 @@ public class PhieuDoiTraDAO {
                     if (ngay != null) phieu.setNgayLap(ngay.toLocalDate());
 
                     phieu.setLyDo(rs.getString("lyDo"));
-                    phieu.setSoLuong(rs.getInt("soLuong"));
                     phieu.setLoaiXuLy(rs.getString("loaiXuLy"));
                     phieu.setTrangThai(rs.getString("trangThai"));
 
@@ -518,7 +517,6 @@ public class PhieuDoiTraDAO {
                     if (ngay != null) phieu.setNgayLap(ngay.toLocalDate());
 
                     phieu.setLyDo(rs.getString("lyDo"));
-                    phieu.setSoLuong(rs.getInt("soLuong"));
                     phieu.setLoaiXuLy(rs.getString("loaiXuLy"));
                     phieu.setTrangThai(rs.getString("trangThai"));
 
