@@ -20,7 +20,6 @@ public class PhieuDoiTra {
     private KhachHang khachHang;
     private LocalDate ngayLap;
     private String lyDo;
-    private int soLuong;
     private String loaiXuLy;       // "Hoàn tiền" | "Đổi hàng"
     private String hinhThucHoan;   // "Tiền mặt" | "Chuyển khoản" | "Voucher"
     private String trangThai;      // "Chờ xử lý" | "Đã duyệt" | "Từ chối"
@@ -29,20 +28,18 @@ public class PhieuDoiTra {
 
     public PhieuDoiTra() {
         this.ngayLap = LocalDate.now();
-        this.soLuong = 1;
         this.loaiXuLy = "Hoàn tiền";
         this.trangThai = "Chờ xử lý";
     }
 
     public PhieuDoiTra(String maPhieuDoiTra, HoaDon hoaDon, NhanVien nhanVien, KhachHang khachHang,
-                       LocalDate ngayLap, String lyDo, int soLuong, String loaiXuLy, String trangThai) {
+                       LocalDate ngayLap, String lyDo, String loaiXuLy, String trangThai) {
         this.maPhieuDoiTra = maPhieuDoiTra;
         this.hoaDon = hoaDon;
         this.nhanVien = nhanVien;
         this.khachHang = khachHang;
         this.ngayLap = ngayLap != null ? ngayLap : LocalDate.now();
         this.lyDo = lyDo;
-        this.soLuong = soLuong;
         this.loaiXuLy = loaiXuLy != null ? loaiXuLy : "Hoàn tiền";
         this.trangThai = trangThai != null ? trangThai : "Chờ xử lý";
     }
@@ -272,12 +269,20 @@ public class PhieuDoiTra {
         this.lyDo = lyDo;
     }
 
-    public int getSoLuong() {
-        return soLuong;
+    public int tinhTongSoLuongTra() {
+        int tong = 0;
+        if (danhSachSanPham != null) {
+            for (ChiTietPhieuDoiTra ct : danhSachSanPham) {
+                if (ct.getSoLuong() > 0) {
+                    tong += ct.getSoLuong();
+                }
+            }
+        }
+        return tong;
     }
 
-    public void setSoLuong(int soLuong) {
-        this.soLuong = soLuong;
+    public int getSoLuong() {
+        return tinhTongSoLuongTra();
     }
 
     public String getLoaiXuLy() {

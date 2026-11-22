@@ -1,6 +1,7 @@
 package com.petshop.dao;
 
 import com.petshop.entity.ChiTietGiaoDich;
+import com.petshop.entity.HoaDon;
 import com.petshop.entity.KhachHang;
 import com.petshop.entity.LichSuGiaoDich;
 import com.petshop.util.DatabaseManager;
@@ -414,21 +415,23 @@ public class KhachHangDAO {
             }
 
             try (ResultSet rs = ps.executeQuery()) {
+                HoaDonDAO hoaDonDAO = new HoaDonDAO();
                 while (rs.next()) {
-                    Date d = rs.getDate("ngayLap");
-                    LocalDate ngayLap = d != null ? d.toLocalDate() : null;
-
-                    LichSuGiaoDich gd = new LichSuGiaoDich(
-                            rs.getString("maHoaDon"),
-                            rs.getString("maKhachHang"),
-                            rs.getString("tenKhachHang"),
-                            ngayLap,
-                            rs.getString("tenNhanVien"),
-                            rs.getString("hinhThucThanhToan"),
-                            rs.getString("trangThaiThanhToan"),
-                            rs.getDouble("tongTien")
-                    );
-                    danhSach.add(gd);
+                    String maHd = rs.getString("maHoaDon");
+                    HoaDon hd = hoaDonDAO.layHoaDonTheoMa(maHd);
+                    if (hd == null) {
+                        Date d = rs.getDate("ngayLap");
+                        LocalDate ngayLap = d != null ? d.toLocalDate() : null;
+                        hd = new HoaDon();
+                        hd.setMaHoaDon(maHd);
+                        hd.setMaKhachHang(rs.getString("maKhachHang"));
+                        hd.setTenKhachHang(rs.getString("tenKhachHang"));
+                        hd.setNgayLap(ngayLap);
+                        hd.setTenNhanVien(rs.getString("tenNhanVien"));
+                        hd.setHinhThucThanhToan(rs.getString("hinhThucThanhToan"));
+                        hd.setTrangThaiThanhToan(rs.getString("trangThaiThanhToan"));
+                    }
+                    danhSach.add(new LichSuGiaoDich(hd));
                 }
             }
         } catch (SQLException e) {

@@ -19,7 +19,6 @@ public class NhanVien {
 
     // Thông tin tài khoản đăng nhập liên kết (Object Reference TaiKhoan)
     private TaiKhoan taiKhoan;
-    private Boolean trangThaiTaiKhoan; // true: Hoạt động, false: Bị khóa, null: Chưa cấp tài khoản
 
     public NhanVien() {
         this.trangThai = "Đang làm";
@@ -169,21 +168,30 @@ public class NhanVien {
     }
 
     public Boolean getTrangThaiTaiKhoan() {
-        return trangThaiTaiKhoan;
+        if (taiKhoan == null) {
+            return null;
+        }
+        if (taiKhoan.getMaTaiKhoan() == null && taiKhoan.getTenDangNhap() == null && taiKhoan.getPhanQuyen() == null) {
+            return null;
+        }
+        return taiKhoan.isTrangThai();
     }
 
     public void setTrangThaiTaiKhoan(Boolean trangThaiTaiKhoan) {
-        this.trangThaiTaiKhoan = trangThaiTaiKhoan;
-        if (trangThaiTaiKhoan != null) {
-            if (this.taiKhoan == null) {
-                this.taiKhoan = new TaiKhoan();
+        if (trangThaiTaiKhoan == null) {
+            if (this.taiKhoan != null && this.taiKhoan.getMaTaiKhoan() == null && this.taiKhoan.getTenDangNhap() == null) {
+                this.taiKhoan = null;
             }
-            this.taiKhoan.setTrangThai(trangThaiTaiKhoan);
+            return;
         }
+        if (this.taiKhoan == null) {
+            this.taiKhoan = new TaiKhoan();
+        }
+        this.taiKhoan.setTrangThai(trangThaiTaiKhoan);
     }
 
     public boolean isTaiKhoanHoatDong() {
-        return Boolean.TRUE.equals(this.trangThaiTaiKhoan);
+        return Boolean.TRUE.equals(getTrangThaiTaiKhoan());
     }
 
     @Override

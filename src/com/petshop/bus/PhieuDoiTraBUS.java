@@ -313,8 +313,6 @@ public class PhieuDoiTraBUS {
             throw new IllegalArgumentException("Vui lòng chọn ít nhất một sản phẩm hợp lệ cần đổi trả!");
         }
 
-        phieu.setSoLuong(tongSoLuongTra);
-
         if (phieu.getMaPhieuDoiTra() == null || phieu.getMaPhieuDoiTra().trim().isEmpty()) {
             phieu.setMaPhieuDoiTra(sinhMaPhieu());
         }
@@ -375,7 +373,6 @@ public class PhieuDoiTraBUS {
             throw new IllegalArgumentException("Phiếu đổi trả phải có ít nhất một mặt hàng hoàn trả!");
         }
 
-        phieu.setSoLuong(tongSoLuongTra);
         return phieuDoiTraDAO.capNhatPhieuDoiTra(phieu);
     }
 

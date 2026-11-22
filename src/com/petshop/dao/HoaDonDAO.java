@@ -255,27 +255,52 @@ public class HoaDonDAO {
             }
 
             // 3. Hoàn lại điểm tích lũy cho khách hàng (nếu hóa đơn có khách hàng)
-            String sqlLayKhach = "SELECT maKhachHang, tongTien FROM dbo.HoaDon WHERE maHoaDon = ?";
-            try (PreparedStatement psKh = conn.prepareStatement(sqlLayKhach)) {
-                psKh.setString(1, maHoaDon);
-                try (ResultSet rsKh = psKh.executeQuery()) {
-                    if (rsKh.next()) {
-                        String maKh = rsKh.getString("maKhachHang");
-                        double tongTienHd = rsKh.getDouble("tongTien");
-                        if (maKh != null && !maKh.isBlank() && tongTienHd > 0) {
-                            long tien = (long) tongTienHd;
-                            int diemDaCong = (int) ((tien / 100_000L) * (tien >= 1_000_000L ? 10L : 5L));
-                            if (diemDaCong > 0) {
-                                String sqlTruDiem = """
-                                        UPDATE dbo.KhachHang
-                                        SET diemTichLuy = CASE WHEN diemTichLuy - ? < 0 THEN 0 ELSE diemTichLuy - ? END
-                                        WHERE maKhachHang = ?
-                                        """;
-                                try (PreparedStatement psTru = conn.prepareStatement(sqlTruDiem)) {
-                                    psTru.setInt(1, diemDaCong);
-                                    psTru.setInt(2, diemDaCong);
-                                    psTru.setString(3, maKh);
-                                    psTru.executeUpdate();
+            HoaDon hdCanHuy = boNhoHoaDon.get(maHoaDon);
+            if (hdCanHuy == null) {
+                try {
+                    hdCanHuy = layHoaDonTheoMa(maHoaDon);
+                } catch (Exception ignored) {}
+            }
+            if (hdCanHuy != null && hdCanHuy.getMaKhachHang() != null && !hdCanHuy.getMaKhachHang().isBlank()) {
+                int diemDaCong = hdCanHuy.getDiemTichLuyCong();
+                int diemDaDung = hdCanHuy.getDiemTichLuySuDung();
+                int thayDoiDiem = diemDaDung - diemDaCong; // Trả lại điểm đã dùng, thu hồi điểm đã cộng
+                if (thayDoiDiem != 0) {
+                    String sqlThayDoiDiem = """
+                            UPDATE dbo.KhachHang
+                            SET diemTichLuy = CASE WHEN diemTichLuy + ? < 0 THEN 0 ELSE diemTichLuy + ? END
+                            WHERE maKhachHang = ?
+                            """;
+                    try (PreparedStatement psDiem = conn.prepareStatement(sqlThayDoiDiem)) {
+                        psDiem.setInt(1, thayDoiDiem);
+                        psDiem.setInt(2, thayDoiDiem);
+                        psDiem.setString(3, hdCanHuy.getMaKhachHang().trim());
+                        psDiem.executeUpdate();
+                    }
+                }
+            } else {
+                String sqlLayKhach = "SELECT maKhachHang, tongTien FROM dbo.HoaDon WHERE maHoaDon = ?";
+                try (PreparedStatement psKh = conn.prepareStatement(sqlLayKhach)) {
+                    psKh.setString(1, maHoaDon);
+                    try (ResultSet rsKh = psKh.executeQuery()) {
+                        if (rsKh.next()) {
+                            String maKh = rsKh.getString("maKhachHang");
+                            double tongTienHd = rsKh.getDouble("tongTien");
+                            if (maKh != null && !maKh.isBlank() && tongTienHd > 0) {
+                                long tien = (long) tongTienHd;
+                                int diemDaCong = (int) ((tien / 100_000L) * (tien >= 1_000_000L ? 10L : 5L));
+                                if (diemDaCong > 0) {
+                                    String sqlTruDiem = """
+                                            UPDATE dbo.KhachHang
+                                            SET diemTichLuy = CASE WHEN diemTichLuy - ? < 0 THEN 0 ELSE diemTichLuy - ? END
+                                            WHERE maKhachHang = ?
+                                            """;
+                                    try (PreparedStatement psTru = conn.prepareStatement(sqlTruDiem)) {
+                                        psTru.setInt(1, diemDaCong);
+                                        psTru.setInt(2, diemDaCong);
+                                        psTru.setString(3, maKh);
+                                        psTru.executeUpdate();
+                                    }
                                 }
                             }
                         }
@@ -526,39 +551,22 @@ public class HoaDonDAO {
                     HoaDon hd = anhXaHoaDon(rs);
                     napChiTietHoaDon(conn, hd);
 
-                    // Tính chi tiết tiền giảm KM và điểm tích lũy
+                    // Khôi phục số điểm tích lũy đã sử dụng từ chênh lệch giữa tổng gốc và tổng tiền lưu DB
                     HoaDon cached = boNhoHoaDon.get(maHoaDon);
                     double tongGoc = hd.tinhTongTienGoc();
-                    double tongChenhLech = Math.max(0.0, tongGoc - hd.getTongTien());
+                    double tongTienDb = rs.getDouble("tongTien");
+                    double tongChenhLech = Math.max(0.0, tongGoc - tongTienDb);
                     if (tongChenhLech > 0.0) {
-                        double tienGiamKm = 0.0;
-                        if (hd.getMaKhuyenMai() != null) {
-                            double phanTram = rs.getDouble("phanTramGiam");
-                            if (phanTram > 0.0) {
-                                tienGiamKm = Math.round(tongGoc * phanTram / 100.0);
-                                if (tienGiamKm > tongChenhLech) {
-                                    tienGiamKm = tongChenhLech;
-                                }
-                            }
-                        }
-                        double tienGiamDiem = tongChenhLech - tienGiamKm;
-                        hd.setTienGiam(tienGiamKm);
+                        double tienGiamKm = hd.tinhTienGiamKhuyenMai();
+                        double tienGiamDiem = Math.max(0.0, tongChenhLech - tienGiamKm);
                         if (tienGiamDiem > 0.0) {
                             int diemDung = (int) Math.ceil(tienGiamDiem / 1000.0);
                             hd.setDiemTichLuySuDung(diemDung);
                         }
                     }
 
-                    if (cached != null) {
-                        if (cached.getTienGiam() > 0.0) {
-                            hd.setTienGiam(cached.getTienGiam());
-                        }
-                        if (cached.getDiemTichLuySuDung() > 0) {
-                            hd.setDiemTichLuySuDung(cached.getDiemTichLuySuDung());
-                        }
-                        hd.setDiemTichLuyCong(cached.getDiemTichLuyCong());
-                        hd.setTienKhachDua(cached.getTienKhachDua());
-                        hd.setTienThoiLai(cached.getTienThoiLai());
+                    if (cached != null && cached.getDiemTichLuySuDung() > 0) {
+                        hd.setDiemTichLuySuDung(cached.getDiemTichLuySuDung());
                     }
                     boNhoHoaDon.put(hd.getMaHoaDon(), hd);
                     return hd;
@@ -908,43 +916,32 @@ public class HoaDonDAO {
         hd.setTenKhachHang(rs.getString("tenKhachHang"));
         hd.setSoDienThoaiKhachHang(rs.getString("soDienThoaiKhachHang"));
         hd.setTenKhuyenMai(rs.getString("tenKhuyenMai"));
+        if (hd.getKhuyenMai() != null) {
+            try {
+                hd.getKhuyenMai().setPhanTramGiam(rs.getDouble("phanTramGiam"));
+            } catch (SQLException ignored) {
+            }
+        }
 
         HoaDon cached = boNhoHoaDon.get(hd.getMaHoaDon());
-        if (cached != null) {
-            hd.setTienGiam(cached.getTienGiam());
+        if (cached != null && cached.getDiemTichLuySuDung() > 0) {
             hd.setDiemTichLuySuDung(cached.getDiemTichLuySuDung());
-            hd.setDiemTichLuyCong(cached.getDiemTichLuyCong());
-            hd.setTienKhachDua(cached.getTienKhachDua());
-            hd.setTienThoiLai(cached.getTienThoiLai());
         }
 
         try {
             double tongGoc = rs.getDouble("tongTienGoc");
             double tongTien = rs.getDouble("tongTien");
-            if (tongGoc > 0.0) {
-                // Nếu chưa có tiền giảm (hoặc bằng 0), khôi phục từ tổng tiền gốc và tổng tiền thực tế
-                if (hd.getTongTienGiam() == 0.0) {
-                    double tongChenhLech = Math.max(0.0, tongGoc - tongTien);
-                    if (tongChenhLech > 0.0) {
-                        double tienGiamKm = 0.0;
-                        if (hd.getMaKhuyenMai() != null) {
-                            try {
-                                double phanTram = rs.getDouble("phanTramGiam");
-                                if (phanTram > 0.0) {
-                                    tienGiamKm = Math.round(tongGoc * phanTram / 100.0);
-                                    if (tienGiamKm > tongChenhLech) {
-                                        tienGiamKm = tongChenhLech;
-                                    }
-                                }
-                            } catch (SQLException ignored) {}
-                        }
-                        double tienGiamDiem = tongChenhLech - tienGiamKm;
-                        hd.setTienGiam(tienGiamKm);
-                        if (tienGiamDiem > 0.0) {
-                            int diemDung = (int) Math.ceil(tienGiamDiem / 1000.0);
-                            hd.setDiemTichLuySuDung(diemDung);
-                            hd.setTienGiamTuDiem(tienGiamDiem);
-                        }
+            if (tongGoc > 0.0 && hd.getDiemTichLuySuDung() == 0) {
+                double tongChenhLech = Math.max(0.0, tongGoc - tongTien);
+                if (tongChenhLech > 0.0) {
+                    double tienGiamKm = 0.0;
+                    if (hd.getKhuyenMai() != null && hd.getKhuyenMai().getPhanTramGiam() > 0.0) {
+                        tienGiamKm = Math.min(tongChenhLech, Math.round(tongGoc * hd.getKhuyenMai().getPhanTramGiam() / 100.0));
+                    }
+                    double tienGiamDiem = Math.max(0.0, tongChenhLech - tienGiamKm);
+                    if (tienGiamDiem > 0.0) {
+                        int diemDung = (int) Math.ceil(tienGiamDiem / 1000.0);
+                        hd.setDiemTichLuySuDung(diemDung);
                     }
                 }
             }

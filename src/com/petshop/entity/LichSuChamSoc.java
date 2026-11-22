@@ -1,20 +1,21 @@
 package com.petshop.entity;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 /**
- * Thực thể biểu diễn một lần hẹn chăm sóc dịch vụ của thú cưng (ánh xạ từ bảng LichHen).
+ * Thực thể biểu diễn một lần hẹn chăm sóc dịch vụ của thú cưng (ánh xạ thông qua Object Reference LichHen).
  */
 public class LichSuChamSoc {
 
+    private static final DateTimeFormatter DINH_DANG_GIO = DateTimeFormatter.ofPattern("HH:mm");
+
     private final LichHen lichHen;
-    private final ThuCung thuCung;
-    private final KhachHang khachHang;
-    private final NhanVien nhanVien;
-    private final LocalDate ngayHen;
-    private final String gioHen;
-    private final String trangThai;
-    private final String ghiChu;
+
+    public LichSuChamSoc(LichHen lichHen) {
+        this.lichHen = lichHen != null ? lichHen : new LichHen();
+    }
 
     public LichSuChamSoc(String maLichHen, String maThuCung, String tenThuCung,
                          String maKhachHang, String tenKhachHang,
@@ -23,19 +24,32 @@ public class LichSuChamSoc {
                          String trangThai, String ghiChu) {
         this.lichHen = new LichHen();
         this.lichHen.setMaLichHen(maLichHen);
-        this.thuCung = new ThuCung();
-        this.thuCung.setMaThuCung(maThuCung);
-        this.thuCung.setTenThuCung(tenThuCung);
-        this.khachHang = new KhachHang();
-        this.khachHang.setMaKhachHang(maKhachHang);
-        this.khachHang.setHoTen(tenKhachHang);
-        this.nhanVien = new NhanVien();
-        this.nhanVien.setMaNhanVien(maNhanVien);
-        this.nhanVien.setHoTen(tenNhanVien);
-        this.ngayHen = ngayHen;
-        this.gioHen = gioHen;
-        this.trangThai = trangThai != null ? trangThai : "Hoàn thành";
-        this.ghiChu = ghiChu != null ? ghiChu : "";
+
+        ThuCung tc = new ThuCung();
+        tc.setMaThuCung(maThuCung);
+        tc.setTenThuCung(tenThuCung);
+        this.lichHen.setThuCung(tc);
+
+        KhachHang kh = new KhachHang();
+        kh.setMaKhachHang(maKhachHang);
+        kh.setHoTen(tenKhachHang);
+        this.lichHen.setKhachHang(kh);
+
+        NhanVien nv = new NhanVien();
+        nv.setMaNhanVien(maNhanVien);
+        nv.setHoTen(tenNhanVien);
+        this.lichHen.setNhanVien(nv);
+
+        this.lichHen.setNgayHen(ngayHen);
+        if (gioHen != null && !gioHen.isBlank() && !"-".equals(gioHen.trim())) {
+            try {
+                String chuanGio = gioHen.trim().length() >= 5 ? gioHen.trim().substring(0, 5) : gioHen.trim();
+                this.lichHen.setGioHen(LocalTime.parse(chuanGio, DINH_DANG_GIO));
+            } catch (Exception ignored) {
+            }
+        }
+        this.lichHen.setTrangThai(trangThai != null ? trangThai : "Hoàn thành");
+        this.lichHen.setGhiChu(ghiChu != null ? ghiChu : "");
     }
 
     public LichHen getLichHen() {
@@ -47,55 +61,58 @@ public class LichSuChamSoc {
     }
 
     public ThuCung getThuCung() {
-        return thuCung;
+        return lichHen != null ? lichHen.getThuCung() : null;
     }
 
     public String getMaThuCung() {
-        return thuCung != null ? thuCung.getMaThuCung() : null;
+        return lichHen != null ? lichHen.getMaThuCung() : null;
     }
 
     public String getTenThuCung() {
-        return thuCung != null ? thuCung.getTenThuCung() : null;
+        return lichHen != null ? lichHen.getTenThuCung() : null;
     }
 
     public KhachHang getKhachHang() {
-        return khachHang;
+        return lichHen != null ? lichHen.getKhachHang() : null;
     }
 
     public String getMaKhachHang() {
-        return khachHang != null ? khachHang.getMaKhachHang() : null;
+        return lichHen != null ? lichHen.getMaKhachHang() : null;
     }
 
     public String getTenKhachHang() {
-        return khachHang != null ? khachHang.getHoTen() : null;
+        return lichHen != null ? lichHen.getTenKhachHang() : null;
     }
 
     public NhanVien getNhanVien() {
-        return nhanVien;
+        return lichHen != null ? lichHen.getNhanVien() : null;
     }
 
     public String getMaNhanVien() {
-        return nhanVien != null ? nhanVien.getMaNhanVien() : null;
+        return lichHen != null ? lichHen.getMaNhanVien() : null;
     }
 
     public String getTenNhanVien() {
-        return nhanVien != null ? nhanVien.getHoTen() : null;
+        return lichHen != null ? lichHen.getTenNhanVien() : null;
     }
 
     public LocalDate getNgayHen() {
-        return ngayHen;
+        return lichHen != null ? lichHen.getNgayHen() : null;
     }
 
     public String getGioHen() {
-        return gioHen;
+        if (lichHen != null && lichHen.getGioHen() != null) {
+            return lichHen.getGioHen().format(DINH_DANG_GIO);
+        }
+        return "-";
     }
 
     public String getTrangThai() {
-        return trangThai;
+        return lichHen != null ? lichHen.getTrangThai() : "Hoàn thành";
     }
 
     public String getGhiChu() {
-        return ghiChu;
+        return (lichHen != null && lichHen.getGhiChu() != null) ? lichHen.getGhiChu() : "";
     }
 }
 

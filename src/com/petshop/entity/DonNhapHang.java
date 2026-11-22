@@ -48,8 +48,7 @@ public class DonNhapHang {
     private NhanVien nhanVienHuy;
     private String lyDoHuy;
 
-    // Danh sách dòng chi tiết và chuỗi tên mặt hàng hiển thị
-    private String tenHang;
+    // Danh sách dòng chi tiết
     private List<ChiTietDonNhap> danhSachChiTiet = new ArrayList<>();
 
     public DonNhapHang() {
@@ -255,12 +254,22 @@ public class DonNhapHang {
         this.danhSachChiTiet = danhSachChiTiet != null ? danhSachChiTiet : new ArrayList<>();
     }
 
+    /**
+     * Phương thức tự tính toán chuỗi tên các mặt hàng để hiển thị trên bảng (không lưu biến thành viên).
+     */
     public String getTenHang() {
-        return tenHang;
-    }
-
-    public void setTenHang(String tenHang) {
-        this.tenHang = tenHang;
+        if (danhSachChiTiet == null || danhSachChiTiet.isEmpty()) {
+            return "";
+        }
+        boolean daHoanTat = TRANG_THAI_HOAN_TAT.equals(trangThai);
+        List<String> ds = new ArrayList<>();
+        for (ChiTietDonNhap ct : danhSachChiTiet) {
+            int slHienThi = daHoanTat && ct.getSoLuongThucNhan() != null ? ct.getSoLuongThucNhan() : ct.getSoLuong();
+            if (daHoanTat && slHienThi <= 0) continue;
+            String tenSP = ct.getTenSanPham() != null ? ct.getTenSanPham() : "SP";
+            ds.add(tenSP + " (x" + slHienThi + ")");
+        }
+        return String.join(", ", ds);
     }
 
     /**

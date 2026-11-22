@@ -33,9 +33,23 @@ public class InHoaDonDialog extends Stage {
     private static final double RONG_NOI_DUNG = 250;
 
     private final HoaDon hoaDon;
+    private final double tienKhachDuaTam;
+    private final double tienThanhToanThemTam;
+    private final double tienHoanLaiTam;
 
     public InHoaDonDialog(HoaDon hoaDon, Stage chuSoHuu) {
+        this(hoaDon, chuSoHuu, 0.0, 0.0, 0.0);
+    }
+
+    public InHoaDonDialog(HoaDon hoaDon, Stage chuSoHuu, double tienKhachDua) {
+        this(hoaDon, chuSoHuu, tienKhachDua, 0.0, 0.0);
+    }
+
+    public InHoaDonDialog(HoaDon hoaDon, Stage chuSoHuu, double tienKhachDua, double tienThanhToanThem, double tienHoanLai) {
         this.hoaDon = hoaDon;
+        this.tienKhachDuaTam = tienKhachDua;
+        this.tienThanhToanThemTam = tienThanhToanThem;
+        this.tienHoanLaiTam = tienHoanLai;
 
         initModality(Modality.APPLICATION_MODAL);
         if (chuSoHuu != null) initOwner(chuSoHuu);
@@ -251,23 +265,21 @@ public class InHoaDonDialog extends Stage {
         luoiTongKet.add(lblHt, 1, row++);
 
         if ("Tiền mặt".equalsIgnoreCase(ht)) {
-            double tienThanhToanThem = hd.getTienThanhToanThem();
-            double tienHoanLai = hd.getTienHoanLai();
+            double tienThanhToanThem = this.tienThanhToanThemTam;
+            double tienHoanLai = this.tienHoanLaiTam;
             boolean coThanhToanThem = tienThanhToanThem > 0.0;
             boolean coHoanTien = tienHoanLai > 0.0;
 
-            double tienDua = hd.getTienKhachDua() > 0.0 ? hd.getTienKhachDua() : hd.getTongTien();
+            double tienDua = this.tienKhachDuaTam > 0.0 ? this.tienKhachDuaTam : hd.getTongTien();
             double tienThoi;
             if (coThanhToanThem) {
-                tienThoi = hd.getTienThoiLai() > 0.0
-                        ? hd.getTienThoiLai()
-                        : Math.max(0.0, tienDua - tienThanhToanThem);
+                tienThoi = Math.max(0.0, tienDua - tienThanhToanThem);
+            } else if (coHoanTien) {
+                double tongSoSanh = hd.getTongTien() + tienHoanLai;
+                tienDua = tongSoSanh;
+                tienThoi = Math.max(0.0, tienDua - tongSoSanh);
             } else {
-                double tongSoSanh = coHoanTien ? hd.getTongTien() + tienHoanLai : hd.getTongTien();
-                tienDua = coHoanTien ? tongSoSanh : tienDua;
-                tienThoi = hd.getTienThoiLai() > 0.0
-                        ? hd.getTienThoiLai()
-                        : Math.max(0.0, tienDua - tongSoSanh);
+                tienThoi = hd.tinhTienThoiLai(tienDua);
             }
 
             luoiTongKet.add(taoLabelNhe("Tiền khách đưa:"), 0, row);
@@ -294,8 +306,8 @@ public class InHoaDonDialog extends Stage {
             luoiTongKet.add(lblDiemMoi, 1, row++);
         }
 
-        if (hd.getTienThanhToanThem() > 0.0) {
-            double tongHoaDonGoc = hd.getTongTien() - hd.getTienThanhToanThem();
+        if (this.tienThanhToanThemTam > 0.0) {
+            double tongHoaDonGoc = hd.getTongTien() - this.tienThanhToanThemTam;
             luoiTongKet.add(taoLabelNhe("Đã thanh toán trước:"), 0, row);
             Label lblGoc = new Label(DINH_DANG_TIEN.format(tongHoaDonGoc));
             lblGoc.setAlignment(Pos.CENTER_RIGHT);
@@ -303,13 +315,13 @@ public class InHoaDonDialog extends Stage {
             luoiTongKet.add(lblGoc, 1, row++);
 
             luoiTongKet.add(taoLabelNhe("Khách thanh toán thêm:"), 0, row);
-            Label lblThem = new Label("+" + DINH_DANG_TIEN.format(hd.getTienThanhToanThem()));
+            Label lblThem = new Label("+" + DINH_DANG_TIEN.format(this.tienThanhToanThemTam));
             lblThem.setAlignment(Pos.CENTER_RIGHT);
             lblThem.setMaxWidth(Double.MAX_VALUE);
             lblThem.setStyle("-fx-font-size: 9.5px; -fx-font-weight: bold; -fx-text-fill: #0284c7;");
             luoiTongKet.add(lblThem, 1, row++);
-        } else if (hd.getTienHoanLai() > 0.0) {
-            double tongHoaDonGoc = hd.getTongTien() + hd.getTienHoanLai();
+        } else if (this.tienHoanLaiTam > 0.0) {
+            double tongHoaDonGoc = hd.getTongTien() + this.tienHoanLaiTam;
             luoiTongKet.add(taoLabelNhe("Đã thanh toán trước:"), 0, row);
             Label lblGoc = new Label(DINH_DANG_TIEN.format(tongHoaDonGoc));
             lblGoc.setAlignment(Pos.CENTER_RIGHT);
@@ -317,7 +329,7 @@ public class InHoaDonDialog extends Stage {
             luoiTongKet.add(lblGoc, 1, row++);
 
             luoiTongKet.add(taoLabelNhe("Hoàn lại tiền mặt:"), 0, row);
-            Label lblHoan = new Label("-" + DINH_DANG_TIEN.format(hd.getTienHoanLai()));
+            Label lblHoan = new Label("-" + DINH_DANG_TIEN.format(this.tienHoanLaiTam));
             lblHoan.setAlignment(Pos.CENTER_RIGHT);
             lblHoan.setMaxWidth(Double.MAX_VALUE);
             lblHoan.setStyle("-fx-font-size: 9.5px; -fx-font-weight: bold; -fx-text-fill: #dc2626;");
