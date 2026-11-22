@@ -255,27 +255,52 @@ public class HoaDonDAO {
             }
 
             // 3. Hoàn lại điểm tích lũy cho khách hàng (nếu hóa đơn có khách hàng)
-            String sqlLayKhach = "SELECT maKhachHang, tongTien FROM dbo.HoaDon WHERE maHoaDon = ?";
-            try (PreparedStatement psKh = conn.prepareStatement(sqlLayKhach)) {
-                psKh.setString(1, maHoaDon);
-                try (ResultSet rsKh = psKh.executeQuery()) {
-                    if (rsKh.next()) {
-                        String maKh = rsKh.getString("maKhachHang");
-                        double tongTienHd = rsKh.getDouble("tongTien");
-                        if (maKh != null && !maKh.isBlank() && tongTienHd > 0) {
-                            long tien = (long) tongTienHd;
-                            int diemDaCong = (int) ((tien / 100_000L) * (tien >= 1_000_000L ? 10L : 5L));
-                            if (diemDaCong > 0) {
-                                String sqlTruDiem = """
-                                        UPDATE dbo.KhachHang
-                                        SET diemTichLuy = CASE WHEN diemTichLuy - ? < 0 THEN 0 ELSE diemTichLuy - ? END
-                                        WHERE maKhachHang = ?
-                                        """;
-                                try (PreparedStatement psTru = conn.prepareStatement(sqlTruDiem)) {
-                                    psTru.setInt(1, diemDaCong);
-                                    psTru.setInt(2, diemDaCong);
-                                    psTru.setString(3, maKh);
-                                    psTru.executeUpdate();
+            HoaDon hdCanHuy = boNhoHoaDon.get(maHoaDon);
+            if (hdCanHuy == null) {
+                try {
+                    hdCanHuy = layHoaDonTheoMa(maHoaDon);
+                } catch (Exception ignored) {}
+            }
+            if (hdCanHuy != null && hdCanHuy.getMaKhachHang() != null && !hdCanHuy.getMaKhachHang().isBlank()) {
+                int diemDaCong = hdCanHuy.getDiemTichLuyCong();
+                int diemDaDung = hdCanHuy.getDiemTichLuySuDung();
+                int thayDoiDiem = diemDaDung - diemDaCong; // Trả lại điểm đã dùng, thu hồi điểm đã cộng
+                if (thayDoiDiem != 0) {
+                    String sqlThayDoiDiem = """
+                            UPDATE dbo.KhachHang
+                            SET diemTichLuy = CASE WHEN diemTichLuy + ? < 0 THEN 0 ELSE diemTichLuy + ? END
+                            WHERE maKhachHang = ?
+                            """;
+                    try (PreparedStatement psDiem = conn.prepareStatement(sqlThayDoiDiem)) {
+                        psDiem.setInt(1, thayDoiDiem);
+                        psDiem.setInt(2, thayDoiDiem);
+                        psDiem.setString(3, hdCanHuy.getMaKhachHang().trim());
+                        psDiem.executeUpdate();
+                    }
+                }
+            } else {
+                String sqlLayKhach = "SELECT maKhachHang, tongTien FROM dbo.HoaDon WHERE maHoaDon = ?";
+                try (PreparedStatement psKh = conn.prepareStatement(sqlLayKhach)) {
+                    psKh.setString(1, maHoaDon);
+                    try (ResultSet rsKh = psKh.executeQuery()) {
+                        if (rsKh.next()) {
+                            String maKh = rsKh.getString("maKhachHang");
+                            double tongTienHd = rsKh.getDouble("tongTien");
+                            if (maKh != null && !maKh.isBlank() && tongTienHd > 0) {
+                                long tien = (long) tongTienHd;
+                                int diemDaCong = (int) ((tien / 100_000L) * (tien >= 1_000_000L ? 10L : 5L));
+                                if (diemDaCong > 0) {
+                                    String sqlTruDiem = """
+                                            UPDATE dbo.KhachHang
+                                            SET diemTichLuy = CASE WHEN diemTichLuy - ? < 0 THEN 0 ELSE diemTichLuy - ? END
+                                            WHERE maKhachHang = ?
+                                            """;
+                                    try (PreparedStatement psTru = conn.prepareStatement(sqlTruDiem)) {
+                                        psTru.setInt(1, diemDaCong);
+                                        psTru.setInt(2, diemDaCong);
+                                        psTru.setString(3, maKh);
+                                        psTru.executeUpdate();
+                                    }
                                 }
                             }
                         }

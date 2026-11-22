@@ -113,7 +113,7 @@ public class HoaDon {
     /**
      * Phương thức tự tính toán: Số điểm tích lũy mới được cộng từ hóa đơn (Điều 2).
      * - Khách vãng lai: 0 điểm
-     * - Khách hàng có tài khoản:
+     * - Khách hàng có tài khoản: Tính trên tổng tiền hóa đơn trước khi giảm giá (tổng tiền gốc).
      *   + Hóa đơn < 1.000.000 VNĐ: mỗi 100.000 VNĐ tính 5 điểm
      *   + Hóa đơn >= 1.000.000 VNĐ: mỗi 100.000 VNĐ tính 10 điểm
      */
@@ -122,7 +122,7 @@ public class HoaDon {
         if (maKh == null || maKh.trim().isEmpty()) {
             return 0;
         }
-        long tien = (long) tinhTongThanhToan();
+        long tien = (long) tinhTongTienGoc();
         if (tien <= 0L) {
             return 0;
         }

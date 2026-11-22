@@ -107,7 +107,7 @@ public class LapHoaDonThanhToanView extends VBox {
     // Điểm tích lũy
     private final CheckBox chkDungDiem = new CheckBox("Dùng điểm tích lũy (1đ = 1.000đ)");
     private final Spinner<Integer> spnDiemDung = new Spinner<>(0, 0, 0);
-    private final Button btnDungToiDaDiem = new Button("Dùng tối đa");
+    private final Button btnDungToiDaDiem = new Button("Tối đa");
     private final Label lblTienGiamTuDiem = new Label("- 0 VNĐ");
     private final Label lblDiemCongDuKien = new Label("Khách vãng lai (không tích điểm)");
 
@@ -426,16 +426,16 @@ public class LapHoaDonThanhToanView extends VBox {
         // CỘT 1: TIỀN HÀNG, KHUYẾN MÃI, ĐIỂM TÍCH LŨY, TỔNG THANH TOÁN
         // =====================================================================
         VBox cotTien = new VBox(4);
-        cotTien.setMinWidth(280);
-        cotTien.setPrefWidth(290);
+        cotTien.setMinWidth(360);
+        cotTien.setPrefWidth(370);
 
         GridPane luoiTien = new GridPane();
         luoiTien.setHgap(8);
         luoiTien.setVgap(4);
 
         ColumnConstraints colTienNhan = new ColumnConstraints();
-        colTienNhan.setMinWidth(90);
-        colTienNhan.setPrefWidth(95);
+        colTienNhan.setMinWidth(95);
+        colTienNhan.setPrefWidth(100);
         ColumnConstraints colTienGiaTri = new ColumnConstraints();
         colTienGiaTri.setHgrow(Priority.ALWAYS);
         luoiTien.getColumnConstraints().addAll(colTienNhan, colTienGiaTri);
@@ -467,8 +467,8 @@ public class LapHoaDonThanhToanView extends VBox {
         chkDungDiem.setStyle("-fx-font-size: 11px;");
         chkDungDiem.setMinWidth(Region.USE_PREF_SIZE);
 
-        spnDiemDung.setPrefWidth(75);
-        spnDiemDung.setMinWidth(70);
+        spnDiemDung.setPrefWidth(65);
+        spnDiemDung.setMinWidth(55);
         spnDiemDung.setEditable(true);
         spnDiemDung.setDisable(true);
         spnDiemDung.getEditor().textProperty().addListener((obs, cu, moi) -> {
@@ -490,9 +490,10 @@ public class LapHoaDonThanhToanView extends VBox {
 
         btnDungToiDaDiem.setStyle("-fx-font-size: 11px; -fx-padding: 2 6;");
         btnDungToiDaDiem.setMinWidth(Region.USE_PREF_SIZE);
+        btnDungToiDaDiem.setTooltip(new Tooltip("Dùng tối đa số điểm tích lũy"));
         btnDungToiDaDiem.setDisable(true);
 
-        HBox hangDiem = new HBox(4, spnDiemDung, btnDungToiDaDiem, lblTienGiamTuDiem);
+        HBox hangDiem = new HBox(6, spnDiemDung, btnDungToiDaDiem, lblTienGiamTuDiem);
         hangDiem.setAlignment(Pos.CENTER_LEFT);
         lblTienGiamTuDiem.setStyle("-fx-font-weight: bold; -fx-text-fill: #dc2626;");
         lblTienGiamTuDiem.setMinWidth(Region.USE_PREF_SIZE);
@@ -1707,9 +1708,9 @@ public class LapHoaDonThanhToanView extends VBox {
             tongThanhToanHienTai = Math.max(0.0, tienSauKm - tienGiamDiemHienTai);
             lblTongThanhToan.setText(DINH_DANG_TIEN.format(tongThanhToanHienTai));
 
-            // 4. Tính điểm tích lũy cộng mới
+            // 4. Tính điểm tích lũy cộng mới (tính theo tổng tiền hàng trước khi giảm giá)
             if (laKhachHang) {
-                diemCongMoiHienTai = controller.tinhDiemTichLuy(tongThanhToanHienTai, true);
+                diemCongMoiHienTai = controller.tinhDiemTichLuy(tongTienHangHienTai, true);
                 lblDiemCongDuKien.setText("Điểm nhận thêm: +" + diemCongMoiHienTai + " điểm");
                 lblDiemCongDuKien.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #15803d;");
             } else {
